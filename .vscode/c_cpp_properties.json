@@ -7,7 +7,7 @@
             "cStandard": "c99",
             "intelliSenseMode": "linux-gcc-x64",
             "compilerPath": "/usr/bin/g++",
-            "defines": ["GLFW_INCLUDE_NONE"],
+            "defines": ["GLFW_INCLUDE_NONE", "VGAME_CLIENT"],
             "includePath": [
                 "${workspaceFolder}/external/entt/include",
                 "${workspaceFolder}/external/glad/include",

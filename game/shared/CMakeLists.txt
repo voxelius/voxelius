@@ -1,4 +1,10 @@
-## SPDX-License-Identifier: MPL-2.0
-## This Source Code Form is subject to the terms of the Mozilla Public
-## License, v2.0. If a copy of the MPL was not distributed with this
-## file, You can obtain one at http://mozilla.org/MPL/2.0/.
+add_library(shared STATIC
+    "${CMAKE_CURRENT_LIST_DIR}/cmdline.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/crc64.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/epoch.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/inertial.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/strtools.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/world.cc")
+target_include_directories(shared PUBLIC "${CMAKE_SOURCE_DIR}")
+target_link_libraries(shared PUBLIC entt glm physfs spdlog)

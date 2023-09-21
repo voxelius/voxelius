@@ -1,4 +1,14 @@
-## SPDX-License-Identifier: MPL-2.0
-## This Source Code Form is subject to the terms of the Mozilla Public
-## License, v2.0. If a copy of the MPL was not distributed with this
-## file, You can obtain one at http://mozilla.org/MPL/2.0/.
+option(BUILD_CLIENT "Build client" ON)
+option(BUILD_SERVER "Build server" OFF)
+
+add_subdirectory(client)
+add_subdirectory(server)
+add_subdirectory(shared)
+
+if(BUILD_CLIENT)
+    add_executable(vgame "${CMAKE_CURRENT_LIST_DIR}/game.cc")
+    target_compile_definitions(vgame PUBLIC VGAME_CLIENT)
+    target_include_directories(vgame PUBLIC "${CMAKE_SOURCE_DIR}")
+    target_link_libraries(vgame PUBLIC physfs spdlog)
+    target_link_libraries(vgame PUBLIC client)
+endif()
