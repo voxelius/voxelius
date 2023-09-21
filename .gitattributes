@@ -1,0 +1,5 @@
+# Since circa 2022, the source code tree
+# tracks dependencies as just directories
+# instead of separate repositories. This makes
+# GitHub's language tracker to go nuts!
+
