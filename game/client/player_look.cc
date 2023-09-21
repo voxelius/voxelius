@@ -17,11 +17,11 @@ static float previous_cy = 0.0f;
 
 static void on_cursor_pos(const CursorPosEvent &event)
 {
-    if(globals::world.registry.valid(globals::local_player)) {
+    if(globals::world.registry.valid(globals::player)) {
         const float dx = event.xpos - previous_cx;
         const float dy = event.ypos - previous_cy;
 
-        auto &head = globals::world.registry.get<HeadComponent>(globals::local_player);
+        auto &head = globals::world.registry.get<HeadComponent>(globals::player);
         head.euler.x -= dy;
         head.euler.y -= dx;
         head.euler.x = cxmath::clamp(head.euler.x, PITCH_MIN, PITCH_MAX);

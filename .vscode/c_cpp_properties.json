@@ -12,9 +12,9 @@
                 "${workspaceFolder}/external/entt/include",
                 "${workspaceFolder}/external/glad/include",
                 "${workspaceFolder}/external/glm/include",
+                "${workspaceFolder}/external/parson/include",
                 "${workspaceFolder}/external/physfs/include",
                 "${workspaceFolder}/external/spdlog/include",
-                "${workspaceFolder}/public",
                 "${workspaceFolder}",
                 "${default}"
             ]

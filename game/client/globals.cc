@@ -9,5 +9,5 @@ float globals::frametime = 0.0f;
 float globals::frametime_avg = 0.0f;
 uint64_t globals::curtime = 0;
 uint64_t globals::framecount = 0;
+entt::entity globals::player = entt::null;
 World globals::world = {};
-entt::entity globals::local_player = entt::null;

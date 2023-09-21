@@ -16,8 +16,8 @@ extern float frametime;
 extern float frametime_avg;
 extern uint64_t curtime;
 extern uint64_t framecount;
+extern entt::entity player;
 extern World world;
-extern entt::entity local_player;
 } // namespace globals
 
 #endif /* B3BD20F9_18D1_4774_A219_C83FBB696B2A */

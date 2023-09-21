@@ -67,7 +67,7 @@ void player_move::init()
 
 void player_move::update()
 {
-    if(globals::world.registry.valid(globals::local_player) && needs_update) {
+    if(globals::world.registry.valid(globals::player) && needs_update) {
         glm::vec3 direction = {};
 
         if(move_keys[MOVE_FD])
@@ -83,10 +83,10 @@ void player_move::update()
         if(move_keys[MOVE_DN])
             direction -= DIR_UP;
 
-        const auto &head = globals::world.registry.get<HeadComponent>(globals::local_player);
-        const auto &transform = globals::world.registry.get<TransformComponent>(globals::local_player);
+        const auto &head = globals::world.registry.get<HeadComponent>(globals::player);
+        const auto &transform = globals::world.registry.get<TransformComponent>(globals::player);
 
-        auto &velocity = globals::world.registry.get<VelocityComponent>(globals::local_player);
+        auto &velocity = globals::world.registry.get<VelocityComponent>(globals::player);
         velocity.velocity = transform.rotation * glm::quat{head.euler} * direction * 5.0f;
 
         needs_update = false;

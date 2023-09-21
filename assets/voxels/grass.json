@@ -1,0 +1,16 @@
+{
+  "shape": "cube",
+  "states": [
+    {
+      "draw": "opaque",
+      "textures": {
+        "side.ft": "/textures/voxel/grass_side.png",
+        "side.bk": "[side.ft]",
+        "side.lf": "[side.ft]",
+        "side.rt": "[side.ft]",
+        "side.up": "/textures/voxel/grass.png",
+        "side.dn": "/textures/voxel/soil.png"
+      }
+    }
+  ]
+}

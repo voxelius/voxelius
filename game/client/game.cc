@@ -45,11 +45,11 @@ void client_game::init_late()
     screen::init_late();
 
     spdlog::info("spawning local player");
-    globals::local_player = globals::world.registry.create();
-    globals::world.registry.emplace<PlayerComponent>(globals::local_player);
-    globals::world.registry.emplace<HeadComponent>(globals::local_player);
-    globals::world.registry.emplace<TransformComponent>(globals::local_player);
-    globals::world.registry.emplace<VelocityComponent>(globals::local_player);
+    globals::player = globals::world.registry.create();
+    globals::world.registry.emplace<PlayerComponent>(globals::player);
+    globals::world.registry.emplace<HeadComponent>(globals::player);
+    globals::world.registry.emplace<TransformComponent>(globals::player);
+    globals::world.registry.emplace<VelocityComponent>(globals::player);
 
     glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
@@ -64,12 +64,11 @@ void client_game::update()
     player_move::update();
 
     inertial::update(globals::world, globals::frametime);
-
 }
 
 void client_game::update_late()
 {
-    VelocityComponent &vel = globals::world.registry.get<VelocityComponent>(globals::local_player);
+    VelocityComponent &vel = globals::world.registry.get<VelocityComponent>(globals::player);
     spdlog::info("VEL: {} {} {} {}", vel.velocity.x, vel.velocity.y, vel.velocity.z, glm::length(vel.velocity));
 }
 
