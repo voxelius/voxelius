@@ -9,7 +9,7 @@
         "side.lf": "[side.ft]",
         "side.rt": "[side.ft]",
         "side.up": "/textures/voxel/grass.png",
-        "side.dn": "/textures/voxel/soil.png"
+        "side.dn": "/textures/voxel/dirt.png"
       }
     }
   ]
