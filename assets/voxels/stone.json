@@ -4,7 +4,7 @@
     {
       "draw": "opaque",
       "textures": {
-        "side.ft": "/textures/voxel/stone.png",
+        "side.ft": "/textures/voxels/stone.png",
         "side.bk": "[side.ft]",
         "side.lf": "[side.ft]",
         "side.rt": "[side.ft]",

@@ -1,0 +1,10 @@
+option(BUILD_CLIENT "Build client" ON)
+option(BUILD_SERVER "Build server" OFF)
+
+if(BUILD_CLIENT)
+    add_executable(vgame "${CMAKE_CURRENT_LIST_DIR}/main.cc")
+    target_compile_definitions(vgame PUBLIC VGAME_CLIENT)
+    target_include_directories(vgame PUBLIC "${CMAKE_SOURCE_DIR}")
+    target_link_libraries(vgame PUBLIC physfs spdlog)
+    target_link_libraries(vgame PUBLIC client)
+endif()

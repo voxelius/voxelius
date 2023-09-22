@@ -9,12 +9,12 @@
             "compilerPath": "/usr/bin/g++",
             "defines": ["GLFW_INCLUDE_NONE", "VGAME_CLIENT"],
             "includePath": [
-                "${workspaceFolder}/external/entt/include",
-                "${workspaceFolder}/external/glad/include",
-                "${workspaceFolder}/external/glm/include",
-                "${workspaceFolder}/external/parson/include",
-                "${workspaceFolder}/external/physfs/include",
-                "${workspaceFolder}/external/spdlog/include",
+                "${workspaceFolder}/deps/entt/include",
+                "${workspaceFolder}/deps/glad/include",
+                "${workspaceFolder}/deps/glm/include",
+                "${workspaceFolder}/deps/parson/include",
+                "${workspaceFolder}/deps/physfs/include",
+                "${workspaceFolder}/deps/spdlog/include",
                 "${workspaceFolder}",
                 "${default}"
             ]
