@@ -4,6 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef A3D93D73_6AE3_4604_8299_286223F3A718
 #define A3D93D73_6AE3_4604_8299_286223F3A718
+#include <array>
 #include <shared/voxel.hh>
 #include <string>
 #include <vector>
@@ -17,6 +18,7 @@ constexpr static const voxel_face_t VOXEL_FACE_TOP      = 0x0004;
 constexpr static const voxel_face_t VOXEL_FACE_BOTTOM   = 0x0005;
 constexpr static const voxel_face_t VOXEL_FACE_CROSS_1  = 0x0006;
 constexpr static const voxel_face_t VOXEL_FACE_CROSS_2  = 0x0007;
+constexpr static const size_t NUM_VOXEL_FACE = 0x0008;
 
 using voxel_draw_t = unsigned short;
 constexpr static const voxel_draw_t VOXEL_DRAW_NODRAW   = 0x0000;
@@ -35,8 +37,8 @@ constexpr static const voxel_shape_t VOXEL_SHAPE_LIQUID = 0x0005;
 struct VoxelInfo final {
     struct State final {
         voxel_draw_t draw {VOXEL_DRAW_NODRAW};
-        std::vector<std::string> textures {};
-        std::vector<unsigned int> cache {};
+        std::array<std::string, NUM_VOXEL_FACE> textures {};
+        std::array<unsigned int, NUM_VOXEL_FACE> cache {};
     };
 
     voxel_shape_t shape {VOXEL_SHAPE_NONE};

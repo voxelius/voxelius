@@ -12,6 +12,7 @@
 #include <shared/inertial.hh>
 #include <shared/player.hh>
 #include <shared/transform.hh>
+#include <shared/vdef.hh>
 #include <shared/velocity.hh>
 #include <spdlog/spdlog.h>
 
@@ -43,6 +44,8 @@ void client_game::init()
 void client_game::init_late()
 {
     screen::init_late();
+
+    vdef::assign("stone", 0x0001);
 
     spdlog::info("spawning local player");
     globals::player = globals::world.registry.create();
