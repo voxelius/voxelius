@@ -5,9 +5,9 @@
 #ifndef BA3AB65D_00CC_47CB_AE09_BD537528FF05
 #define BA3AB65D_00CC_47CB_AE09_BD537528FF05
 
-namespace player_look
+namespace plook
 {
 void init();
-} // namespace player_look
+} // namespace plook
 
 #endif /* BA3AB65D_00CC_47CB_AE09_BD537528FF05 */

@@ -13,7 +13,6 @@
 
 // UNDONE: allow build system to change this so that
 // someone who forked the game can change it to whatever
-// without going Deep Into The Code.
 constexpr static const char *VGAME_DIRNAME = ".voxelius";
 
 static std::filesystem::path get_gamepath()
@@ -24,7 +23,7 @@ static std::filesystem::path get_gamepath()
         // We are running in a development environment.
         // Base game content is located in the repo.
         // UNDONE: allow this to be on by default in case
-        // of a generic source build (like historic does)
+        // of a generic source build (like historic)
         return std::filesystem::current_path() / "assets";
     }
 

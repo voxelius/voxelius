@@ -5,7 +5,7 @@
 #include <bitset>
 #include <client/globals.hh>
 #include <client/input.hh>
-#include <client/player_move.hh>
+#include <client/pmove.hh>
 #include <shared/head.hh>
 #include <shared/transform.hh>
 #include <shared/velocity.hh>
@@ -60,12 +60,12 @@ static void on_key(const KeyEvent &event)
     }
 }
 
-void player_move::init()
+void pmove::init()
 {
     globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
 }
 
-void player_move::update()
+void pmove::update()
 {
     if(globals::world.registry.valid(globals::player) && needs_update) {
         glm::vec3 direction = {};

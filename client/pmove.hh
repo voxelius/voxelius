@@ -5,10 +5,10 @@
 #ifndef B5ACD6D4_E0AC_4270_BEFF_252ED1707727
 #define B5ACD6D4_E0AC_4270_BEFF_252ED1707727
 
-namespace player_move
+namespace pmove
 {
 void init();
 void update();
-} // namespace player_move
+} // namespace pmove
 
 #endif /* B5ACD6D4_E0AC_4270_BEFF_252ED1707727 */

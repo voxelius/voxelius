@@ -5,9 +5,10 @@
 #include <client/game.hh>
 #include <client/globals.hh>
 #include <client/input.hh>
-#include <client/player_look.hh>
-#include <client/player_move.hh>
+#include <client/plook.hh>
+#include <client/pmove.hh>
 #include <client/screen.hh>
+#include <client/view.hh>
 #include <shared/head.hh>
 #include <shared/inertial.hh>
 #include <shared/player.hh>
@@ -34,8 +35,8 @@ void client_game::init()
     input::init();
     screen::init();
 
-    player_look::init();
-    player_move::init();
+    plook::init();
+    pmove::init();
 
     globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
     globals::dispatcher.sink<ScreenSizeEvent>().connect<&on_screen_size>();
@@ -64,18 +65,19 @@ void client_game::deinit()
 
 void client_game::update()
 {
-    player_move::update();
+    pmove::update();
+
+    view::update();
 
     inertial::update(globals::world, globals::frametime);
 }
 
 void client_game::update_late()
 {
-    VelocityComponent &vel = globals::world.registry.get<VelocityComponent>(globals::player);
-    spdlog::info("VEL: {} {} {} {}", vel.velocity.x, vel.velocity.y, vel.velocity.z, glm::length(vel.velocity));
+
 }
 
 void client_game::render()
 {
-    
+
 }

@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/globals.hh>
 #include <client/input.hh>
-#include <client/player_look.hh>
+#include <client/plook.hh>
 #include <client/screen.hh>
 #include <shared/cxmath.hh>
 #include <shared/head.hh>
@@ -31,7 +31,7 @@ static void on_cursor_pos(const CursorPosEvent &event)
     previous_cy = event.ypos;
 }
 
-void player_look::init()
+void plook::init()
 {
     float width, height;
     screen::get_size(width, height);
