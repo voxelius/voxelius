@@ -13,6 +13,4 @@ struct Vertex final {
     glm::vec2 uv {};
 };
 
-using quad_t = Vertex[3];
-
 #endif/* E0465D19_6F9E_4088_A99A_53127126F8F2 */
