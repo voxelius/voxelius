@@ -16,27 +16,27 @@ public:
     Shader() = default;
     Shader(Shader &&rhs);
     Shader &operator=(Shader &&rhs);
-    void create(GLenum stage);
+    void create(uint32_t stage);
     void destroy();
     bool glsl(const std::string &source);
 #if 0
     bool spirv(const std::vector<uint8_t> &binary);
 #endif
-    constexpr GLenum get_stage() const;
+    constexpr uint32_t get_stage() const;
 
 private:
-    GLenum stage {0};
+    uint32_t stage {0};
 };
 
 namespace detail
 {
 static inline void check_shader_info_log(uint32_t shader)
 {
-    GLint length;
+    int32_t length;
     glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
     if(length > 1) {
         std::string info_log(static_cast<size_t>(length) + 1, static_cast<char>(0));
-        glGetShaderInfoLog(shader, static_cast<GLsizei>(info_log.size()), nullptr, info_log.data());
+        glGetShaderInfoLog(shader, static_cast<int32_t>(info_log.size()), nullptr, info_log.data());
         spdlog::debug(info_log);
     }
 }
@@ -59,7 +59,7 @@ inline glxx::Shader &glxx::Shader::operator=(glxx::Shader &&rhs)
     return *this;
 }
 
-inline void glxx::Shader::create(GLenum stage)
+inline void glxx::Shader::create(uint32_t stage)
 {
     destroy();
     this->handle = glCreateShader(stage);
@@ -78,7 +78,7 @@ inline void glxx::Shader::destroy()
 inline bool glxx::Shader::glsl(const std::string &source)
 {
     if(handle) {
-        GLint status;
+        int32_t status;
         const char *data = source.c_str();
 
         glShaderSource(handle, 1, &data, nullptr);
@@ -93,13 +93,13 @@ inline bool glxx::Shader::glsl(const std::string &source)
 }
 
 #if 0
-inline bool glxx::Shader::spirv(GLenum stage, const std::vector<uint8_t> &binary)
+inline bool glxx::Shader::spirv(uint32_t stage, const std::vector<uint8_t> &binary)
 {
     if(handle && stage) {
-        GLint status;
+        int32_t status;
         const char *data = source.c_str();
 
-        glShaderBinary(1, &handle, GL_SHADER_BINARY_FORMAT_SPIR_V, binary.data(), static_cast<GLsizei>(binary.size()));
+        glShaderBinary(1, &handle, GL_SHADER_BINARY_FORMAT_SPIR_V, binary.data(), static_cast<int32_t>(binary.size()));
         glSpecializeShader(handle, "main", 0, nullptr, nullptr);
         glxx::detail::check_shader_info_log(handle);
 
@@ -111,7 +111,7 @@ inline bool glxx::Shader::spirv(GLenum stage, const std::vector<uint8_t> &binary
 }
 #endif
 
-inline constexpr GLenum glxx::Shader::get_stage() const
+inline constexpr uint32_t glxx::Shader::get_stage() const
 {
     return stage;
 }

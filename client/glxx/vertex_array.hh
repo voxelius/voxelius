@@ -20,7 +20,7 @@ public:
     void set_index_buffer(const Buffer &ibo);
     void set_vertex_buffer(uint32_t binding, const Buffer &vbo, size_t stride);
     void enable_attribute(uint32_t attrib, bool enable);
-    void set_attribute_format(uint32_t attrib, GLenum type, size_t count, size_t offset, bool normalized);
+    void set_attribute_format(uint32_t attrib, uint32_t type, size_t count, size_t offset, bool normalized);
     void set_attribute_binding(uint32_t attrib, uint32_t binding);
     static void unbind();
 };
@@ -65,7 +65,7 @@ inline void glxx::VertexArray::set_index_buffer(const glxx::Buffer &ibo)
 
 inline void glxx::VertexArray::set_vertex_buffer(uint32_t binding, const glxx::Buffer &vbo, size_t stride)
 {
-    glVertexArrayVertexBuffer(handle, binding, vbo.get(), 0, static_cast<GLsizei>(stride));
+    glVertexArrayVertexBuffer(handle, binding, vbo.get(), 0, static_cast<int32_t>(stride));
 }
 
 inline void glxx::VertexArray::enable_attribute(uint32_t attrib, bool enable)
@@ -78,15 +78,15 @@ inline void glxx::VertexArray::enable_attribute(uint32_t attrib, bool enable)
     glDisableVertexArrayAttrib(handle, attrib);
 }
 
-inline void glxx::VertexArray::set_attribute_format(uint32_t attrib, GLenum type, size_t count, size_t offset, bool normalized)
+inline void glxx::VertexArray::set_attribute_format(uint32_t attrib, uint32_t type, size_t count, size_t offset, bool normalized)
 {
     switch(type) {
         case GL_FLOAT:
-            glVertexArrayAttribFormat(handle, attrib, static_cast<GLint>(count), type, normalized ? GL_TRUE : GL_FALSE, static_cast<uint32_t>(offset));
+            glVertexArrayAttribFormat(handle, attrib, static_cast<int32_t>(count), type, normalized ? GL_TRUE : GL_FALSE, static_cast<uint32_t>(offset));
             break;
         case GL_INT:
         case GL_UNSIGNED_INT:
-            glVertexArrayAttribIFormat(handle, attrib, static_cast<GLint>(count), type, static_cast<uint32_t>(offset));
+            glVertexArrayAttribIFormat(handle, attrib, static_cast<int32_t>(count), type, static_cast<uint32_t>(offset));
             break;
         default:
             spdlog::warn("GL: unknown attrib type {}", type);

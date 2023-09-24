@@ -60,7 +60,7 @@ enum class PixelFormat {
 
 namespace detail
 {
-static inline bool get_pixel_format_cpu(glxx::PixelFormat format, GLenum &fmt, GLenum &type)
+static inline bool get_pixel_format_cpu(glxx::PixelFormat format, uint32_t &fmt, uint32_t &type)
 {
     switch(format) {
         case glxx::PixelFormat::R8_UNORM:
@@ -173,7 +173,7 @@ static inline bool get_pixel_format_cpu(glxx::PixelFormat format, GLenum &fmt, G
     return true;
 }
 
-static inline GLenum get_pixel_format_gpu(glxx::PixelFormat format)
+static inline uint32_t get_pixel_format_gpu(glxx::PixelFormat format)
 {
     switch(format) {
         case glxx::PixelFormat::R8_UNORM:

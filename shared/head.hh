@@ -4,10 +4,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef C03A8559_5CB5_46CF_ACD6_10679001CDBC
 #define C03A8559_5CB5_46CF_ACD6_10679001CDBC
-#include <glm/vec3.hpp>
+#include <shared/types.hh>
 
 struct HeadComponent final {
-    glm::vec3 euler {};
+    vec3f_t euler {};
 };
 
 #endif /* C03A8559_5CB5_46CF_ACD6_10679001CDBC */

@@ -9,7 +9,7 @@
 #include <spdlog/spdlog.h>
 #include <unordered_map>
 
-static std::unordered_map<std::string, voxel_id_t> name_map = {};
+static std::unordered_map<std::string, uint16_t> name_map = {};
 static vdef_vector voxels = {};
 
 void vdef::purge()
@@ -20,7 +20,7 @@ void vdef::purge()
     voxels.clear();
 }
 
-voxel_id_t vdef::assign(const std::string &name, voxel_id_t hint)
+uint16_t vdef::assign(const std::string &name, uint16_t hint)
 {
     if(hint == NULL_VOXEL_ID) {
         spdlog::error("vdef: cannot assign NULL_VOXEL_ID");
@@ -105,14 +105,14 @@ voxel_id_t vdef::assign(const std::string &name, voxel_id_t hint)
         for(size_t j = 0; j < num_textures; ++j) {
             const char *face_str = json_object_get_name(textures, j);
             static const std::unordered_map<std::string, voxel_face_t> faces = {
-                { "face.north",     VOXEL_FACE_NORTH    },
-                { "face.south",     VOXEL_FACE_SOUTH    },
-                { "face.east",      VOXEL_FACE_EAST     },
-                { "face.west",      VOXEL_FACE_WEST     },
-                { "face.top",       VOXEL_FACE_TOP      },
-                { "face.bottom",    VOXEL_FACE_BOTTOM   },
-                { "face.cross_1",   VOXEL_FACE_CROSS_1  },
-                { "face.cross_2",   VOXEL_FACE_CROSS_2  },
+                { "north",      VOXEL_FACE_NORTH    },
+                { "south",      VOXEL_FACE_SOUTH    },
+                { "east",       VOXEL_FACE_EAST     },
+                { "west",       VOXEL_FACE_WEST     },
+                { "top",        VOXEL_FACE_TOP      },
+                { "bottom",     VOXEL_FACE_BOTTOM   },
+                { "cross_1",    VOXEL_FACE_CROSS_1  },
+                { "cross_2",    VOXEL_FACE_CROSS_2  },
             };
 
             const auto it = faces.find(face_str ? face_str : std::string{});
@@ -161,7 +161,7 @@ VoxelInfo *vdef::find(const std::string &name)
     return nullptr;
 }
 
-VoxelInfo *vdef::find(voxel_id_t id)
+VoxelInfo *vdef::find(uint16_t id)
 {
     if(id < voxels.size())
         return voxels[id];

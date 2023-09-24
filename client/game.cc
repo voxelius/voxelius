@@ -9,6 +9,7 @@
 #include <client/pmove.hh>
 #include <client/screen.hh>
 #include <client/view.hh>
+#include <client/voxel_mesher.hh>
 #include <shared/head.hh>
 #include <shared/inertial.hh>
 #include <shared/player.hh>
@@ -38,6 +39,8 @@ void client_game::init()
     plook::init();
     pmove::init();
 
+    voxel_mesher::init();
+
     globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
     globals::dispatcher.sink<ScreenSizeEvent>().connect<&on_screen_size>();
 }
@@ -60,7 +63,7 @@ void client_game::init_late()
 
 void client_game::deinit()
 {
-
+    voxel_mesher::deinit();
 }
 
 void client_game::update()
@@ -68,6 +71,8 @@ void client_game::update()
     pmove::update();
 
     view::update();
+
+    voxel_mesher::update();
 
     inertial::update(globals::world, globals::frametime);
 }

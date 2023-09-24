@@ -16,8 +16,8 @@ public:
     void create();
     void destroy();
     void bind(uint32_t unit) const;
-    void parameter(GLenum pname, GLint value);
-    void parameter(GLenum pname, GLfloat value);
+    void parameter(uint32_t pname, int32_t value);
+    void parameter(uint32_t pname, GLfloat value);
 };
 } // namespace glxx
 
@@ -53,12 +53,12 @@ inline void glxx::Sampler::bind(uint32_t unit) const
     glBindSampler(unit, handle);
 }
 
-inline void glxx::Sampler::parameter(GLenum pname, GLint value)
+inline void glxx::Sampler::parameter(uint32_t pname, int32_t value)
 {
     glSamplerParameteri(handle, pname, value);
 }
 
-inline void glxx::Sampler::parameter(GLenum pname, GLfloat value)
+inline void glxx::Sampler::parameter(uint32_t pname, GLfloat value)
 {
     glSamplerParameterf(handle, pname, value);
 }

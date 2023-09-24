@@ -6,6 +6,7 @@
 #include <client/globals.hh>
 #include <client/input.hh>
 #include <client/pmove.hh>
+#include <shared/const.hh>
 #include <shared/head.hh>
 #include <shared/transform.hh>
 #include <shared/velocity.hh>
@@ -68,7 +69,7 @@ void pmove::init()
 void pmove::update()
 {
     if(globals::world.registry.valid(globals::player) && needs_update) {
-        glm::vec3 direction = {};
+        vec3f_t direction = {};
 
         if(move_keys[MOVE_FD])
             direction += DIR_FORWARD;
@@ -87,7 +88,7 @@ void pmove::update()
         const auto &transform = globals::world.registry.get<TransformComponent>(globals::player);
 
         auto &velocity = globals::world.registry.get<VelocityComponent>(globals::player);
-        velocity.velocity = transform.rotation * glm::quat{head.euler} * direction * 5.0f;
+        velocity.velocity = transform.rotation * quatf_t{head.euler} * direction * 5.0f;
 
         needs_update = false;
     }

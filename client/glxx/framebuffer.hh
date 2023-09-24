@@ -17,8 +17,8 @@ public:
     Framebuffer &operator=(Framebuffer &&rhs);
     void create();
     void destroy();
-    void attach(GLenum attachment, const Texture2D &texture);
-    void attach(GLenum attachment, const Renderbuffer &rbo);
+    void attach(uint32_t attachment, const Texture2D &texture);
+    void attach(uint32_t attachment, const Renderbuffer &rbo);
     bool complete() const;
     void bind() const;
     template<typename... AT>
@@ -54,12 +54,12 @@ inline void glxx::Framebuffer::destroy()
     }
 }
 
-inline void glxx::Framebuffer::attach(GLenum attachment, const glxx::Texture2D &texture)
+inline void glxx::Framebuffer::attach(uint32_t attachment, const glxx::Texture2D &texture)
 {
     glNamedFramebufferTexture(handle, attachment, texture.get(), 0);
 }
 
-inline void glxx::Framebuffer::attach(GLenum attachment, const glxx::Renderbuffer &rbo)
+inline void glxx::Framebuffer::attach(uint32_t attachment, const glxx::Renderbuffer &rbo)
 {
     glNamedFramebufferRenderbuffer(handle, attachment, GL_RENDERBUFFER, rbo.get());
 }
@@ -77,8 +77,8 @@ inline void glxx::Framebuffer::bind() const
 template<typename... AT>
 inline void glxx::Framebuffer::set_fragment_targets(AT &&...args)
 {
-    const GLenum attachments[] = {static_cast<GLenum>(args)...};
-    glNamedFramebufferDrawBuffers(handle, static_cast<GLsizei>(cxmath::array_size(attachments)), attachments);
+    const uint32_t attachments[] = {static_cast<uint32_t>(args)...};
+    glNamedFramebufferDrawBuffers(handle, static_cast<int32_t>(cxmath::array_size(attachments)), attachments);
 }
 
 inline void glxx::Framebuffer::unbind()

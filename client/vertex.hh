@@ -2,15 +2,15 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef E0465D19_6F9E_4088_A99A_53127126F8F2
-#define E0465D19_6F9E_4088_A99A_53127126F8F2
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
+#ifndef E4173999_DC44_49FA_882B_7F84EC7381B3
+#define E4173999_DC44_49FA_882B_7F84EC7381B3
+#include <shared/types.hh>
 
 struct Vertex final {
-    glm::vec3 coord {};
-    glm::vec3 norm {};
-    glm::vec2 uv {};
+    vec3f_t position {};
+    vec3f_t normal {};
+    vec2f_t texcoord {};
+    uint32_t texture {};
 };
 
-#endif/* E0465D19_6F9E_4088_A99A_53127126F8F2 */
+#endif/* E4173999_DC44_49FA_882B_7F84EC7381B3 */

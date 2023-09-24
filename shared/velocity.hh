@@ -4,10 +4,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef E6E0E341_1360_4547_A830_C4B53CF202DC
 #define E6E0E341_1360_4547_A830_C4B53CF202DC
-#include <glm/vec3.hpp>
+#include <shared/types.hh>
 
 struct VelocityComponent final {
-    glm::vec3 velocity {};
+    vec3f_t velocity {};
 };
 
 #endif /* E6E0E341_1360_4547_A830_C4B53CF202DC */

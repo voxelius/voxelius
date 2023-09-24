@@ -15,6 +15,8 @@
                 "${workspaceFolder}/deps/parson/include",
                 "${workspaceFolder}/deps/physfs/include",
                 "${workspaceFolder}/deps/spdlog/include",
+                "${workspaceFolder}/deps/stb/include",
+                "${workspaceFolder}/deps/thread_pool/include",
                 "${workspaceFolder}",
                 "${default}"
             ]

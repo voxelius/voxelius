@@ -33,6 +33,8 @@ add_subdirectory(deps/glm)
 add_subdirectory(deps/parson)
 add_subdirectory(deps/physfs)
 add_subdirectory(deps/spdlog)
+add_subdirectory(deps/stb)
+add_subdirectory(deps/thread_pool)
 find_package(glfw3 3.3 REQUIRED)
 
 add_subdirectory(client)

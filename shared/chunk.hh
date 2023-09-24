@@ -9,8 +9,10 @@
 #include <shared/coord.hh>
 #include <shared/voxel.hh>
 
+using voxel_array_t = std::array<voxel_t, CHUNK_VOLUME>;
+
 struct Chunk {
-    std::array<voxel_t, CHUNK_VOLUME> voxels {};
+    voxel_array_t voxels {};
     entt::entity entity {entt::null};
     short ref_count {};
 };

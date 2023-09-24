@@ -13,14 +13,14 @@ namespace glxx
 {
 class Texture : public Object<Texture> {
 public:
-    Texture(GLenum target);
+    Texture(uint32_t target);
     void create();
     void destroy();
     void gen_mipmap();
     void bind(uint32_t unit) const;
 
 protected:
-    GLenum target;
+    uint32_t target;
 };
 
 class Texture2D final : public Texture {
@@ -42,7 +42,7 @@ public:
 };
 } // namespace glxx
 
-inline glxx::Texture::Texture(GLenum target)
+inline glxx::Texture::Texture(uint32_t target)
     : target{target}
 {
 }
@@ -92,7 +92,7 @@ inline glxx::Texture2D &glxx::Texture2D::operator=(glxx::Texture2D &&rhs)
 
 inline bool glxx::Texture2D::storage(int width, int height, glxx::PixelFormat format)
 {
-    if(GLenum f = glxx::detail::get_pixel_format_gpu(format)) {
+    if(uint32_t f = glxx::detail::get_pixel_format_gpu(format)) {
         glTextureStorage2D(handle, cxmath::log2<int>(cxmath::max(width, height)), f, width, height);
         return true;
     }
@@ -102,7 +102,7 @@ inline bool glxx::Texture2D::storage(int width, int height, glxx::PixelFormat fo
 
 inline bool glxx::Texture2D::write(int x, int y, int width, int height, glxx::PixelFormat format, const void *data)
 {
-    GLenum fmt, type;
+    uint32_t fmt, type;
     if(glxx::detail::get_pixel_format_cpu(format, fmt, type)) {
         glTextureSubImage2D(handle, 0, x, y, width, height, fmt, type, data);
         return true;
@@ -132,7 +132,7 @@ inline glxx::Texture2DArray &glxx::Texture2DArray::operator=(glxx::Texture2DArra
 
 inline bool glxx::Texture2DArray::storage(int width, int height, int layers, glxx::PixelFormat format)
 {
-    if(GLenum f = glxx::detail::get_pixel_format_gpu(format)) {
+    if(uint32_t f = glxx::detail::get_pixel_format_gpu(format)) {
         glTextureStorage3D(handle, cxmath::log2<int>(cxmath::max(width, height)), f, width, height, layers);
         return true;
     }
@@ -142,7 +142,7 @@ inline bool glxx::Texture2DArray::storage(int width, int height, int layers, glx
 
 inline bool glxx::Texture2DArray::write(int layer, int x, int y, int width, int height, PixelFormat format, const void *data)
 {
-    GLenum fmt, type;
+    uint32_t fmt, type;
     if(glxx::detail::get_pixel_format_cpu(format, fmt, type)) {
         glTextureSubImage3D(handle, 0, x, y, layer, width, height, 1, fmt, type, data);
         return true;

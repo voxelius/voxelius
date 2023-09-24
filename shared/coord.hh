@@ -59,7 +59,7 @@ constexpr static inline const voxel_coord_t to_voxel(const chunk_coord_t &cvec, 
     };
 }
 
-constexpr static inline const voxel_coord_t to_voxel(const glm::vec3 &wvec)
+constexpr static inline const voxel_coord_t to_voxel(const vec3f_t &wvec)
 {
     return voxel_coord_t {
         static_cast<voxel_coord_t::value_type>(wvec.x),
@@ -68,21 +68,21 @@ constexpr static inline const voxel_coord_t to_voxel(const glm::vec3 &wvec)
     };
 }
 
-constexpr static inline const glm::vec3 to_world(const chunk_coord_t &cvec)
+constexpr static inline const vec3f_t to_world(const chunk_coord_t &cvec)
 {
-    return glm::vec3 {
-        static_cast<glm::vec3::value_type>(cvec.x << CHUNK_SIZE_LOG2),
-        static_cast<glm::vec3::value_type>(cvec.y << CHUNK_SIZE_LOG2),
-        static_cast<glm::vec3::value_type>(cvec.z << CHUNK_SIZE_LOG2),
+    return vec3f_t {
+        static_cast<vec3f_t::value_type>(cvec.x << CHUNK_SIZE_LOG2),
+        static_cast<vec3f_t::value_type>(cvec.y << CHUNK_SIZE_LOG2),
+        static_cast<vec3f_t::value_type>(cvec.z << CHUNK_SIZE_LOG2),
     };
 }
 
-constexpr static inline const glm::vec3 to_world(const voxel_coord_t &vvec)
+constexpr static inline const vec3f_t to_world(const voxel_coord_t &vvec)
 {
-    return glm::vec3 {
-        static_cast<glm::vec3::value_type>(vvec.x),
-        static_cast<glm::vec3::value_type>(vvec.y),
-        static_cast<glm::vec3::value_type>(vvec.z),
+    return vec3f_t {
+        static_cast<vec3f_t::value_type>(vvec.x),
+        static_cast<vec3f_t::value_type>(vvec.y),
+        static_cast<vec3f_t::value_type>(vvec.z),
     };
 }
 

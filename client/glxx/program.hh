@@ -32,7 +32,7 @@ private:
 
 namespace detail
 {
-static inline GLbitfield get_stage_bit(GLenum stage)
+static inline GLbitfield get_stage_bit(uint32_t stage)
 {
     if(stage == GL_VERTEX_SHADER)
         return GL_VERTEX_SHADER_BIT;
@@ -43,11 +43,11 @@ static inline GLbitfield get_stage_bit(GLenum stage)
 
 static inline void check_program_info_log(uint32_t program)
 {
-    GLint length;
+    int32_t length;
     glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
     if(length > 1) {
         std::string info_log(static_cast<size_t>(length) + 1, static_cast<char>(0));
-        glGetProgramInfoLog(program, static_cast<GLsizei>(info_log.size()), nullptr, info_log.data());
+        glGetProgramInfoLog(program, static_cast<int32_t>(info_log.size()), nullptr, info_log.data());
         spdlog::debug(info_log);
     }
 }
@@ -107,7 +107,7 @@ inline void glxx::Program::attach(const glxx::Shader &shader)
 inline bool glxx::Program::link()
 {
     if(handle && stage_bits) {
-        GLint status;
+        int32_t status;
 
         glLinkProgram(handle);
         glxx::detail::check_program_info_log(handle);

@@ -9,37 +9,37 @@
 namespace glxx
 {
 struct DrawArraysCmd final {
-    GLsizei vertices;
-    GLsizei instances;
-    GLint base_vertex;
+    int32_t vertices;
+    int32_t instances;
+    int32_t base_vertex;
     uint32_t base_instance;
 };
 
 struct DrawElementsCmd final {
-    GLsizei indices;
-    GLsizei instances;
-    GLint base_index;
-    GLint base_vertex;
+    int32_t indices;
+    int32_t instances;
+    int32_t base_index;
+    int32_t base_vertex;
     uint32_t base_instance;
 };
 
 class DrawCommand final {
 public:
     DrawCommand() = default;
-    DrawCommand(GLenum mode, size_t vertices, size_t instances, size_t base_vertex, size_t base_instance);
-    DrawCommand(GLenum mode, GLenum type, size_t indices, size_t instances, size_t base_index, size_t base_vertex, size_t base_instance);
+    DrawCommand(uint32_t mode, size_t vertices, size_t instances, size_t base_vertex, size_t base_instance);
+    DrawCommand(uint32_t mode, uint32_t type, size_t indices, size_t instances, size_t base_index, size_t base_vertex, size_t base_instance);
     DrawCommand(DrawCommand &&rhs);
     DrawCommand &operator=(DrawCommand &&rhs);
     constexpr bool valid() const;
-    void set(GLenum mode, size_t vertices, size_t instances, size_t base_vertex, size_t base_instance);
-    void set(GLenum mode, GLenum type, size_t indices, size_t instances, size_t base_index, size_t base_vertex, size_t base_instance);
+    void set(uint32_t mode, size_t vertices, size_t instances, size_t base_vertex, size_t base_instance);
+    void set(uint32_t mode, uint32_t type, size_t indices, size_t instances, size_t base_index, size_t base_vertex, size_t base_instance);
     void invoke() const;
     size_t size() const;
 
 private:
     bool indexed {false};
-    GLenum mode {0};
-    GLenum type {0};
+    uint32_t mode {0};
+    uint32_t type {0};
     union {
         DrawArraysCmd a;
         DrawElementsCmd e;
@@ -47,13 +47,13 @@ private:
 };
 }
 
-inline glxx::DrawCommand::DrawCommand(GLenum mode, size_t vertices, size_t instances, size_t base_vertex, size_t base_instance)
+inline glxx::DrawCommand::DrawCommand(uint32_t mode, size_t vertices, size_t instances, size_t base_vertex, size_t base_instance)
     : indexed{false}, mode{mode}, type{0}
 {
     set(mode, vertices, instances, base_vertex, base_instance);
 }
 
-inline glxx::DrawCommand::DrawCommand(GLenum mode, GLenum type, size_t indices, size_t instances, size_t base_index, size_t base_vertex, size_t base_instance)
+inline glxx::DrawCommand::DrawCommand(uint32_t mode, uint32_t type, size_t indices, size_t instances, size_t base_index, size_t base_vertex, size_t base_instance)
     : indexed{true}, mode{mode}, type{type}
 {
     set(mode, type, indices, instances, base_index, base_vertex, base_instance);
@@ -85,25 +85,25 @@ inline constexpr bool glxx::DrawCommand::valid() const
     return mode != 0;
 }
 
-inline void glxx::DrawCommand::set(GLenum mode, size_t vertices, size_t instances, size_t base_vertex, size_t base_instance)
+inline void glxx::DrawCommand::set(uint32_t mode, size_t vertices, size_t instances, size_t base_vertex, size_t base_instance)
 {
     indexed = false;
     this->mode = mode;
-    cmd.a.vertices = static_cast<GLsizei>(vertices);
-    cmd.a.instances = static_cast<GLsizei>(instances);
-    cmd.a.base_vertex = static_cast<GLint>(base_vertex);
+    cmd.a.vertices = static_cast<int32_t>(vertices);
+    cmd.a.instances = static_cast<int32_t>(instances);
+    cmd.a.base_vertex = static_cast<int32_t>(base_vertex);
     cmd.a.base_instance = static_cast<uint32_t>(base_instance);
 }
 
-inline void glxx::DrawCommand::set(GLenum mode, GLenum type, size_t indices, size_t instances, size_t base_index, size_t base_vertex, size_t base_instance)
+inline void glxx::DrawCommand::set(uint32_t mode, uint32_t type, size_t indices, size_t instances, size_t base_index, size_t base_vertex, size_t base_instance)
 {
     indexed = true;
     this->mode = mode;
     this->type = type;
-    cmd.e.indices = static_cast<GLsizei>(indices);
-    cmd.e.instances = static_cast<GLsizei>(instances);
-    cmd.e.base_index = static_cast<GLint>(base_index);
-    cmd.e.base_vertex = static_cast<GLint>(base_vertex);
+    cmd.e.indices = static_cast<int32_t>(indices);
+    cmd.e.instances = static_cast<int32_t>(instances);
+    cmd.e.base_index = static_cast<int32_t>(base_index);
+    cmd.e.base_vertex = static_cast<int32_t>(base_vertex);
     cmd.e.base_instance = static_cast<uint32_t>(base_instance);
 }
 

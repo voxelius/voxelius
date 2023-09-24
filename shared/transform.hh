@@ -4,12 +4,11 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef EF33F6A4_03E8_4759_8E02_43BC2E4401AD
 #define EF33F6A4_03E8_4759_8E02_43BC2E4401AD
-#include <glm/gtc/quaternion.hpp>
-#include <glm/vec3.hpp>
+#include <shared/types.hh>
 
 struct TransformComponent final {
-    glm::vec3 position {};
-    glm::quat rotation {};
+    vec3f_t position {};
+    quatf_t rotation {};
 };
 
 #endif /* EF33F6A4_03E8_4759_8E02_43BC2E4401AD */

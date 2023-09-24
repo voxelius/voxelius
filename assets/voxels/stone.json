@@ -4,12 +4,12 @@
     {
       "draw": "opaque",
       "textures": {
-        "face.north":   "/textures/voxels/stone.png",
-        "face.south":   "^face.north",
-        "face.east":    "^face.north",
-        "face.west":    "^face.north",
-        "face.top":     "^face.north",
-        "face.bottom":  "^face.north"
+        "north":  "/textures/voxels/stone.png",
+        "south":  "^north",
+        "east":   "^north",
+        "west":   "^north",
+        "top":    "^north",
+        "bottom": "^north"
       }
     }
   ]

@@ -5,35 +5,36 @@
 #include <client/globals.hh>
 #include <client/screen.hh>
 #include <client/view.hh>
+#include <shared/const.hh>
 #include <shared/head.hh>
 #include <shared/transform.hh>
 
-static glm::vec3 view_angles = {};
-static glm::vec3 view_position = {};
-static glm::mat4x4 view_matrix = {};
+static vec3f_t view_angles = {};
+static vec3f_t view_position = {};
+static mat4x4f_t view_matrix = {};
 
 void view::update()
 {
-    view_angles = glm::vec3{0.0f, 0.0f, 0.0f};
-    view_position = glm::vec3{0.0f, 0.0f, 0.0f};
+    view_angles = vec3f_t{0.0f, 0.0f, 0.0f};
+    view_position = vec3f_t{0.0f, 0.0f, 0.0f};
     view_matrix = glm::perspective(cxmath::radians(90.0f), screen::get_aspect(), 0.01f, 1024.0f);
 
     if(globals::world.registry.valid(globals::player)) {
         const auto &hc = globals::world.registry.get<HeadComponent>(globals::player);
         const auto &tc = globals::world.registry.get<TransformComponent>(globals::player);
-        const glm::quat qa = tc.rotation * glm::quat{hc.euler};
+        const quatf_t qa = tc.rotation * quatf_t{hc.euler};
         view_angles = glm::eulerAngles(qa);
         view_position = tc.position;
         view_matrix *= glm::lookAt(tc.position, tc.position + qa * DIR_FORWARD, DIR_UP);
     }
 }
 
-const glm::vec3 &view::get_angles()
+const vec3f_t &view::get_angles()
 {
     return view_angles;
 }
 
-const glm::vec3 &view::get_position()
+const vec3f_t &view::get_position()
 {
     return view_position;
 }

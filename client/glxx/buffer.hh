@@ -15,7 +15,7 @@ public:
     Buffer &operator=(Buffer &&rhs);
     void create();
     void destroy();
-    void bind_base(GLenum target, uint32_t index);
+    void bind_base(uint32_t target, uint32_t index);
     void storage(size_t size, const void *data, GLbitfield flags);
     void resize(size_t new_size, const void *data, GLbitfield usage);
     void write(size_t offset, size_t size, const void *data);
@@ -50,7 +50,7 @@ inline void glxx::Buffer::destroy()
     }
 }
 
-inline void glxx::Buffer::bind_base(GLenum target, uint32_t index)
+inline void glxx::Buffer::bind_base(uint32_t target, uint32_t index)
 {
     glBindBufferBase(target, index, handle);
 }

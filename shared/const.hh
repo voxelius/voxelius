@@ -4,19 +4,19 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef EE2EDB21_A70D_41E2_949C_E378889F66DE
 #define EE2EDB21_A70D_41E2_949C_E378889F66DE
-#include <glm/vec3.hpp>
 #include <shared/cxmath.hh>
+#include <shared/types.hh>
 
-constexpr static const glm::vec3 DIR_FORWARD = glm::vec3{0.0f, 0.0f, -1.0f};
-constexpr static const glm::vec3 DIR_RIGHT = glm::vec3{1.0f, 0.0f, 0.0f};
-constexpr static const glm::vec3 DIR_UP = glm::vec3{0.0f, 1.0f, 0.0f};
+constexpr static const vec3f_t DIR_FORWARD = vec3f_t{0.0f, 0.0f, -1.0f};
+constexpr static const vec3f_t DIR_RIGHT = vec3f_t{1.0f, 0.0f, 0.0f};
+constexpr static const vec3f_t DIR_UP = vec3f_t{0.0f, 1.0f, 0.0f};
 
-constexpr static const glm::vec3 HDIR_NORTH = glm::vec3{0.0f, 0.0f, -1.0f};
-constexpr static const glm::vec3 HDIR_SOUTH = glm::vec3{0.0f, 0.0f, +1.0f};
-constexpr static const glm::vec3 HDIR_EAST = glm::vec3{+1.0f, 0.0f, 0.0f};
-constexpr static const glm::vec3 HDIR_WEST = glm::vec3{-1.0f, 0.0f, 0.0f};
-constexpr static const glm::vec3 HDIR_UP = glm::vec3{0.0f, +1.0f, 0.0f};
-constexpr static const glm::vec3 HDIR_DN = glm::vec3{0.0f, -1.0f, 0.0f};
+constexpr static const vec3f_t HDIR_NORTH = vec3f_t{0.0f, 0.0f, -1.0f};
+constexpr static const vec3f_t HDIR_SOUTH = vec3f_t{0.0f, 0.0f, +1.0f};
+constexpr static const vec3f_t HDIR_EAST = vec3f_t{+1.0f, 0.0f, 0.0f};
+constexpr static const vec3f_t HDIR_WEST = vec3f_t{-1.0f, 0.0f, 0.0f};
+constexpr static const vec3f_t HDIR_UP = vec3f_t{0.0f, +1.0f, 0.0f};
+constexpr static const vec3f_t HDIR_DN = vec3f_t{0.0f, -1.0f, 0.0f};
 
 constexpr static const size_t CHUNK_SIZE = 16;
 constexpr static const size_t CHUNK_AREA = CHUNK_SIZE * CHUNK_SIZE;
