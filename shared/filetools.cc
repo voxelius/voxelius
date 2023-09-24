@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <shared/filetools.hh>
 
-bool filetools::read(const std::string &path, std::string &out)
+bool util::read(const std::string &path, std::string &out)
 {
     if(PHYSFS_File *file = PHYSFS_openRead(path.c_str())) {
         out.resize(PHYSFS_fileLength(file));
@@ -16,7 +16,7 @@ bool filetools::read(const std::string &path, std::string &out)
     return true;
 }
 
-bool filetools::read(const std::string &path, std::vector<uint8_t> &out)
+bool util::read(const std::string &path, std::vector<uint8_t> &out)
 {
     if(PHYSFS_File *file = PHYSFS_openRead(path.c_str())) {
         out.resize(PHYSFS_fileLength(file));
@@ -26,4 +26,44 @@ bool filetools::read(const std::string &path, std::vector<uint8_t> &out)
     }
 
     return true;
+}
+
+bool util::write(const std::string &path, const std::string &in)
+{
+    if(PHYSFS_File *file = PHYSFS_openWrite(path.c_str())) {
+        PHYSFS_writeBytes(file, in.data(), in.size());
+        PHYSFS_close(file);
+        return true;
+    }
+
+    return true;
+}
+
+bool util::write(const std::string &path, const std::vector<uint8_t> &in)
+{
+    if(PHYSFS_File *file = PHYSFS_openWrite(path.c_str())) {
+        PHYSFS_writeBytes(file, in.data(), in.size());
+        PHYSFS_close(file);
+        return true;
+    }
+
+    return true;
+}
+
+bool util::readline(PHYSFS_File *file, std::string &line)
+{
+    if(file && !PHYSFS_eof(file)) {
+        line.clear();
+        char tmp[2] = {0};
+        while(PHYSFS_readBytes(file, tmp, 1) == 1) {
+            tmp[1] = 0x00; // make sure it's terminated.
+            if(tmp[0] == '\n')
+                break;
+            line.append(tmp);
+        }
+
+        return true;
+    }
+
+    return false;
 }

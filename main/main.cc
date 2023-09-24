@@ -85,6 +85,8 @@ static std::filesystem::path get_userpath()
 
 int main(int argc, char **argv)
 {
+    cmdline::append(argc, argv);
+
     try {
         auto *lp = spdlog::default_logger_raw();
         lp->sinks().clear();
@@ -96,8 +98,6 @@ int main(int argc, char **argv)
         std::cerr << ex.what() << std::endl;
         std::terminate();
     }
-
-    cmdline::append(argc, argv);
 
     if(!PHYSFS_init(argv[0])) {
         spdlog::critical("physfs: init failed: {}", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));

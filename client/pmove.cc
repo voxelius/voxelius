@@ -10,6 +10,7 @@
 #include <shared/head.hh>
 #include <shared/transform.hh>
 #include <shared/velocity.hh>
+#include <shared/world.hh>
 
 constexpr static const size_t MOVE_FD = 0;
 constexpr static const size_t MOVE_BK = 1;

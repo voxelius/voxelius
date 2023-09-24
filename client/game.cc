@@ -8,6 +8,7 @@
 #include <client/plook.hh>
 #include <client/pmove.hh>
 #include <client/screen.hh>
+#include <client/shaders.hh>
 #include <client/view.hh>
 #include <client/voxel_mesher.hh>
 #include <shared/head.hh>
@@ -35,6 +36,7 @@ void client_game::init()
 {
     input::init();
     screen::init();
+    shaders::init();
 
     plook::init();
     pmove::init();
@@ -49,7 +51,7 @@ void client_game::init_late()
 {
     screen::init_late();
 
-    vdef::assign("stone", 0x0001);
+    vdef::assign(Identifier{"voxelius:stone"}, 0x0001);
 
     spdlog::info("spawning local player");
     globals::player = globals::world.registry.create();

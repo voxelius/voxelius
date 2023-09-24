@@ -67,9 +67,9 @@ voxel_t World::get_voxel(const chunk_coord_t &cvec, const local_coord_t &lvec) c
 
 void World::set_voxel(voxel_t voxel, const voxel_coord_t &vvec)
 {
-    const chunk_coord_t cvec = coord::to_chunk(vvec);
-    const local_coord_t lvec = coord::to_voxel(vvec);
-    const size_t index = coord::to_index(lvec);
+    const auto cvec = coord::to_chunk(vvec);
+    const auto lvec = coord::to_voxel(vvec);
+    const auto index = coord::to_index(lvec);
 
     Chunk *chunk = create_chunk(cvec);
     chunk->voxels[index] = voxel;
@@ -87,10 +87,10 @@ void World::set_voxel(voxel_t voxel, const voxel_coord_t &vvec)
 
 void World::set_voxel(voxel_t voxel, const chunk_coord_t &cvec, const local_coord_t &lvec)
 {
-    const voxel_coord_t vvec = coord::to_voxel(cvec, lvec);
-    const chunk_coord_t pcvec = coord::to_chunk(vvec);
-    const local_coord_t plvec = coord::to_local(vvec);
-    const size_t index = coord::to_index(plvec);
+    const auto vvec = coord::to_voxel(cvec, lvec);
+    const auto pcvec = coord::to_chunk(vvec);
+    const auto plvec = coord::to_local(vvec);
+    const auto index = coord::to_index(plvec);
 
     Chunk *chunk = create_chunk(pcvec);
     chunk->voxels[index] = voxel;

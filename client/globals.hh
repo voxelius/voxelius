@@ -5,9 +5,12 @@
 #ifndef B3BD20F9_18D1_4774_A219_C83FBB696B2A
 #define B3BD20F9_18D1_4774_A219_C83FBB696B2A
 #include <entt/entity/entity.hpp>
-#include <GLFW/glfw3.h>
 #include <shared/globals.hh>
-#include <shared/world.hh>
+#include <shared/vdef.hh>
+
+struct GLFWwindow;
+class World;
+class GBuffer;
 
 namespace globals
 {
@@ -18,6 +21,7 @@ extern uint64_t curtime;
 extern uint64_t framecount;
 extern entt::entity player;
 extern World world;
+extern GBuffer gbuffers[NUM_VOXEL_DRAW];
 } // namespace globals
 
 #endif /* B3BD20F9_18D1_4774_A219_C83FBB696B2A */

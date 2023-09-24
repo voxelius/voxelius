@@ -8,6 +8,7 @@
 #include <client/screen.hh>
 #include <shared/cxmath.hh>
 #include <shared/head.hh>
+#include <shared/world.hh>
 
 constexpr static const float PITCH_MIN = -1.0f * cxmath::radians(89.9f);
 constexpr static const float PITCH_MAX = +1.0f * cxmath::radians(89.9f);

@@ -4,6 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/globals.hh>
 #include <client/screen.hh>
+#include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
 static float calc_aspect(int width, int height)

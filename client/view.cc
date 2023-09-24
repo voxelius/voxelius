@@ -8,6 +8,7 @@
 #include <shared/const.hh>
 #include <shared/head.hh>
 #include <shared/transform.hh>
+#include <shared/world.hh>
 
 static vec3f_t view_angles = {};
 static vec3f_t view_position = {};

@@ -4,6 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef B9BCABB9_B3D9_477E_8A06_71E46760F32E
 #define B9BCABB9_B3D9_477E_8A06_71E46760F32E
+#include <math.h>
 #include <type_traits>
 #include <stddef.h>
 

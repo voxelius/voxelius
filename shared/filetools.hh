@@ -9,10 +9,13 @@
 #include <string>
 #include <vector>
 
-namespace filetools
+namespace util
 {
 bool read(const std::string &path, std::string &out);
 bool read(const std::string &path, std::vector<uint8_t> &out);
-} // namespace filetools
+bool write(const std::string &path, const std::string &in);
+bool write(const std::string &path, const std::vector<uint8_t> &in);
+bool readline(PHYSFS_File *file, std::string &line);
+} // namespace util
 
 #endif/* B6FB9749_445F_475B_A8EF_8F59D88067DB */

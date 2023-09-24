@@ -4,6 +4,7 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/epoch.cc"
     "${CMAKE_CURRENT_LIST_DIR}/filetools.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/identifier.cc"
     "${CMAKE_CURRENT_LIST_DIR}/inertial.cc"
     "${CMAKE_CURRENT_LIST_DIR}/strtools.cc"
     "${CMAKE_CURRENT_LIST_DIR}/vdef.cc"

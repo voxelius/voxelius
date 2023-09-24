@@ -4,13 +4,13 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef C22100A9_D5BB_4CD9_BDAF_D3F44DE7B084
 #define C22100A9_D5BB_4CD9_BDAF_D3F44DE7B084
+#include <array>
 #include <client/mesh.hh>
+#include <shared/vdef.hh>
 #include <memory>
 
 struct VoxelMeshComponent final {
-    std::unique_ptr<Mesh> opaque {nullptr};
-    std::unique_ptr<Mesh> alpha {nullptr};
-    std::unique_ptr<Mesh> fluid {nullptr};
+    std::array<Mesh, NUM_VOXEL_DRAW> meshes {};
 };
 
 namespace voxel_mesher

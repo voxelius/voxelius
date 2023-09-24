@@ -11,21 +11,23 @@
 
 class Image final : public mixin::NonCopyable {
 public:
+    constexpr static const glxx::PixelFormat FORMAT = glxx::PixelFormat::R8G8B8_UNORM;
+
+public:
     Image() = default;
-    Image(const std::string &path, glxx::PixelFormat fmt);
+    Image(const std::string &path);
     Image(Image &&rhs);
     virtual ~Image();
 
     Image &operator=(Image &&rhs);
 
-    bool create(const std::string &path, glxx::PixelFormat fmt);
+    bool create(const std::string &path);
     void destroy();
     bool valid() const;
 
     int get_width() const;
     int get_height() const;
     void get_size(int &width, int &height) const;
-    glxx::PixelFormat get_format() const;
     const void *data() const;
     void *data();
 
@@ -33,7 +35,6 @@ private:
     int width {};
     int height {};
     void *pixels {nullptr};
-    glxx::PixelFormat format {};
 };
 
 static inline void make_glfw_image(Image &image, GLFWimage &out)

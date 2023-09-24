@@ -9,7 +9,7 @@
 #include <spdlog/spdlog.h>
 #include <unordered_map>
 
-static std::unordered_map<std::string, uint16_t> name_map = {};
+static std::unordered_map<Identifier, uint16_t> name_map = {};
 static vdef_vector voxels = {};
 
 void vdef::purge()
@@ -20,7 +20,7 @@ void vdef::purge()
     voxels.clear();
 }
 
-uint16_t vdef::assign(const std::string &name, uint16_t hint)
+uint16_t vdef::assign(const Identifier &name, uint16_t hint)
 {
     if(hint == NULL_VOXEL_ID) {
         spdlog::error("vdef: cannot assign NULL_VOXEL_ID");
@@ -28,17 +28,17 @@ uint16_t vdef::assign(const std::string &name, uint16_t hint)
     }
 
     if(const auto nit = name_map.find(name); nit != name_map.cend()) {
-        spdlog::error("vdef: name {} is taken by voxel {}", nit->first, nit->second);
+        spdlog::error("vdef: name {} is taken by voxel {}", nit->first.get(), nit->second);
         return NULL_VOXEL_ID;
     }
 
-    const std::string path1 = fmt::format("/voxels/{}.json", name);
-    const std::string path2 = fmt::format("/voxels/{}.jsonc", name);
+    const std::string path1 = name.get_file_path_ext("voxels", "json");
+    const std::string path2 = name.get_file_path_ext("voxels", "jsonc");
 
     std::string source;
-    if(!filetools::read(path1, source)) {
-        if(!filetools::read(path2, source)) {
-            spdlog::error("vdef: {}: {}", name, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+    if(!util::read(path1, source)) {
+        if(!util::read(path2, source)) {
+            spdlog::error("vdef: {}: {}", name.get(), PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
             return NULL_VOXEL_ID;
         }
     }
@@ -47,13 +47,13 @@ uint16_t vdef::assign(const std::string &name, uint16_t hint)
     JSON_Object *json = json_value_get_object(json_val);
 
     if(!json_val) {
-        spdlog::error("vdef: {}: parse error", name);
+        spdlog::error("vdef: {}: parse error", name.get());
         return NULL_VOXEL_ID;
     }
 
     if(!json) {
         json_value_free(json_val);
-        spdlog::error("vdef: {}: root is not an object", name);
+        spdlog::error("vdef: {}: root is not an object", name.get());
         return NULL_VOXEL_ID;
     }
 
@@ -85,7 +85,7 @@ uint16_t vdef::assign(const std::string &name, uint16_t hint)
         VoxelInfo::State state = {};
         state.draw = VOXEL_DRAW_NODRAW;
         state.textures.fill(std::string{});
-        state.cache.fill(0U);
+        state.cache.fill(UINT32_MAX);
 
         const char *draw = json_object_get_string(node, "draw");
         static const std::unordered_map<std::string, voxel_draw_t> draws = {
@@ -118,7 +118,7 @@ uint16_t vdef::assign(const std::string &name, uint16_t hint)
             const auto it = faces.find(face_str ? face_str : std::string{});
             if(it == faces.cend())
                 continue;
-            const voxel_face_t face = it->second;
+            const auto face = it->second;
 
             const std::string texname = json_object_get_name(textures, j);
 
@@ -130,16 +130,20 @@ uint16_t vdef::assign(const std::string &name, uint16_t hint)
                 const std::string query = texture.substr(1);
 
                 if(texname == query) {
-                    spdlog::warn("vdef: {}: {}: self-referencing texture", name, texname);
+                    spdlog::warn("vdef: {}: {}: self-referencing texture", name.get(), texname);
                     continue;
                 }
 
                 const char *qstr = json_object_get_string(textures, query.c_str());
-                state.textures[face] = qstr ? qstr : texture;
-                continue;
+                const Identifier ident = Identifier{qstr ? qstr : texture};
+                state.textures[face] = ident.get_file_path("textures");
+                spdlog::debug("vdef: {}: {} -> {}", name.get(), texname, state.textures[face]);
             }
-
-            state.textures[face] = texture;
+            else {
+                const Identifier ident = Identifier{texture};
+                state.textures[face] = ident.get_file_path("textures");
+                spdlog::debug("vdef: {}: {} -> {}", name.get(), texname, state.textures[face]);
+            }
         }
 
         out.states.push_back(state);
@@ -153,7 +157,7 @@ uint16_t vdef::assign(const std::string &name, uint16_t hint)
     return hint;
 }
 
-VoxelInfo *vdef::find(const std::string &name)
+VoxelInfo *vdef::find(const Identifier &name)
 {
     const auto it = name_map.find(name);
     if(it != name_map.cend())

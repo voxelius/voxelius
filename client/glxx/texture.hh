@@ -16,7 +16,7 @@ public:
     Texture(uint32_t target);
     void create();
     void destroy();
-    void gen_mipmap();
+    void generate_mipmap();
     void bind(uint32_t unit) const;
 
 protected:
@@ -61,7 +61,7 @@ inline void glxx::Texture::destroy()
     }
 }
 
-inline void glxx::Texture::gen_mipmap()
+inline void glxx::Texture::generate_mipmap()
 {
     glGenerateTextureMipmap(handle);
 }
