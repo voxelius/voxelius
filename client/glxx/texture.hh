@@ -6,7 +6,7 @@
 #define E7A03B69_CB3F_461D_9AEE_494C746DEEE4
 #include <client/glxx/object.hh>
 #include <client/glxx/pixel_format.hh>
-#include <shared/cxmath.hh>
+#include <core/util.hh>
 #include <glm/common.hpp>
 
 namespace glxx
@@ -93,7 +93,7 @@ inline glxx::Texture2D &glxx::Texture2D::operator=(glxx::Texture2D &&rhs)
 inline bool glxx::Texture2D::storage(int width, int height, glxx::PixelFormat format)
 {
     if(uint32_t f = glxx::detail::get_pixel_format_gpu(format)) {
-        glTextureStorage2D(handle, cxmath::log2<int>(cxmath::max(width, height)), f, width, height);
+        glTextureStorage2D(handle, util::log2<int>(util::max(width, height)), f, width, height);
         return true;
     }
 
@@ -133,7 +133,7 @@ inline glxx::Texture2DArray &glxx::Texture2DArray::operator=(glxx::Texture2DArra
 inline bool glxx::Texture2DArray::storage(int width, int height, int layers, glxx::PixelFormat format)
 {
     if(uint32_t f = glxx::detail::get_pixel_format_gpu(format)) {
-        glTextureStorage3D(handle, cxmath::log2<int>(cxmath::max(width, height)), f, width, height, layers);
+        glTextureStorage3D(handle, util::log2<int>(util::max(width, height)), f, width, height, layers);
         return true;
     }
 

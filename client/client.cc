@@ -5,6 +5,8 @@
 #include <client/client.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
+#include <client/image.hh>
+#include <core/cmdline.hh>
 #include <core/epoch.hh>
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -40,6 +42,14 @@ void client::main()
     if(!globals::window) {
         spdlog::critical("glfw: failed to open a window");
         std::terminate();
+    }
+
+    if(Image icon = Image{"32x32.png"}; icon.valid()) {
+        GLFWimage image = {};
+        image.width = icon.get_width();
+        image.height = icon.get_height();
+        image.pixels = reinterpret_cast<unsigned char *>(icon.data());
+        glfwSetWindowIcon(globals::window, 1, &image);
     }
 
     glfwMakeContextCurrent(globals::window);
