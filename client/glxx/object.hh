@@ -4,8 +4,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef B4A95A22_058B_484D_8689_DC7A008C3267
 #define B4A95A22_058B_484D_8689_DC7A008C3267
+#include <core/mixin.hh>
 #include <glad/gl.h>
-#include <shared/mixin.hh>
 #include <stddef.h>
 #include <utility>
 

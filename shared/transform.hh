@@ -2,13 +2,13 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef EF33F6A4_03E8_4759_8E02_43BC2E4401AD
-#define EF33F6A4_03E8_4759_8E02_43BC2E4401AD
-#include <shared/types.hh>
+#ifndef D8D17F43_6CC4_4F44_83BD_94585F8FB594
+#define D8D17F43_6CC4_4F44_83BD_94585F8FB594
+#include <core/types.hh>
 
 struct TransformComponent final {
     vec3f_t position {};
     quatf_t rotation {};
 };
 
-#endif /* EF33F6A4_03E8_4759_8E02_43BC2E4401AD */
+#endif/* D8D17F43_6CC4_4F44_83BD_94585F8FB594 */

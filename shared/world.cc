@@ -5,46 +5,45 @@
 #include <shared/globals.hh>
 #include <shared/world.hh>
 
-Chunk *World::create_chunk(const chunk_coord_t &cvec)
+Chunk *World::create_chunk(const chunk_pos_t &cpos)
 {
-    Chunk *chunk = find_chunk(cvec);
+    Chunk *chunk = find_chunk(cpos);
 
     if(chunk == nullptr) {
         chunk = new Chunk{};
         chunk->voxels.fill(NULL_VOXEL);
         chunk->entity = registry.create();
-        chunk->ref_count = 0;
 
         ChunkComponent &component = registry.emplace<ChunkComponent>(chunk->entity);
         component.chunk = chunk;
-        component.cvec = cvec;
+        component.cpos = cpos;
 
-        chunks.emplace(cvec, chunk);
+        chunks.emplace(cpos, chunk);
 
         globals::dispatcher.trigger(ChunkCreateEvent {
             .world = this,
             .chunk = chunk,
-            .cvec = cvec,
+            .cpos = cpos,
         });
     }
 
     return chunk;
 }
 
-Chunk *World::find_chunk(const chunk_coord_t &cvec) const
+Chunk *World::find_chunk(const chunk_pos_t &cpos) const
 {
-    if(const auto it = chunks.find(cvec); it != chunks.cend())
+    if(const auto it = chunks.find(cpos); it != chunks.cend())
         return it->second;
     return nullptr;
 }
 
-void World::remove_chunk(const chunk_coord_t &cvec)
+void World::remove_chunk(const chunk_pos_t &cpos)
 {
-    if(const auto it = chunks.find(cvec); it != chunks.cend()) {
+    if(const auto it = chunks.find(cpos); it != chunks.cend()) {
         globals::dispatcher.trigger(ChunkRemoveEvent {
             .world = this,
             .chunk = it->second,
-            .cvec = cvec,
+            .cpos = cpos,
         });
 
         registry.destroy(it->second->entity);
@@ -53,56 +52,56 @@ void World::remove_chunk(const chunk_coord_t &cvec)
     }
 }
 
-voxel_t World::get_voxel(const voxel_coord_t &vvec) const
+voxel_t World::get_voxel(const voxel_pos_t &vpos) const
 {
-    return get_voxel(coord::to_chunk(vvec), coord::to_local(vvec));
+    return get_voxel(pos::to_chunk(vpos), pos::to_local(vpos));
 }
 
-voxel_t World::get_voxel(const chunk_coord_t &cvec, const local_coord_t &lvec) const
+voxel_t World::get_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos) const
 {
-    if(const auto it = chunks.find(cvec); it != chunks.cend())
-        return it->second->voxels.at(coord::to_index(lvec));
+    if(const auto it = chunks.find(cpos); it != chunks.cend())
+        return it->second->voxels.at(pos::to_index(lpos));
     return NULL_VOXEL;
 }
 
-void World::set_voxel(voxel_t voxel, const voxel_coord_t &vvec)
+void World::set_voxel(voxel_t voxel, const voxel_pos_t &vpos)
 {
-    const auto cvec = coord::to_chunk(vvec);
-    const auto lvec = coord::to_voxel(vvec);
-    const auto index = coord::to_index(lvec);
+    const auto cpos = pos::to_chunk(vpos);
+    const auto lpos = pos::to_local(vpos);
+    const auto index = pos::to_index(lpos);
 
-    Chunk *chunk = create_chunk(cvec);
+    Chunk *chunk = create_chunk(cpos);
     chunk->voxels[index] = voxel;
 
     globals::dispatcher.trigger(VoxelUpdateEvent {
         .world = this,
         .chunk = chunk,
         .voxel = voxel,
-        .cvec = cvec,
-        .lvec = lvec,
-        .vvec = vvec,
+        .cpos = cpos,
+        .lpos = lpos,
+        .vpos = vpos,
         .index = index,
     });
 }
 
-void World::set_voxel(voxel_t voxel, const chunk_coord_t &cvec, const local_coord_t &lvec)
+void World::set_voxel(voxel_t voxel, const chunk_pos_t &cpos, const local_pos_t &lpos)
 {
-    const auto vvec = coord::to_voxel(cvec, lvec);
-    const auto pcvec = coord::to_chunk(vvec);
-    const auto plvec = coord::to_local(vvec);
-    const auto index = coord::to_index(plvec);
+    const auto p_vpos = pos::to_voxel(cpos, lpos);
+    const auto p_cpos = pos::to_chunk(p_vpos);
+    const auto p_lpos = pos::to_local(p_vpos);
+    const auto p_index = pos::to_index(p_lpos);
 
-    Chunk *chunk = create_chunk(pcvec);
-    chunk->voxels[index] = voxel;
+    Chunk *chunk = create_chunk(p_cpos);
+    chunk->voxels[p_index] = voxel;
 
     globals::dispatcher.trigger(VoxelUpdateEvent {
         .world = this,
         .chunk = chunk,
         .voxel = voxel,
-        .cvec = pcvec,
-        .lvec = plvec,
-        .vvec = vvec,
-        .index = index,
+        .cpos = p_cpos,
+        .lpos = p_lpos,
+        .vpos = p_vpos,
+        .index = p_index,
     });
 }
 
@@ -112,13 +111,4 @@ void World::purge()
         remove_chunk(it.first);
     registry.clear();
     chunks.clear();
-}
-
-void World::sweep()
-{
-    for(const auto it : chunks) {
-        if(it.second->ref_count >= 0)
-            continue;
-        remove_chunk(it.first);
-    }
 }

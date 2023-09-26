@@ -3,10 +3,10 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/client.hh>
-#include <filesystem>
+#include <core/cmdline.hh>
+#include <core/vfs.hh>
 #include <iostream>
-#include <physfs.h>
-#include <shared/cmdline.hh>
+#include <server/server.hh>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #include <stdlib.h>
@@ -99,8 +99,12 @@ int main(int argc, char **argv)
         std::terminate();
     }
 
-    if(!PHYSFS_init(argv[0])) {
-        spdlog::critical("physfs: init failed: {}", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+    // UNDONE: a global variable that enables
+    // various development mode features that can
+    // be set if cmdline::contains("dev")
+
+    if(!vfs::init(argv[0])) {
+        spdlog::critical("physfs: init failed: {}", vfs::get_error());
         std::terminate();
     }
 
@@ -114,18 +118,18 @@ int main(int argc, char **argv)
     std::filesystem::create_directories(gamepath, dingus);
     std::filesystem::create_directories(userpath, dingus);
 
-    if(!PHYSFS_mount(gamepath.native().c_str(), NULL, false)) {
-        spdlog::critical("physfs: mount {} failed: {}", gamepath.string(), PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+    if(!vfs::mount(gamepath, vfs::get_root_path(), false)) {
+        spdlog::critical("physfs: mount {} failed: {}", gamepath.string(), vfs::get_error());
         std::terminate();
     }
 
-    if(!PHYSFS_mount(userpath.native().c_str(), NULL, false)) {
-        spdlog::critical("physfs: mount {} failed: {}", userpath.string(), PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+    if(!vfs::mount(userpath, vfs::get_root_path(), false)) {
+        spdlog::critical("physfs: mount {} failed: {}", userpath.string(), vfs::get_error());
         std::terminate();
     }
 
-    if(!PHYSFS_setWriteDir(userpath.native().c_str())) {
-        spdlog::critical("physfs: setwritedir {} failed: {}", userpath.string(), PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+    if(!vfs::set_write_path(userpath)) {
+        spdlog::critical("physfs: setwritedir {} failed: {}", userpath.string(), vfs::get_error());
         std::terminate();
     }
 
@@ -142,8 +146,8 @@ int main(int argc, char **argv)
     #error Its 5 dollars on Steam and consoles but it is free on App Store and Google Play.
 #endif
 
-    if(!PHYSFS_deinit()) {
-        spdlog::critical("physfs: deinit failed: {}", PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+    if(!vfs::deinit()) {
+        spdlog::critical("physfs: deinit failed: {}", vfs::get_error());
         std::terminate();
     }
 

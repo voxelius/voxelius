@@ -2,94 +2,92 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef F55EA7C6_AAD7_43D1_AAA1_017426C5544B
-#define F55EA7C6_AAD7_43D1_AAA1_017426C5544B
+#ifndef A26A347B_8002_432F_AD85_2F3FB1FA8F1E
+#define A26A347B_8002_432F_AD85_2F3FB1FA8F1E
 #include <functional>
-#include <glm/common.hpp>
 #include <shared/const.hh>
-#include <stdint.h>
 
-using chunk_coord_t = glm::vec<3, int32_t, glm::packed_highp>;
-using local_coord_t = glm::vec<3, int16_t, glm::packed_highp>;
-using voxel_coord_t = glm::vec<3, int64_t, glm::packed_highp>;
+using chunk_pos_t = glm::vec<3, int32_t, glm::packed_highp>;
+using local_pos_t = glm::vec<3, int16_t, glm::packed_highp>;
+using voxel_pos_t = glm::vec<3, int64_t, glm::packed_highp>;
 
 template<>
-struct std::hash<chunk_coord_t> final {
-    constexpr inline const size_t operator()(const chunk_coord_t &cvec) const
+struct std::hash<chunk_pos_t> final {
+    constexpr inline const size_t operator()(const chunk_pos_t &cpos) const
     {
-        return (cvec.x * 73856093) ^ (cvec.y * 19349663) ^ (cvec.z * 83492791);
+        return (cpos.x * 73856093) ^ (cpos.y * 19349663) ^ (cpos.z * 83492791);
     }
 };
 
-namespace coord
+namespace pos
 {
-constexpr static inline const chunk_coord_t to_chunk(const voxel_coord_t &vvec)
+constexpr static inline const chunk_pos_t to_chunk(const voxel_pos_t &vpos)
 {
-    return chunk_coord_t {
-        static_cast<chunk_coord_t::value_type>(vvec.x >> CHUNK_SIZE_LOG2),
-        static_cast<chunk_coord_t::value_type>(vvec.y >> CHUNK_SIZE_LOG2),
-        static_cast<chunk_coord_t::value_type>(vvec.z >> CHUNK_SIZE_LOG2),
+    return chunk_pos_t {
+        static_cast<chunk_pos_t::value_type>(vpos.x >> CHUNK_SIZE_LOG2),
+        static_cast<chunk_pos_t::value_type>(vpos.y >> CHUNK_SIZE_LOG2),
+        static_cast<chunk_pos_t::value_type>(vpos.z >> CHUNK_SIZE_LOG2),
     };
 }
 
-constexpr static inline const local_coord_t to_local(const voxel_coord_t &vvec)
+constexpr static inline const local_pos_t to_local(const voxel_pos_t &vpos)
 {
-    return local_coord_t {
-        glm::abs(static_cast<local_coord_t::value_type>(vvec.x % CHUNK_SIZE)),
-        glm::abs(static_cast<local_coord_t::value_type>(vvec.y % CHUNK_SIZE)),
-        glm::abs(static_cast<local_coord_t::value_type>(vvec.z % CHUNK_SIZE)),
+    return local_pos_t {
+        glm::abs(static_cast<local_pos_t::value_type>(vpos.x % CHUNK_SIZE)),
+        glm::abs(static_cast<local_pos_t::value_type>(vpos.y % CHUNK_SIZE)),
+        glm::abs(static_cast<local_pos_t::value_type>(vpos.z % CHUNK_SIZE)),
     };
 }
 
-constexpr static inline const local_coord_t to_local(const size_t index)
+constexpr static inline const local_pos_t to_local(const size_t index)
 {
-    return local_coord_t {
-        static_cast<local_coord_t::value_type>((index / CHUNK_AREA)),
-        static_cast<local_coord_t::value_type>((index % CHUNK_SIZE)),
-        static_cast<local_coord_t::value_type>((index / CHUNK_SIZE) % CHUNK_SIZE),
+    return local_pos_t {
+        static_cast<local_pos_t::value_type>((index / CHUNK_AREA)),
+        static_cast<local_pos_t::value_type>((index % CHUNK_SIZE)),
+        static_cast<local_pos_t::value_type>((index / CHUNK_SIZE) % CHUNK_SIZE),
     };
 }
 
-constexpr static inline const voxel_coord_t to_voxel(const chunk_coord_t &cvec, const local_coord_t &lvec)
+constexpr static inline const voxel_pos_t to_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos)
 {
-    return voxel_coord_t {
-        static_cast<voxel_coord_t::value_type>(lvec.x + (cvec.x << CHUNK_SIZE_LOG2)),
-        static_cast<voxel_coord_t::value_type>(lvec.y + (cvec.y << CHUNK_SIZE_LOG2)),
-        static_cast<voxel_coord_t::value_type>(lvec.z + (cvec.z << CHUNK_SIZE_LOG2)),
+    return voxel_pos_t {
+        static_cast<voxel_pos_t::value_type>(lpos.x + (cpos.x << CHUNK_SIZE_LOG2)),
+        static_cast<voxel_pos_t::value_type>(lpos.y + (cpos.y << CHUNK_SIZE_LOG2)),
+        static_cast<voxel_pos_t::value_type>(lpos.z + (cpos.z << CHUNK_SIZE_LOG2)),
     };
 }
 
-constexpr static inline const voxel_coord_t to_voxel(const vec3f_t &wvec)
+constexpr static inline const voxel_pos_t to_voxel(const vec3f_t &wpos)
 {
-    return voxel_coord_t {
-        static_cast<voxel_coord_t::value_type>(wvec.x),
-        static_cast<voxel_coord_t::value_type>(wvec.y),
-        static_cast<voxel_coord_t::value_type>(wvec.z),
+    return voxel_pos_t {
+        static_cast<voxel_pos_t::value_type>(wpos.x),
+        static_cast<voxel_pos_t::value_type>(wpos.y),
+        static_cast<voxel_pos_t::value_type>(wpos.z),
     };
 }
 
-constexpr static inline const vec3f_t to_world(const chunk_coord_t &cvec)
+constexpr static inline const vec3f_t to_world(const chunk_pos_t &cpos)
 {
     return vec3f_t {
-        static_cast<vec3f_t::value_type>(cvec.x << CHUNK_SIZE_LOG2),
-        static_cast<vec3f_t::value_type>(cvec.y << CHUNK_SIZE_LOG2),
-        static_cast<vec3f_t::value_type>(cvec.z << CHUNK_SIZE_LOG2),
+        static_cast<vec3f_t::value_type>(cpos.x << CHUNK_SIZE_LOG2),
+        static_cast<vec3f_t::value_type>(cpos.y << CHUNK_SIZE_LOG2),
+        static_cast<vec3f_t::value_type>(cpos.z << CHUNK_SIZE_LOG2),
     };
 }
 
-constexpr static inline const vec3f_t to_world(const voxel_coord_t &vvec)
+constexpr static inline const vec3f_t to_world(const voxel_pos_t &vpos)
 {
     return vec3f_t {
-        static_cast<vec3f_t::value_type>(vvec.x),
-        static_cast<vec3f_t::value_type>(vvec.y),
-        static_cast<vec3f_t::value_type>(vvec.z),
+        static_cast<vec3f_t::value_type>(vpos.x),
+        static_cast<vec3f_t::value_type>(vpos.y),
+        static_cast<vec3f_t::value_type>(vpos.z),
     };
 }
 
-constexpr static inline const size_t to_index(const local_coord_t &lvec)
+constexpr static inline const size_t to_index(const local_pos_t &lpos)
 {
-    return static_cast<size_t>((lvec.x * CHUNK_SIZE + lvec.z) * CHUNK_SIZE + lvec.y);
+    return static_cast<size_t>((lpos.x * CHUNK_SIZE + lpos.z) * CHUNK_SIZE + lpos.y);
 }
-} // namespace coord
+} // namespace pos
 
-#endif /* F55EA7C6_AAD7_43D1_AAA1_017426C5544B */
+#endif/* A26A347B_8002_432F_AD85_2F3FB1FA8F1E */

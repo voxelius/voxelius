@@ -5,18 +5,9 @@
 #include <client/game.hh>
 #include <client/globals.hh>
 #include <client/input.hh>
-#include <client/plook.hh>
-#include <client/pmove.hh>
 #include <client/screen.hh>
-#include <client/shaders.hh>
-#include <client/view.hh>
-#include <client/voxel_mesher.hh>
-#include <shared/head.hh>
 #include <shared/inertial.hh>
-#include <shared/player.hh>
-#include <shared/transform.hh>
 #include <shared/vdef.hh>
-#include <shared/velocity.hh>
 #include <spdlog/spdlog.h>
 
 static void on_key(const KeyEvent &event)
@@ -36,12 +27,6 @@ void client_game::init()
 {
     input::init();
     screen::init();
-    shaders::init();
-
-    plook::init();
-    pmove::init();
-
-    voxel_mesher::init();
 
     globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
     globals::dispatcher.sink<ScreenSizeEvent>().connect<&on_screen_size>();
@@ -51,30 +36,25 @@ void client_game::init_late()
 {
     screen::init_late();
 
-    vdef::assign(Identifier{"voxelius:stone"}, 0x0001);
+    vdef::assign("grass", 0x0001);
 
-    spdlog::info("spawning local player");
-    globals::player = globals::world.registry.create();
-    globals::world.registry.emplace<PlayerComponent>(globals::player);
-    globals::world.registry.emplace<HeadComponent>(globals::player);
-    globals::world.registry.emplace<TransformComponent>(globals::player);
-    globals::world.registry.emplace<VelocityComponent>(globals::player);
-
-    glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    if(VoxelInfo *info = vdef::find(make_voxel(0x0001, 0))) {
+        spdlog::info("{} info:", info->name);
+        spdlog::info("  draw: {}", info->draw);
+        spdlog::info("  north: {}", info->textures[VOXEL_FACE_NORTH].path.string());
+        spdlog::info("  south: {}", info->textures[VOXEL_FACE_SOUTH].path.string());
+        spdlog::info("  top: {}", info->textures[VOXEL_FACE_TOP].path.string());
+        spdlog::info("  bottom: {}", info->textures[VOXEL_FACE_BOTTOM].path.string());
+    }
 }
 
 void client_game::deinit()
 {
-    voxel_mesher::deinit();
+
 }
 
 void client_game::update()
 {
-    pmove::update();
-
-    view::update();
-
-    voxel_mesher::update();
 
     inertial::update(globals::world, globals::frametime);
 }

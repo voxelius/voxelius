@@ -2,182 +2,161 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#include <core/vfs.hh>
 #include <parson.h>
-#include <shared/filetools.hh>
 #include <shared/vdef.hh>
-#include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
-#include <unordered_map>
 
-static std::unordered_map<Identifier, uint16_t> name_map = {};
-static vdef_vector voxels = {};
+std::unordered_set<std::string> vdef::names = {};
+std::unordered_set<vfs::path_t, vfs::path_hasher_t> vdef::textures = {};
+std::vector<VoxelInfoRoot *> vdef::voxels = {};
 
-void vdef::purge()
+bool vdef::assign(const std::string &name, uint32_t id)
 {
-    for(const auto it : voxels)
-        delete it;
-    name_map.clear();
-    voxels.clear();
-}
-
-uint16_t vdef::assign(const Identifier &name, uint16_t hint)
-{
-    if(hint == NULL_VOXEL_ID) {
-        spdlog::error("vdef: cannot assign NULL_VOXEL_ID");
-        return NULL_VOXEL_ID;
+    if(id == NULL_VOXEL_ID) {
+        spdlog::warn("vdef: can't assign to NULL_VOXEL_ID");
+        return false;
     }
 
-    if(const auto nit = name_map.find(name); nit != name_map.cend()) {
-        spdlog::error("vdef: name {} is taken by voxel {}", nit->first.get(), nit->second);
-        return NULL_VOXEL_ID;
+    if(vdef::names.count(name)) {
+        spdlog::warn("vdef: name {} is already assigned", name);
+        return false;
     }
 
-    const std::string path1 = name.get_file_path_ext("voxels", "json");
-    const std::string path2 = name.get_file_path_ext("voxels", "jsonc");
+    std::string source = {};
 
-    std::string source;
-    if(!util::read(path1, source)) {
-        if(!util::read(path2, source)) {
-            spdlog::error("vdef: {}: {}", name.get(), PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
-            return NULL_VOXEL_ID;
-        }
+    const vfs::path_t path = fmt::format("/voxels/{}.json", name);
+
+    if(!vfs::read_string(path, source)) {
+        spdlog::warn("vdef: {}: {}", path.string(), vfs::get_error());
+        return false;
     }
 
-    JSON_Value *json_val = json_parse_string_with_comments(source.c_str());
-    JSON_Object *json = json_value_get_object(json_val);
+    JSON_Value *jsonv = json_parse_string(source.c_str());
+    JSON_Object *json = json_value_get_object(jsonv);
 
-    if(!json_val) {
-        spdlog::error("vdef: {}: parse error", name.get());
-        return NULL_VOXEL_ID;
+    if(!jsonv) {
+        spdlog::warn("vdef: {}: parse error", path.string());
+        return false;
     }
 
     if(!json) {
-        json_value_free(json_val);
-        spdlog::error("vdef: {}: root is not an object", name.get());
-        return NULL_VOXEL_ID;
+        json_value_free(jsonv);
+        spdlog::warn("vdef: {}: root is not an object", path.string());
+        return false;
     }
 
-    VoxelInfo out = {};
-    out.shape = VOXEL_SHAPE_NONE;
-    out.states.clear();
-    out.name = name;
+    VoxelInfoRoot iroot = {};
+    iroot.name = name;
+    iroot.vec.clear();
 
-    const char *shape = json_object_get_string(json, "shape");
-    static const std::unordered_map<std::string, voxel_shape_t> shapes = {
-        { "none",   VOXEL_SHAPE_NONE    },
-        { "cube",   VOXEL_SHAPE_CUBE    },
-        { "slab",   VOXEL_SHAPE_SLAB    },
-        { "stairs", VOXEL_SHAPE_STAIRS  },
-        { "cross",  VOXEL_SHAPE_CROSS   },
-        { "liquid", VOXEL_SHAPE_LIQUID  },
-    };
+    JSON_Array *states = json_object_get_array(json, "states");
+    size_t num_states = json_array_get_count(states);
 
-    if(const auto it = shapes.find(shape ? shape : std::string{}); it != shapes.cend()) {
-        out.shape = it->second;
+    if(num_states == 0) {
+        json_value_free(jsonv);
+        spdlog::warn("vdef: {}: voxel has no states", path.string());
+        return false;
     }
-
-    const JSON_Array *states = json_object_get_array(json, "states");
-    const size_t num_states = json_array_get_count(states);
 
     for(size_t i = 0; i < num_states; ++i) {
-        const JSON_Object *node = json_array_get_object(states, i);
+        VoxelInfo info = {};
+        info.draw = VOXEL_DRAW_NODRAW;
+        info.name = iroot.name;
 
-        VoxelInfo::State state = {};
-        state.draw = VOXEL_DRAW_NODRAW;
-        state.textures.fill(std::string{});
-        state.cache.fill(UINT32_MAX);
-
-        const char *draw = json_object_get_string(node, "draw");
-        static const std::unordered_map<std::string, voxel_draw_t> draws = {
-            { "nodraw", VOXEL_DRAW_NODRAW },
-            { "opaque", VOXEL_DRAW_OPAQUE },
-            { "alpha", VOXEL_DRAW_ALPHA },
-            { "fluid", VOXEL_DRAW_FLUID },
-        };
-
-        if(const auto it = draws.find(draw ? draw : std::string{}); it != draws.cend()) {
-            state.draw = it->second;
+        for(size_t j = 0; j < NUM_VOXEL_FACE; ++j) {
+            info.textures[j].cache = UINT32_MAX;
         }
 
-        const JSON_Object *textures = json_object_get_object(node, "textures");
-        const size_t num_textures = json_object_get_count(textures);
+        JSON_Object *pstate = json_array_get_object(states, i);
 
-        for(size_t j = 0; j < num_textures; ++j) {
-            const char *face_str = json_object_get_name(textures, j);
-            static const std::unordered_map<std::string, voxel_face_t> faces = {
-                { "north",      VOXEL_FACE_NORTH    },
-                { "south",      VOXEL_FACE_SOUTH    },
-                { "east",       VOXEL_FACE_EAST     },
-                { "west",       VOXEL_FACE_WEST     },
-                { "top",        VOXEL_FACE_TOP      },
-                { "bottom",     VOXEL_FACE_BOTTOM   },
-                { "cross_1",    VOXEL_FACE_CROSS_1  },
-                { "cross_2",    VOXEL_FACE_CROSS_2  },
+        if(!pstate) {
+            json_value_free(jsonv);
+            spdlog::warn("vdef: {}: state #{} is not an object", path.string(), i);
+            return false;
+        }
+
+        if(const char *str = json_object_get_string(pstate, "draw")) {
+            static const std::unordered_map<std::string, voxel_draw_t> draws = {
+                { "nodraw", VOXEL_DRAW_NODRAW   },
+                { "opaque", VOXEL_DRAW_OPAQUE   },
+                { "alpha",  VOXEL_DRAW_ALPHA    },
+                { "fluid",  VOXEL_DRAW_FLUID    },
             };
 
-            const auto it = faces.find(face_str ? face_str : std::string{});
+            if(const auto it = draws.find(str); it != draws.cend()) {
+                info.draw = it->second;
+            }
+        }
+
+        JSON_Object *textures = json_object_get_object(pstate, "textures");
+        size_t num_textures = json_object_get_count(textures);
+
+        for(size_t j = 0; j < num_textures; ++j) {
+            const char *fstr = json_object_get_name(textures, j);
+            static const std::unordered_map<std::string, voxel_face_t> faces = {
+                { "north",  VOXEL_FACE_NORTH    },
+                { "south",  VOXEL_FACE_SOUTH    },
+                { "east",   VOXEL_FACE_EAST     },
+                { "west",   VOXEL_FACE_WEST     },
+                { "top",    VOXEL_FACE_TOP      },
+                { "bottom", VOXEL_FACE_BOTTOM   },
+            };
+
+            const auto it = faces.find(fstr);
             if(it == faces.cend())
                 continue;
             const auto face = it->second;
 
-            const std::string texname = json_object_get_name(textures, j);
-
-            const JSON_Value *value = json_object_get_value_at(textures, j);
-            const char *cstr = json_value_get_string(value);
-            const std::string texture = cstr ? cstr : std::string{};
-
-            if(texture[0] == '^') {
-                const std::string query = texture.substr(1);
-
-                if(texname == query) {
-                    spdlog::warn("vdef: {}: {}: self-referencing texture", name.get(), texname);
-                    continue;
+            if(const char *tstr = json_value_get_string(json_object_get_value_at(textures, j))) {
+                if(tstr[0] == '^') {
+                    if(const char *qstr = json_object_get_string(json, &tstr[1])) {
+                        const vfs::path_t qpath = vfs::path_t{qstr};
+                        info.textures[face].path = qpath;
+                        vdef::textures.emplace(qpath);
+                        continue;
+                    }
                 }
 
-                const char *qstr = json_object_get_string(textures, query.c_str());
-                const Identifier ident = Identifier{qstr ? qstr : texture};
-                state.textures[face] = ident.get_file_path("textures");
-                spdlog::debug("vdef: {}: {} -> {}", name.get(), texname, state.textures[face]);
-            }
-            else {
-                const Identifier ident = Identifier{texture};
-                state.textures[face] = ident.get_file_path("textures");
-                spdlog::debug("vdef: {}: {} -> {}", name.get(), texname, state.textures[face]);
+                const vfs::path_t tpath = vfs::path_t{tstr};
+                info.textures[face].path = tpath;
+                vdef::textures.emplace(tpath);
             }
         }
 
-        out.states.push_back(state);
+        iroot.vec.push_back(info);
     }
 
-    if(voxels.size() < hint)
-        voxels.resize(hint + 1, nullptr);
-    voxels[hint] = new VoxelInfo{out};
-    name_map[name] = hint;
+    if(vdef::voxels.size() <= id)
+        vdef::voxels.resize(id + 1, nullptr);
+    vdef::voxels[id] = new VoxelInfoRoot{iroot};
 
-    return hint;
+    vdef::names.emplace(name);
+
+    return true;
 }
 
-VoxelInfo *vdef::find(const Identifier &name)
+VoxelInfo *vdef::find(uint32_t id, uint8_t state)
 {
-    const auto it = name_map.find(name);
-    if(it != name_map.cend())
-        return voxels[it->second];
-    return nullptr;
+    if(id >= vdef::voxels.size() || !vdef::voxels[id])
+        return nullptr;
+    if(state >= vdef::voxels[id]->vec.size())
+        return nullptr;
+    return &vdef::voxels[id]->vec[state];
 }
 
-VoxelInfo *vdef::find(uint16_t id)
+VoxelInfo *vdef::find(voxel_t voxel)
 {
-    if(id < voxels.size())
-        return voxels[id];
-    return nullptr;
+    const auto id = get_voxel_id(voxel);
+    const auto state = get_voxel_state(voxel);
+    return vdef::find(id, state);
 }
 
-vdef_iterator vdef::begin()
+void vdef::purge()
 {
-    return voxels.begin();
-}
-
-vdef_iterator vdef::end()
-{
-    return voxels.end();
+    for(auto it : vdef::voxels)
+        delete it;
+    vdef::names.clear();
+    vdef::textures.clear();
+    vdef::voxels.clear();
 }

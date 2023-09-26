@@ -1,0 +1,16 @@
+{
+  "default": "/textures/voxel/dirt.png",
+  "states": [
+    {
+      "draw": "opaque",
+      "textures": {
+        "north":  "^default",
+        "south":  "^default",
+        "east":   "^default",
+        "west":   "^default",
+        "top":    "^default",
+        "bottom": "^default"
+      }
+    }
+  ]
+}

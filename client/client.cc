@@ -5,9 +5,9 @@
 #include <client/client.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
+#include <core/epoch.hh>
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
-#include <shared/epoch.hh>
 #include <spdlog/spdlog.h>
 
 static void on_glfw_error(int code, const char *message)

@@ -1,0 +1,18 @@
+{
+  "default_dirt": "/textures/voxel/dirt.png",
+  "default_side": "/textures/voxel/grass_side.png",
+  "default_top":  "/textures/voxel/grass_top.png",
+  "states": [
+    {
+      "draw": "opaque",
+      "textures": {
+        "north":  "^default_side",
+        "south":  "^default_side",
+        "east":   "^default_side",
+        "west":   "^default_side",
+        "top":    "^default_top",
+        "bottom": "^default_dirt"
+      }
+    }
+  ]
+}

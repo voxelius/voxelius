@@ -1,7 +1,3 @@
-## SPDX-License-Identifier: MPL-2.0
-## This Source Code Form is subject to the terms of the Mozilla Public
-## License, v2.0. If a copy of the MPL was not distributed with this
-## file, You can obtain one at http://mozilla.org/MPL/2.0/.
 cmake_minimum_required(VERSION 3.10)
 project(VOXELIUS LANGUAGES CXX VERSION 0.0.1)
 
@@ -37,6 +33,7 @@ add_subdirectory(deps/stb)
 add_subdirectory(deps/thread_pool)
 find_package(glfw3 3.3 REQUIRED)
 
+add_subdirectory(core)
 add_subdirectory(client)
 add_subdirectory(server)
 add_subdirectory(shared)
