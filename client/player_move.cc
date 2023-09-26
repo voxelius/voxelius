@@ -86,10 +86,8 @@ void player_move::update()
             direction -= DIR_UP;
 
         const auto &head = globals::world.registry.get<HeadComponent>(globals::player);
-        const auto &transform = globals::world.registry.get<TransformComponent>(globals::player);
-
         auto &velocity = globals::world.registry.get<VelocityComponent>(globals::player);
-        velocity.velocity = transform.rotation * quatf_t{head.euler} * direction * 5.0f;
+        velocity.velocity = quatf_t{vec3f_t{head.angles.x, head.angles.y, 0.0f}} * direction * 5.0f;
 
         needs_update = false;
     }

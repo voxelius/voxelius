@@ -8,7 +8,7 @@
 
 struct TransformComponent final {
     vec3f_t position {0.0f, 0.0f, 0.0f};
-    quatf_t rotation {glm::identity<quatf_t>()};
+    vec3f_t angles {0.0f, 0.0f, 0.0f};
 };
 
 #endif/* D8D17F43_6CC4_4F44_83BD_94585F8FB594 */

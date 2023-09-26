@@ -139,8 +139,9 @@ void client_game::update_late()
 {
     glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    VelocityComponent &vel = globals::world.registry.get<VelocityComponent>(globals::player);
-    spdlog::info("VEL: {} {} {} {}", vel.velocity.x, vel.velocity.y, vel.velocity.z, glm::length(vel.velocity));
+    const vec3f_t angles = view::get_angles();
+    const vec3f_t rang = glm::degrees(angles);
+    spdlog::info("ANG: {} {} {}", rang.x, rang.y, rang.z);
 }
 
 void client_game::render()

@@ -21,12 +21,11 @@ void view::update()
     view_matrix = glm::perspective(cxmath::radians(90.0f), screen::get_aspect(), 0.01f, 1024.0f);
 
     if(globals::world.registry.valid(globals::player)) {
-        const auto &hc = globals::world.registry.get<HeadComponent>(globals::player);
-        const auto &tc = globals::world.registry.get<TransformComponent>(globals::player);
-        const quatf_t qa = tc.rotation * quatf_t{hc.euler};
-        view_angles = glm::eulerAngles(qa);
-        view_position = tc.position;
-        view_matrix *= glm::lookAt(tc.position, tc.position + qa * DIR_FORWARD, DIR_UP);
+        const auto &head = globals::world.registry.get<HeadComponent>(globals::player);
+        const auto &transform = globals::world.registry.get<TransformComponent>(globals::player);
+        view_angles = vec3f_t{head.angles.x, head.angles.y, 0.0f};
+        view_position = transform.position;
+        view_matrix *= glm::lookAt(view_position, view_position + quatf_t{view_angles} * DIR_FORWARD, DIR_UP);
     }
 }
 

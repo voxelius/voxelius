@@ -6,7 +6,7 @@
 #include <client/input.hh>
 #include <client/player_look.hh>
 #include <client/screen.hh>
-#include <shared/cxmath.hh>
+#include <shared/angle.hh>
 #include <shared/head.hh>
 #include <shared/world.hh>
 
@@ -23,9 +23,10 @@ static void on_cursor_pos(const CursorPosEvent &event)
         const float dy = event.ypos - previous_cy;
 
         auto &head = globals::world.registry.get<HeadComponent>(globals::player);
-        head.euler.x -= cxmath::radians(dy) * 0.25f; // UNDONE
-        head.euler.y -= cxmath::radians(dx) * 0.25f;
-        head.euler.x = cxmath::clamp(head.euler.x, PITCH_MIN, PITCH_MAX);
+        head.angles.x -= cxmath::radians(dy) * 0.25f; // UNDONE
+        head.angles.y -= cxmath::radians(dx) * 0.25f;
+        head.angles.x = cxmath::clamp(head.angles.x, PITCH_MIN, PITCH_MAX);
+        head.angles = angle::wrap_180_n(head.angles);
     }
 
     previous_cx = event.xpos;
