@@ -5,28 +5,26 @@
 #ifndef C9D5143C_9F77_4370_AA09_61AA3A6C2F37
 #define C9D5143C_9F77_4370_AA09_61AA3A6C2F37
 #include <client/mesh.hh>
-#include <core/types.hh>
+#include <shared/vdef.hh>
 
 struct VoxelVertex final {
-    vec3f_t pos {};
+    vec3f_t position {};
     vec3f_t norm {};
     vec2f_t tex_uv {};
     uint32_t tex_id {};
 };
 
 struct VoxelMeshComponent final {
-    Mesh opaque {};
-    Mesh alpha {};
-    Mesh fluid {};
+    std::array<Mesh, NUM_VOXEL_DRAW> meshes {};
 };
 
 using VoxelMeshBuilder = MeshBuilder<VoxelVertex>;
 
-namespace vmesh
+namespace voxel_mesher
 {
 void init();
 void deinit();
 void update();
-} // namespace vmesh
+} // namespace voxel_mesher
 
 #endif/* C9D5143C_9F77_4370_AA09_61AA3A6C2F37 */

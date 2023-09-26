@@ -3,7 +3,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <algorithm>
-#include <core/cmdline.hh>
+#include <shared/cmdline.hh>
 #include <unordered_map>
 #include <unordered_set>
 #include <ctype.h> // isspace

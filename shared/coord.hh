@@ -19,7 +19,7 @@ struct std::hash<chunk_pos_t> final {
     }
 };
 
-namespace pos
+namespace coord
 {
 constexpr static inline const chunk_pos_t to_chunk(const voxel_pos_t &vpos)
 {
@@ -88,6 +88,6 @@ constexpr static inline const size_t to_index(const local_pos_t &lpos)
 {
     return static_cast<size_t>((lpos.x * CHUNK_SIZE + lpos.z) * CHUNK_SIZE + lpos.y);
 }
-} // namespace pos
+} // namespace coord
 
 #endif/* A26A347B_8002_432F_AD85_2F3FB1FA8F1E */

@@ -40,7 +40,7 @@ Chunk *World::find_chunk(const chunk_pos_t &cpos) const
 void World::remove_chunk(const chunk_pos_t &cpos)
 {
     if(const auto it = chunks.find(cpos); it != chunks.cend()) {
-        globals::dispatcher.trigger(ChunkRemoveEvent {
+        globals::dispatcher.enqueue(ChunkRemoveEvent {
             .world = this,
             .chunk = it->second,
             .cpos = cpos,
@@ -54,26 +54,26 @@ void World::remove_chunk(const chunk_pos_t &cpos)
 
 voxel_t World::get_voxel(const voxel_pos_t &vpos) const
 {
-    return get_voxel(pos::to_chunk(vpos), pos::to_local(vpos));
+    return get_voxel(coord::to_chunk(vpos), coord::to_local(vpos));
 }
 
 voxel_t World::get_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos) const
 {
     if(const auto it = chunks.find(cpos); it != chunks.cend())
-        return it->second->voxels.at(pos::to_index(lpos));
+        return it->second->voxels.at(coord::to_index(lpos));
     return NULL_VOXEL;
 }
 
 void World::set_voxel(voxel_t voxel, const voxel_pos_t &vpos)
 {
-    const auto cpos = pos::to_chunk(vpos);
-    const auto lpos = pos::to_local(vpos);
-    const auto index = pos::to_index(lpos);
+    const auto cpos = coord::to_chunk(vpos);
+    const auto lpos = coord::to_local(vpos);
+    const auto index = coord::to_index(lpos);
 
     Chunk *chunk = create_chunk(cpos);
     chunk->voxels[index] = voxel;
 
-    globals::dispatcher.trigger(VoxelUpdateEvent {
+    globals::dispatcher.enqueue(VoxelUpdateEvent {
         .world = this,
         .chunk = chunk,
         .voxel = voxel,
@@ -86,15 +86,15 @@ void World::set_voxel(voxel_t voxel, const voxel_pos_t &vpos)
 
 void World::set_voxel(voxel_t voxel, const chunk_pos_t &cpos, const local_pos_t &lpos)
 {
-    const auto p_vpos = pos::to_voxel(cpos, lpos);
-    const auto p_cpos = pos::to_chunk(p_vpos);
-    const auto p_lpos = pos::to_local(p_vpos);
-    const auto p_index = pos::to_index(p_lpos);
+    const auto p_vpos = coord::to_voxel(cpos, lpos);
+    const auto p_cpos = coord::to_chunk(p_vpos);
+    const auto p_lpos = coord::to_local(p_vpos);
+    const auto p_index = coord::to_index(p_lpos);
 
     Chunk *chunk = create_chunk(p_cpos);
     chunk->voxels[p_index] = voxel;
 
-    globals::dispatcher.trigger(VoxelUpdateEvent {
+    globals::dispatcher.enqueue(VoxelUpdateEvent {
         .world = this,
         .chunk = chunk,
         .voxel = voxel,
@@ -107,8 +107,20 @@ void World::set_voxel(voxel_t voxel, const chunk_pos_t &cpos, const local_pos_t 
 
 void World::purge()
 {
-    for(const auto it : chunks)
-        remove_chunk(it.first);
+    auto it = chunks.begin();
+
+    while(it != chunks.end()) {
+        globals::dispatcher.enqueue(ChunkRemoveEvent {
+            .world = this,
+            .chunk = it->second,
+            .cpos = it->first,
+        });
+
+        registry.destroy(it->second->entity);
+        delete it->second;
+        it = chunks.erase(it);
+    }
+
     registry.clear();
     chunks.clear();
 }

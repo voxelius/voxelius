@@ -4,10 +4,12 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef BFEEBAB4_33CD_4BFB_B2C6_DA641B4BEDC5
 #define BFEEBAB4_33CD_4BFB_B2C6_DA641B4BEDC5
+#include <client/glxx/fwd.hh>
 #include <entt/fwd.hpp>
 #include <shared/globals.hh>
 
 struct GLFWwindow;
+class GBuffer;
 class World;
 
 namespace globals
@@ -22,8 +24,9 @@ extern uint64_t framecount;
 extern World world;
 extern entt::entity player;
 
-
-
+extern GBuffer gbuffer_opaque;
+extern GBuffer gbuffer_alpha;
+extern GBuffer gbuffer_fluid;
 } // namespace globals
 
 #endif/* BFEEBAB4_33CD_4BFB_B2C6_DA641B4BEDC5 */

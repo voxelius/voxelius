@@ -2,6 +2,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#include <client/gbuffer.hh>
 #include <client/globals.hh>
 #include <shared/world.hh>
 
@@ -14,3 +15,7 @@ uint64_t globals::framecount = 0;
 
 World globals::world = {};
 entt::entity globals::player = entt::null;
+
+GBuffer globals::gbuffer_opaque = {};
+GBuffer globals::gbuffer_alpha = {};
+GBuffer globals::gbuffer_fluid = {};

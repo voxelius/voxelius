@@ -2,12 +2,12 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#include <client/client.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
+#include <client/main.hh>
 #include <client/image.hh>
-#include <core/cmdline.hh>
-#include <core/epoch.hh>
+#include <shared/cmdline.hh>
+#include <shared/epoch.hh>
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
@@ -37,7 +37,7 @@ void client::main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_SAMPLES, 0);
 
-    globals::window = glfwCreateWindow(640, 480, "Client", nullptr, nullptr);
+    globals::window = glfwCreateWindow(1280, 720, "Client", nullptr, nullptr);
 
     if(!globals::window) {
         spdlog::critical("glfw: failed to open a window");

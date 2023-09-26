@@ -33,7 +33,6 @@ add_subdirectory(deps/stb)
 add_subdirectory(deps/thread_pool)
 find_package(glfw3 3.3 REQUIRED)
 
-add_subdirectory(core)
 add_subdirectory(client)
 add_subdirectory(server)
 add_subdirectory(shared)

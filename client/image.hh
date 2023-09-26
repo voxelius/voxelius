@@ -5,13 +5,13 @@
 #ifndef B3D18FD3_A55D_4E01_8C67_46D9B1D6D1E0
 #define B3D18FD3_A55D_4E01_8C67_46D9B1D6D1E0
 #include <client/glxx/pixel_format.hh>
-#include <core/mixin.hh>
-#include <core/vfs.hh>
+#include <shared/mixin.hh>
+#include <shared/vfs.hh>
 #include <string>
 
 class Image final : public mixin::NonCopyable {
 public:
-    constexpr static const glxx::PixelFormat FORMAT = glxx::PixelFormat::R8G8B8_UNORM;
+    constexpr static const glxx::PixelFormat FORMAT = glxx::PixelFormat::R8G8B8A8_UNORM;
 
 public:
     Image() = default;

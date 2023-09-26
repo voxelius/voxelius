@@ -4,11 +4,11 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef D8D17F43_6CC4_4F44_83BD_94585F8FB594
 #define D8D17F43_6CC4_4F44_83BD_94585F8FB594
-#include <core/types.hh>
+#include <shared/types.hh>
 
 struct TransformComponent final {
-    vec3f_t position {};
-    quatf_t rotation {};
+    vec3f_t position {0.0f, 0.0f, 0.0f};
+    quatf_t rotation {glm::identity<quatf_t>()};
 };
 
 #endif/* D8D17F43_6CC4_4F44_83BD_94585F8FB594 */

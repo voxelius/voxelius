@@ -4,10 +4,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef D436CB53_96B6_44CB_9AC4_3C4E375311BB
 #define D436CB53_96B6_44CB_9AC4_3C4E375311BB
-#include <core/types.hh>
+#include <shared/types.hh>
 #include <type_traits>
 
-namespace util
+namespace cxmath
 {
 template<typename T>
 constexpr static inline const T degrees(const T x)
@@ -26,7 +26,7 @@ constexpr static inline const T log2(const T x)
 {
     if(x < 2)
         return 0;
-    return util::log2<T>((x + 1) >> 1) + 1;
+    return cxmath::log2<T>((x + 1) >> 1) + 1;
 }
 
 template<typename T, typename F>
@@ -91,6 +91,6 @@ constexpr static inline const size_t array_size(T(&)[L])
 {
     return L;
 }
-} // namespace util
+} // namespace cxmath
 
 #endif/* D436CB53_96B6_44CB_9AC4_3C4E375311BB */

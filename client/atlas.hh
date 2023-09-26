@@ -5,7 +5,7 @@
 #ifndef F86D32A9_E203_4B86_B07B_280C5F59669C
 #define F86D32A9_E203_4B86_B07B_280C5F59669C
 #include <client/glxx/texture.hh>
-#include <core/vfs.hh>
+#include <shared/vfs.hh>
 
 struct AtlasTexture final {
     uint32_t tex_id {};

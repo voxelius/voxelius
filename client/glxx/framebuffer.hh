@@ -6,7 +6,7 @@
 #define BD1F3414_2439_43B8_AC4E_328F85870738
 #include <client/glxx/renderbuffer.hh>
 #include <client/glxx/texture.hh>
-#include <core/util.hh>
+#include <shared/cxmath.hh>
 
 namespace glxx
 {
@@ -78,7 +78,7 @@ template<typename... AT>
 inline void glxx::Framebuffer::set_fragment_targets(AT &&...args)
 {
     const uint32_t attachments[] = {static_cast<uint32_t>(args)...};
-    glNamedFramebufferDrawBuffers(handle, static_cast<int32_t>(util::array_size(attachments)), attachments);
+    glNamedFramebufferDrawBuffers(handle, static_cast<int32_t>(cxmath::array_size(attachments)), attachments);
 }
 
 inline void glxx::Framebuffer::unbind()

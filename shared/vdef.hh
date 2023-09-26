@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef F5273C9F_B00A_4160_97BD_663B53274569
 #define F5273C9F_B00A_4160_97BD_663B53274569
-#include <core/vfs.hh>
+#include <shared/vfs.hh>
 #include <shared/world.hh>
 #include <unordered_set>
 #include <vector>

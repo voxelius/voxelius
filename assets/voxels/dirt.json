@@ -1,5 +1,5 @@
 {
-  "default": "/textures/voxel/dirt.png",
+  "default": "/textures/voxels/dirt.png",
   "states": [
     {
       "draw": "opaque",

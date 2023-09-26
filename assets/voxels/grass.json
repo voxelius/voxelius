@@ -1,7 +1,7 @@
 {
-  "default_dirt": "/textures/voxel/dirt.png",
-  "default_side": "/textures/voxel/grass_side.png",
-  "default_top":  "/textures/voxel/grass_top.png",
+  "default_dirt": "/textures/voxels/dirt.png",
+  "default_side": "/textures/voxels/grass_side.png",
+  "default_top":  "/textures/voxels/grass_top.png",
   "states": [
     {
       "draw": "opaque",

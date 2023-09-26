@@ -48,7 +48,7 @@ const AtlasTexture *atlas::load(const vfs::path_t &path)
         return &atlas_vec[it->second];
     }
 
-    if(atlas_vec.size() + 1 >= atlas_count) {
+    if(atlas_vec.size() + 1 > atlas_count) {
         spdlog::error("atlas: size exceeded [{}/{}]", atlas_vec.size() + 1, atlas_count);
         return nullptr;
     }

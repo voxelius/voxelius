@@ -2,12 +2,12 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef C6F2BFD2_BE9D_44E0_9DC9_48EA1845AE9A
-#define C6F2BFD2_BE9D_44E0_9DC9_48EA1845AE9A
-#include <shared/types.hh>
+#ifndef BA3AB65D_00CC_47CB_AE09_BD537528FF05
+#define BA3AB65D_00CC_47CB_AE09_BD537528FF05
 
-struct VelocityComponent final {
-    vec3f_t velocity {};
-};
+namespace player_look
+{
+void init();
+} // namespace player_look
 
-#endif/* C6F2BFD2_BE9D_44E0_9DC9_48EA1845AE9A */
+#endif /* BA3AB65D_00CC_47CB_AE09_BD537528FF05 */
