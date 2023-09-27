@@ -19,7 +19,6 @@ constexpr static const size_t MOVE_RT = 3;
 constexpr static const size_t MOVE_UP = 4;
 constexpr static const size_t MOVE_DN = 5;
 
-static bool needs_update = false;
 static std::bitset<8> move_keys = {};
 
 static void on_key(const KeyEvent &event)
@@ -31,31 +30,25 @@ static void on_key(const KeyEvent &event)
         switch(event.key) {
             case GLFW_KEY_W:
             case GLFW_KEY_UP:
-                needs_update = true;
                 move_keys.set(MOVE_FD, act_dn);
                 break;
             case GLFW_KEY_S:
             case GLFW_KEY_DOWN:
-                needs_update = true;
                 move_keys.set(MOVE_BK, act_dn);
                 break;
             case GLFW_KEY_A:
             case GLFW_KEY_LEFT:
-                needs_update = true;
                 move_keys.set(MOVE_LF, act_dn);
                 break;
             case GLFW_KEY_D:
             case GLFW_KEY_RIGHT:
-                needs_update = true;
                 move_keys.set(MOVE_RT, act_dn);
                 break;
             case GLFW_KEY_SPACE:
-                needs_update = true;
                 move_keys.set(MOVE_UP, act_dn);
                 break;
             case GLFW_KEY_LEFT_SHIFT:
             case GLFW_KEY_RIGHT_SHIFT:
-                needs_update = true;
                 move_keys.set(MOVE_DN, act_dn);
                 break;
         }
@@ -69,7 +62,7 @@ void player_move::init()
 
 void player_move::update()
 {
-    if(globals::world.registry.valid(globals::player) && needs_update) {
+    if(globals::world.registry.valid(globals::player)) {
         vec3f_t direction = {0.0f, 0.0f, 0.0f};
 
         if(move_keys[MOVE_FD])
@@ -88,7 +81,5 @@ void player_move::update()
         const auto &head = globals::world.registry.get<HeadComponent>(globals::player);
         auto &velocity = globals::world.registry.get<VelocityComponent>(globals::player);
         velocity.velocity = quatf_t{vec3f_t{head.angles.x, head.angles.y, 0.0f}} * direction * 5.0f;
-
-        needs_update = false;
     }
 }

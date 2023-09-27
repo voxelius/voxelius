@@ -135,7 +135,7 @@ void voxel_renderer::render()
     glDepthFunc(GL_LEQUAL);
 
     // UNDONE: maintain this via a debug setting
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClearDepthf(1.0f);
