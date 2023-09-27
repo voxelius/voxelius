@@ -24,9 +24,11 @@ extern uint64_t framecount;
 extern World world;
 extern entt::entity player;
 
-extern GBuffer gbuffer_opaque;
-extern GBuffer gbuffer_alpha;
-extern GBuffer gbuffer_fluid;
+extern GBuffer gbuffer_solid;
+extern GBuffer gbuffer_cutout;
+extern GBuffer gbuffer_blend;
+extern glxx::Framebuffer deferred_fbo;
+extern glxx::Texture2D deferred_color;
 } // namespace globals
 
 #endif/* BFEEBAB4_33CD_4BFB_B2C6_DA641B4BEDC5 */

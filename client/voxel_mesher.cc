@@ -527,4 +527,9 @@ void voxel_mesher::update()
             break;
         continue;
     }
+
+    if(num_finalized || num_queued) {
+        // Output only when we have something to output
+        spdlog::debug("voxel_mesher: {} {}", num_finalized, num_queued);
+    }
 }

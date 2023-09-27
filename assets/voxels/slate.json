@@ -1,5 +1,5 @@
 {
-  "default": "/textures/voxels/dirt.png",
+  "default": "/textures/voxels/slate.png",
   "states": [
     {
       "draw": "solid",

@@ -16,6 +16,8 @@ uint64_t globals::framecount = 0;
 World globals::world = {};
 entt::entity globals::player = entt::null;
 
-GBuffer globals::gbuffer_opaque = {};
-GBuffer globals::gbuffer_alpha = {};
-GBuffer globals::gbuffer_fluid = {};
+GBuffer globals::gbuffer_solid = {};
+GBuffer globals::gbuffer_cutout = {};
+GBuffer globals::gbuffer_blend = {};
+glxx::Framebuffer globals::deferred_fbo = {};
+glxx::Texture2D globals::deferred_color = {};

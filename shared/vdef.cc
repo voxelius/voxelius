@@ -79,9 +79,9 @@ bool vdef::assign(const std::string &name, uint32_t id)
         if(const char *str = json_object_get_string(pstate, "draw")) {
             static const std::unordered_map<std::string, voxel_draw_t> draws = {
                 { "nodraw", VOXEL_DRAW_NODRAW   },
-                { "opaque", VOXEL_DRAW_OPAQUE   },
-                { "alpha",  VOXEL_DRAW_ALPHA    },
-                { "fluid",  VOXEL_DRAW_FLUID    },
+                { "solid",  VOXEL_DRAW_SOLID    },
+                { "cutout", VOXEL_DRAW_CUTOUT   },
+                { "blend",  VOXEL_DRAW_BLEND    },
             };
 
             if(const auto it = draws.find(str); it != draws.cend()) {

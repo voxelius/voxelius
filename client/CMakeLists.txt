@@ -1,5 +1,6 @@
 add_library(client STATIC
     "${CMAKE_CURRENT_LIST_DIR}/atlas.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/deferred_pass.cc"
     "${CMAKE_CURRENT_LIST_DIR}/game.cc"
     "${CMAKE_CURRENT_LIST_DIR}/gbuffer.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
@@ -8,6 +9,7 @@ add_library(client STATIC
     "${CMAKE_CURRENT_LIST_DIR}/main.cc"
     "${CMAKE_CURRENT_LIST_DIR}/player_look.cc"
     "${CMAKE_CURRENT_LIST_DIR}/player_move.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/postprocess.cc"
     "${CMAKE_CURRENT_LIST_DIR}/screen.cc"
     "${CMAKE_CURRENT_LIST_DIR}/view.cc"
     "${CMAKE_CURRENT_LIST_DIR}/voxel_mesher.cc"

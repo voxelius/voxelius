@@ -2,7 +2,7 @@
   "default": "/textures/voxels/stone.png",
   "states": [
     {
-      "draw": "opaque",
+      "draw": "solid",
       "textures": {
         "north":  "^default",
         "south":  "^default",

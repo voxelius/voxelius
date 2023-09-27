@@ -11,9 +11,9 @@
 
 using voxel_draw_t = unsigned short;
 constexpr static const voxel_draw_t VOXEL_DRAW_NODRAW   = 0xFFFF;
-constexpr static const voxel_draw_t VOXEL_DRAW_OPAQUE   = 0x0000;
-constexpr static const voxel_draw_t VOXEL_DRAW_ALPHA    = 0x0001;
-constexpr static const voxel_draw_t VOXEL_DRAW_FLUID    = 0x0002;
+constexpr static const voxel_draw_t VOXEL_DRAW_SOLID    = 0x0000;
+constexpr static const voxel_draw_t VOXEL_DRAW_CUTOUT   = 0x0001;
+constexpr static const voxel_draw_t VOXEL_DRAW_BLEND    = 0x0002;
 constexpr static const size_t NUM_VOXEL_DRAW = 3;
 
 using voxel_face_t = unsigned short;

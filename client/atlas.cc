@@ -78,6 +78,7 @@ const AtlasTexture *atlas::load(const vfs::path_t &path)
         return &atlas_vec[texture.tex_id];
     }
 
+    spdlog::error("atlas: {}: load error", path.string());
     return nullptr;
 }
 

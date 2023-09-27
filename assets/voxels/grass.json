@@ -4,7 +4,7 @@
   "default_top":  "/textures/voxels/grass_top.png",
   "states": [
     {
-      "draw": "opaque",
+      "draw": "solid",
       "textures": {
         "north":  "^default_side",
         "south":  "^default_side",

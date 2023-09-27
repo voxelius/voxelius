@@ -24,10 +24,14 @@ struct VoxelRender_UBO final {
 
 static glxx::Buffer ubo = {};
 static glxx::Sampler sampler = {};
-static glxx::Program prog_opaque = {};
 static glxx::VertexArray vao = {};
+static glxx::Program program_solid = {};
 
-static void init_program(glxx::Program &prog, const std::string &name)
+static std::vector<entt::entity> chunks_solid = {};
+static std::vector<entt::entity> chunks_cutout = {};
+static std::vector<entt::entity> chunks_blend = {};
+
+static void init_programram(glxx::Program &prog, const std::string &name)
 {
     glxx::Shader vert = {};
     glxx::Shader frag = {};
@@ -36,10 +40,28 @@ static void init_program(glxx::Program &prog, const std::string &name)
     vert.create(GL_VERTEX_SHADER);
     frag.create(GL_FRAGMENT_SHADER);
 
-    if(!vfs::read_string(fmt::format("/shaders/{}.vert", name), source) || !vert.glsl(source))
+    const vfs::path_t vert_path = fmt::format("/shaders/{}.vert", name);
+    const vfs::path_t frag_path = fmt::format("/shaders/{}.frag", name);
+
+    if(!vfs::read_string(vert_path, source)) {
+        spdlog::critical("voxel_renderer: {}: load failed", vert_path.string());
         std::terminate();
-    if(!vfs::read_string(fmt::format("/shaders/{}.frag", name), source) || !frag.glsl(source))
+    }
+
+    if(!vert.glsl(source)) {
+        spdlog::critical("voxel_renderer: {}: compile failed", vert_path.string());
         std::terminate();
+    }
+
+    if(!vfs::read_string(frag_path, source)) {
+        spdlog::critical("voxel_renderer: {}: load failed", frag_path.string());
+        std::terminate();
+    }
+
+    if(!frag.glsl(source)) {
+        spdlog::critical("voxel_renderer: {}: compile failed", frag_path.string());
+        std::terminate();
+    }
 
     prog.create();
     prog.attach(vert);
@@ -53,20 +75,20 @@ static void init_program(glxx::Program &prog, const std::string &name)
 
 void voxel_renderer::init()
 {
-    ubo.create();
-    ubo.storage(sizeof(VoxelRender_UBO), nullptr, GL_DYNAMIC_STORAGE_BIT);
-
     sampler.create();
     sampler.parameter(GL_TEXTURE_WRAP_S, GL_REPEAT);
     sampler.parameter(GL_TEXTURE_WRAP_T, GL_REPEAT);
     sampler.parameter(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     sampler.parameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-    init_program(prog_opaque, "gbuffer_opaque");
-    // init_program(prog_alpha, "gbuffer_alpha");
-    // init_program(prog_fluid, "gbuffer_fluid");
+    ubo.create();
+    ubo.storage(sizeof(VoxelRender_UBO), nullptr, GL_DYNAMIC_STORAGE_BIT);
 
     vao.create();
+
+    init_programram(program_solid, "gbuffer_solid");
+    // init_programram(program_cutout, "gbuffer_cutout");
+    // init_programram(program_blend, "gbuffer_blend");
 
     // Attachment #0: FLOAT3, position
     vao.enable_attribute(0, true);
@@ -91,10 +113,16 @@ void voxel_renderer::init()
 
 void voxel_renderer::deinit()
 {
+    chunks_blend.clear();
+    chunks_cutout.clear();
+    chunks_solid.clear();
+
+    program_solid.destroy();
+
     vao.destroy();
-    prog_opaque.destroy();
-    sampler.destroy();
     ubo.destroy();
+
+    sampler.destroy();
 }
 
 void voxel_renderer::render()
@@ -126,25 +154,31 @@ void voxel_renderer::render()
     screen::get_size(width, height);
     glViewport(0, 0, width, height);
 
+    chunks_solid.clear();
+    chunks_cutout.clear();
+    chunks_blend.clear();
+
     const auto group = globals::world.registry.group(entt::get<VoxelMeshComponent, ChunkComponent>);
+    for(const auto [entity, mesh, chunk] : group.each()) {
+        if(mesh.meshes[VOXEL_DRAW_SOLID].vertices)
+            chunks_solid.push_back(entity);
+        if(mesh.meshes[VOXEL_DRAW_CUTOUT].vertices)
+            chunks_cutout.push_back(entity);
+        if(mesh.meshes[VOXEL_DRAW_BLEND].vertices)
+            chunks_blend.push_back(entity);
+    }
 
-    // Crutch!
-    globals::gbuffer_opaque.get_framebuffer().bind();
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    program_solid.bind();
+    globals::gbuffer_solid.get_framebuffer().bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    for(const auto entity : chunks_solid) {
+        const auto &chunk = globals::world.registry.get<ChunkComponent>(entity);
+        const auto &mesh = globals::world.registry.get<VoxelMeshComponent>(entity);
+        const auto &mref = mesh.meshes[VOXEL_DRAW_SOLID];
 
-    for(const auto [entity, mc, chunk] : group.each()) {
-        uniforms.chunk = vec4f_t{coord::to_world(chunk.cpos), 0.0f};
+        const auto wcpos = coord::to_world(chunk.cpos);
+        uniforms.chunk = vec4f_t{wcpos.x, wcpos.y, wcpos.z, 0.0f};
         ubo.write(0, sizeof(uniforms), &uniforms);
-
-        // Crutch!
-        const Mesh &mref = mc.meshes[VOXEL_DRAW_OPAQUE];
-
-        // Crutch!
-        prog_opaque.bind();
-
-        // Crutch!
-        globals::gbuffer_opaque.get_framebuffer().bind();
 
         vao.set_vertex_buffer(0, mref.vbo, sizeof(VoxelVertex));
 
