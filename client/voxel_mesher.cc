@@ -244,7 +244,7 @@ void VMeshWorker::process()
                                 unsigned int qh;
 
                                 // Quad width
-                                for(qw = 1U; (mpos + qw) < CHUNK_SIZE && mask[mpos + qw]; ++qw);
+                                for(qw = 1U; (i + qw) < CHUNK_SIZE && mask[mpos + qw]; ++qw);
 
                                 // Quad height
                                 bool qh_complete = false;

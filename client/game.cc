@@ -109,7 +109,7 @@ void client_game::init_late()
     }
 
     for(int xz = 0; xz < 8; ++xz) {
-        globals::world.set_voxel(0x000002, voxel_pos_t{xz, 18, xz});
+        globals::world.set_voxel(0x000002, voxel_pos_t{xz / 2, 18, xz});
     }
 
     spdlog::info("spawning local player");
