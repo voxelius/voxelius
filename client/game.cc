@@ -96,16 +96,16 @@ void client_game::init_late()
         }
     }
 
-    for(int i = 0; i < 16; ++i) {
-        for(int j = 0; j < 16; ++j) {
-            for(int k = 0; k < 1; ++k) {
+    for(int i = 0; i < 32; ++i) {
+        for(int j = 0; j < 32; ++j) {
+            for(int k = 0; k < 2; ++k) {
                 globals::world.set_voxel(0x00000001, voxel_pos_t{i, k, j});
             }
         }
     }
 
-    for(int i = 0; i < 4; ++i) {
-       globals::world.set_voxel(0x00000001, voxel_pos_t{i, 1, i});
+    for(int i = 0; i < 8; ++i) {
+       globals::world.set_voxel(0x00000001, voxel_pos_t{i, 2, i});
     }
 }
 
@@ -137,11 +137,8 @@ void client_game::update()
 
 void client_game::update_late()
 {
+    // FIXME: there should be a way to release the cursor
     glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-    const vec3f_t angles = view::get_angles();
-    const vec3f_t rang = glm::degrees(angles);
-    spdlog::info("ANG: {} {} {}", rang.x, rang.y, rang.z);
 }
 
 void client_game::render()

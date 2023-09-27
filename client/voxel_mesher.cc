@@ -220,7 +220,7 @@ void VMeshWorker::process()
 
                 local_pos_t x = {0, 0, 0};
 
-                while(x[d] < CHUNK_SIZE) {
+                for(x[d] = 0; x[d] < CHUNK_SIZE;) {
                     size_t mpos;
 
                     mask.fill(false);
@@ -238,9 +238,7 @@ void VMeshWorker::process()
 
                     mpos = 0;
                     for(unsigned int j = 0U; j < CHUNK_SIZE; ++j) {
-                        unsigned int i = 0U;
-
-                        while(i < CHUNK_SIZE) {
+                        for(unsigned int i = 0U; i < CHUNK_SIZE;) {
                             if(mask[mpos]) {
                                 unsigned int qw;
                                 unsigned int qh;
@@ -270,9 +268,10 @@ void VMeshWorker::process()
                                 vec3f_t pos = vec3f_t{x};
 
                                 if(q[d] < 0) {
-                                    // If the vistest direction is negative,
-                                    // the resulting face needs to be nudged
-                                    // in its direction... for some reason?
+                                    // Since we increased x[d] before, faces
+                                    // with positive normals are in their place
+                                    // but faces with negative normals need to
+                                    // be nudged in the normal's direction.
                                     pos[d] += static_cast<float>(q[d]);
                                 }
 
@@ -363,24 +362,6 @@ void VMeshWorker::process()
     }
 }
 
-#if 0
-                                i += qw;
-                                mpos += qw;
-                            }
-                            else {
-                                ++i;
-                                ++mpos;
-                            }
-
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-#endif
-
 void VMeshWorker::finalize(entt::entity entity)
 {
     auto &mc = globals::world.registry.get_or_emplace<VoxelMeshComponent>(entity);
@@ -426,8 +407,22 @@ struct NeedsMeshingComponent final {};
 
 static void on_chunk_create(const ChunkCreateEvent &event)
 {
-    // FIXME: queue neighbours as well
+    const std::array<chunk_pos_t, 6> neighbours = {
+        event.cpos + chunk_pos_t{0, 0, 1},
+        event.cpos - chunk_pos_t{0, 0, 1},
+        event.cpos + chunk_pos_t{0, 1, 0},
+        event.cpos - chunk_pos_t{0, 1, 0},
+        event.cpos + chunk_pos_t{1, 0, 0},
+        event.cpos - chunk_pos_t{1, 0, 0},
+    };
+
     event.world->registry.emplace_or_replace<NeedsMeshingComponent>(event.chunk->entity);
+
+    for(const auto ncpos : neighbours) {
+        if(const Chunk *nchunk = event.world->find_chunk(ncpos)) {
+            event.world->registry.emplace_or_replace<NeedsMeshingComponent>(nchunk->entity);
+        }
+    }
 }
 
 static void on_chunk_remove(const ChunkRemoveEvent &event)
@@ -466,8 +461,8 @@ static void on_voxel_update(const VoxelUpdateEvent &event)
     }
 
     for(const chunk_pos_t &ncpos : neighbours) {
-        if(const Chunk *nchunk = globals::world.find_chunk(ncpos)) {
-            globals::world.registry.emplace_or_replace<NeedsMeshingComponent>(nchunk->entity);
+        if(const Chunk *nchunk = event.world->find_chunk(ncpos)) {
+            event.world->registry.emplace_or_replace<NeedsMeshingComponent>(nchunk->entity);
         }
     }
 }
@@ -489,32 +484,20 @@ void voxel_mesher::deinit()
 
 void voxel_mesher::update()
 {
-    const auto group = globals::world.registry.group<NeedsMeshingComponent>(entt::get<ChunkComponent>);
-    for(const auto [entity, chunk] : group.each()) {
-        if(workers.find(chunk.cpos) == workers.cend()) {
-            globals::world.registry.remove<NeedsMeshingComponent>(entity);
-            VMeshWorker worker = {};
-            worker.cpos = chunk.cpos;
-            worker.prepare();
-            worker.process();
-            worker.finalize(entity);
-        }
-    }
+    size_t num_queued = 0;
+    size_t num_finalized = 0;
 
-#if 0
-    size_t finalized = 0;
-    auto worker = workers.begin();
-    while(worker != workers.cend()) {
+    for(auto worker = workers.begin(); worker != workers.end();) {
         if(worker->second->future.valid()) {
             if(worker->second->future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
                 if(const Chunk *chunk = globals::world.find_chunk(worker->second->cpos)) {
                     worker->second->finalize(chunk->entity);
-                    ++finalized;
+                    ++num_finalized;
                 }
 
                 worker = workers.erase(worker);
 
-                if(finalized >= MESHER_TASKS_PER_FRAME)
+                if(num_finalized >= MESHER_TASKS_PER_FRAME)
                     break;
                 continue;
             }
@@ -523,27 +506,25 @@ void voxel_mesher::update()
         ++worker;
     }
 
-    size_t queued = 0;
     const auto group = globals::world.registry.group<NeedsMeshingComponent>(entt::get<ChunkComponent>);
+
     for(const auto [entity, chunk] : group.each()) {
         if(workers.find(chunk.cpos) == workers.cend()) {
             globals::world.registry.remove<NeedsMeshingComponent>(entity);
 
             auto &worker = workers.emplace(chunk.cpos, std::make_unique<VMeshWorker>()).first->second;
             worker->cpos = chunk.cpos;
-
             worker->prepare();
 
-            // UNDONE: if the player is within one chunk radius,
-            // we might want to simply go with blocking worker->process().
+            // FIXME: have a Sodium-like setting to force nearby chunks
+            // to be meshed in the main thread to avoid visual glitches
             worker->future = workers_pool.submit(std::bind(&VMeshWorker::process, worker.get()));
 
-            ++queued;
+            ++num_queued;
         }
 
-        if(queued >= MESHER_TASKS_PER_FRAME)
+        if(num_queued >= MESHER_TASKS_PER_FRAME)
             break;
         continue;
     }
-#endif
 }

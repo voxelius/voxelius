@@ -107,9 +107,7 @@ void World::set_voxel(voxel_t voxel, const chunk_pos_t &cpos, const local_pos_t 
 
 void World::purge()
 {
-    auto it = chunks.begin();
-
-    while(it != chunks.end()) {
+    for(auto it = chunks.begin(); it != chunks.end();) {
         globals::dispatcher.enqueue(ChunkRemoveEvent {
             .world = this,
             .chunk = it->second,
