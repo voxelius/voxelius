@@ -16,10 +16,7 @@ class Object : public mixin::NonCopyable {
 public:
     Object() = default;
     virtual ~Object();
-    template<typename... AT>
-    void create(AT &&...args);
-    template<typename... AT>
-    void destroy(AT &&...args);
+    void destroy();
     constexpr bool valid() const;
     constexpr uint32_t get() const;
 
@@ -35,17 +32,9 @@ inline glxx::Object<T>::~Object()
 }
 
 template<typename T>
-template<typename... AT>
-inline void glxx::Object<T>::create(AT &&...args)
+inline void glxx::Object<T>::destroy()
 {
-    static_cast<T *>(this)->create(std::forward<AT>(args)...);
-}
-
-template<typename T>
-template<typename... AT>
-inline void glxx::Object<T>::destroy(AT &&...args)
-{
-    static_cast<T *>(this)->destroy(std::forward<AT>(args)...);
+    static_cast<T *>(this)->destroy();
 }
 
 template<typename T>
