@@ -1,15 +1,14 @@
 {
-  "default": "/textures/voxels/stone.png",
   "states": [
     {
       "draw": "solid",
       "textures": {
-        "north":  "^default",
-        "south":  "^default",
-        "east":   "^default",
-        "west":   "^default",
-        "top":    "^default",
-        "bottom": "^default"
+        "north":  ["/textures/voxels/stone.png"],
+        "south":  ["/textures/voxels/stone.png"],
+        "east":   ["/textures/voxels/stone.png"],
+        "west":   ["/textures/voxels/stone.png"],
+        "top":    ["/textures/voxels/stone.png"],
+        "bottom": ["/textures/voxels/stone.png"]
       }
     }
   ]

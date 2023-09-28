@@ -5,12 +5,15 @@
 #include <client/atlas.hh>
 #include <client/globals.hh>
 #include <client/voxel_mesher.hh>
+#include <client/voxel_vertex.hh>
 #include <shared/cxmath.hh>
 #include <shared/world.hh>
 #include <shared/vdef.hh>
 #include <spdlog/spdlog.h>
 #include <thread_pool.hpp>
 #include <unordered_set>
+
+using VoxelMeshBuilder = MeshBuilder<VoxelVertex>;
 
 using chunk_cache_id_t = unsigned short;
 constexpr static const chunk_cache_id_t CHUNK_CACHE_ITSELF  = 0x0000;
@@ -184,13 +187,12 @@ void VMeshWorker::process()
             for(voxel_face_t face = 0; face < NUM_VOXEL_FACE; ++face) {
                 std::array<bool, CHUNK_AREA> mask = {};
 
-                const AtlasTexture *atex = atlas::find(info->textures[face].cache);
+                const VoxelTexture &vtex = info->textures[face];
 
-                if(atex == nullptr) {
-                    // FIX 2023-09-26:
-                    // The vdef cache is now set up right after
-                    // we fill it up since we now can iterate through
-                    // all the textures found in the table.
+                if(vtex.paths.empty()) {
+                    // Something went TERRIBLY WRONG
+                    // either during altas setup or during
+                    // voxel_anims::construct()
                     continue;
                 }
 
@@ -276,7 +278,7 @@ void VMeshWorker::process()
                                 }
 
                                 vec2f_t uvs[4] = {};
-                                vec2f_t tc = vec2f_t{qw, qh} * atex->max_uv;
+                                vec2f_t tc = vec2f_t{qw, qh};
 
                                 switch(face) {
                                     case VOXEL_FACE_WEST:
@@ -324,18 +326,20 @@ void VMeshWorker::process()
                                 dv[v] = static_cast<float>(qh);
 
                                 VoxelVertex verts[4] = {};
+                                const uint16_t tex_off = vtex.offset;
+                                const uint16_t tex_frames = vtex.paths.size();
 
                                 if(q[d] < 0) {
-                                    verts[0] = VoxelVertex{pos, norm, uvs[0], atex->tex_id};
-                                    verts[1] = VoxelVertex{pos + dv, norm, uvs[1], atex->tex_id};
-                                    verts[2] = VoxelVertex{pos + du + dv, norm, uvs[2], atex->tex_id};
-                                    verts[3] = VoxelVertex{pos + du, norm, uvs[3], atex->tex_id};
+                                    verts[0] = VoxelVertex{pos, norm, uvs[0], tex_off, tex_frames};
+                                    verts[1] = VoxelVertex{pos + dv, norm, uvs[1], tex_off, tex_frames};
+                                    verts[2] = VoxelVertex{pos + du + dv, norm, uvs[2], tex_off, tex_frames};
+                                    verts[3] = VoxelVertex{pos + du, norm, uvs[3], tex_off, tex_frames};
                                 }
                                 else {
-                                    verts[0] = VoxelVertex{pos, norm, uvs[0], atex->tex_id};
-                                    verts[1] = VoxelVertex{pos + du, norm, uvs[1], atex->tex_id};
-                                    verts[2] = VoxelVertex{pos + dv + du, norm, uvs[2], atex->tex_id};
-                                    verts[3] = VoxelVertex{pos + dv, norm, uvs[3], atex->tex_id};
+                                    verts[0] = VoxelVertex{pos, norm, uvs[0], tex_off, tex_frames};
+                                    verts[1] = VoxelVertex{pos + du, norm, uvs[1], tex_off, tex_frames};
+                                    verts[2] = VoxelVertex{pos + dv + du, norm, uvs[2], tex_off, tex_frames};
+                                    verts[3] = VoxelVertex{pos + dv, norm, uvs[3], tex_off, tex_frames};
                                 }
 
                                 VoxelMeshBuilder &builder = builders[info->draw];

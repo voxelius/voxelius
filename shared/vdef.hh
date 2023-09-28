@@ -26,8 +26,8 @@ constexpr static const voxel_face_t VOXEL_FACE_BOTTOM   = 0x0005;
 constexpr static const size_t NUM_VOXEL_FACE = 6;
 
 struct VoxelTexture final {
-    vfs::path_t path {};
-    uint32_t cache {};
+    std::vector<vfs::path_t> paths {};
+    uint16_t offset {};
 };
 
 struct VoxelInfo final {

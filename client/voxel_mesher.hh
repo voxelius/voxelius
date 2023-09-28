@@ -7,18 +7,9 @@
 #include <client/mesh.hh>
 #include <shared/vdef.hh>
 
-struct VoxelVertex final {
-    vec3f_t position {};
-    vec3f_t norm {};
-    vec2f_t tex_uv {};
-    uint32_t tex_id {};
-};
-
 struct VoxelMeshComponent final {
     std::array<Mesh, NUM_VOXEL_DRAW> meshes {};
 };
-
-using VoxelMeshBuilder = MeshBuilder<VoxelVertex>;
 
 namespace voxel_mesher
 {

@@ -65,7 +65,8 @@ bool vdef::assign(const std::string &name, uint32_t id)
         info.name = iroot.name;
 
         for(size_t j = 0; j < NUM_VOXEL_FACE; ++j) {
-            info.textures[j].cache = UINT32_MAX;
+            info.textures[j].paths.clear();
+            info.textures[j].offset = UINT16_MAX;
         }
 
         JSON_Object *pstate = json_array_get_object(states, i);
@@ -108,19 +109,16 @@ bool vdef::assign(const std::string &name, uint32_t id)
                 continue;
             const auto face = it->second;
 
-            if(const char *tstr = json_value_get_string(json_object_get_value_at(textures, j))) {
-                if(tstr[0] == '^') {
-                    if(const char *qstr = json_object_get_string(json, &tstr[1])) {
-                        const vfs::path_t qpath = vfs::path_t{qstr};
-                        info.textures[face].path = qpath;
-                        vdef::textures.emplace(qpath);
-                        continue;
-                    }
-                }
+            JSON_Value *pathsv = json_object_get_value_at(textures, j);
+            JSON_Array *paths = json_value_get_array(pathsv);
+            size_t num_paths = json_array_get_count(paths);
 
-                const vfs::path_t tpath = vfs::path_t{tstr};
-                info.textures[face].path = tpath;
-                vdef::textures.emplace(tpath);
+            for(size_t k = 0; k < num_paths; ++k) {
+                if(const char *tstr = json_array_get_string(paths, k)) {
+                    info.textures[face].paths.push_back(tstr);
+                    vdef::textures.emplace(tstr);
+                    continue;
+                }
             }
         }
 

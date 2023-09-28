@@ -3,10 +3,11 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #version 450 core
+#pragma import common
 
-in vertex_interface {
-    vec3 texcoord;
-    vec3 normal;
+inout vertex_interface {
+    vec3 norm;
+    vec3 uvw;
 } vert;
 
 layout(location = 0) out vec4 target_albedo;
@@ -16,7 +17,7 @@ layout(binding = 0) uniform sampler2DArray textures;
 
 void main(void)
 {
-    target_albedo = texture(textures, vert.texcoord);
-    target_normal.xyz = normalize(vert.normal);
+    target_albedo = texture(textures, vert.uvw);
+    target_normal.xyz = normalize(vert.norm);
     target_normal.w = 0.0;
 }

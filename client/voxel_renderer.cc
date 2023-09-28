@@ -9,9 +9,12 @@
 #include <client/glxx/sampler.hh>
 #include <client/glxx/vertex_array.hh>
 #include <client/screen.hh>
+#include <client/shaders.hh>
 #include <client/view.hh>
+#include <client/voxel_anims.hh>
 #include <client/voxel_mesher.hh>
 #include <client/voxel_renderer.hh>
+#include <client/voxel_vertex.hh>
 #include <shared/types.hh>
 #include <shared/vfs.hh>
 #include <shared/world.hh>
@@ -31,7 +34,7 @@ static std::vector<entt::entity> chunks_solid = {};
 static std::vector<entt::entity> chunks_cutout = {};
 static std::vector<entt::entity> chunks_blend = {};
 
-static void init_programram(glxx::Program &prog, const std::string &name)
+static void init_program(glxx::Program &prog, const std::string &name)
 {
     glxx::Shader vert = {};
     glxx::Shader frag = {};
@@ -40,28 +43,10 @@ static void init_programram(glxx::Program &prog, const std::string &name)
     vert.create(GL_VERTEX_SHADER);
     frag.create(GL_FRAGMENT_SHADER);
 
-    const vfs::path_t vert_path = fmt::format("/shaders/{}.vert", name);
-    const vfs::path_t frag_path = fmt::format("/shaders/{}.frag", name);
-
-    if(!vfs::read_string(vert_path, source)) {
-        spdlog::critical("voxel_renderer: {}: load failed", vert_path.string());
+    if(!shaders::compile(vert, fmt::format("/shaders/{}.vert", name)))
         std::terminate();
-    }
-
-    if(!vert.glsl(source)) {
-        spdlog::critical("voxel_renderer: {}: compile failed", vert_path.string());
+    if(!shaders::compile(frag, fmt::format("/shaders/{}.frag", name)))
         std::terminate();
-    }
-
-    if(!vfs::read_string(frag_path, source)) {
-        spdlog::critical("voxel_renderer: {}: load failed", frag_path.string());
-        std::terminate();
-    }
-
-    if(!frag.glsl(source)) {
-        spdlog::critical("voxel_renderer: {}: compile failed", frag_path.string());
-        std::terminate();
-    }
 
     prog.create();
     prog.attach(vert);
@@ -86,29 +71,11 @@ void voxel_renderer::init()
 
     vao.create();
 
-    init_programram(program_solid, "gbuffer_solid");
-    // init_programram(program_cutout, "gbuffer_cutout");
-    // init_programram(program_blend, "gbuffer_blend");
+    VoxelVertex::setup(vao);
 
-    // Attachment #0: FLOAT3, position
-    vao.enable_attribute(0, true);
-    vao.set_attribute_format(0, GL_FLOAT, 3, offsetof(VoxelVertex, position), false);
-    vao.set_attribute_binding(0, 0);
-
-    // Attachment #1: FLOAT3, normal
-    vao.enable_attribute(1, true);
-    vao.set_attribute_format(1, GL_FLOAT, 3, offsetof(VoxelVertex, norm), false);
-    vao.set_attribute_binding(1, 0);
-
-    // Attachment #2: FLOAT2, UV coords
-    vao.enable_attribute(2, true);
-    vao.set_attribute_format(2, GL_FLOAT, 2, offsetof(VoxelVertex, tex_uv), false);
-    vao.set_attribute_binding(2, 0);
-
-    // Attachment #3: UINT1, atlas index
-    vao.enable_attribute(3, true);
-    vao.set_attribute_format(3, GL_UNSIGNED_INT, 1, offsetof(VoxelVertex, tex_id), false);
-    vao.set_attribute_binding(3, 0);
+    init_program(program_solid, "gbuffer_solid");
+    // init_program(program_cutout, "gbuffer_cutout");
+    // init_program(program_blend, "gbuffer_blend");
 }
 
 void voxel_renderer::deinit()
@@ -150,6 +117,8 @@ void voxel_renderer::render()
     uniforms.vpmat = view::get_matrix();
     ubo.bind_base(GL_UNIFORM_BUFFER, 1);
 
+    voxel_anims::bind_ssbo();
+
     int width, height;
     screen::get_size(width, height);
     glViewport(0, 0, width, height);
@@ -180,7 +149,7 @@ void voxel_renderer::render()
         uniforms.chunk = vec4f_t{wcpos.x, wcpos.y, wcpos.z, 0.0f};
         ubo.write(0, sizeof(uniforms), &uniforms);
 
-        vao.set_vertex_buffer(0, mref.vbo, sizeof(VoxelVertex));
+        vao.set_vertex_buffer(VOXEL_VERTEX_VBO_BINDING, mref.vbo, sizeof(VoxelVertex));
 
         glDrawArrays(GL_TRIANGLES, 0, mref.vertices);
     }

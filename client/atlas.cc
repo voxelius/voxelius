@@ -66,16 +66,14 @@ const AtlasTexture *atlas::load(const vfs::path_t &path)
         }
 
         AtlasTexture texture = {};
-        texture.tex_id = atlas_vec.size();
-        texture.max_uv.x = static_cast<float>(iwidth) / static_cast<float>(atlas_width);
-        texture.max_uv.y = static_cast<float>(iheight) / static_cast<float>(atlas_height);
+        texture.texture = atlas_vec.size();
 
-        atlas_obj.write(texture.tex_id, 0, 0, iwidth, iheight, Image::FORMAT, image.data());
+        atlas_obj.write(texture.texture, 0, 0, iwidth, iheight, Image::FORMAT, image.data());
 
-        atlas_map.emplace(path, texture.tex_id);
+        atlas_map.emplace(path, texture.texture);
         atlas_vec.push_back(texture);
 
-        return &atlas_vec[texture.tex_id];
+        return &atlas_vec[texture.texture];
     }
 
     spdlog::error("atlas: {}: load error", path.string());

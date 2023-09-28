@@ -12,9 +12,12 @@
 #include <client/player_move.hh>
 #include <client/postprocess.hh>
 #include <client/screen.hh>
+#include <client/shaders.hh>
 #include <client/view.hh>
+#include <client/voxel_anims.hh>
 #include <client/voxel_mesher.hh>
 #include <client/voxel_renderer.hh>
+#include <client/voxel_vertex.hh>
 #include <shared/head.hh>
 #include <shared/inertial.hh>
 #include <shared/player.hh>
@@ -51,9 +54,13 @@ void client_game::init()
     input::init();
     screen::init();
 
+    shaders::init();
+    VoxelVertex::init();
+
     player_look::init();
     player_move::init();
 
+    voxel_anims::init();
     voxel_mesher::init();
     voxel_renderer::init();
 
@@ -83,17 +90,7 @@ void client_game::init_late()
         }
     }
 
-    for(VoxelInfoRoot *rinfo : vdef::voxels) {
-        if(rinfo) {
-            for(VoxelInfo &info : rinfo->vec) {
-                for(VoxelTexture &vtex : info.textures) {
-                    if(const AtlasTexture *atex = atlas::find(vtex.path)) {
-                        vtex.cache = atex->tex_id;
-                    }
-                }
-            }
-        }
-    }
+    voxel_anims::construct();
 
     globals::world.create_chunk(chunk_pos_t{0, 0, 0})->voxels.fill(0x000001);
     globals::world.create_chunk(chunk_pos_t{0, 0, 1})->voxels.fill(0x000002);
@@ -136,6 +133,7 @@ void client_game::deinit()
 
     voxel_renderer::deinit();
     voxel_mesher::deinit();
+    voxel_anims::deinit();
 
     // Certain components have their destructors
     // calling OpenGL API functions, which are

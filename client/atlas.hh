@@ -8,8 +8,7 @@
 #include <shared/vfs.hh>
 
 struct AtlasTexture final {
-    uint32_t tex_id {};
-    vec2f_t max_uv {};
+    uint32_t texture {};
 };
 
 namespace atlas
@@ -19,7 +18,7 @@ void generate_mipmap();
 void destroy();
 const AtlasTexture *load(const vfs::path_t &path);
 const AtlasTexture *find(const vfs::path_t &path);
-const AtlasTexture *find(const uint32_t tex_id);
+const AtlasTexture *find(const uint32_t texture);
 const glxx::Texture2DArray &get();
 } // namespace atlas
 

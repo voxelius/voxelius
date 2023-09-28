@@ -1,17 +1,14 @@
 {
-  "default_dirt": "/textures/voxels/dirt.png",
-  "default_side": "/textures/voxels/grass_side.png",
-  "default_top":  "/textures/voxels/grass_top.png",
   "states": [
     {
       "draw": "solid",
       "textures": {
-        "north":  "^default_side",
-        "south":  "^default_side",
-        "east":   "^default_side",
-        "west":   "^default_side",
-        "top":    "^default_top",
-        "bottom": "^default_dirt"
+        "north":  ["/textures/voxels/grass_side.png"],
+        "south":  ["/textures/voxels/grass_side.png"],
+        "east":   ["/textures/voxels/grass_side.png"],
+        "west":   ["/textures/voxels/grass_side.png"],
+        "top":    ["/textures/voxels/grass_top.png"],
+        "bottom": ["/textures/voxels/dirt.png"]
       }
     }
   ]

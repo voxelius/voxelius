@@ -9,6 +9,7 @@
 #include <client/glxx/sampler.hh>
 #include <client/glxx/vertex_array.hh>
 #include <client/screen.hh>
+#include <client/shaders.hh>
 #include <shared/vfs.hh>
 
 static glxx::Sampler sampler = {};
@@ -32,28 +33,10 @@ void postprocess::init()
     vert.create(GL_VERTEX_SHADER);
     frag.create(GL_FRAGMENT_SHADER);
 
-    const vfs::path_t vert_path = "/shaders/postprocess.vert";
-    const vfs::path_t frag_path = "/shaders/postprocess.frag";
-
-    if(!vfs::read_string(vert_path, source)) {
-        spdlog::critical("postprocess: {}: load failed", vert_path.string());
+    if(!shaders::compile(vert, "/shaders/postprocess.vert"))
         std::terminate();
-    }
-
-    if(!vert.glsl(source)) {
-        spdlog::critical("postprocess: {}: compile failed", vert_path.string());
+    if(!shaders::compile(frag, "/shaders/postprocess.frag"))
         std::terminate();
-    }
-
-    if(!vfs::read_string(frag_path, source)) {
-        spdlog::critical("postprocess: {}: load failed", frag_path.string());
-        std::terminate();
-    }
-
-    if(!frag.glsl(source)) {
-        spdlog::critical("postprocess: {}: compile failed", frag_path.string());
-        std::terminate();
-    }
 
     program.create();
     program.attach(vert);
