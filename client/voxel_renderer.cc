@@ -21,7 +21,8 @@
 #include <spdlog/fmt/fmt.h>
 
 struct VoxelRender_UBO final {
-    mat4x4f_t vpmat {};
+    mat4x4f_t viewmat {};
+    vec4u_t timings {};
     vec4f_t chunk {};
 };
 
@@ -94,6 +95,8 @@ void voxel_renderer::deinit()
 
 void voxel_renderer::render()
 {
+    VoxelRender_UBO uniforms = {};
+
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
@@ -113,8 +116,8 @@ void voxel_renderer::render()
 
     sampler.bind(0);
 
-    VoxelRender_UBO uniforms = {};
-    uniforms.vpmat = view::get_matrix();
+    uniforms.viewmat = view::get_matrix();
+    uniforms.timings.x = voxel_anims::frame;
     ubo.bind_base(GL_UNIFORM_BUFFER, 1);
 
     voxel_anims::bind_ssbo();

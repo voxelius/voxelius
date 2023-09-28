@@ -84,9 +84,6 @@ void client::main()
     client_game::init();
     client_game::init_late();
 
-    // UNDONE: we might want to calculate frametime
-    // in the "native" microsecond ticks so it's a good
-    // idea to also store last_curtime as a globalvar.
     uint64_t last_curtime = globals::curtime;
 
     while(!glfwWindowShouldClose(globals::window)) {
@@ -121,7 +118,7 @@ void client::main()
         // later by calling entt::dispatcher::update()
         globals::dispatcher.update();
 
-        globals::framecount++;
+        globals::framecount += 1;
     }
 
     spdlog::info("client: shutdown after {} frames", globals::framecount);

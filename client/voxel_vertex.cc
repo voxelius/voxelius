@@ -8,57 +8,68 @@
 #include <shared/cxmath.hh>
 
 constexpr static const char *voxel_vertex_vert = R"glsl(
-    layout(location = 0) in uint _voxel_vertex_data_x;
-    layout(location = 1) in uint _voxel_vertex_data_y;
-    layout(location = 2) in vec3 _voxel_vertex_data_norm;
-    layout(location = 3) in vec2 _voxel_vertex_data_uv;
-    #define voxel_vertex_norm() _voxel_vertex_data_norm
-    #define voxel_vertex_uv() _voxel_vertex_data_uv
+    layout(location = 0) in uvec4 _vvdat_i;
+
+    // vvdat_i[0]: 3x10-bit vertex position
     vec3 voxel_vertex_position()
     {
         vec3 position;
-        position.x = float(uint(_voxel_vertex_data_x >> 22U) & 0x3FFU) / 512.0 * 32.0;
-        position.y = float(uint(_voxel_vertex_data_x >> 12U) & 0x3FFU) / 512.0 * 32.0;
-        position.z = float(uint(_voxel_vertex_data_x >> 2U) & 0x3FFU) / 512.0 * 32.0;
+        position.x = float((_vvdat_i.x >> 20U) & 0x3FFU) / 511.0 * 16.0;
+        position.y = float((_vvdat_i.x >> 10U) & 0x3FFU) / 511.0 * 16.0;
+        position.z = float((_vvdat_i.x >>  0U) & 0x3FFU) / 511.0 * 16.0;
         return position;
     }
-    uint voxel_vertex_toffset()
+
+    // vvdat_i[1]: 3x10-bit vertex normal
+    vec3 voxel_vertex_normal()
     {
-        return ((_voxel_vertex_data_y & 0xFFFF0000U) >> 16U);
+        vec3 normal;
+        normal.x = float((_vvdat_i.y >> 20U) & 0x3FFU) / 511.0 * 2.0 - 1.0;
+        normal.y = float((_vvdat_i.y >> 10U) & 0x3FFU) / 511.0 * 2.0 - 1.0;
+        normal.z = float((_vvdat_i.y >>  0U) & 0x3FFU) / 511.0 * 2.0 - 1.0;
+        return normal;
     }
-    uint voxel_vertex_tsize()
+
+    // vvdat_i[2]: 2x16-bit texture coords
+    vec2 voxel_vertex_texcoord()
     {
-        return (_voxel_vertex_data_y & 0x0000FFFFU);
+        vec2 texcoord;
+        texcoord.x = float((_vvdat_i.z >> 16U) & 0xFFFFU) / 65535.0 * 32.0;
+        texcoord.y = float((_vvdat_i.z >>  0U) & 0xFFFFU) / 65535.0 * 32.0;
+        return texcoord;
     }
+
+    // vvdat_i[3]: 1x16-bit toffset, 1x16-bit tframes
+    #define voxel_vertex_toffset() ((_vvdat_i.w >> 16U) & 0xFFFFU)
+    #define voxel_vertex_tframes() ((_vvdat_i.w >>  0U) & 0xFFFFU)
 )glsl";
 
-VoxelVertex::VoxelVertex(const vec3f_t &position, const vec3f_t &norm, const vec2f_t &uv, uint16_t toffset, uint16_t tsize)
+VoxelVertex::VoxelVertex(const vec3f_t &position, const vec3f_t &normal, const vec2f_t &uv, uint16_t toffset, uint16_t tframes)
 {
-    data_x |= (static_cast<uint32_t>(position.x / 32.0f * 512.0f) & 0x3FF) << 22;
-    data_x |= (static_cast<uint32_t>(position.y / 32.0f * 512.0f) & 0x3FF) << 12;
-    data_x |= (static_cast<uint32_t>(position.z / 32.0f * 512.0f) & 0x3FF) << 2;
-    data_y |= (static_cast<uint32_t>(toffset) << 16);
-    data_y |= (static_cast<uint32_t>(tsize) << 0);
-    data_norm = norm;
-    data_uv = uv;
+    // vvdat_i[0]: 3x10-bit vertex position
+    vvdat_i[0] |= (static_cast<uint32_t>(position.x / 16.0f * 511.0f) & 0x3FF) << 20;
+    vvdat_i[0] |= (static_cast<uint32_t>(position.y / 16.0f * 511.0f) & 0x3FF) << 10;
+    vvdat_i[0] |= (static_cast<uint32_t>(position.z / 16.0f * 511.0f) & 0x3FF);
+
+    // vvdat_i[1]: 3x10-bit vertex normal
+    vvdat_i[1] |= (static_cast<uint32_t>((0.5f + 0.5f * normal.x) * 511.0f) & 0x3FF) << 20;
+    vvdat_i[1] |= (static_cast<uint32_t>((0.5f + 0.5f * normal.y) * 511.0f) & 0x3FF) << 10;
+    vvdat_i[1] |= (static_cast<uint32_t>((0.5f + 0.5f * normal.z) * 511.0f) & 0x3FF);
+
+    // vvdat_i[2]: 2x16-bit texture coords
+    vvdat_i[2] |= (static_cast<uint32_t>(uv.x / 32.0f * 65535.0f) & 0xFFFF) << 16;
+    vvdat_i[2] |= (static_cast<uint32_t>(uv.y / 32.0f * 65535.0f) & 0xFFFF);
+
+    // vvdat_i[3]: 1x16-bit toffset, 1x16-bit tframes
+    vvdat_i[3] |= 0xFFFF0000 & (toffset << 16);
+    vvdat_i[3] |= 0x0000FFFF & (tframes);
 }
 
 void VoxelVertex::setup(glxx::VertexArray &vao)
 {
     vao.enable_attribute(0, true);
-    vao.enable_attribute(1, true);
-    vao.enable_attribute(2, true);
-    vao.enable_attribute(3, true);
-
-    vao.set_attribute_format(0, GL_UNSIGNED_INT, 1, offsetof(VoxelVertex, data_x), false);
-    vao.set_attribute_format(1, GL_UNSIGNED_INT, 1, offsetof(VoxelVertex, data_y), false);
-    vao.set_attribute_format(2, GL_FLOAT, 3, offsetof(VoxelVertex, data_norm), false);
-    vao.set_attribute_format(3, GL_FLOAT, 2, offsetof(VoxelVertex, data_uv), false);
-
+    vao.set_attribute_format(0, GL_UNSIGNED_INT, 4, offsetof(VoxelVertex, vvdat_i), false);
     vao.set_attribute_binding(0, VOXEL_VERTEX_VBO_BINDING);
-    vao.set_attribute_binding(1, VOXEL_VERTEX_VBO_BINDING);
-    vao.set_attribute_binding(2, VOXEL_VERTEX_VBO_BINDING);
-    vao.set_attribute_binding(3, VOXEL_VERTEX_VBO_BINDING);
 }
 
 void VoxelVertex::init()

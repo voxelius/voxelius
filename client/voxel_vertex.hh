@@ -10,13 +10,14 @@
 constexpr static const uint32_t VOXEL_VERTEX_VBO_BINDING = 0;
 
 struct VoxelVertex final {
-    uint32_t data_x {}; // 3x10-bit position
-    uint32_t data_y {}; // 1x16-bit texture offset, 1x16-bit texture frame count
-    vec3f_t data_norm {};
-    vec2f_t data_uv {};
+    // vvdat_i[0]: 3x10-bit vertex position
+    // vvdat_i[1]: 3x10-bit vertex normal
+    // vvdat_i[2]: 2x16-bit texture coords
+    // vvdat_i[3]: 1x16-bit toffset, 1x16-bit tframes
+    uint32_t vvdat_i[4] {};
 
     VoxelVertex() = default;
-    VoxelVertex(const vec3f_t &position, const vec3f_t &norm, const vec2f_t &uv, uint16_t tex_off, uint16_t tex_frames);
+    VoxelVertex(const vec3f_t &position, const vec3f_t &normal, const vec2f_t &uv, uint16_t toffset, uint16_t tframes);
     static void setup(glxx::VertexArray &vao);
     static void init();
 };

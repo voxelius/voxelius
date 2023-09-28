@@ -7,13 +7,12 @@
 #pragma import voxel_anims
 #pragma import voxel_vertex
 
-inout vertex_interface {
-    vec3 norm;
-    vec3 uvw;
-} vert;
+layout(location = 0) out vec3 normal;
+layout(location = 1) out vec3 texcoord;
 
 layout(std140, binding = 1) uniform VoxelRender_UBO {
-    mat4x4 vpmat;
+    mat4x4 viewmat;
+    uvec4 timings;
     vec4 chunk;
 };
 
@@ -22,16 +21,13 @@ void main(void)
     gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
     gl_Position.xyz += chunk.xyz;
     gl_Position.xyz += voxel_vertex_position();
-    gl_Position = vpmat * gl_Position;
+    gl_Position = viewmat * gl_Position;
 
-    // FIXME
-    const uint frame = 0U;
+    const uint toffset = voxel_vertex_toffset();
+    const uint tframes = voxel_vertex_tframes();
+    const uint atex = voxel_anims[toffset + (timings.x % tframes)];
 
-    const uint tex_offset = voxel_vertex_toffset();
-    const uint tex_size = voxel_vertex_tsize();
-    const uint tex = voxel_anims[tex_offset + (frame % tex_size)];
-
-    vert.norm = voxel_vertex_norm();
-    vert.uvw.xy = voxel_vertex_uv();
-    vert.uvw.z = floor(float(tex) + 0.5);
+    normal = voxel_vertex_normal();
+    texcoord.xy = voxel_vertex_texcoord();
+    texcoord.z = floor(float(atex) + 0.5);
 }

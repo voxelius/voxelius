@@ -6,18 +6,11 @@
 #pragma import common
 #pragma import screenspace
 
-layout(location = 0) inout vec2 uv;
-
-const vec2 verts[8] = {
-    vec2(-1.0, -1.0), vec2(+1.0, -1.0),
-    vec2(+1.0, +1.0), vec2(-1.0, -1.0),
-    vec2(+1.0, +1.0), vec2(-1.0, +1.0),
-    vec2(-1.0, -1.0), vec2(+1.0, +1.0),
-};
+layout(location = 0) out vec2 texcoord;
 
 void main(void)
 {
-    uv = screenspace_texcoord;
+    texcoord = screenspace_texcoord;
     gl_Position.xy = screenspace_position;
     gl_Position.z = 0.0;
     gl_Position.w = 1.0;

@@ -17,13 +17,11 @@ static module_map_t md_frag = {};
 constexpr static const char *common_vert = R"glsl(
     #define FRAG_SHADER 0
     #define VERT_SHADER 1
-    #define inout out
 )glsl";
 
 constexpr static const char *common_frag = R"glsl(
     #define FRAG_SHADER 1
     #define VERT_SHADER 0
-    #define inout in
 )glsl";
 
 constexpr static const char *screenspace_vert = R"glsl(

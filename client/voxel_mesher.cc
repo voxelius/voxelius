@@ -218,7 +218,7 @@ void VMeshWorker::process()
                 const unsigned int u = (d + 1U) % 3U;
                 const unsigned int v = (d + 2U) % 3U;
                 const local_pos_t q = get_face_direction(face);
-                const vec3f_t norm = vec3f_t{q.x, q.y, q.z};
+                const vec3f_t normal = vec3f_t{q.x, q.y, q.z};
 
                 local_pos_t x = {0, 0, 0};
 
@@ -326,20 +326,20 @@ void VMeshWorker::process()
                                 dv[v] = static_cast<float>(qh);
 
                                 VoxelVertex verts[4] = {};
-                                const uint16_t tex_off = vtex.offset;
-                                const uint16_t tex_frames = vtex.paths.size();
+                                const uint16_t toffset = vtex.offset;
+                                const uint16_t tframes = vtex.paths.size();
 
                                 if(q[d] < 0) {
-                                    verts[0] = VoxelVertex{pos, norm, uvs[0], tex_off, tex_frames};
-                                    verts[1] = VoxelVertex{pos + dv, norm, uvs[1], tex_off, tex_frames};
-                                    verts[2] = VoxelVertex{pos + du + dv, norm, uvs[2], tex_off, tex_frames};
-                                    verts[3] = VoxelVertex{pos + du, norm, uvs[3], tex_off, tex_frames};
+                                    verts[0] = VoxelVertex{pos,             normal, uvs[0], toffset, tframes};
+                                    verts[1] = VoxelVertex{pos + dv,        normal, uvs[1], toffset, tframes};
+                                    verts[2] = VoxelVertex{pos + du + dv,   normal, uvs[2], toffset, tframes};
+                                    verts[3] = VoxelVertex{pos + du,        normal, uvs[3], toffset, tframes};
                                 }
                                 else {
-                                    verts[0] = VoxelVertex{pos, norm, uvs[0], tex_off, tex_frames};
-                                    verts[1] = VoxelVertex{pos + du, norm, uvs[1], tex_off, tex_frames};
-                                    verts[2] = VoxelVertex{pos + dv + du, norm, uvs[2], tex_off, tex_frames};
-                                    verts[3] = VoxelVertex{pos + dv, norm, uvs[3], tex_off, tex_frames};
+                                    verts[0] = VoxelVertex{pos,             normal, uvs[0], toffset, tframes};
+                                    verts[1] = VoxelVertex{pos + du,        normal, uvs[1], toffset, tframes};
+                                    verts[2] = VoxelVertex{pos + dv + du,   normal, uvs[2], toffset, tframes};
+                                    verts[3] = VoxelVertex{pos + dv,        normal, uvs[3], toffset, tframes};
                                 }
 
                                 VoxelMeshBuilder &builder = builders[info->draw];

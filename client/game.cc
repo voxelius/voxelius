@@ -80,6 +80,7 @@ void client_game::init_late()
     vdef::assign("slate",   0x000002);
     vdef::assign("dirt",    0x000003);
     vdef::assign("grass",   0x000004);
+    vdef::assign("test",    0x000005);
 
     atlas::create(16, 16, vdef::textures.size());
 
@@ -96,6 +97,7 @@ void client_game::init_late()
     globals::world.create_chunk(chunk_pos_t{0, 0, 1})->voxels.fill(0x000002);
     globals::world.create_chunk(chunk_pos_t{0, 0, 2})->voxels.fill(0x000003);
     globals::world.create_chunk(chunk_pos_t{0, 0, 3})->voxels.fill(0x000004);
+    globals::world.create_chunk(chunk_pos_t{2, 0, 0})->voxels.fill(0x000005);
 
     for(int x = 0; x < 16; ++x) {
         for(int z = 0; z < 16; ++z) {
@@ -150,6 +152,7 @@ void client_game::update()
 
     view::update();
 
+    voxel_anims::update();
     voxel_mesher::update();
 }
 

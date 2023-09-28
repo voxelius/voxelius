@@ -5,10 +5,8 @@
 #version 450 core
 #pragma import common
 
-inout vertex_interface {
-    vec3 norm;
-    vec3 uvw;
-} vert;
+layout(location = 0) in vec3 normal;
+layout(location = 1) in vec3 texcoord;
 
 layout(location = 0) out vec4 target_albedo;
 layout(location = 1) out vec4 target_normal;
@@ -17,7 +15,7 @@ layout(binding = 0) uniform sampler2DArray textures;
 
 void main(void)
 {
-    target_albedo = texture(textures, vert.uvw);
-    target_normal.xyz = normalize(vert.norm);
+    target_albedo = texture(textures, texcoord);
+    target_normal.xyz = normalize(normal);
     target_normal.w = 0.0;
 }

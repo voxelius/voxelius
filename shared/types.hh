@@ -22,8 +22,20 @@
 using vec2f_t = glm::vec<2, float, glm::packed_highp>;
 using vec3f_t = glm::vec<3, float, glm::packed_highp>;
 using vec4f_t = glm::vec<4, float, glm::packed_highp>;
+
+using vec2d_t = glm::vec<2, double, glm::packed_highp>;
+using vec3d_t = glm::vec<3, double, glm::packed_highp>;
+using vec4d_t = glm::vec<4, double, glm::packed_highp>;
+
+using vec2u_t = glm::vec<2, uint32_t, glm::packed_highp>;
+using vec3u_t = glm::vec<3, uint32_t, glm::packed_highp>;
+using vec4u_t = glm::vec<4, uint32_t, glm::packed_highp>;
+
 using mat4x4f_t = glm::mat<4, 4, float, glm::packed_highp>;
+using mat4x4d_t = glm::mat<4, 4, double, glm::packed_highp>;
+
 using quatf_t = glm::qua<float, glm::packed_highp>;
+using quatd_t = glm::qua<double, glm::packed_highp>;
 
 constexpr static const vec3f_t DIR_FORWARD = vec3f_t{0.0f, 0.0f, -1.0f};
 constexpr static const vec3f_t DIR_RIGHT = vec3f_t{1.0f, 0.0f, 0.0f};

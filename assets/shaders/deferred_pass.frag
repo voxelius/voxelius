@@ -5,7 +5,7 @@
 #version 450 core
 #pragma import common
 
-layout(location = 0) inout vec2 uv;
+layout(location = 0) in vec2 texcoord;
 
 layout(location = 0) out vec4 target;
 
@@ -19,8 +19,8 @@ void main(void)
     const vec3 IM_AMBIENT_C = vec3( 0.200,  0.200,  0.200);
 
     // Get data from the gbuffer.
-    const vec4 albedo = texture(solid_albedo, uv);
-    const vec3 normal = texture(solid_normal, uv).xyz;
+    const vec4 albedo = texture(solid_albedo, texcoord);
+    const vec3 normal = texture(solid_normal, texcoord).xyz;
 
     // Calculate constant diffuse
     const float diffuse_c = max(dot(normalize(normal), IM_LIGHT_DIR), 0.0);

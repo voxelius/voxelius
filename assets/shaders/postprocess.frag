@@ -5,7 +5,7 @@
 #version 450 core
 #pragma import common
 
-layout(location = 0) inout vec2 uv;
+layout(location = 0) in vec2 texcoord;
 
 layout(location = 0) out vec4 target;
 
@@ -13,5 +13,5 @@ layout(binding = 0) uniform sampler2D image;
 
 void main(void)
 {
-    target = texture(image, uv);
+    target = texture(image, texcoord);
 }

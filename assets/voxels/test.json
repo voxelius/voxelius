@@ -1,0 +1,15 @@
+{
+  "states": [
+    {
+      "draw": "solid",
+      "textures": {
+        "north":  ["/textures/voxels/test1.png", "/textures/voxels/test2.png", "/textures/voxels/test3.png", "/textures/voxels/test4.png"],
+        "south":  ["/textures/voxels/test1.png", "/textures/voxels/test2.png", "/textures/voxels/test3.png", "/textures/voxels/test4.png"],
+        "east":   ["/textures/voxels/test1.png", "/textures/voxels/test2.png", "/textures/voxels/test3.png", "/textures/voxels/test4.png"],
+        "west":   ["/textures/voxels/test1.png", "/textures/voxels/test2.png", "/textures/voxels/test3.png", "/textures/voxels/test4.png"],
+        "top":    ["/textures/voxels/test1.png", "/textures/voxels/test2.png", "/textures/voxels/test3.png", "/textures/voxels/test4.png"],
+        "bottom": ["/textures/voxels/test1.png", "/textures/voxels/test2.png", "/textures/voxels/test3.png", "/textures/voxels/test4.png"]
+      }
+    }
+  ]
+}
