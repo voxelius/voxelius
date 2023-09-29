@@ -1,14 +1,15 @@
 {
+  "default": "/textures/voxels/dirt.png",
   "states": [
     {
       "draw": "solid",
       "textures": {
-        "north":  ["/textures/voxels/dirt.png"],
-        "south":  ["/textures/voxels/dirt.png"],
-        "east":   ["/textures/voxels/dirt.png"],
-        "west":   ["/textures/voxels/dirt.png"],
-        "top":    ["/textures/voxels/dirt.png"],
-        "bottom": ["/textures/voxels/dirt.png"]
+        "north":  ["^default"],
+        "south":  ["^default"],
+        "east":   ["^default"],
+        "west":   ["^default"],
+        "top":    ["^default"],
+        "bottom": ["^default"]
       }
     }
   ]

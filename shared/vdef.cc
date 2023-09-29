@@ -115,9 +115,16 @@ bool vdef::assign(const std::string &name, uint32_t id)
 
             for(size_t k = 0; k < num_paths; ++k) {
                 if(const char *tstr = json_array_get_string(paths, k)) {
+                    if(tstr[0] == '^') {
+                        if(const char *qstr = json_object_get_string(json, &tstr[1])) {
+                            info.textures[face].paths.push_back(qstr);
+                            vdef::textures.emplace(qstr);
+                            continue;
+                        }
+                    }
+
                     info.textures[face].paths.push_back(tstr);
                     vdef::textures.emplace(tstr);
-                    continue;
                 }
             }
         }

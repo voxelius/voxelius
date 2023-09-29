@@ -1,14 +1,15 @@
 {
+  "default": "/textures/voxels/slate.png",
   "states": [
     {
       "draw": "solid",
       "textures": {
-        "north":  ["/textures/voxels/slate.png"],
-        "south":  ["/textures/voxels/slate.png"],
-        "east":   ["/textures/voxels/slate.png"],
-        "west":   ["/textures/voxels/slate.png"],
-        "top":    ["/textures/voxels/slate.png"],
-        "bottom": ["/textures/voxels/slate.png"]
+        "north":  ["^default"],
+        "south":  ["^default"],
+        "east":   ["^default"],
+        "west":   ["^default"],
+        "top":    ["^default"],
+        "bottom": ["^default"]
       }
     }
   ]
