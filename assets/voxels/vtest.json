@@ -1,8 +1,8 @@
 {
-  "F1": "/textures/voxels/test1.png",
-  "F2": "/textures/voxels/test2.png",
-  "F3": "/textures/voxels/test3.png",
-  "F4": "/textures/voxels/test4.png",
+  "F1": "/textures/voxels/vtest1.png",
+  "F2": "/textures/voxels/vtest2.png",
+  "F3": "/textures/voxels/vtest3.png",
+  "F4": "/textures/voxels/vtest4.png",
   "states": [
     {
       "draw": "solid",

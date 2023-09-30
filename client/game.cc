@@ -71,16 +71,63 @@ void client_game::init()
     globals::dispatcher.sink<ScreenSizeEvent>().connect<&on_screen_size>();
 }
 
+constexpr static const uint32_t STONE   = 1;
+constexpr static const uint32_t SLATE   = 2;
+constexpr static const uint32_t DIRT    = 3;
+constexpr static const uint32_t GRASS   = 4;
+constexpr static const uint32_t VTEST   = 5;
+
+// Surface level for world generation
+constexpr static const int64_t SURFACE = 0;
+
+#include <glm/gtc/noise.hpp>
+
+static voxel_t voxel_at(const voxel_pos_t &vpos)
+{
+    int64_t surf = SURFACE + 16.0f * glm::simplex(vec2f_t{vpos.x, vpos.z} / 64.0f);
+    if(vpos.y <= surf - 64)
+        return make_voxel(SLATE, NULL_VOXEL_STATE);
+    if(vpos.y <= surf - 8)
+        return make_voxel(STONE, NULL_VOXEL_STATE);
+    if(vpos.y <= surf - 1)
+        return make_voxel(DIRT, NULL_VOXEL_STATE);
+    if(vpos.y <= surf)
+        return make_voxel(GRASS, NULL_VOXEL_STATE);
+    return NULL_VOXEL;
+}
+
+static void generate(const chunk_pos_t &cpos)
+{
+    spdlog::trace("generating {} {} {}", cpos.x, cpos.y, cpos.z);
+
+    bool empty = true;
+    voxel_array_t voxels = {};
+
+    for(size_t i = 0; i < CHUNK_VOLUME; ++i) {
+        const auto lpos = coord::to_local(i);
+        const auto vpos = coord::to_voxel(cpos, lpos);
+        const auto voxel = voxel_at(vpos);
+        if(voxel != NULL_VOXEL)
+            empty = false;
+        voxels[i] = voxel;
+    }
+
+    if(!empty) {
+        Chunk *chunk = globals::world.create_chunk(cpos);
+        chunk->voxels = voxels;
+    }
+}
+
 void client_game::init_late()
 {
     screen::init_late();
 
     vdef::purge();
-    vdef::assign("stone",   0x000001);
-    vdef::assign("slate",   0x000002);
-    vdef::assign("dirt",    0x000003);
-    vdef::assign("grass",   0x000004);
-    vdef::assign("test",    0x000005);
+    vdef::assign("stone", STONE);
+    vdef::assign("slate", SLATE);
+    vdef::assign("dirt", DIRT);
+    vdef::assign("grass", GRASS);
+    vdef::assign("vtest", VTEST);
 
     atlas::create(16, 16, vdef::textures.size());
 
@@ -93,22 +140,12 @@ void client_game::init_late()
 
     voxel_anims::construct();
 
-    globals::world.create_chunk(chunk_pos_t{0, 0, 0})->voxels.fill(0x000001);
-    globals::world.create_chunk(chunk_pos_t{0, 0, 1})->voxels.fill(0x000002);
-    globals::world.create_chunk(chunk_pos_t{0, 0, 2})->voxels.fill(0x000003);
-    globals::world.create_chunk(chunk_pos_t{0, 0, 3})->voxels.fill(0x000004);
-    globals::world.create_chunk(chunk_pos_t{2, 0, 0})->voxels.fill(0x000005);
-
-    for(int x = 0; x < 16; ++x) {
-        for(int z = 0; z < 16; ++z) {
-            for(int y = 0; y < 2; ++y) {
-                globals::world.set_voxel(0x000001, voxel_pos_t{x, 16 + y, z});
+    for(int x = -4; x < 3; ++x) {
+        for(int z = -4; z < 3; ++z) {
+            for(int y = -4; y < 2; ++y) {
+                generate(chunk_pos_t{x, y, z});
             }
         }
-    }
-
-    for(int xz = 0; xz < 8; ++xz) {
-        globals::world.set_voxel(0x000002, voxel_pos_t{xz / 2, 18, xz});
     }
 
     spdlog::info("spawning local player");

@@ -45,8 +45,8 @@ void screen::get_size(float &width, float &height)
 {
     int iwidth, iheight;
     glfwGetFramebufferSize(globals::window, &iwidth, &iheight);
-    width = static_cast<float>(width);
-    height = static_cast<float>(height);
+    width = static_cast<float>(iwidth);
+    height = static_cast<float>(iheight);
 }
 
 float screen::get_aspect()
