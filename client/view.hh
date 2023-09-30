@@ -6,13 +6,25 @@
 #define AF5EC318_9471_46CE_B408_CBD968EC6F7C
 #include <shared/coord.hh>
 
+struct ViewValues final {
+    vector3_t angles {};
+    vector3_t position {};
+    vector3_t direction {};
+    vector3f_t lpos_float {};
+    matrix4x4f_t matrix {};
+    chunk_pos_t cpos {};
+};
+
 namespace view
 {
 void update();
 const vector3_t &get_angles();
-const chunk_pos_t &get_cpos();
+const vector3_t &get_position();
+const vector3_t &get_direction();
 const vector3f_t &get_lpos_float();
 const matrix4x4f_t &get_matrix();
+const chunk_pos_t &get_cpos();
+void get_values(ViewValues &vv);
 } // namespace view
 
 #endif/* AF5EC318_9471_46CE_B408_CBD968EC6F7C */

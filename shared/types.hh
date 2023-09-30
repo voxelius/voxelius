@@ -34,15 +34,19 @@ using vector2_t = glm::vec<2, double, glm::packed_highp>;
 using vector3_t = glm::vec<3, double, glm::packed_highp>;
 using vector4_t = glm::vec<4, double, glm::packed_highp>;
 
-constexpr static const vector3f_t DIR_FORWARD = vector3f_t{0.0, 0.0, -1.0};
-constexpr static const vector3f_t DIR_RIGHT = vector3f_t{1.0, 0.0, 0.0};
-constexpr static const vector3f_t DIR_UP = vector3f_t{0.0, 1.0, 0.0};
+constexpr static const vector3_t DIR_FORWARD = vector3_t{0.0, 0.0, -1.0};
+constexpr static const vector3_t DIR_RIGHT = vector3_t{1.0, 0.0, 0.0};
+constexpr static const vector3_t DIR_UP = vector3_t{0.0, 1.0, 0.0};
 
-constexpr static const vector3f_t HDIR_NORTH = vector3f_t{0.0, 0.0, -1.0};
-constexpr static const vector3f_t HDIR_SOUTH = vector3f_t{0.0, 0.0, +1.0};
-constexpr static const vector3f_t HDIR_EAST = vector3f_t{+1.0, 0.0, 0.0};
-constexpr static const vector3f_t HDIR_WEST = vector3f_t{-1.0, 0.0, 0.0};
-constexpr static const vector3f_t HDIR_UP = vector3f_t{0.0, +1.0, 0.0};
-constexpr static const vector3f_t HDIR_DN = vector3f_t{0.0, -1.0, 0.0};
+constexpr static const vector3f_t FDIR_FORWARD = vector3f_t{DIR_FORWARD};
+constexpr static const vector3f_t FDIR_RIGHT = vector3f_t{DIR_RIGHT};
+constexpr static const vector3f_t FDIR_UP = vector3f_t{DIR_UP};
+
+constexpr static const vector3_t HDIR_NORTH = vector3_t{0.0, 0.0, -1.0};
+constexpr static const vector3_t HDIR_SOUTH = vector3_t{0.0, 0.0, +1.0};
+constexpr static const vector3_t HDIR_EAST = vector3_t{+1.0, 0.0, 0.0};
+constexpr static const vector3_t HDIR_WEST = vector3_t{-1.0, 0.0, 0.0};
+constexpr static const vector3_t HDIR_UP = vector3_t{0.0, +1.0, 0.0};
+constexpr static const vector3_t HDIR_DN = vector3_t{0.0, -1.0, 0.0};
 
 #endif/* EC6136EE_DE13_4F6F_98DD_B2F86921CC05 */

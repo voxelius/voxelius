@@ -7,9 +7,9 @@
 #include <functional>
 #include <shared/const.hh>
 
-using chunk_pos_t = glm::vec<3, int32_t, glm::packed_highp>;
-using local_pos_t = glm::vec<3, int16_t, glm::packed_highp>;
-using voxel_pos_t = glm::vec<3, int64_t, glm::packed_highp>;
+using chunk_pos_t = glm::vec<3, int32_t>;
+using local_pos_t = glm::vec<3, int16_t>;
+using voxel_pos_t = glm::vec<3, int64_t>;
 
 template<>
 struct std::hash<chunk_pos_t> final {

@@ -64,7 +64,7 @@ voxel_t World::get_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos) const
     return NULL_VOXEL;
 }
 
-void World::set_voxel(voxel_t voxel, const voxel_pos_t &vpos)
+void World::set_voxel(const voxel_pos_t &vpos, voxel_t voxel)
 {
     const auto cpos = coord::to_chunk(vpos);
     const auto lpos = coord::to_local(vpos);
@@ -84,7 +84,7 @@ void World::set_voxel(voxel_t voxel, const voxel_pos_t &vpos)
     });
 }
 
-void World::set_voxel(voxel_t voxel, const chunk_pos_t &cpos, const local_pos_t &lpos)
+void World::set_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos, voxel_t voxel)
 {
     const auto p_vpos = coord::to_voxel(cpos, lpos);
     const auto p_cpos = coord::to_chunk(p_vpos);
@@ -103,6 +103,80 @@ void World::set_voxel(voxel_t voxel, const chunk_pos_t &cpos, const local_pos_t 
         .vpos = p_vpos,
         .index = p_index,
     });
+}
+
+// https://youtu.be/NbSee-XM7WA
+// https://lodev.org/cgtutor/raycasting.html
+bool World::raycast(RayDDA &out, const vector3_t &start, const vector3_t &direction, double max_distance) const
+{
+    Chunk *chunk = nullptr;
+
+    out.start = start;
+    out.direction = glm::normalize(direction);
+
+    out.lstep.x = glm::abs(1.0 / out.direction.x);
+    out.lstep.y = glm::abs(1.0 / out.direction.y);
+    out.lstep.z = glm::abs(1.0 / out.direction.z);
+
+    // FIXME: why exactly can't we use coord::to_voxel() here?
+    out.vpos.x = cxmath::floor<voxel_pos_t::value_type>(out.start.x);
+    out.vpos.y = cxmath::floor<voxel_pos_t::value_type>(out.start.y);
+    out.vpos.z = cxmath::floor<voxel_pos_t::value_type>(out.start.z);
+
+    for(unsigned int d = 0U; d < 3U; ++d) {
+        if(out.direction[d] < 0.0) {
+            out.lengths[d] = out.lstep[d] * (out.start[d] - out.vpos[d]);
+            out.vstep[d] = -1;            
+        }
+        else {
+            out.lengths[d] = out.lstep[d] * (out.vpos[d] + 1.0 - out.start[d]);
+            out.vstep[d] = +1;
+        }
+    }
+
+    out.cpos = coord::to_chunk(out.vpos);
+    chunk = find_chunk(out.cpos);
+    out.voxel = NULL_VOXEL_ID;
+
+    while(out.distance < max_distance) {
+        bool is_done = true;
+
+        for(unsigned int d = 0U; d < 3U; ++d) {
+            const double u = out.lengths[(d + 1U) % 3U];
+            const double v = out.lengths[(d + 2U) % 3U];
+
+            if(out.lengths[d] < u && out.lengths[d] < v) {
+                out.vpos[d] += out.vstep[d];
+                out.distance = out.lengths[d];
+                out.lengths[d] += out.lstep[d];
+                is_done = false;
+                break;
+            }
+        }
+
+        if(is_done) {
+            // We didn't propagate any
+            // further, we are done then.
+            break;
+        }
+
+        const auto ncpos = coord::to_chunk(out.vpos);
+        if(ncpos != out.cpos) {
+            chunk = find_chunk(ncpos);
+            out.cpos = ncpos;
+        }
+
+        if(chunk) {
+            out.voxel = chunk->voxels.at(coord::to_index(coord::to_local(out.vpos)));
+            if(out.voxel != NULL_VOXEL) {
+                out.wpos = out.start + out.direction * out.distance;
+                return true;
+            }
+        }
+    }
+
+    out.wpos = out.start + out.direction * max_distance;
+    return false;
 }
 
 void World::purge()

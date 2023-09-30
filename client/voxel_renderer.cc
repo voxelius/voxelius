@@ -96,7 +96,10 @@ void voxel_renderer::deinit()
 
 void voxel_renderer::render()
 {
+    ViewValues vv = {};
     VoxelRender_UBO uniforms = {};
+
+    view::get_values(vv);
 
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -119,7 +122,7 @@ void voxel_renderer::render()
 
     sampler.bind(0);
 
-    uniforms.viewmat = view::get_matrix();
+    uniforms.viewmat = vv.matrix;
     uniforms.timings.x = voxel_anims::frame;
     ubo.bind_base(GL_UNIFORM_BUFFER, 1);
 
@@ -151,7 +154,7 @@ void voxel_renderer::render()
         const auto &mesh = globals::world.registry.get<VoxelMeshComponent>(entity);
         const auto &mref = mesh.meshes[VOXEL_DRAW_SOLID];
 
-        const auto wcpos = coord::to_world(chunk.cpos - view::get_cpos());
+        const auto wcpos = coord::to_world(chunk.cpos - vv.cpos);
         uniforms.chunk = vector4_t{wcpos.x, wcpos.y, wcpos.z, 0.0};
         ubo.write(0, sizeof(uniforms), &uniforms);
 

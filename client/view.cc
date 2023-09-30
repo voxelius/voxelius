@@ -10,25 +10,31 @@
 #include <shared/transform.hh>
 #include <shared/world.hh>
 
-static vector3_t view_angles = {};
-static chunk_pos_t view_cpos = {};
-static vector3f_t view_lpos_float = {};
-static matrix4x4f_t view_matrix = {};
+static vector3_t view_angles {};
+static vector3_t view_position {};
+static vector3_t view_direction {};
+static vector3f_t view_lpos_float {};
+static matrix4x4f_t view_matrix {};
+static chunk_pos_t view_cpos {};
 
 void view::update()
 {
-    view_angles = vector3_t{0.0, 0.0, 0.0};
-    view_cpos = chunk_pos_t{0, 0, 0};
-    view_lpos_float = vector3_t{0.0f, 0.0f, 0.0f};
+    view_angles = vector3_t{};
+    view_position = vector3_t{};
+    view_direction = vector3_t{};
+    view_lpos_float = vector3f_t{};
     view_matrix = glm::perspective(cxmath::radians(90.0), screen::get_aspect(), 0.01, 1024.0);
+    view_cpos = chunk_pos_t{};
 
     if(globals::world.registry.valid(globals::player)) {
         const auto &head = globals::world.registry.get<HeadComponent>(globals::player);
         const auto &transform = globals::world.registry.get<TransformComponent>(globals::player);
-        view_angles = transform.angles + vector3_t{head.angles.x, head.angles.y, 0.0};
         view_cpos = coord::to_chunk(coord::to_voxel(transform.position));
-        view_lpos_float = transform.position - coord::to_world(view_cpos);
-        view_matrix *= glm::lookAt(view_lpos_float, view_lpos_float + quaternionf_t{view_angles} * DIR_FORWARD, DIR_UP);
+        view_angles = transform.angles + vector3_t{head.angles.x, head.angles.y, 0.0};
+        view_position = transform.position; // FIXME: head offset?
+        view_direction = quaternion_t{view_angles} * DIR_FORWARD;
+        view_lpos_float = view_position - coord::to_world(view_cpos);
+        view_matrix *= glm::lookAt(view_lpos_float, view_lpos_float + vector3f_t{view_direction}, FDIR_UP);
     }
 }
 
@@ -37,9 +43,14 @@ const vector3_t &view::get_angles()
     return view_angles;
 }
 
-const chunk_pos_t &view::get_cpos()
+const vector3_t &view::get_position()
 {
-    return view_cpos;
+    return view_position;
+}
+
+const vector3_t &view::get_direction()
+{
+    return view_direction;
 }
 
 const vector3f_t &view::get_lpos_float()
@@ -50,4 +61,19 @@ const vector3f_t &view::get_lpos_float()
 const matrix4x4f_t &view::get_matrix()
 {
     return view_matrix;
+}
+
+const chunk_pos_t &view::get_cpos()
+{
+    return view_cpos;
+}
+
+void view::get_values(ViewValues &vv)
+{
+    vv.angles = view_angles;
+    vv.position = view_position;
+    vv.direction = view_direction;
+    vv.lpos_float = view_lpos_float;
+    vv.matrix = view_matrix;
+    vv.cpos = view_cpos;
 }

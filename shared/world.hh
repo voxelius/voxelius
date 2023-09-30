@@ -45,6 +45,22 @@ struct ChunkComponent final {
     chunk_pos_t cpos {};
 };
 
+struct RayDDA final {
+    vector3_t start {};
+    vector3_t direction {};
+
+    Chunk *chunk {nullptr};
+    voxel_t voxel {NULL_VOXEL};
+    chunk_pos_t cpos {};
+    voxel_pos_t vpos {};
+    double distance {};
+    vector3_t wpos {};
+
+    vector3_t lstep {};
+    vector3_t lengths {};
+    voxel_pos_t vstep {};
+};
+
 class World final {
 public:
     Chunk *create_chunk(const chunk_pos_t &cpos);
@@ -53,8 +69,10 @@ public:
 
     voxel_t get_voxel(const voxel_pos_t &vpos) const;
     voxel_t get_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos) const;
-    void set_voxel(voxel_t voxel, const voxel_pos_t &vpos);
-    void set_voxel(voxel_t voxel, const chunk_pos_t &cpos, const local_pos_t &lpos);
+    void set_voxel(const voxel_pos_t &vpos, voxel_t voxel);
+    void set_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos, voxel_t voxel);
+
+    bool raycast(RayDDA &out, const vector3_t &start, const vector3_t &direction, double max_distance) const;
 
     void purge();
 

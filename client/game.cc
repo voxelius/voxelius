@@ -25,6 +25,12 @@
 #include <shared/velocity.hh>
 #include <spdlog/spdlog.h>
 
+constexpr static const uint32_t STONE   = 1;
+constexpr static const uint32_t SLATE   = 2;
+constexpr static const uint32_t DIRT    = 3;
+constexpr static const uint32_t GRASS   = 4;
+constexpr static const uint32_t VTEST   = 5;
+
 static void on_key(const KeyEvent &event)
 {
     if(event.action == GLFW_PRESS) {
@@ -32,6 +38,23 @@ static void on_key(const KeyEvent &event)
             spdlog::info("GLFW_KEY_ESCAPE has been pressed, exiting");
             glfwSetWindowShouldClose(globals::window, true);
             return;
+        }
+    }
+}
+
+static void on_mouse_button(const MouseButtonEvent &event)
+{
+    if(event.action == GLFW_PRESS) {
+        RayDDA ray = {};
+        ViewValues vv = {};
+        view::get_values(vv);
+
+        if(globals::world.raycast(ray, vv.position, vv.direction, 10.0)) {
+            switch(event.button) {
+                case GLFW_MOUSE_BUTTON_LEFT:
+                    globals::world.set_voxel(ray.vpos, NULL_VOXEL);
+                    break;
+            }
         }
     }
 }
@@ -68,14 +91,9 @@ void client_game::init()
     postprocess::init();
 
     globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
+    globals::dispatcher.sink<MouseButtonEvent>().connect<&on_mouse_button>();
     globals::dispatcher.sink<ScreenSizeEvent>().connect<&on_screen_size>();
 }
-
-constexpr static const uint32_t STONE   = 1;
-constexpr static const uint32_t SLATE   = 2;
-constexpr static const uint32_t DIRT    = 3;
-constexpr static const uint32_t GRASS   = 4;
-constexpr static const uint32_t VTEST   = 5;
 
 // Surface level for world generation
 constexpr static const int64_t SURFACE = 0;
