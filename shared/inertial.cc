@@ -6,7 +6,7 @@
 #include <shared/transform.hh>
 #include <shared/velocity.hh>
 
-void inertial::update(World &world, float frametime)
+void inertial::update(World &world, double frametime)
 {
     const auto &group = world.registry.group<VelocityComponent>(entt::get<TransformComponent>);
 

@@ -28,16 +28,16 @@ static void on_mouse_button_event(GLFWwindow *window, int button, int action, in
 static void on_cursor_pos_event(GLFWwindow *window, double xpos, double ypos)
 {
     globals::dispatcher.trigger(CursorPosEvent {
-        .xpos = static_cast<float>(xpos), 
-        .ypos = static_cast<float>(ypos),
+        .xpos = xpos, 
+        .ypos = ypos,
     });
 }
 
 static void on_scroll_event(GLFWwindow *window, double dx, double dy)
 {
     globals::dispatcher.trigger(ScrollEvent {
-        .dx = static_cast<float>(dx),
-        .dy = static_cast<float>(dy),
+        .dx = dx,
+        .dy = dy,
     });
 }
 

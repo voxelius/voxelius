@@ -44,21 +44,21 @@ constexpr static const char *voxel_vertex_vert = R"glsl(
     #define voxel_vertex_tframes() ((_vvdat_i.w >>  0U) & 0xFFFFU)
 )glsl";
 
-VoxelVertex::VoxelVertex(const vector3f_t &position, const vector3f_t &normal, const vector2f_t &uv, uint16_t toffset, uint16_t tframes)
+VoxelVertex::VoxelVertex(const vector3_t &position, const vector3_t &normal, const vector2_t &uv, uint16_t toffset, uint16_t tframes)
 {
     // vvdat_i[0]: 3x10-bit vertex position
-    vvdat_i[0] |= (static_cast<uint32_t>(position.x / 16.0f * 511.0f) & 0x3FF) << 20;
-    vvdat_i[0] |= (static_cast<uint32_t>(position.y / 16.0f * 511.0f) & 0x3FF) << 10;
-    vvdat_i[0] |= (static_cast<uint32_t>(position.z / 16.0f * 511.0f) & 0x3FF);
+    vvdat_i[0] |= (static_cast<uint32_t>(position.x / 16.0 * 511.0) & 0x3FF) << 20;
+    vvdat_i[0] |= (static_cast<uint32_t>(position.y / 16.0 * 511.0) & 0x3FF) << 10;
+    vvdat_i[0] |= (static_cast<uint32_t>(position.z / 16.0 * 511.0) & 0x3FF);
 
     // vvdat_i[1]: 3x10-bit vertex normal
-    vvdat_i[1] |= (static_cast<uint32_t>((0.5f + 0.5f * normal.x) * 511.0f) & 0x3FF) << 20;
-    vvdat_i[1] |= (static_cast<uint32_t>((0.5f + 0.5f * normal.y) * 511.0f) & 0x3FF) << 10;
-    vvdat_i[1] |= (static_cast<uint32_t>((0.5f + 0.5f * normal.z) * 511.0f) & 0x3FF);
+    vvdat_i[1] |= (static_cast<uint32_t>((0.5 + 0.5 * normal.x) * 511.0) & 0x3FF) << 20;
+    vvdat_i[1] |= (static_cast<uint32_t>((0.5 + 0.5 * normal.y) * 511.0) & 0x3FF) << 10;
+    vvdat_i[1] |= (static_cast<uint32_t>((0.5 + 0.5 * normal.z) * 511.0) & 0x3FF);
 
     // vvdat_i[2]: 2x16-bit texture coords
-    vvdat_i[2] |= (static_cast<uint32_t>(uv.x / 32.0f * 65535.0f) & 0xFFFF) << 16;
-    vvdat_i[2] |= (static_cast<uint32_t>(uv.y / 32.0f * 65535.0f) & 0xFFFF);
+    vvdat_i[2] |= (static_cast<uint32_t>(uv.x / 32.0 * 65535.0) & 0xFFFF) << 16;
+    vvdat_i[2] |= (static_cast<uint32_t>(uv.y / 32.0 * 65535.0) & 0xFFFF);
 
     // vvdat_i[3]: 1x16-bit toffset, 1x16-bit tframes
     vvdat_i[3] |= 0xFFFF0000 & (toffset << 16);

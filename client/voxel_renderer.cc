@@ -8,6 +8,7 @@
 #include <client/glxx/program.hh>
 #include <client/glxx/sampler.hh>
 #include <client/glxx/vertex_array.hh>
+#include <client/input.hh>
 #include <client/screen.hh>
 #include <client/shaders.hh>
 #include <client/view.hh>
@@ -105,10 +106,12 @@ void voxel_renderer::render()
     glDepthFunc(GL_LEQUAL);
 
     // UNDONE: maintain this via a debug setting
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    if(glfwGetMouseButton(globals::window, GLFW_MOUSE_BUTTON_4))
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClearDepthf(1.0f);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
+    glClearDepthf(1.0);
 
     vao.bind();
 
@@ -148,8 +151,8 @@ void voxel_renderer::render()
         const auto &mesh = globals::world.registry.get<VoxelMeshComponent>(entity);
         const auto &mref = mesh.meshes[VOXEL_DRAW_SOLID];
 
-        const auto wcpos = coord::to_world(chunk.cpos);
-        uniforms.chunk = vector4f_t{wcpos.x, wcpos.y, wcpos.z, 0.0f};
+        const auto wcpos = coord::to_world(chunk.cpos - view::get_cpos());
+        uniforms.chunk = vector4_t{wcpos.x, wcpos.y, wcpos.z, 0.0};
         ubo.write(0, sizeof(uniforms), &uniforms);
 
         vao.set_vertex_buffer(VOXEL_VERTEX_VBO_BINDING, mref.vbo, sizeof(VoxelVertex));

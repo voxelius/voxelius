@@ -61,7 +61,7 @@ void deferred_pass::render()
 {
     glDisable(GL_DEPTH_TEST);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(0.0, 0.0, 0.0, 0.0);
 
     globals::deferred_fbo.bind();
     glClear(GL_COLOR_BUFFER_BIT);

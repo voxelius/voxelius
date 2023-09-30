@@ -76,8 +76,8 @@ void client::main()
     // war crime of a feature enabled.
     glDisable(GL_MULTISAMPLE);
 
-    globals::frametime = 0.0f;
-    globals::frametime_avg = 0.0f;
+    globals::frametime = 0.0;
+    globals::frametime_avg = 0.0;
     globals::curtime = epoch::microseconds();
     globals::framecount = 0;
 
@@ -88,9 +88,9 @@ void client::main()
 
     while(!glfwWindowShouldClose(globals::window)) {
         globals::curtime = epoch::microseconds();
-        globals::frametime = static_cast<float>(globals::curtime - last_curtime) / 1000000.0f;
+        globals::frametime = static_cast<double>(globals::curtime - last_curtime) / 1000000.0;
         globals::frametime_avg += globals::frametime;
-        globals::frametime_avg *= 0.5f;
+        globals::frametime_avg *= 0.5;
 
         last_curtime = globals::curtime;
 

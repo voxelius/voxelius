@@ -7,40 +7,40 @@
 #include <glm/common.hpp>
 #include <shared/cxmath.hh>
 
-constexpr static const float ANGLE_180D = cxmath::radians(180.0f);
-constexpr static const float ANGLE_360D = cxmath::radians(360.0f);
+constexpr static const double ANGLE_180D = cxmath::radians(180.0);
+constexpr static const double ANGLE_360D = cxmath::radians(360.0);
 
 namespace angle
 {
-static inline const float wrap_180_n(const float angle)
+static inline const double wrap_180_n(const double angle)
 {
-    const float wrap = glm::mod(angle + ANGLE_180D, ANGLE_360D);
-    return ((wrap < 0.0f) ? (wrap + ANGLE_360D) : wrap) - ANGLE_180D;
+    const double wrap = glm::mod(angle + ANGLE_180D, ANGLE_360D);
+    return ((wrap < 0.0) ? (wrap + ANGLE_360D) : wrap) - ANGLE_180D;
 }
 
-static inline const float wrap_180_p(const float angle)
+static inline const double wrap_180_p(const double angle)
 {
     return glm::mod(glm::mod(angle, ANGLE_180D) + ANGLE_180D, ANGLE_180D);
 }
 
-static inline const float wrap_360_p(const float angle)
+static inline const double wrap_360_p(const double angle)
 {
     return glm::mod(glm::mod(angle, ANGLE_360D) + ANGLE_360D, ANGLE_360D);
 }
 
 template<glm::length_t L, glm::qualifier Q>
-static inline const glm::vec<L, float, Q> wrap_180_n(const glm::vec<L, float, Q> &angles)
+static inline const glm::vec<L, double, Q> wrap_180_n(const glm::vec<L, double, Q> &angles)
 {
-    glm::vec<L, float, Q> wrap;
+    glm::vec<L, double, Q> wrap;
     for(glm::length_t i = 0; i < L; i++)
         wrap[i] = wrap_180_n(angles[i]);
     return wrap;
 }
 
 template<glm::length_t L, glm::qualifier Q>
-static inline const glm::vec<L, float, Q> wrap_360_p(const glm::vec<L, float, Q> &angles)
+static inline const glm::vec<L, double, Q> wrap_360_p(const glm::vec<L, double, Q> &angles)
 {
-    glm::vec<L, float, Q> wrap;
+    glm::vec<L, double, Q> wrap;
     for(glm::length_t i = 0; i < L; i++)
         wrap[i] = wrap_360_p(angles[i]);
     return wrap;

@@ -4,13 +4,14 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef AF5EC318_9471_46CE_B408_CBD968EC6F7C
 #define AF5EC318_9471_46CE_B408_CBD968EC6F7C
-#include <shared/types.hh>
+#include <shared/coord.hh>
 
 namespace view
 {
 void update();
-const vector3f_t &get_angles();
-const vector3f_t &get_position();
+const vector3_t &get_angles();
+const chunk_pos_t &get_cpos();
+const vector3f_t &get_lpos_float();
 const matrix4x4f_t &get_matrix();
 } // namespace view
 

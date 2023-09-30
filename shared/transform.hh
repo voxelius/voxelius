@@ -7,8 +7,8 @@
 #include <shared/types.hh>
 
 struct TransformComponent final {
-    vector3f_t position {0.0f, 0.0f, 0.0f};
-    vector3f_t angles {0.0f, 0.0f, 0.0f};
+    vector3_t position {0.0, 0.0, 0.0};
+    vector3_t angles {0.0, 0.0, 0.0};
 };
 
 #endif/* D8D17F43_6CC4_4F44_83BD_94585F8FB594 */

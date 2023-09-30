@@ -63,7 +63,7 @@ void player_move::init()
 void player_move::update()
 {
     if(globals::world.registry.valid(globals::player)) {
-        vector3f_t direction = {0.0f, 0.0f, 0.0f};
+        vector3_t direction = {0.0, 0.0, 0.0};
 
         if(move_keys[MOVE_FD])
             direction += DIR_FORWARD;
@@ -80,6 +80,6 @@ void player_move::update()
 
         const auto &head = globals::world.registry.get<HeadComponent>(globals::player);
         auto &velocity = globals::world.registry.get<VelocityComponent>(globals::player);
-        velocity.velocity = quatf_t{vector3f_t{head.angles.x, head.angles.y, 0.0f}} * direction * 16.0f;
+        velocity.velocity = quaternion_t{vector3_t{head.angles.x, head.angles.y, 0.0}} * direction * 16.0;
     }
 }

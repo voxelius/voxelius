@@ -7,11 +7,11 @@
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
-static float calc_aspect(int width, int height)
+static double calc_aspect(int width, int height)
 {
     if(width > height)
-        return static_cast<float>(width) / static_cast<float>(height);
-    return static_cast<float>(height) / static_cast<float>(width);
+        return static_cast<double>(width) / static_cast<double>(height);
+    return static_cast<double>(height) / static_cast<double>(width);
 }
 
 static void on_framebuffer_size_event(GLFWwindow *window, int width, int height)
@@ -41,15 +41,15 @@ void screen::get_size(int &width, int &height)
     glfwGetFramebufferSize(globals::window, &width, &height);
 }
 
-void screen::get_size(float &width, float &height)
+void screen::get_size(double &width, double &height)
 {
     int iwidth, iheight;
     glfwGetFramebufferSize(globals::window, &iwidth, &iheight);
-    width = static_cast<float>(iwidth);
-    height = static_cast<float>(iheight);
+    width = static_cast<double>(iwidth);
+    height = static_cast<double>(iheight);
 }
 
-float screen::get_aspect()
+double screen::get_aspect()
 {
     int width, height;
     glfwGetFramebufferSize(globals::window, &width, &height);

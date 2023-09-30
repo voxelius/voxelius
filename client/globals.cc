@@ -8,8 +8,8 @@
 
 GLFWwindow *globals::window = nullptr;
 
-float globals::frametime = 0.0f;
-float globals::frametime_avg = 0.0f;
+double globals::frametime = 0.0;
+double globals::frametime_avg = 0.0;
 uint64_t globals::curtime = 0;
 uint64_t globals::framecount = 0;
 

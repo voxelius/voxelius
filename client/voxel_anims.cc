@@ -28,7 +28,7 @@ void voxel_anims::init()
     // animation texture IDs in a fragment shader is a war crime
     shaders::add("voxel_anims", GL_VERTEX_SHADER, voxel_anims_vert);
 
-    voxel_anims::frametime = static_cast<uint64_t>(1000000.0f / 10.0f);
+    voxel_anims::frametime = static_cast<uint64_t>(1000000.0 / 10.0);
     voxel_anims::nextframe = 0;
     voxel_anims::frame = 0;
 }

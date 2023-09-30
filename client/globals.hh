@@ -16,8 +16,8 @@ namespace globals
 {
 extern GLFWwindow *window;
 
-extern float frametime;
-extern float frametime_avg;
+extern double frametime;
+extern double frametime_avg;
 extern uint64_t curtime;
 extern uint64_t framecount;
 

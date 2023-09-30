@@ -8,7 +8,7 @@
 struct ScreenSizeEvent final {
     int width {};
     int height {};
-    float aspect {1.0f};
+    double aspect {1.0};
 };
 
 namespace screen
@@ -16,8 +16,8 @@ namespace screen
 void init();
 void init_late();
 void get_size(int &width, int &height);
-void get_size(float &width, float &height);
-float get_aspect();
+void get_size(double &width, double &height);
+double get_aspect();
 } // namespace screen
 
 #endif /* B161F956_A082_4B9E_AD07_9417FE24D22A */

@@ -20,13 +20,13 @@ struct MouseButtonEvent final {
 };
 
 struct CursorPosEvent final {
-    float xpos {};
-    float ypos {};
+    double xpos {};
+    double ypos {};
 };
 
 struct ScrollEvent final {
-    float dx {};
-    float dy {};
+    double dx {};
+    double dy {};
 };
 
 namespace input

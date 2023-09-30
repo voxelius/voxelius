@@ -84,9 +84,7 @@ constexpr static const int64_t SURFACE = 0;
 
 static voxel_t voxel_at(const voxel_pos_t &vpos)
 {
-    int64_t surf = SURFACE + 16.0f * glm::simplex(vector2f_t{vpos.x, vpos.z} / 64.0f);
-    if(vpos.y <= surf - 64)
-        return make_voxel(SLATE, NULL_VOXEL_STATE);
+    int64_t surf = SURFACE + 8.0 * glm::simplex(vector2_t{vpos.x, vpos.z} / 48.0);
     if(vpos.y <= surf - 8)
         return make_voxel(STONE, NULL_VOXEL_STATE);
     if(vpos.y <= surf - 1)
@@ -140,9 +138,9 @@ void client_game::init_late()
 
     voxel_anims::construct();
 
-    for(int x = -4; x < 3; ++x) {
-        for(int z = -4; z < 3; ++z) {
-            for(int y = -4; y < 2; ++y) {
+    for(int x = -8; x < 7; ++x) {
+        for(int z = -8; z < 7; ++z) {
+            for(int y = -1; y < 2; ++y) {
                 generate(chunk_pos_t{x, y, z});
             }
         }

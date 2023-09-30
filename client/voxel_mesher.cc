@@ -218,7 +218,7 @@ void VMeshWorker::process()
                 const unsigned int u = (d + 1U) % 3U;
                 const unsigned int v = (d + 2U) % 3U;
                 const local_pos_t q = get_face_direction(face);
-                const vector3f_t normal = vector3f_t{q.x, q.y, q.z};
+                const vector3_t normal = vector3_t{q.x, q.y, q.z};
 
                 local_pos_t x = {0, 0, 0};
 
@@ -267,63 +267,63 @@ void VMeshWorker::process()
                                 x[u] = i;
                                 x[v] = j;
 
-                                vector3f_t pos = vector3f_t{x};
+                                vector3_t pos = vector3_t{x};
 
                                 if(q[d] < 0) {
                                     // Since we increased x[d] before, faces
                                     // with positive normals are in their place
                                     // but faces with negative normals need to
                                     // be nudged in the normal's direction.
-                                    pos[d] += static_cast<float>(q[d]);
+                                    pos[d] += static_cast<double>(q[d]);
                                 }
 
-                                vector2f_t uvs[4] = {};
-                                vector2f_t tc = vector2f_t{qw, qh};
+                                vector2_t uvs[4] = {};
+                                vector2_t tc = vector2_t{qw, qh};
 
                                 switch(face) {
                                     case VOXEL_FACE_WEST:
-                                        uvs[0] = vector2f_t{0.0f, 0.0f};
-                                        uvs[1] = vector2f_t{tc.y, 0.0f};
-                                        uvs[2] = vector2f_t{tc.y, tc.x};
-                                        uvs[3] = vector2f_t{0.0f, tc.x};
+                                        uvs[0] = vector2_t{0.0, 0.0};
+                                        uvs[1] = vector2_t{tc.y, 0.0};
+                                        uvs[2] = vector2_t{tc.y, tc.x};
+                                        uvs[3] = vector2_t{0.0, tc.x};
                                         break;
                                     case VOXEL_FACE_EAST:
-                                        uvs[0] = vector2f_t{tc.y, 0.0f};
-                                        uvs[1] = vector2f_t{tc.y, tc.x};
-                                        uvs[2] = vector2f_t{0.0f, tc.x};
-                                        uvs[3] = vector2f_t{0.0f, 0.0f};
+                                        uvs[0] = vector2_t{tc.y, 0.0};
+                                        uvs[1] = vector2_t{tc.y, tc.x};
+                                        uvs[2] = vector2_t{0.0, tc.x};
+                                        uvs[3] = vector2_t{0.0, 0.0};
                                         break;
                                     case VOXEL_FACE_SOUTH:
-                                        uvs[0] = vector2f_t{0.0f, 0.0f};
-                                        uvs[1] = vector2f_t{tc.x, 0.0f};
-                                        uvs[2] = vector2f_t{tc.x, tc.y};
-                                        uvs[3] = vector2f_t{0.0f, tc.y};
+                                        uvs[0] = vector2_t{0.0, 0.0};
+                                        uvs[1] = vector2_t{tc.x, 0.0};
+                                        uvs[2] = vector2_t{tc.x, tc.y};
+                                        uvs[3] = vector2_t{0.0, tc.y};
                                         break;
                                     case VOXEL_FACE_NORTH:
-                                        uvs[0] = vector2f_t{0.0f, 0.0f};
-                                        uvs[1] = vector2f_t{0.0f, tc.y};
-                                        uvs[2] = vector2f_t{tc.x, tc.y};
-                                        uvs[3] = vector2f_t{tc.x, 0.0f};
+                                        uvs[0] = vector2_t{0.0, 0.0};
+                                        uvs[1] = vector2_t{0.0, tc.y};
+                                        uvs[2] = vector2_t{tc.x, tc.y};
+                                        uvs[3] = vector2_t{tc.x, 0.0};
                                         break;
                                     case VOXEL_FACE_TOP:
-                                        uvs[0] = vector2f_t{0.0f, tc.x};
-                                        uvs[1] = vector2f_t{0.0f, 0.0f};
-                                        uvs[2] = vector2f_t{tc.y, 0.0f};
-                                        uvs[3] = vector2f_t{tc.y, tc.x};
+                                        uvs[0] = vector2_t{0.0, tc.x};
+                                        uvs[1] = vector2_t{0.0, 0.0};
+                                        uvs[2] = vector2_t{tc.y, 0.0};
+                                        uvs[3] = vector2_t{tc.y, tc.x};
                                         break;
                                     case VOXEL_FACE_BOTTOM:
-                                        uvs[0] = vector2f_t{tc.y, tc.x};
-                                        uvs[1] = vector2f_t{0.0f, tc.x};
-                                        uvs[2] = vector2f_t{0.0f, 0.0f};
-                                        uvs[3] = vector2f_t{tc.y, 0.0f};
+                                        uvs[0] = vector2_t{tc.y, tc.x};
+                                        uvs[1] = vector2_t{0.0, tc.x};
+                                        uvs[2] = vector2_t{0.0, 0.0};
+                                        uvs[3] = vector2_t{tc.y, 0.0};
                                         break;
                                 }
 
-                                vector3f_t du = {0.0f, 0.0f, 0.0f};
-                                du[u] = static_cast<float>(qw);
+                                vector3_t du = {0.0, 0.0, 0.0};
+                                du[u] = static_cast<double>(qw);
 
-                                vector3f_t dv = {0.0f, 0.0f, 0.0f};
-                                dv[v] = static_cast<float>(qh);
+                                vector3_t dv = {0.0, 0.0, 0.0};
+                                dv[v] = static_cast<double>(qh);
 
                                 VoxelVertex verts[4] = {};
                                 const uint16_t toffset = vtex.offset;

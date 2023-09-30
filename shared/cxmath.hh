@@ -12,13 +12,13 @@ namespace cxmath
 template<typename T>
 constexpr static inline const T degrees(const T x)
 {
-    return x * static_cast<T>(180.0f / M_PI);
+    return x * static_cast<T>(180.0 / M_PI);
 }
 
 template<typename T>
 constexpr static inline const T radians(const T x)
 {
-    return x * static_cast<T>(M_PI / 180.0f);
+    return x * static_cast<T>(M_PI / 180.0);
 }
 
 template<typename T>

@@ -8,7 +8,7 @@
 
 namespace inertial
 {
-void update(World &world, float frametime);
+void update(World &world, double frametime);
 } // namespace inertial
 
 #endif/* B7883F64_E276_4A48_B1AC_AA62EDE90340 */
