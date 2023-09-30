@@ -21,9 +21,9 @@
 #include <spdlog/fmt/fmt.h>
 
 struct VoxelRender_UBO final {
-    mat4x4f_t viewmat {};
-    vec4u_t timings {};
-    vec4f_t chunk {};
+    matrix4x4f_t viewmat {};
+    vector4u_t timings {};
+    vector4f_t chunk {};
 };
 
 static glxx::Buffer ubo = {};
@@ -149,7 +149,7 @@ void voxel_renderer::render()
         const auto &mref = mesh.meshes[VOXEL_DRAW_SOLID];
 
         const auto wcpos = coord::to_world(chunk.cpos);
-        uniforms.chunk = vec4f_t{wcpos.x, wcpos.y, wcpos.z, 0.0f};
+        uniforms.chunk = vector4f_t{wcpos.x, wcpos.y, wcpos.z, 0.0f};
         ubo.write(0, sizeof(uniforms), &uniforms);
 
         vao.set_vertex_buffer(VOXEL_VERTEX_VBO_BINDING, mref.vbo, sizeof(VoxelVertex));

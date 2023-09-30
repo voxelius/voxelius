@@ -9,9 +9,9 @@
 namespace view
 {
 void update();
-const vec3f_t &get_angles();
-const vec3f_t &get_position();
-const mat4x4f_t &get_matrix();
+const vector3f_t &get_angles();
+const vector3f_t &get_position();
+const matrix4x4f_t &get_matrix();
 } // namespace view
 
 #endif/* AF5EC318_9471_46CE_B408_CBD968EC6F7C */

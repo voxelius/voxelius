@@ -7,7 +7,7 @@
 #include <shared/types.hh>
 
 struct HeadComponent final {
-    vec2f_t angles {0.0f, 0.0f};
+    vector2f_t angles {0.0f, 0.0f};
 };
 
 #endif /* C03A8559_5CB5_46CF_ACD6_10679001CDBC */

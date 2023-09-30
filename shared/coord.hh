@@ -57,7 +57,7 @@ constexpr static inline const voxel_pos_t to_voxel(const chunk_pos_t &cpos, cons
     };
 }
 
-constexpr static inline const voxel_pos_t to_voxel(const vec3f_t &wpos)
+constexpr static inline const voxel_pos_t to_voxel(const vector3f_t &wpos)
 {
     return voxel_pos_t {
         static_cast<voxel_pos_t::value_type>(wpos.x),
@@ -66,21 +66,21 @@ constexpr static inline const voxel_pos_t to_voxel(const vec3f_t &wpos)
     };
 }
 
-constexpr static inline const vec3f_t to_world(const chunk_pos_t &cpos)
+constexpr static inline const vector3f_t to_world(const chunk_pos_t &cpos)
 {
-    return vec3f_t {
-        static_cast<vec3f_t::value_type>(cpos.x << CHUNK_SIZE_LOG2),
-        static_cast<vec3f_t::value_type>(cpos.y << CHUNK_SIZE_LOG2),
-        static_cast<vec3f_t::value_type>(cpos.z << CHUNK_SIZE_LOG2),
+    return vector3f_t {
+        static_cast<vector3f_t::value_type>(cpos.x << CHUNK_SIZE_LOG2),
+        static_cast<vector3f_t::value_type>(cpos.y << CHUNK_SIZE_LOG2),
+        static_cast<vector3f_t::value_type>(cpos.z << CHUNK_SIZE_LOG2),
     };
 }
 
-constexpr static inline const vec3f_t to_world(const voxel_pos_t &vpos)
+constexpr static inline const vector3f_t to_world(const voxel_pos_t &vpos)
 {
-    return vec3f_t {
-        static_cast<vec3f_t::value_type>(vpos.x),
-        static_cast<vec3f_t::value_type>(vpos.y),
-        static_cast<vec3f_t::value_type>(vpos.z),
+    return vector3f_t {
+        static_cast<vector3f_t::value_type>(vpos.x),
+        static_cast<vector3f_t::value_type>(vpos.y),
+        static_cast<vector3f_t::value_type>(vpos.z),
     };
 }
 

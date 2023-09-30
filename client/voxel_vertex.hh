@@ -17,7 +17,7 @@ struct VoxelVertex final {
     uint32_t vvdat_i[4] {};
 
     VoxelVertex() = default;
-    VoxelVertex(const vec3f_t &position, const vec3f_t &normal, const vec2f_t &uv, uint16_t toffset, uint16_t tframes);
+    VoxelVertex(const vector3f_t &position, const vector3f_t &normal, const vector2f_t &uv, uint16_t toffset, uint16_t tframes);
     static void setup(glxx::VertexArray &vao);
     static void init();
 };

@@ -19,33 +19,25 @@
 #define M_PI 3.14159265358979323846f
 #endif
 
-using vec2f_t = glm::vec<2, float, glm::packed_highp>;
-using vec3f_t = glm::vec<3, float, glm::packed_highp>;
-using vec4f_t = glm::vec<4, float, glm::packed_highp>;
-
-using vec2d_t = glm::vec<2, double, glm::packed_highp>;
-using vec3d_t = glm::vec<3, double, glm::packed_highp>;
-using vec4d_t = glm::vec<4, double, glm::packed_highp>;
-
-using vec2u_t = glm::vec<2, uint32_t, glm::packed_highp>;
-using vec3u_t = glm::vec<3, uint32_t, glm::packed_highp>;
-using vec4u_t = glm::vec<4, uint32_t, glm::packed_highp>;
-
-using mat4x4f_t = glm::mat<4, 4, float, glm::packed_highp>;
-using mat4x4d_t = glm::mat<4, 4, double, glm::packed_highp>;
-
+using vector2f_t = glm::vec<2, float, glm::packed_highp>;
+using vector3f_t = glm::vec<3, float, glm::packed_highp>;
+using vector4f_t = glm::vec<4, float, glm::packed_highp>;
+using matrix4x4f_t = glm::mat<4, 4, float, glm::packed_highp>;
 using quatf_t = glm::qua<float, glm::packed_highp>;
-using quatd_t = glm::qua<double, glm::packed_highp>;
 
-constexpr static const vec3f_t DIR_FORWARD = vec3f_t{0.0f, 0.0f, -1.0f};
-constexpr static const vec3f_t DIR_RIGHT = vec3f_t{1.0f, 0.0f, 0.0f};
-constexpr static const vec3f_t DIR_UP = vec3f_t{0.0f, 1.0f, 0.0f};
+using vector2u_t = glm::vec<2, uint32_t, glm::packed_highp>;
+using vector3u_t = glm::vec<3, uint32_t, glm::packed_highp>;
+using vector4u_t = glm::vec<4, uint32_t, glm::packed_highp>;
 
-constexpr static const vec3f_t HDIR_NORTH = vec3f_t{0.0f, 0.0f, -1.0f};
-constexpr static const vec3f_t HDIR_SOUTH = vec3f_t{0.0f, 0.0f, +1.0f};
-constexpr static const vec3f_t HDIR_EAST = vec3f_t{+1.0f, 0.0f, 0.0f};
-constexpr static const vec3f_t HDIR_WEST = vec3f_t{-1.0f, 0.0f, 0.0f};
-constexpr static const vec3f_t HDIR_UP = vec3f_t{0.0f, +1.0f, 0.0f};
-constexpr static const vec3f_t HDIR_DN = vec3f_t{0.0f, -1.0f, 0.0f};
+constexpr static const vector3f_t DIR_FORWARD = vector3f_t{0.0f, 0.0f, -1.0f};
+constexpr static const vector3f_t DIR_RIGHT = vector3f_t{1.0f, 0.0f, 0.0f};
+constexpr static const vector3f_t DIR_UP = vector3f_t{0.0f, 1.0f, 0.0f};
+
+constexpr static const vector3f_t HDIR_NORTH = vector3f_t{0.0f, 0.0f, -1.0f};
+constexpr static const vector3f_t HDIR_SOUTH = vector3f_t{0.0f, 0.0f, +1.0f};
+constexpr static const vector3f_t HDIR_EAST = vector3f_t{+1.0f, 0.0f, 0.0f};
+constexpr static const vector3f_t HDIR_WEST = vector3f_t{-1.0f, 0.0f, 0.0f};
+constexpr static const vector3f_t HDIR_UP = vector3f_t{0.0f, +1.0f, 0.0f};
+constexpr static const vector3f_t HDIR_DN = vector3f_t{0.0f, -1.0f, 0.0f};
 
 #endif/* EC6136EE_DE13_4F6F_98DD_B2F86921CC05 */

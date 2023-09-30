@@ -7,7 +7,7 @@
 #include <shared/types.hh>
 
 struct VelocityComponent final {
-    vec3f_t velocity {};
+    vector3f_t velocity {};
 };
 
 #endif/* C6F2BFD2_BE9D_44E0_9DC9_48EA1845AE9A */
