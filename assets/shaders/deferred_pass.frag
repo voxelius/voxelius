@@ -14,20 +14,8 @@ layout(binding = 1) uniform sampler2D solid_normal;
 
 void main(void)
 {
-    // The oldest trick in the book.
-    const vec3 IM_LIGHT_DIR = vec3(-0.500,  1.000, -0.250);
-    const vec3 IM_AMBIENT_C = vec3( 0.200,  0.200,  0.200);
-
-    // Get data from the gbuffer.
     const vec4 albedo = texture(solid_albedo, texcoord);
     const vec3 normal = texture(solid_normal, texcoord).xyz;
-
-    // Calculate constant diffuse
-    const float diffuse_c = max(dot(normalize(normal), IM_LIGHT_DIR), 0.0);
-
-    // Combine lighting
     target = vec4(0.0, 0.0, 0.0, 1.0);
     target.rgb += albedo.rgb;
-    target.rgb *= diffuse_c;
-    target.rgb += IM_AMBIENT_C * albedo.rgb;
 }

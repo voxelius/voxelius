@@ -9,6 +9,7 @@
 
 layout(location = 0) out vec3 normal;
 layout(location = 1) out vec3 texcoord;
+layout(location = 2) out float shade;
 
 layout(std140, binding = 1) uniform VoxelRender_UBO {
     mat4x4 viewmat;
@@ -30,4 +31,5 @@ void main(void)
     normal = voxel_vertex_normal();
     texcoord.xy = voxel_vertex_texcoord();
     texcoord.z = floor(float(atex) + 0.5);
+    shade = voxel_vertex_shade();
 }

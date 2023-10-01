@@ -7,6 +7,7 @@
 
 layout(location = 0) in vec3 normal;
 layout(location = 1) in vec3 texcoord;
+layout(location = 2) in float shade;
 
 layout(location = 0) out vec4 target_albedo;
 layout(location = 1) out vec4 target_normal;
@@ -15,7 +16,7 @@ layout(binding = 0) uniform sampler2DArray textures;
 
 void main(void)
 {
-    target_albedo = texture(textures, texcoord);
+    target_albedo = shade * texture(textures, texcoord);
     target_normal.xyz = normalize(normal);
     target_normal.w = 0.0;
 }

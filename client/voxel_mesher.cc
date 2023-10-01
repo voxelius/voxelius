@@ -279,6 +279,7 @@ void VMeshWorker::process()
 
                                 vector2_t uvs[4] = {};
                                 vector2_t tc = vector2_t{qw, qh};
+                                unsigned int shade = 0U;
 
                                 switch(face) {
                                     case VOXEL_FACE_WEST:
@@ -286,36 +287,42 @@ void VMeshWorker::process()
                                         uvs[1] = vector2_t{tc.y, 0.0};
                                         uvs[2] = vector2_t{tc.y, tc.x};
                                         uvs[3] = vector2_t{0.0, tc.x};
+                                        shade = 1U; // 0.6
                                         break;
                                     case VOXEL_FACE_EAST:
                                         uvs[0] = vector2_t{tc.y, 0.0};
                                         uvs[1] = vector2_t{tc.y, tc.x};
                                         uvs[2] = vector2_t{0.0, tc.x};
                                         uvs[3] = vector2_t{0.0, 0.0};
+                                        shade = 1U; // 0.6
                                         break;
                                     case VOXEL_FACE_SOUTH:
                                         uvs[0] = vector2_t{0.0, 0.0};
                                         uvs[1] = vector2_t{tc.x, 0.0};
                                         uvs[2] = vector2_t{tc.x, tc.y};
                                         uvs[3] = vector2_t{0.0, tc.y};
+                                        shade = 2U; // 0.8
                                         break;
                                     case VOXEL_FACE_NORTH:
                                         uvs[0] = vector2_t{0.0, 0.0};
                                         uvs[1] = vector2_t{0.0, tc.y};
                                         uvs[2] = vector2_t{tc.x, tc.y};
                                         uvs[3] = vector2_t{tc.x, 0.0};
+                                        shade = 2U; // 0.8
                                         break;
                                     case VOXEL_FACE_TOP:
                                         uvs[0] = vector2_t{0.0, tc.x};
                                         uvs[1] = vector2_t{0.0, 0.0};
                                         uvs[2] = vector2_t{tc.y, 0.0};
                                         uvs[3] = vector2_t{tc.y, tc.x};
+                                        shade = 3U; // 1.0
                                         break;
                                     case VOXEL_FACE_BOTTOM:
                                         uvs[0] = vector2_t{tc.y, tc.x};
                                         uvs[1] = vector2_t{0.0, tc.x};
                                         uvs[2] = vector2_t{0.0, 0.0};
                                         uvs[3] = vector2_t{tc.y, 0.0};
+                                        shade = 0U; // 0.4
                                         break;
                                 }
 
@@ -330,16 +337,16 @@ void VMeshWorker::process()
                                 const uint16_t tframes = vtex.paths.size();
 
                                 if(q[d] < 0) {
-                                    verts[0] = VoxelVertex{pos,             normal, uvs[0], toffset, tframes};
-                                    verts[1] = VoxelVertex{pos + dv,        normal, uvs[1], toffset, tframes};
-                                    verts[2] = VoxelVertex{pos + du + dv,   normal, uvs[2], toffset, tframes};
-                                    verts[3] = VoxelVertex{pos + du,        normal, uvs[3], toffset, tframes};
+                                    verts[0] = VoxelVertex{pos,             shade, normal, toffset, tframes, uvs[0]};
+                                    verts[1] = VoxelVertex{pos + dv,        shade, normal, toffset, tframes, uvs[1]};
+                                    verts[2] = VoxelVertex{pos + du + dv,   shade, normal, toffset, tframes, uvs[2]};
+                                    verts[3] = VoxelVertex{pos + du,        shade, normal, toffset, tframes, uvs[3]};
                                 }
                                 else {
-                                    verts[0] = VoxelVertex{pos,             normal, uvs[0], toffset, tframes};
-                                    verts[1] = VoxelVertex{pos + du,        normal, uvs[1], toffset, tframes};
-                                    verts[2] = VoxelVertex{pos + dv + du,   normal, uvs[2], toffset, tframes};
-                                    verts[3] = VoxelVertex{pos + dv,        normal, uvs[3], toffset, tframes};
+                                    verts[0] = VoxelVertex{pos,             shade, normal, toffset, tframes, uvs[0]};
+                                    verts[1] = VoxelVertex{pos + du,        shade, normal, toffset, tframes, uvs[1]};
+                                    verts[2] = VoxelVertex{pos + dv + du,   shade, normal, toffset, tframes, uvs[2]};
+                                    verts[3] = VoxelVertex{pos + dv,        shade, normal, toffset, tframes, uvs[3]};
                                 }
 
                                 VoxelMeshBuilder &builder = builders[info->draw];
