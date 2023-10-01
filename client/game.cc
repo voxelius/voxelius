@@ -12,6 +12,7 @@
 #include <client/player_move.hh>
 #include <client/postprocess.hh>
 #include <client/screen.hh>
+#include <client/screenshot.hh>
 #include <client/shaders.hh>
 #include <client/view.hh>
 #include <client/voxel_anims.hh>
@@ -76,6 +77,8 @@ void client_game::init()
 {
     input::init();
     screen::init();
+
+    screenshot::init();
 
     shaders::init();
     VoxelVertex::init();
