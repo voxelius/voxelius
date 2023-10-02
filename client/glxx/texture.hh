@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef E7A03B69_CB3F_461D_9AEE_494C746DEEE4
-#define E7A03B69_CB3F_461D_9AEE_494C746DEEE4
+#ifndef CLIENT_GLXX_TEXTURE_HH
+#define CLIENT_GLXX_TEXTURE_HH
 #include <client/glxx/object.hh>
 #include <client/glxx/pixel_format.hh>
 #include <shared/cxmath.hh>
@@ -151,4 +151,4 @@ inline bool glxx::Texture2DArray::write(int layer, int x, int y, int width, int 
     return false;
 }
 
-#endif /* E7A03B69_CB3F_461D_9AEE_494C746DEEE4 */
+#endif /* CLIENT_GLXX_TEXTURE_HH */

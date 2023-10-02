@@ -24,7 +24,7 @@ void atlas::create(int width, int height, size_t count)
     atlas_count = count;
 
     atlas_obj.create();
-    atlas_obj.storage(width, height, static_cast<int>(count), Image::FORMAT);
+    atlas_obj.storage(width, height, static_cast<int>(count), Image::RGBA);
 }
 
 void atlas::generate_mipmap()
@@ -55,7 +55,7 @@ const AtlasTexture *atlas::load(const vfs::path_t &path)
 
     Image image = {};
 
-    if(image.create(path, true)) {
+    if(image.load_rgba(path, true)) {
         int iwidth, iheight;
         image.get_size(iwidth, iheight);
 
@@ -68,7 +68,7 @@ const AtlasTexture *atlas::load(const vfs::path_t &path)
         AtlasTexture texture = {};
         texture.texture = atlas_vec.size();
 
-        atlas_obj.write(texture.texture, 0, 0, iwidth, iheight, Image::FORMAT, image.data());
+        atlas_obj.write(texture.texture, 0, 0, iwidth, iheight, Image::RGBA, image.data());
 
         atlas_map.emplace(path, texture.texture);
         atlas_vec.push_back(texture);

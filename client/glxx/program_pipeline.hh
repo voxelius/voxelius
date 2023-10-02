@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef FF5205F0_4FB9_459E_8512_47E9AB32304F
-#define FF5205F0_4FB9_459E_8512_47E9AB32304F
+#ifndef CLIENT_GLXX_PROGRAM_PIPELINE_HH
+#define CLIENT_GLXX_PROGRAM_PIPELINE_HH
 #include <client/glxx/program.hh>
 
 namespace glxx
@@ -63,4 +63,4 @@ inline void glxx::ProgramPipeline::unbind()
     glBindProgramPipeline(0);
 }
 
-#endif /* FF5205F0_4FB9_459E_8512_47E9AB32304F */
+#endif /* CLIENT_GLXX_PROGRAM_PIPELINE_HH */

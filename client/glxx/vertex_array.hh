@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef F07D2DDF_2D70_4BFD_A4F5_A62DB7CDB6D7
-#define F07D2DDF_2D70_4BFD_A4F5_A62DB7CDB6D7
+#ifndef CLIENT_GLXX_VERTEX_ARRAY_HH
+#define CLIENT_GLXX_VERTEX_ARRAY_HH
 #include <client/glxx/buffer.hh>
 #include <spdlog/spdlog.h>
 
@@ -104,4 +104,4 @@ inline void glxx::VertexArray::unbind()
     glBindVertexArray(0);
 }
 
-#endif /* F07D2DDF_2D70_4BFD_A4F5_A62DB7CDB6D7 */
+#endif /* CLIENT_GLXX_VERTEX_ARRAY_HH */

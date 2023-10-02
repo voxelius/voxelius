@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef F8FC1920_3152_4480_B56B_7FF4E9CCD554
-#define F8FC1920_3152_4480_B56B_7FF4E9CCD554
+#ifndef SHARED_WORLD_HH
+#define SHARED_WORLD_HH
 #include <array>
 #include <entt/entity/entity.hpp>
 #include <entt/entity/registry.hpp>
@@ -108,4 +108,4 @@ struct VoxelUpdateEvent final {
     size_t index {};
 };
 
-#endif/* F8FC1920_3152_4480_B56B_7FF4E9CCD554 */
+#endif/* SHARED_WORLD_HH */

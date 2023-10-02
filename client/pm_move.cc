@@ -5,7 +5,7 @@
 #include <bitset>
 #include <client/globals.hh>
 #include <client/input.hh>
-#include <client/player_move.hh>
+#include <client/pm_move.hh>
 #include <shared/const.hh>
 #include <shared/head.hh>
 #include <shared/transform.hh>
@@ -55,12 +55,12 @@ static void on_key(const KeyEvent &event)
     }
 }
 
-void player_move::init()
+void pm_move::init()
 {
     globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
 }
 
-void player_move::update()
+void pm_move::update()
 {
     if(globals::world.registry.valid(globals::player)) {
         vector3_t direction = {0.0, 0.0, 0.0};

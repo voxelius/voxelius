@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef D8DF2B82_6836_44B7_BC98_BD9E30625A30
-#define D8DF2B82_6836_44B7_BC98_BD9E30625A30
+#ifndef SHARED_MIXIN_HH
+#define SHARED_MIXIN_HH
 
 namespace mixin
 {
@@ -21,4 +21,4 @@ class NonMovable {
 };
 } // namespace mixin
 
-#endif/* D8DF2B82_6836_44B7_BC98_BD9E30625A30 */
+#endif/* SHARED_MIXIN_HH */

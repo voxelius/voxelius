@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef F6497C57_54A6_48FC_99DF_2ED45F570563
-#define F6497C57_54A6_48FC_99DF_2ED45F570563
+#ifndef CLIENT_GLXX_RENDERBUFFER_HH
+#define CLIENT_GLXX_RENDERBUFFER_HH
 #include <client/glxx/object.hh>
 #include <client/glxx/pixel_format.hh>
 
@@ -52,4 +52,4 @@ inline void glxx::Renderbuffer::storage(int width, int height, PixelFormat forma
     glNamedRenderbufferStorage(handle, glxx::detail::get_pixel_format_gpu(format), width, height);
 }
 
-#endif /* F6497C57_54A6_48FC_99DF_2ED45F570563 */
+#endif /* CLIENT_GLXX_RENDERBUFFER_HH */

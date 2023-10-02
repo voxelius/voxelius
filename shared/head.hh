@@ -2,12 +2,12 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef C03A8559_5CB5_46CF_ACD6_10679001CDBC
-#define C03A8559_5CB5_46CF_ACD6_10679001CDBC
+#ifndef SHARED_HEAD_HH
+#define SHARED_HEAD_HH
 #include <shared/types.hh>
 
 struct HeadComponent final {
     vector2_t angles {0.0, 0.0};
 };
 
-#endif /* C03A8559_5CB5_46CF_ACD6_10679001CDBC */
+#endif /* SHARED_HEAD_HH */

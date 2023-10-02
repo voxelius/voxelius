@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef B09BC94C_1FEF_49B2_8F3E_E9289AA9C836
-#define B09BC94C_1FEF_49B2_8F3E_E9289AA9C836
+#ifndef SHARED_ANGLE_HH
+#define SHARED_ANGLE_HH
 #include <glm/common.hpp>
 #include <shared/cxmath.hh>
 
@@ -47,4 +47,4 @@ static inline const glm::vec<L, double, Q> wrap_360_p(const glm::vec<L, double, 
 }
 } // namespace angle
 
-#endif/* B09BC94C_1FEF_49B2_8F3E_E9289AA9C836 */
+#endif/* SHARED_ANGLE_HH */

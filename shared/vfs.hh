@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef A52A1506_280E_435B_A63C_DF288D91207F
-#define A52A1506_280E_435B_A63C_DF288D91207F
+#ifndef SHARED_VFS_HH
+#define SHARED_VFS_HH
 #include <filesystem>
 #include <limits>
 #include <physfs.h>
@@ -59,4 +59,4 @@ bool write_bytes(const path_t &path, const std::vector<uint8_t> &in);
 bool write_string(const path_t &path, const std::string &in);
 } // namespace vfs
 
-#endif/* A52A1506_280E_435B_A63C_DF288D91207F */
+#endif/* SHARED_VFS_HH */

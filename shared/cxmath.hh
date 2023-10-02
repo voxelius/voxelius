@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef D436CB53_96B6_44CB_9AC4_3C4E375311BB
-#define D436CB53_96B6_44CB_9AC4_3C4E375311BB
+#ifndef SHARED_CXMATH_HH
+#define SHARED_CXMATH_HH
 #include <shared/types.hh>
 #include <type_traits>
 
@@ -93,4 +93,4 @@ constexpr static inline const size_t array_size(T(&)[L])
 }
 } // namespace cxmath
 
-#endif/* D436CB53_96B6_44CB_9AC4_3C4E375311BB */
+#endif/* SHARED_CXMATH_HH */

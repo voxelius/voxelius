@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef F86D32A9_E203_4B86_B07B_280C5F59669C
-#define F86D32A9_E203_4B86_B07B_280C5F59669C
+#ifndef CLIENT_ATLAS_HH
+#define CLIENT_ATLAS_HH
 #include <client/glxx/texture.hh>
 #include <shared/vfs.hh>
 
@@ -22,4 +22,4 @@ const AtlasTexture *find(const uint32_t texture);
 const glxx::Texture2DArray &get();
 } // namespace atlas
 
-#endif/* F86D32A9_E203_4B86_B07B_280C5F59669C */
+#endif/* CLIENT_ATLAS_HH */

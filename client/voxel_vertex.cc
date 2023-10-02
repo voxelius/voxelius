@@ -77,7 +77,7 @@ void VoxelVertex::setup(glxx::VertexArray &vao)
 {
     vao.enable_attribute(0, true);
     vao.set_attribute_format(0, GL_UNSIGNED_INT, 4, offsetof(VoxelVertex, vvdat_i), false);
-    vao.set_attribute_binding(0, VOXEL_VERTEX_VBO_BINDING);
+    vao.set_attribute_binding(0, VOXEL_VBO_BINDING);
 }
 
 void VoxelVertex::init()

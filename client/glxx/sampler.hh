@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef A288DEB5_6CCC_4335_BF93_FEC6FD2E256F
-#define A288DEB5_6CCC_4335_BF93_FEC6FD2E256F
+#ifndef CLIENT_GLXX_SAMPLER_HH
+#define CLIENT_GLXX_SAMPLER_HH
 #include <client/glxx/object.hh>
 
 namespace glxx
@@ -63,4 +63,4 @@ inline void glxx::Sampler::parameter(uint32_t pname, GLfloat value)
     glSamplerParameterf(handle, pname, value);
 }
 
-#endif /* A288DEB5_6CCC_4335_BF93_FEC6FD2E256F */
+#endif /* CLIENT_GLXX_SAMPLER_HH */

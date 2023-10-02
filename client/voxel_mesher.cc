@@ -71,7 +71,7 @@ static const local_pos_t get_face_direction(voxel_face_t face)
     }
 }
 
-class VMeshWorker final : public mixin::NonCopyable {
+class VoxelMeshWorker final : public mixin::NonCopyable {
 public:
     // OPTIMIZATION:
     // Instead of using any thread locking mechanisms to
@@ -97,7 +97,7 @@ public:
     std::shared_future<bool> future {};
 };
 
-void VMeshWorker::preserve_chunk(const chunk_pos_t &cpos)
+void VoxelMeshWorker::preserve_chunk(const chunk_pos_t &cpos)
 {
     if(const Chunk *chunk = globals::world.find_chunk(cpos)) {
         const auto idx = get_chunk_cache_id(this->cpos, cpos);
@@ -105,7 +105,7 @@ void VMeshWorker::preserve_chunk(const chunk_pos_t &cpos)
     }
 }
 
-bool VMeshWorker::test(voxel_t voxel, const VoxelInfo *info, const local_pos_t &nlpos) const
+bool VoxelMeshWorker::test(voxel_t voxel, const VoxelInfo *info, const local_pos_t &nlpos) const
 {
     const auto patch_vpos = coord::to_voxel(cpos, nlpos);
     const auto patch_cpos = coord::to_chunk(patch_vpos);
@@ -150,7 +150,7 @@ bool VMeshWorker::test(voxel_t voxel, const VoxelInfo *info, const local_pos_t &
     return false;
 }
 
-void VMeshWorker::prepare()
+void VoxelMeshWorker::prepare()
 {
     preserve_chunk(cpos);
     preserve_chunk(cpos + chunk_pos_t{0, 0, 1});
@@ -161,7 +161,7 @@ void VMeshWorker::prepare()
     preserve_chunk(cpos - chunk_pos_t{1, 0, 0});
 }
 
-void VMeshWorker::process()
+void VoxelMeshWorker::process()
 {
     const voxel_array_t &chunk = chunks[CHUNK_CACHE_ITSELF];
 
@@ -373,7 +373,7 @@ void VMeshWorker::process()
     }
 }
 
-void VMeshWorker::finalize(entt::entity entity)
+void VoxelMeshWorker::finalize(entt::entity entity)
 {
     auto &mc = globals::world.registry.get_or_emplace<VoxelMeshComponent>(entity);
 
@@ -411,7 +411,7 @@ constexpr static const size_t MESHER_TASKS_PER_FRAME = 32;
 #endif
 
 static thread_pool workers_pool = thread_pool{MESHER_THREADS_COUNT};
-static std::unordered_map<chunk_pos_t, std::unique_ptr<VMeshWorker>> workers = {};
+static std::unordered_map<chunk_pos_t, std::unique_ptr<VoxelMeshWorker>> workers = {};
 
 // Bogus internal flag component
 struct NeedsMeshingComponent final {};
@@ -523,13 +523,13 @@ void voxel_mesher::update()
         if(workers.find(chunk.cpos) == workers.cend()) {
             globals::world.registry.remove<NeedsMeshingComponent>(entity);
 
-            auto &worker = workers.emplace(chunk.cpos, std::make_unique<VMeshWorker>()).first->second;
+            auto &worker = workers.emplace(chunk.cpos, std::make_unique<VoxelMeshWorker>()).first->second;
             worker->cpos = chunk.cpos;
             worker->prepare();
 
             // FIXME: have a Sodium-like setting to force nearby chunks
             // to be meshed in the main thread to avoid visual glitches
-            worker->future = workers_pool.submit(std::bind(&VMeshWorker::process, worker.get()));
+            worker->future = workers_pool.submit(std::bind(&VoxelMeshWorker::process, worker.get()));
 
             ++num_queued;
         }

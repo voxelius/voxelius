@@ -2,13 +2,15 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef B5ACD6D4_E0AC_4270_BEFF_252ED1707727
-#define B5ACD6D4_E0AC_4270_BEFF_252ED1707727
+#ifndef CLIENT_GUI_FONT_HH
+#define CLIENT_GUI_FONT_HH
 
-namespace player_move
+
+namespace gui
 {
-void init();
-void update();
-} // namespace player_move
+class Font final {
 
-#endif /* B5ACD6D4_E0AC_4270_BEFF_252ED1707727 */
+};
+} // namespace gui
+
+#endif/* CLIENT_GUI_FONT_HH */

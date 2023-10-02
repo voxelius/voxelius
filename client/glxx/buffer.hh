@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef E69DB236_81BC_4E98_B5E0_FAE6650B602F
-#define E69DB236_81BC_4E98_B5E0_FAE6650B602F
+#ifndef CLIENT_GLXX_BUFFER_HH
+#define CLIENT_GLXX_BUFFER_HH
 #include <client/glxx/object.hh>
 
 namespace glxx
@@ -75,4 +75,4 @@ inline void glxx::Buffer::read(size_t offset, size_t size, void *data) const
     glGetNamedBufferSubData(handle, static_cast<GLintptr>(offset), static_cast<GLsizeiptr>(size), data);
 }
 
-#endif /* E69DB236_81BC_4E98_B5E0_FAE6650B602F */
+#endif /* CLIENT_GLXX_BUFFER_HH */

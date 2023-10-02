@@ -44,12 +44,14 @@ void client::main()
         std::terminate();
     }
 
-    if(Image icon = Image{"32x32.png"}; icon.valid()) {
-        GLFWimage image = {};
-        image.width = icon.get_width();
-        image.height = icon.get_height();
-        image.pixels = reinterpret_cast<unsigned char *>(icon.data());
-        glfwSetWindowIcon(globals::window, 1, &image);
+    Image image = {};
+
+    if(image.load_rgba("32x32.png", false)) {
+        GLFWimage icon = {};
+        icon.width = image.get_width();
+        icon.height = image.get_height();
+        icon.pixels = reinterpret_cast<unsigned char *>(image.data());
+        glfwSetWindowIcon(globals::window, 1, &icon);
     }
 
     glfwMakeContextCurrent(globals::window);

@@ -158,7 +158,7 @@ void voxel_renderer::render()
         uniforms.chunk = vector4_t{wcpos.x, wcpos.y, wcpos.z, 0.0};
         ubo.write(0, sizeof(uniforms), &uniforms);
 
-        vao.set_vertex_buffer(VOXEL_VERTEX_VBO_BINDING, mref.vbo, sizeof(VoxelVertex));
+        vao.set_vertex_buffer(VOXEL_VBO_BINDING, mref.vbo, sizeof(VoxelVertex));
 
         glDrawArrays(GL_TRIANGLES, 0, mref.vertices);
     }

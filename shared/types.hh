@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef EC6136EE_DE13_4F6F_98DD_B2F86921CC05
-#define EC6136EE_DE13_4F6F_98DD_B2F86921CC05
+#ifndef SHARED_TYPES_HH
+#define SHARED_TYPES_HH
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -49,4 +49,4 @@ constexpr static const vector3_t HDIR_WEST = vector3_t{-1.0, 0.0, 0.0};
 constexpr static const vector3_t HDIR_UP = vector3_t{0.0, +1.0, 0.0};
 constexpr static const vector3_t HDIR_DN = vector3_t{0.0, -1.0, 0.0};
 
-#endif/* EC6136EE_DE13_4F6F_98DD_B2F86921CC05 */
+#endif/* SHARED_TYPES_HH */

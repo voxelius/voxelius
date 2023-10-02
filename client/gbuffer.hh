@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef ED122468_0EE3_4FC5_9C6A_22F0C364C19C
-#define ED122468_0EE3_4FC5_9C6A_22F0C364C19C
+#ifndef CLIENT_GBUFFER_HH
+#define CLIENT_GBUFFER_HH
 #include <client/glxx/framebuffer.hh>
 
 class GBuffer final {
@@ -24,4 +24,4 @@ private:
     glxx::Framebuffer framebuffer;
 };
 
-#endif/* ED122468_0EE3_4FC5_9C6A_22F0C364C19C */
+#endif/* CLIENT_GBUFFER_HH */

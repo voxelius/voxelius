@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/globals.hh>
 #include <client/input.hh>
-#include <client/player_look.hh>
+#include <client/pm_look.hh>
 #include <client/screen.hh>
 #include <shared/angle.hh>
 #include <shared/head.hh>
@@ -33,7 +33,7 @@ static void on_cursor_pos(const CursorPosEvent &event)
     previous_cy = event.ypos;
 }
 
-void player_look::init()
+void pm_look::init()
 {
     double width, height;
     screen::get_size(width, height);

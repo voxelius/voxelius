@@ -2,12 +2,12 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef C818F02B_A5DD_4849_955F_5D6CEAC97830
-#define C818F02B_A5DD_4849_955F_5D6CEAC97830
+#ifndef CLIENT_VOXEL_VERTEX_HH
+#define CLIENT_VOXEL_VERTEX_HH
 #include <client/glxx/fwd.hh>
 #include <shared/types.hh>
 
-constexpr static const uint32_t VOXEL_VERTEX_VBO_BINDING = 0;
+constexpr static const uint32_t VOXEL_VBO_BINDING = 0;
 
 struct VoxelVertex final {
     // vvdat_i[0]: 3x10-bit vertex position, 1x2-bit vertex shade
@@ -22,4 +22,4 @@ struct VoxelVertex final {
     static void init();
 };
 
-#endif/* C818F02B_A5DD_4849_955F_5D6CEAC97830 */
+#endif/* CLIENT_VOXEL_VERTEX_HH */

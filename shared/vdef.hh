@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef F5273C9F_B00A_4160_97BD_663B53274569
-#define F5273C9F_B00A_4160_97BD_663B53274569
+#ifndef SHARED_VDEF_HH
+#define SHARED_VDEF_HH
 #include <shared/vfs.hh>
 #include <shared/world.hh>
 #include <unordered_set>
@@ -52,4 +52,4 @@ VoxelInfo *find(voxel_t voxel);
 void purge();
 } // namespace vdef
 
-#endif/* F5273C9F_B00A_4160_97BD_663B53274569 */
+#endif/* SHARED_VDEF_HH */

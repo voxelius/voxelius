@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef BD1F3414_2439_43B8_AC4E_328F85870738
-#define BD1F3414_2439_43B8_AC4E_328F85870738
+#ifndef CLIENT_GLXX_FRAMEBUFFER_HH
+#define CLIENT_GLXX_FRAMEBUFFER_HH
 #include <client/glxx/renderbuffer.hh>
 #include <client/glxx/texture.hh>
 #include <shared/cxmath.hh>
@@ -86,4 +86,4 @@ inline void glxx::Framebuffer::unbind()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-#endif /* BD1F3414_2439_43B8_AC4E_328F85870738 */
+#endif /* CLIENT_GLXX_FRAMEBUFFER_HH */

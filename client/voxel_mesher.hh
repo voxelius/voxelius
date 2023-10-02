@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef C9D5143C_9F77_4370_AA09_61AA3A6C2F37
-#define C9D5143C_9F77_4370_AA09_61AA3A6C2F37
+#ifndef CLIENT_VOXEL_MESHER_HH
+#define CLIENT_VOXEL_MESHER_HH
 #include <client/mesh.hh>
 #include <shared/vdef.hh>
 
@@ -18,4 +18,4 @@ void deinit();
 void update();
 } // namespace voxel_mesher
 
-#endif/* C9D5143C_9F77_4370_AA09_61AA3A6C2F37 */
+#endif/* CLIENT_VOXEL_MESHER_HH */

@@ -8,11 +8,10 @@
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
 #include <client/input.hh>
-#include <client/player_look.hh>
-#include <client/player_move.hh>
+#include <client/pm_look.hh>
+#include <client/pm_move.hh>
 #include <client/postprocess.hh>
 #include <client/screen.hh>
-#include <client/screenshot.hh>
 #include <client/shaders.hh>
 #include <client/view.hh>
 #include <client/voxel_anims.hh>
@@ -78,13 +77,11 @@ void client_game::init()
     input::init();
     screen::init();
 
-    screenshot::init();
-
     shaders::init();
     VoxelVertex::init();
 
-    player_look::init();
-    player_move::init();
+    pm_look::init();
+    pm_move::init();
 
     voxel_anims::init();
     voxel_mesher::init();
@@ -202,7 +199,7 @@ void client_game::deinit()
 
 void client_game::update()
 {
-    player_move::update();
+    pm_move::update();
 
     inertial::update(globals::world, globals::frametime);
 

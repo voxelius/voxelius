@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef A26A347B_8002_432F_AD85_2F3FB1FA8F1E
-#define A26A347B_8002_432F_AD85_2F3FB1FA8F1E
+#ifndef SHARED_COORD_HH
+#define SHARED_COORD_HH
 #include <functional>
 #include <shared/const.hh>
 
@@ -90,4 +90,4 @@ constexpr static inline const size_t to_index(const local_pos_t &lpos)
 }
 } // namespace coord
 
-#endif/* A26A347B_8002_432F_AD85_2F3FB1FA8F1E */
+#endif/* SHARED_COORD_HH */

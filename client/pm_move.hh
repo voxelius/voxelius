@@ -2,12 +2,13 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef E9E80D21_EBD5_494B_B8A7_E93FEB63F2DD
-#define E9E80D21_EBD5_494B_B8A7_E93FEB63F2DD
+#ifndef CLIENT_PM_MOVE_HH
+#define CLIENT_PM_MOVE_HH
 
-namespace screenshot
+namespace pm_move
 {
 void init();
-} // namespace screenshot
+void update();
+} // namespace pm_move
 
-#endif/* E9E80D21_EBD5_494B_B8A7_E93FEB63F2DD */
+#endif /* CLIENT_PLAYER_MOVE_HH */

@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef E29ED32A_C651_432D_BBC4_B9705EC39AB8
-#define E29ED32A_C651_432D_BBC4_B9705EC39AB8
+#ifndef CLIENT_GLXX_SHADER_HH
+#define CLIENT_GLXX_SHADER_HH
 #include <client/glxx/object.hh>
 #include <spdlog/spdlog.h>
 #include <string>
@@ -116,4 +116,4 @@ inline constexpr uint32_t glxx::Shader::get_stage() const
     return stage;
 }
 
-#endif /* E29ED32A_C651_432D_BBC4_B9705EC39AB8 */
+#endif /* CLIENT_GLXX_SHADER_HH */

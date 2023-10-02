@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef B82DAA50_894A_47D9_989E_833EC4C50B89
-#define B82DAA50_894A_47D9_989E_833EC4C50B89
+#ifndef CLIENT_INPUT_HH
+#define CLIENT_INPUT_HH
 #include <GLFW/glfw3.h>
 
 struct KeyEvent final {
@@ -34,4 +34,4 @@ namespace input
 void init();
 } // namespace input
 
-#endif /* B82DAA50_894A_47D9_989E_833EC4C50B89 */
+#endif /* CLIENT_INPUT_HH */

@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef C0F5E2EC_9F1D_4811_96CD_345B1AE0C616
-#define C0F5E2EC_9F1D_4811_96CD_345B1AE0C616
+#ifndef CLIENT_GLXX_PIXEL_FORMAT_HH
+#define CLIENT_GLXX_PIXEL_FORMAT_HH
 #include <glad/gl.h>
 
 namespace glxx
@@ -277,4 +277,4 @@ static inline uint32_t get_pixel_format_gpu(glxx::PixelFormat format)
 } // namespace detail
 } // namespace glxx
 
-#endif /* C0F5E2EC_9F1D_4811_96CD_345B1AE0C616 */
+#endif /* CLIENT_GLXX_PIXEL_FORMAT_HH */

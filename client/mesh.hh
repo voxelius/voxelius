@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef C9BA3093_DF7D_4334_BAB4_BF92B4C981D7
-#define C9BA3093_DF7D_4334_BAB4_BF92B4C981D7
+#ifndef CLIENT_MESH_HH
+#define CLIENT_MESH_HH
 #include <client/glxx/buffer.hh>
 #include <vector>
 
@@ -86,4 +86,4 @@ inline const vert *MeshBuilder<vert>::data() const
     return vec.data();
 }
 
-#endif/* C9BA3093_DF7D_4334_BAB4_BF92B4C981D7 */
+#endif/* CLIENT_MESH_HH */

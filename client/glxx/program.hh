@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef CFED6606_D0E7_4704_BE88_56BC31287F1F
-#define CFED6606_D0E7_4704_BE88_56BC31287F1F
+#ifndef CLIENT_GLXX_PROGRAM_HH
+#define CLIENT_GLXX_PROGRAM_HH
 #include <array>
 #include <client/glxx/shader.hh>
 #include <spdlog/spdlog.h>
@@ -141,4 +141,4 @@ inline void glxx::Program::unbind()
     glUseProgram(0);
 }
 
-#endif /* CFED6606_D0E7_4704_BE88_56BC31287F1F */
+#endif /* CLIENT_GLXX_PROGRAM_HH */
