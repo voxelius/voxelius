@@ -4,13 +4,13 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_MESH_HH
 #define CLIENT_MESH_HH
-#include <client/glxx/buffer.hh>
+#include <client/gl_buffer.hh>
 #include <vector>
 
 struct Mesh final {
     size_t vertices {};
     size_t triangles {};
-    glxx::Buffer vbo {};
+    gl::Buffer vbo {};
 };
 
 template<typename vert>

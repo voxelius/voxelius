@@ -4,24 +4,24 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_GBUFFER_HH
 #define CLIENT_GBUFFER_HH
-#include <client/glxx/framebuffer.hh>
+#include <client/gl_framebuffer.hh>
 
 class GBuffer final {
 public:
     void create(int width, int height);
     void destroy();
 
-    const glxx::Texture2D &get_albedo_attachment() const;
-    const glxx::Texture2D &get_normal_attachment() const;
+    const gl::Texture2D &get_albedo_attachment() const;
+    const gl::Texture2D &get_normal_attachment() const;
 
-    const glxx::Renderbuffer &get_renderbuffer() const;
-    const glxx::Framebuffer &get_framebuffer() const;
+    const gl::Renderbuffer &get_renderbuffer() const;
+    const gl::Framebuffer &get_framebuffer() const;
 
 private:
-    glxx::Texture2D albedo_attachment;
-    glxx::Texture2D normal_attachment;
-    glxx::Renderbuffer renderbuffer;
-    glxx::Framebuffer framebuffer;
+    gl::Texture2D albedo_attachment;
+    gl::Texture2D normal_attachment;
+    gl::Renderbuffer renderbuffer;
+    gl::Framebuffer framebuffer;
 };
 
 #endif/* CLIENT_GBUFFER_HH */

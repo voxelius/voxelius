@@ -7,19 +7,12 @@
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 
-static double calc_aspect(int width, int height)
-{
-    if(width > height)
-        return static_cast<double>(width) / static_cast<double>(height);
-    return static_cast<double>(height) / static_cast<double>(width);
-}
-
 static void on_framebuffer_size_event(GLFWwindow *window, int width, int height)
 {
     globals::dispatcher.trigger(ScreenSizeEvent {
         .width = width, 
         .height = height,
-        .aspect = calc_aspect(width, height),
+        .aspect = static_cast<double>(width) / static_cast<double>(height),
     });
 }
 
@@ -53,5 +46,5 @@ double screen::get_aspect()
 {
     int width, height;
     glfwGetFramebufferSize(globals::window, &width, &height);
-    return calc_aspect(width, height);
+    return static_cast<double>(width) / static_cast<double>(height);
 }

@@ -2,15 +2,15 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef CLIENT_GLXX_PROGRAM_HH
-#define CLIENT_GLXX_PROGRAM_HH
+#ifndef CLIENT_GL_PROGRAM_HH
+#define CLIENT_GL_PROGRAM_HH
 #include <array>
-#include <client/glxx/shader.hh>
+#include <client/gl_shader.hh>
 #include <spdlog/spdlog.h>
 
-namespace glxx
+namespace gl
 {
-class Program final : public Object<Program> {
+class Program final : public gl::Object<Program> {
 public:
     Program() = default;
     Program(Program &&rhs);
@@ -18,7 +18,7 @@ public:
     void create();
     void destroy();
     void set_separable(bool separable);
-    void attach(const glxx::Shader &shader);
+    void attach(const gl::Shader &shader);
     bool link();
     void bind();
     constexpr bool is_separable() const;
@@ -29,6 +29,7 @@ private:
     bool separable {false};
     GLbitfield stage_bits {0};
 };
+} // namespace gl
 
 namespace detail
 {
@@ -52,9 +53,8 @@ static inline void check_program_info_log(uint32_t program)
     }
 }
 } // namespace detail
-} // namespace glxx
 
-inline glxx::Program::Program(glxx::Program &&rhs)
+inline gl::Program::Program(gl::Program &&rhs)
     : separable{rhs.separable}, stage_bits{rhs.stage_bits}
 {
     handle = rhs.handle;
@@ -63,23 +63,23 @@ inline glxx::Program::Program(glxx::Program &&rhs)
     rhs.stage_bits = 0;
 }
 
-inline glxx::Program &glxx::Program::operator=(glxx::Program &&rhs)
+inline gl::Program &gl::Program::operator=(gl::Program &&rhs)
 {
-    glxx::Program copy {std::move(rhs)};
+    gl::Program copy {std::move(rhs)};
     std::swap(handle, copy.handle);
     std::swap(separable, copy.separable);
     std::swap(stage_bits, copy.stage_bits);
     return *this;
 }
 
-inline void glxx::Program::create()
+inline void gl::Program::create()
 {
     destroy();
     handle = glCreateProgram();
     glProgramParameteri(handle, GL_PROGRAM_SEPARABLE, separable ? GL_TRUE : GL_FALSE);
 }
 
-inline void glxx::Program::destroy()
+inline void gl::Program::destroy()
 {
     if(handle) {
         glDeleteProgram(handle);
@@ -88,14 +88,14 @@ inline void glxx::Program::destroy()
     }
 }
 
-inline void glxx::Program::set_separable(bool separable)
+inline void gl::Program::set_separable(bool separable)
 {
     if(handle)
         glProgramParameteri(handle, GL_PROGRAM_SEPARABLE, separable ? GL_TRUE : GL_FALSE);
     this->separable = separable;
 }
 
-inline void glxx::Program::attach(const glxx::Shader &shader)
+inline void gl::Program::attach(const gl::Shader &shader)
 {
     const GLbitfield stage_bit = detail::get_stage_bit(shader.get_stage());
     if(handle && !(stage_bits & stage_bit)) {
@@ -104,13 +104,13 @@ inline void glxx::Program::attach(const glxx::Shader &shader)
     }
 }
 
-inline bool glxx::Program::link()
+inline bool gl::Program::link()
 {
     if(handle && stage_bits) {
         int32_t status;
 
         glLinkProgram(handle);
-        glxx::detail::check_program_info_log(handle);
+        detail::check_program_info_log(handle);
 
         glGetProgramiv(handle, GL_LINK_STATUS, &status);
         return status;
@@ -119,26 +119,26 @@ inline bool glxx::Program::link()
     return false;
 }
 
-inline void glxx::Program::bind()
+inline void gl::Program::bind()
 {
     if(!handle)
         return;
     glUseProgram(handle);
 }
 
-constexpr inline bool glxx::Program::is_separable() const
+constexpr inline bool gl::Program::is_separable() const
 {
     return separable;
 }
 
-constexpr inline GLbitfield glxx::Program::get_stage_bits() const
+constexpr inline GLbitfield gl::Program::get_stage_bits() const
 {
     return stage_bits;
 }
 
-inline void glxx::Program::unbind()
+inline void gl::Program::unbind()
 {
     glUseProgram(0);
 }
 
-#endif /* CLIENT_GLXX_PROGRAM_HH */
+#endif/* CLIENT_GL_PROGRAM_HH */

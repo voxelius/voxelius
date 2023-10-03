@@ -12,19 +12,19 @@ void GBuffer::create(int width, int height)
     // Format: RGBA 32-bit float.
     // Comment: color data.
     albedo_attachment.create();
-    albedo_attachment.storage(width, height, glxx::PixelFormat::R32G32B32A32_FLOAT);
+    albedo_attachment.storage(width, height, PixelFormat::R32G32B32A32_FLOAT);
 
     // ID: 1.
     // Format: XYZ 32-bit float.
     // Comment: vertex normals.
     normal_attachment.create();
-    normal_attachment.storage(width, height, glxx::PixelFormat::R32G32B32_FLOAT);
+    normal_attachment.storage(width, height, PixelFormat::R32G32B32_FLOAT);
 
     // ID: none.
     // Format: 24-bit depth.
     // Comment: depth buffer stub.
     renderbuffer.create();
-    renderbuffer.storage(width, height, glxx::PixelFormat::D24_UNORM);
+    renderbuffer.storage(width, height, PixelFormat::D24_UNORM);
 
     framebuffer.create();
 
@@ -45,22 +45,22 @@ void GBuffer::destroy()
     albedo_attachment.destroy();
 }
 
-const glxx::Texture2D &GBuffer::get_albedo_attachment() const
+const gl::Texture2D &GBuffer::get_albedo_attachment() const
 {
     return albedo_attachment;
 }
 
-const glxx::Texture2D &GBuffer::get_normal_attachment() const
+const gl::Texture2D &GBuffer::get_normal_attachment() const
 {
     return normal_attachment;
 }
 
-const glxx::Renderbuffer &GBuffer::get_renderbuffer() const
+const gl::Renderbuffer &GBuffer::get_renderbuffer() const
 {
     return renderbuffer;
 }
 
-const glxx::Framebuffer &GBuffer::get_framebuffer() const
+const gl::Framebuffer &GBuffer::get_framebuffer() const
 {
     return framebuffer;
 }

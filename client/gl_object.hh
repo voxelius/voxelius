@@ -2,14 +2,14 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef CLIENT_GLXX_OBJECT_HH
-#define CLIENT_GLXX_OBJECT_HH
+#ifndef CLIENT_GL_OBJECT_HH
+#define CLIENT_GL_OBJECT_HH
 #include <shared/mixin.hh>
 #include <glad/gl.h>
 #include <stddef.h>
 #include <utility>
 
-namespace glxx
+namespace gl
 {
 template<typename T>
 class Object : public mixin::NonCopyable {
@@ -23,30 +23,30 @@ public:
 protected:
     uint32_t handle {0};
 };
-} // namespace glxx
+} // namespace gl
 
 template<typename T>
-inline glxx::Object<T>::~Object()
+inline gl::Object<T>::~Object()
 {
     destroy();
 }
 
 template<typename T>
-inline void glxx::Object<T>::destroy()
+inline void gl::Object<T>::destroy()
 {
     static_cast<T *>(this)->destroy();
 }
 
 template<typename T>
-inline constexpr bool glxx::Object<T>::valid() const
+inline constexpr bool gl::Object<T>::valid() const
 {
     return handle != 0;
 }
 
 template<typename T>
-inline constexpr uint32_t glxx::Object<T>::get() const
+inline constexpr uint32_t gl::Object<T>::get() const
 {
     return handle;
 }
 
-#endif /* CLIENT_GLXX_OBJECT_HH */
+#endif/* CLIENT_GL_OBJECT_HH */

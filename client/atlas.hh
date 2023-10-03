@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_ATLAS_HH
 #define CLIENT_ATLAS_HH
-#include <client/glxx/texture.hh>
+#include <client/gl_texture.hh>
 #include <shared/vfs.hh>
 
 struct AtlasTexture final {
@@ -19,7 +19,7 @@ void destroy();
 const AtlasTexture *load(const vfs::path_t &path);
 const AtlasTexture *find(const vfs::path_t &path);
 const AtlasTexture *find(const uint32_t texture);
-const glxx::Texture2DArray &get();
+const gl::Texture2DArray &get();
 } // namespace atlas
 
 #endif/* CLIENT_ATLAS_HH */

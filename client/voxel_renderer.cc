@@ -5,9 +5,9 @@
 #include <client/atlas.hh>
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
-#include <client/glxx/program.hh>
-#include <client/glxx/sampler.hh>
-#include <client/glxx/vertex_array.hh>
+#include <client/gl_program.hh>
+#include <client/gl_sampler.hh>
+#include <client/gl_vertexarray.hh>
 #include <client/input.hh>
 #include <client/screen.hh>
 #include <client/shaders.hh>
@@ -27,19 +27,19 @@ struct VoxelRender_UBO final {
     vector4f_t chunk {};
 };
 
-static glxx::Buffer ubo = {};
-static glxx::Sampler sampler = {};
-static glxx::VertexArray vao = {};
-static glxx::Program program_solid = {};
+static gl::Buffer ubo = {};
+static gl::Sampler sampler = {};
+static gl::VertexArray vao = {};
+static gl::Program program_solid = {};
 
 static std::vector<entt::entity> chunks_solid = {};
 static std::vector<entt::entity> chunks_cutout = {};
 static std::vector<entt::entity> chunks_blend = {};
 
-static void init_program(glxx::Program &prog, const std::string &name)
+static void init_program(gl::Program &prog, const std::string &name)
 {
-    glxx::Shader vert = {};
-    glxx::Shader frag = {};
+    gl::Shader vert = {};
+    gl::Shader frag = {};
     std::string source = {};
 
     vert.create(GL_VERTEX_SHADER);

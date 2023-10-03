@@ -25,17 +25,15 @@ constexpr static const char *common_frag = R"glsl(
 )glsl";
 
 constexpr static const char *screenspace_vert = R"glsl(
-    const vec2 _screenspace_position[8] = {
+    const vec2 _screenspace_position[6] = {
         vec2(-1.0, -1.0), vec2(+1.0, -1.0),
         vec2(+1.0, +1.0), vec2(-1.0, -1.0),
         vec2(+1.0, +1.0), vec2(-1.0, +1.0),
-        vec2(-1.0, -1.0), vec2(+1.0, +1.0),
     };
-    const vec2 _screenspace_texcoord[8] = {
+    const vec2 _screenspace_texcoord[6] = {
         vec2(0.0, 0.0), vec2(1.0, 0.0),
-        vec2(1.0, 1.0), vec2(0.0, 0.0),
-        vec2(1.0, 1.0), vec2(0.0, 1.0),
-        vec2(0.0, 0.0), vec2(1.0, 1.0),
+        vec2(1.0, 1.0), vec2(1.0, 1.0),
+        vec2(0.0, 1.0), vec2(0.0, 0.0),
     };
     #define screenspace_position _screenspace_position[gl_VertexID % 6]
     #define screenspace_texcoord _screenspace_texcoord[gl_VertexID % 6]
@@ -86,7 +84,7 @@ void shaders::add(const std::string &name, uint32_t stage, const std::string &so
     }
 }
 
-bool shaders::compile(glxx::Shader &shader, const vfs::path_t &path)
+bool shaders::compile(gl::Shader &shader, const vfs::path_t &path)
 {
     vfs::file_t *file = vfs::open(path, vfs::OPEN_RD);
 

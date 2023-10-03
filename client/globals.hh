@@ -4,9 +4,15 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_GLOBALS_HH
 #define CLIENT_GLOBALS_HH
-#include <client/glxx/fwd.hh>
 #include <entt/fwd.hpp>
 #include <shared/globals.hh>
+#include <shared/types.hh>
+
+namespace gl
+{
+class Framebuffer;
+class Texture2D;
+} // namespace gl
 
 struct GLFWwindow;
 class GBuffer;
@@ -27,8 +33,8 @@ extern entt::entity player;
 extern GBuffer gbuffer_solid;
 extern GBuffer gbuffer_cutout;
 extern GBuffer gbuffer_blend;
-extern glxx::Framebuffer deferred_fbo;
-extern glxx::Texture2D deferred_color;
+extern gl::Framebuffer deferred_fbo;
+extern gl::Texture2D deferred_color;
 } // namespace globals
 
 #endif/* CLIENT_GLOBALS_HH */

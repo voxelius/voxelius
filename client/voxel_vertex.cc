@@ -2,7 +2,6 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#include <client/glxx/vertex_array.hh>
 #include <client/shaders.hh>
 #include <client/voxel_vertex.hh>
 #include <shared/cxmath.hh>
@@ -73,7 +72,7 @@ VoxelVertex::VoxelVertex(const vector3_t &position, unsigned int shade, const ve
     vvdat_i[3] |= (static_cast<uint32_t>(uv.y / 16.0 * 65535.0) & 0xFFFF);
 }
 
-void VoxelVertex::setup(glxx::VertexArray &vao)
+void VoxelVertex::setup(gl::VertexArray &vao)
 {
     vao.enable_attribute(0, true);
     vao.set_attribute_format(0, GL_UNSIGNED_INT, 4, offsetof(VoxelVertex, vvdat_i), false);

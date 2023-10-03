@@ -2,13 +2,13 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef CLIENT_GLXX_BUFFER_HH
-#define CLIENT_GLXX_BUFFER_HH
-#include <client/glxx/object.hh>
+#ifndef CLIENT_GL_BUFFER_HH
+#define CLIENT_GL_BUFFER_HH
+#include <client/gl_object.hh>
 
-namespace glxx
+namespace gl
 {
-class Buffer final : public Object<Buffer> {
+class Buffer final : public gl::Object<Buffer> {
 public:
     Buffer() = default;
     Buffer(Buffer &&rhs);
@@ -21,28 +21,28 @@ public:
     void write(size_t offset, size_t size, const void *data);
     void read(size_t offset, size_t size, void *data) const;
 };
-} // namespace glxx
+} // namespace gl
 
-inline glxx::Buffer::Buffer(glxx::Buffer &&rhs)
+inline gl::Buffer::Buffer(gl::Buffer &&rhs)
 {
     handle = rhs.handle;
     rhs.handle = 0;
 }
 
-inline glxx::Buffer &glxx::Buffer::operator=(glxx::Buffer &&rhs)
+inline gl::Buffer &gl::Buffer::operator=(gl::Buffer &&rhs)
 {
-    glxx::Buffer copy {std::move(rhs)};
+    gl::Buffer copy {std::move(rhs)};
     std::swap(handle, copy.handle);
     return *this;
 }
 
-inline void glxx::Buffer::create()
+inline void gl::Buffer::create()
 {
     destroy();
     glCreateBuffers(1, &handle);
 }
 
-inline void glxx::Buffer::destroy()
+inline void gl::Buffer::destroy()
 {
     if(handle) {
         glDeleteBuffers(1, &handle);
@@ -50,29 +50,29 @@ inline void glxx::Buffer::destroy()
     }
 }
 
-inline void glxx::Buffer::bind_base(uint32_t target, uint32_t index)
+inline void gl::Buffer::bind_base(uint32_t target, uint32_t index)
 {
     glBindBufferBase(target, index, handle);
 }
 
-inline void glxx::Buffer::storage(size_t size, const void *data, GLbitfield flags)
+inline void gl::Buffer::storage(size_t size, const void *data, GLbitfield flags)
 {
     glNamedBufferStorage(handle, static_cast<GLsizeiptr>(size), data, flags);
 }
 
-inline void glxx::Buffer::resize(size_t new_size, const void *data, GLbitfield usage)
+inline void gl::Buffer::resize(size_t new_size, const void *data, GLbitfield usage)
 {
     glNamedBufferData(handle, static_cast<GLsizeiptr>(new_size), data, usage);
 }
 
-inline void glxx::Buffer::write(size_t offset, size_t size, const void *data)
+inline void gl::Buffer::write(size_t offset, size_t size, const void *data)
 {
     glNamedBufferSubData(handle, static_cast<GLintptr>(offset), static_cast<GLsizeiptr>(size), data);
 }
 
-inline void glxx::Buffer::read(size_t offset, size_t size, void *data) const
+inline void gl::Buffer::read(size_t offset, size_t size, void *data) const
 {
     glGetNamedBufferSubData(handle, static_cast<GLintptr>(offset), static_cast<GLsizeiptr>(size), data);
 }
 
-#endif /* CLIENT_GLXX_BUFFER_HH */
+#endif/* CLIENT_GL_BUFFER_HH */

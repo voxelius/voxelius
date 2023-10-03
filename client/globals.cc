@@ -19,5 +19,5 @@ entt::entity globals::player = entt::null;
 GBuffer globals::gbuffer_solid = {};
 GBuffer globals::gbuffer_cutout = {};
 GBuffer globals::gbuffer_blend = {};
-glxx::Framebuffer globals::deferred_fbo = {};
-glxx::Texture2D globals::deferred_color = {};
+gl::Framebuffer globals::deferred_fbo = {};
+gl::Texture2D globals::deferred_color = {};

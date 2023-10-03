@@ -5,16 +5,16 @@
 #include <client/postprocess.hh>
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
-#include <client/glxx/program.hh>
-#include <client/glxx/sampler.hh>
-#include <client/glxx/vertex_array.hh>
+#include <client/gl_program.hh>
+#include <client/gl_sampler.hh>
+#include <client/gl_vertexarray.hh>
 #include <client/screen.hh>
 #include <client/shaders.hh>
 #include <shared/vfs.hh>
 
-static glxx::Sampler sampler = {};
-static glxx::VertexArray vao = {};
-static glxx::Program program = {};
+static gl::Sampler sampler = {};
+static gl::VertexArray vao = {};
+static gl::Program program = {};
 
 void postprocess::init()
 {
@@ -26,8 +26,8 @@ void postprocess::init()
 
     vao.create();
 
-    glxx::Shader vert = {};
-    glxx::Shader frag = {};
+    gl::Shader vert = {};
+    gl::Shader frag = {};
     std::string source = {};
 
     vert.create(GL_VERTEX_SHADER);
@@ -63,7 +63,7 @@ void postprocess::render()
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glClearColor(0.0, 0.0, 0.0, 0.0);
 
-    glxx::Framebuffer::unbind();
+    gl::Framebuffer::unbind();
     glClear(GL_COLOR_BUFFER_BIT);
 
     globals::deferred_color.bind(0);

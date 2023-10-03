@@ -2,16 +2,16 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef CLIENT_GLXX_SHADER_HH
-#define CLIENT_GLXX_SHADER_HH
-#include <client/glxx/object.hh>
+#ifndef CLIENT_GL_SHADER_HH
+#define CLIENT_GL_SHADER_HH
+#include <client/gl_object.hh>
 #include <spdlog/spdlog.h>
 #include <string>
 #include <vector>
 
-namespace glxx
+namespace gl
 {
-class Shader final : public Object<Shader> {
+class Shader final : public gl::Object<Shader> {
 public:
     Shader() = default;
     Shader(Shader &&rhs);
@@ -27,6 +27,7 @@ public:
 private:
     uint32_t stage {0};
 };
+} // namespace gl
 
 namespace detail
 {
@@ -41,9 +42,8 @@ static inline void check_shader_info_log(uint32_t shader)
     }
 }
 } // namespace detail
-} // namespace glxx
 
-inline glxx::Shader::Shader(glxx::Shader &&rhs)
+inline gl::Shader::Shader(gl::Shader &&rhs)
     : stage{rhs.stage}
 {
     handle = rhs.handle;
@@ -51,22 +51,22 @@ inline glxx::Shader::Shader(glxx::Shader &&rhs)
     rhs.stage = 0;
 }
 
-inline glxx::Shader &glxx::Shader::operator=(glxx::Shader &&rhs)
+inline gl::Shader &gl::Shader::operator=(gl::Shader &&rhs)
 {
-    glxx::Shader copy {std::move(rhs)};
+    gl::Shader copy {std::move(rhs)};
     std::swap(handle, copy.handle);
     std::swap(stage, copy.stage);
     return *this;
 }
 
-inline void glxx::Shader::create(uint32_t stage)
+inline void gl::Shader::create(uint32_t stage)
 {
     destroy();
     this->handle = glCreateShader(stage);
     this->stage = stage;
 }
 
-inline void glxx::Shader::destroy()
+inline void gl::Shader::destroy()
 {
     if(handle) {
         glDeleteShader(handle);
@@ -75,7 +75,7 @@ inline void glxx::Shader::destroy()
     }
 }
 
-inline bool glxx::Shader::glsl(const std::string &source)
+inline bool gl::Shader::glsl(const std::string &source)
 {
     if(handle) {
         int32_t status;
@@ -83,7 +83,7 @@ inline bool glxx::Shader::glsl(const std::string &source)
 
         glShaderSource(handle, 1, &data, nullptr);
         glCompileShader(handle);
-        glxx::detail::check_shader_info_log(handle);
+        detail::check_shader_info_log(handle);
 
         glGetShaderiv(handle, GL_COMPILE_STATUS, &status);
         return status == GL_TRUE;
@@ -93,7 +93,7 @@ inline bool glxx::Shader::glsl(const std::string &source)
 }
 
 #if 0
-inline bool glxx::Shader::spirv(uint32_t stage, const std::vector<uint8_t> &binary)
+inline bool gl::Shader::spirv(uint32_t stage, const std::vector<uint8_t> &binary)
 {
     if(handle && stage) {
         int32_t status;
@@ -101,7 +101,7 @@ inline bool glxx::Shader::spirv(uint32_t stage, const std::vector<uint8_t> &bina
 
         glShaderBinary(1, &handle, GL_SHADER_BINARY_FORMAT_SPIR_V, binary.data(), static_cast<int32_t>(binary.size()));
         glSpecializeShader(handle, "main", 0, nullptr, nullptr);
-        glxx::detail::check_shader_info_log(handle);
+        detail::check_shader_info_log(handle);
 
         glGetShaderiv(handle, GL_COMPILE_STATUS, &status);
         return status;
@@ -111,9 +111,9 @@ inline bool glxx::Shader::spirv(uint32_t stage, const std::vector<uint8_t> &bina
 }
 #endif
 
-inline constexpr uint32_t glxx::Shader::get_stage() const
+inline constexpr uint32_t gl::Shader::get_stage() const
 {
     return stage;
 }
 
-#endif /* CLIENT_GLXX_SHADER_HH */
+#endif/* CLIENT_GL_SHADER_HH */

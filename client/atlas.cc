@@ -11,7 +11,7 @@
 static int atlas_width = 0;
 static int atlas_height = 0;
 static size_t atlas_count = 0;
-static glxx::Texture2DArray atlas_obj = {};
+static gl::Texture2DArray atlas_obj = {};
 static std::vector<AtlasTexture> atlas_vec = {};
 static std::unordered_map<vfs::path_t, size_t, vfs::path_hasher_t> atlas_map = {};
 
@@ -94,7 +94,7 @@ const AtlasTexture *atlas::find(const uint32_t tex_id)
     return nullptr;
 }
 
-const glxx::Texture2DArray &atlas::get()
+const gl::Texture2DArray &atlas::get()
 {
     return atlas_obj;
 }

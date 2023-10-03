@@ -5,25 +5,9 @@
 #include <client/image.hh>
 #include <stb_image.h>
 
-Image::Image(Image &&rhs)
-{
-    std::swap(rhs.width, width);
-    std::swap(rhs.height, height);
-    std::swap(rhs.pixels, pixels);
-}
-
 Image::~Image()
 {
     unload();
-}
-
-Image &Image::operator=(Image &&rhs)
-{
-    Image copy = Image{std::move(rhs)};
-    std::swap(copy.width, width);
-    std::swap(copy.height, height);
-    std::swap(copy.pixels, pixels);
-    return (*this);
 }
 
 bool Image::load_grayscale(const vfs::path_t &path, bool flip)

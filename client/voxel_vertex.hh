@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_VOXEL_VERTEX_HH
 #define CLIENT_VOXEL_VERTEX_HH
-#include <client/glxx/fwd.hh>
+#include <client/gl_vertexarray.hh>
 #include <shared/types.hh>
 
 constexpr static const uint32_t VOXEL_VBO_BINDING = 0;
@@ -18,7 +18,7 @@ struct VoxelVertex final {
 
     VoxelVertex() = default;
     VoxelVertex(const vector3_t &position, unsigned int shade, const vector3_t &normal, uint16_t toffset, uint16_t tframes, const vector2_t &uv);
-    static void setup(glxx::VertexArray &vao);
+    static void setup(gl::VertexArray &vao);
     static void init();
 };
 

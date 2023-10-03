@@ -3,11 +3,13 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/atlas.hh>
-#include <client/deferred_pass.hh>
+#include <client/deferred.hh>
+#include <client/fonts.hh>
 #include <client/game.hh>
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
 #include <client/input.hh>
+#include <client/label.hh>
 #include <client/pm_look.hh>
 #include <client/pm_move.hh>
 #include <client/postprocess.hh>
@@ -30,6 +32,9 @@ constexpr static const uint32_t SLATE   = 2;
 constexpr static const uint32_t DIRT    = 3;
 constexpr static const uint32_t GRASS   = 4;
 constexpr static const uint32_t VTEST   = 5;
+
+static const Font *font = nullptr;
+static Label label = {};
 
 static void on_key(const KeyEvent &event)
 {
@@ -66,7 +71,7 @@ static void on_screen_size(const ScreenSizeEvent &event)
     globals::gbuffer_blend.create(event.width, event.height);
 
     globals::deferred_color.create();
-    globals::deferred_color.storage(event.width, event.height, glxx::PixelFormat::R8G8B8A8_UNORM);
+    globals::deferred_color.storage(event.width, event.height, PixelFormat::R8G8B8A8_UNORM);
     globals::deferred_fbo.create();
     globals::deferred_fbo.attach(GL_COLOR_ATTACHMENT0, globals::deferred_color);
     globals::deferred_fbo.set_fragment_targets(GL_COLOR_ATTACHMENT0);
@@ -87,12 +92,21 @@ void client_game::init()
     voxel_mesher::init();
     voxel_renderer::init();
 
-    deferred_pass::init();
+    deferred::init();
     postprocess::init();
+
+    // FIXME FIXME FIXME MOVE THIS SOMEWHERE ELSE
+    Label::init();
 
     globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
     globals::dispatcher.sink<MouseButtonEvent>().connect<&on_mouse_button>();
     globals::dispatcher.sink<ScreenSizeEvent>().connect<&on_screen_size>();
+
+    // FIXME FIXME FIXME MOVE THIS SOMEWHERE ELSE
+    font = fonts::load_image("16x16", "/fonts/unifont16x16.png", 16, 16);
+    label.set_text(L"Рисуется шрифтом UNIFONT в диапазоне U+0000...U+0FFF");
+    label.set_position({16U, 16U});
+    label.set_scale({1.5, 2.0});
 }
 
 // Surface level for world generation
@@ -138,6 +152,7 @@ void client_game::init_late()
 {
     screen::init_late();
 
+#if 0
     vdef::purge();
     vdef::assign("stone", STONE);
     vdef::assign("slate", SLATE);
@@ -170,6 +185,7 @@ void client_game::init_late()
     globals::world.registry.emplace<HeadComponent>(globals::player);
     globals::world.registry.emplace<TransformComponent>(globals::player);
     globals::world.registry.emplace<VelocityComponent>(globals::player);
+#endif
 }
 
 void client_game::deinit()
@@ -183,12 +199,20 @@ void client_game::deinit()
     globals::gbuffer_cutout.destroy();
     globals::gbuffer_solid.destroy();
 
+    Label::deinit();
+
     postprocess::deinit();
-    deferred_pass::deinit();
+    deferred::deinit();
 
     voxel_renderer::deinit();
     voxel_mesher::deinit();
     voxel_anims::deinit();
+
+    // FIXME FIXME FIXME MOVE THIS SOMEWHERE ELSE
+    fonts::purge();
+
+    // FIXME FIXME FIXME MOVE THIS SOMEWHERE ELSE
+    label.destroy();
 
     // Certain components have their destructors
     // calling OpenGL API functions, which are
@@ -212,12 +236,18 @@ void client_game::update()
 void client_game::update_late()
 {
     // FIXME: there should be a way to release the cursor
-    glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
 void client_game::render()
 {
-    voxel_renderer::render();
-    deferred_pass::render();
-    postprocess::render();
+    //voxel_renderer::render();
+    //deferred::render();
+    //postprocess::render();
+
+    // FIXME FIXME FIXME MOVE THIS SOMEWHERE ELSE
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    Label::draw(label, font);
 }

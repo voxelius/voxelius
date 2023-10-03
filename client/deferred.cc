@@ -2,40 +2,32 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#include <client/deferred_pass.hh>
+#include <client/deferred.hh>
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
-#include <client/glxx/program.hh>
-#include <client/glxx/sampler.hh>
-#include <client/glxx/vertex_array.hh>
+#include <client/gl_program.hh>
+#include <client/gl_sampler.hh>
+#include <client/gl_vertexarray.hh>
 #include <client/screen.hh>
 #include <client/shaders.hh>
 #include <shared/vfs.hh>
 
-static glxx::Sampler sampler = {};
-static glxx::VertexArray vao = {};
-static glxx::Program program = {};
+static gl::Program program = {};
+static gl::Sampler sampler = {};
+static gl::VertexArray vao = {};
 
-void deferred_pass::init()
+void deferred::init()
 {
-    sampler.create();
-    sampler.parameter(GL_TEXTURE_WRAP_S, GL_REPEAT);
-    sampler.parameter(GL_TEXTURE_WRAP_T, GL_REPEAT);
-    sampler.parameter(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    sampler.parameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-    vao.create();
-
-    glxx::Shader vert = {};
-    glxx::Shader frag = {};
+    gl::Shader vert = {};
+    gl::Shader frag = {};
     std::string source = {};
 
     vert.create(GL_VERTEX_SHADER);
     frag.create(GL_FRAGMENT_SHADER);
 
-    if(!shaders::compile(vert, "/shaders/deferred_pass.vert"))
+    if(!shaders::compile(vert, "/shaders/deferred.vert"))
         std::terminate();
-    if(!shaders::compile(frag, "/shaders/deferred_pass.frag"))
+    if(!shaders::compile(frag, "/shaders/deferred.frag"))
         std::terminate();
 
     program.create();
@@ -46,18 +38,24 @@ void deferred_pass::init()
         std::terminate();
     vert.destroy();
     frag.destroy();
+
+    sampler.create();
+    sampler.parameter(GL_TEXTURE_WRAP_S, GL_REPEAT);
+    sampler.parameter(GL_TEXTURE_WRAP_T, GL_REPEAT);
+    sampler.parameter(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    sampler.parameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    vao.create();
 }
 
-void deferred_pass::deinit()
+void deferred::deinit()
 {
-    program.destroy();
-
     vao.destroy();
-
     sampler.destroy();
+    program.destroy();
 }
 
-void deferred_pass::render()
+void deferred::render()
 {
     glDisable(GL_DEPTH_TEST);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -77,8 +75,6 @@ void deferred_pass::render()
     glViewport(0, 0, width, height);
 
     vao.bind();
-
     program.bind();
-
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }

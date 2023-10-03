@@ -4,23 +4,18 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_IMAGE_HH
 #define CLIENT_IMAGE_HH
-#include <client/glxx/pixel_format.hh>
+#include <client/pixel_format.hh>
 #include <shared/mixin.hh>
 #include <shared/vfs.hh>
 #include <string>
 
 class Image final : public mixin::NonCopyable {
 public:
-    constexpr static const glxx::PixelFormat GRAYSCALE = glxx::PixelFormat::R8_UNORM;
-    constexpr static const glxx::PixelFormat RGBA = glxx::PixelFormat::R8G8B8A8_UNORM;
+    constexpr static const PixelFormat GRAYSCALE = PixelFormat::R8_UNORM;
+    constexpr static const PixelFormat RGBA = PixelFormat::R8G8B8A8_UNORM;
 
 public:
-    Image() = default;
-    Image(Image &&rhs);
     virtual ~Image();
-
-    Image &operator=(Image &&rhs);
-
     bool load_grayscale(const vfs::path_t &path, bool flip);
     bool load_rgba(const vfs::path_t &path, bool flip);
     void unload();

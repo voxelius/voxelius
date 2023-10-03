@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/atlas.hh>
 #include <client/globals.hh>
-#include <client/glxx/buffer.hh>
+#include <client/gl_buffer.hh>
 #include <client/shaders.hh>
 #include <client/voxel_anims.hh>
 #include <shared/vdef.hh>
@@ -16,7 +16,7 @@ constexpr static const char *voxel_anims_vert = R"glsl(
     };
 )glsl";
 
-static glxx::Buffer ssbo = {};
+static gl::Buffer ssbo = {};
 
 uint64_t voxel_anims::frametime = 0;
 uint64_t voxel_anims::nextframe = 0;
