@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_GL_SHADER_HH
 #define CLIENT_GL_SHADER_HH
-#include <client/gl_object.hh>
+#include <client/gl/object.hh>
 #include <spdlog/spdlog.h>
 #include <string>
 #include <vector>

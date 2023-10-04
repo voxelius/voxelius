@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_UI_LABEL_HH
 #define CLIENT_UI_LABEL_HH
-#include <client/gl_texture.hh>
+#include <client/ui/font.hh>
 #include <shared/types.hh>
 #include <string>
 
@@ -12,16 +12,23 @@ namespace ui
 {
 class Label final {
 public:
-    void set(const std::string &text);
-    void set(const std::wstring &text);
+    void set_text(const std::wstring &text);
+    void set_center(const vector2i_t &center);
+    void set_color(const vector4_t &color);
+    void set_scale(const vector2_t &scale);
     void destroy();
 
-    const gl::Texture2D &get() const;
-    const size_t get_size() const;
-
 private:
+    int texture_width {};
+    vector2i_t center {};
+    vector4_t color {1.0, 1.0, 1.0, 1.0};
+    vector2_t scale {1.0, 1.0};
     gl::Texture2D texture {};
-    size_t text_size {};
+
+public:
+    static void init();
+    static void deinit();
+    static void draw(const Label &label, const Font &font);
 };
 } // namespace ui
 

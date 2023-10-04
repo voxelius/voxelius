@@ -5,11 +5,10 @@
 #include <client/atlas.hh>
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
-#include <client/gl_program.hh>
-#include <client/gl_sampler.hh>
-#include <client/gl_vertexarray.hh>
+#include <client/gl/program.hh>
+#include <client/gl/sampler.hh>
+#include <client/gl/vertexarray.hh>
 #include <client/input.hh>
-#include <client/screen.hh>
 #include <client/shaders.hh>
 #include <client/view.hh>
 #include <client/voxel_anims.hh>
@@ -128,9 +127,7 @@ void voxel_renderer::render()
 
     voxel_anims::bind_ssbo();
 
-    int width, height;
-    screen::get_size(width, height);
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, globals::window_width, globals::window_height);
 
     chunks_solid.clear();
     chunks_cutout.clear();

@@ -25,6 +25,10 @@ using vector2f_t = glm::vec<2, float, glm::packed_highp>;
 using vector3f_t = glm::vec<3, float, glm::packed_highp>;
 using vector4f_t = glm::vec<4, float, glm::packed_highp>;
 
+using vector2i_t = glm::vec<2, int32_t, glm::packed_highp>;
+using vector3i_t = glm::vec<3, int32_t, glm::packed_highp>;
+using vector4i_t = glm::vec<4, int32_t, glm::packed_highp>;
+
 using vector2u_t = glm::vec<2, uint32_t, glm::packed_highp>;
 using vector3u_t = glm::vec<3, uint32_t, glm::packed_highp>;
 using vector4u_t = glm::vec<4, uint32_t, glm::packed_highp>;

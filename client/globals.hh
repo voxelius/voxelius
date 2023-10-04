@@ -14,6 +14,11 @@ class Framebuffer;
 class Texture2D;
 } // namespace gl
 
+namespace ui
+{
+class Font;
+}
+
 struct GLFWwindow;
 class GBuffer;
 class World;
@@ -21,6 +26,14 @@ class World;
 namespace globals
 {
 extern GLFWwindow *window;
+extern int window_width;
+extern int window_height;
+extern double window_aspect;
+
+extern unsigned int ui_scale;
+
+extern double cursor_xpos;
+extern double cursor_ypos;
 
 extern double frametime;
 extern double frametime_avg;
@@ -35,6 +48,8 @@ extern GBuffer gbuffer_cutout;
 extern GBuffer gbuffer_blend;
 extern gl::Framebuffer deferred_fbo;
 extern gl::Texture2D deferred_color;
+
+extern ui::Font default_font;
 } // namespace globals
 
 #endif/* CLIENT_GLOBALS_HH */

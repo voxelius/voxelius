@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_GBUFFER_HH
 #define CLIENT_GBUFFER_HH
-#include <client/gl_framebuffer.hh>
+#include <client/gl/framebuffer.hh>
 
 class GBuffer final {
 public:

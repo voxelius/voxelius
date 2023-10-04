@@ -56,8 +56,8 @@ const AtlasTexture *atlas::load(const vfs::path_t &path)
     Image image = {};
 
     if(image.load_rgba(path, true)) {
-        int iwidth, iheight;
-        image.get_size(iwidth, iheight);
+        const int iwidth = image.get_width();
+        const int iheight = image.get_height();
 
         if(iwidth > atlas_width || iheight > atlas_height) {
             // UNDONE: bring std_image_resize here?

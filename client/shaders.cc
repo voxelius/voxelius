@@ -27,8 +27,8 @@ constexpr static const char *common_frag = R"glsl(
 constexpr static const char *screenspace_vert = R"glsl(
     const vec2 _screenspace_position[6] = {
         vec2(-1.0, -1.0), vec2(+1.0, -1.0),
-        vec2(+1.0, +1.0), vec2(-1.0, -1.0),
-        vec2(+1.0, +1.0), vec2(-1.0, +1.0),
+        vec2(+1.0, +1.0), vec2(+1.0, +1.0),
+        vec2(-1.0, +1.0), vec2(-1.0, -1.0),
     };
     const vec2 _screenspace_texcoord[6] = {
         vec2(0.0, 0.0), vec2(1.0, 0.0),

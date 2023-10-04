@@ -5,10 +5,9 @@
 #include <client/deferred.hh>
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
-#include <client/gl_program.hh>
-#include <client/gl_sampler.hh>
-#include <client/gl_vertexarray.hh>
-#include <client/screen.hh>
+#include <client/gl/program.hh>
+#include <client/gl/sampler.hh>
+#include <client/gl/vertexarray.hh>
 #include <client/shaders.hh>
 #include <shared/vfs.hh>
 
@@ -70,9 +69,7 @@ void deferred::render()
     sampler.bind(0);
     sampler.bind(1);
 
-    int width, height;
-    screen::get_size(width, height);
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, globals::window_width, globals::window_height);
 
     vao.bind();
     program.bind();

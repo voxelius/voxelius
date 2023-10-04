@@ -5,14 +5,20 @@
 #include <client/globals.hh>
 #include <client/screen.hh>
 #include <GLFW/glfw3.h>
+#include <shared/cxmath.hh>
 #include <spdlog/spdlog.h>
 
 static void on_framebuffer_size_event(GLFWwindow *window, int width, int height)
 {
+    globals::window_width = width;
+    globals::window_height = height;
+    globals::window_aspect = static_cast<double>(width) / static_cast<double>(height);
+    globals::ui_scale = cxmath::max(1U, cxmath::ceil<unsigned int>(static_cast<double>(height) / 480.0));
+
     globals::dispatcher.trigger(ScreenSizeEvent {
-        .width = width, 
-        .height = height,
-        .aspect = static_cast<double>(width) / static_cast<double>(height),
+        .width = globals::window_width,
+        .height = globals::window_height,
+        .aspect = globals::window_aspect,
     });
 }
 
@@ -29,22 +35,3 @@ void screen::init_late()
     on_framebuffer_size_event(globals::window, width, height);
 }
 
-void screen::get_size(int &width, int &height)
-{
-    glfwGetFramebufferSize(globals::window, &width, &height);
-}
-
-void screen::get_size(double &width, double &height)
-{
-    int iwidth, iheight;
-    glfwGetFramebufferSize(globals::window, &iwidth, &iheight);
-    width = static_cast<double>(iwidth);
-    height = static_cast<double>(iheight);
-}
-
-double screen::get_aspect()
-{
-    int width, height;
-    glfwGetFramebufferSize(globals::window, &width, &height);
-    return static_cast<double>(width) / static_cast<double>(height);
-}

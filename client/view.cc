@@ -3,7 +3,6 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/globals.hh>
-#include <client/screen.hh>
 #include <client/view.hh>
 #include <shared/const.hh>
 #include <shared/head.hh>
@@ -23,7 +22,7 @@ void view::update()
     view_position = vector3_t{};
     view_direction = vector3_t{};
     view_lpos_float = vector3f_t{};
-    view_matrix = glm::perspective(cxmath::radians(90.0), screen::get_aspect(), 0.01, 1024.0);
+    view_matrix = glm::perspective(cxmath::radians(90.0), globals::window_aspect, 0.01, 1024.0);
     view_cpos = chunk_pos_t{};
 
     if(globals::world.registry.valid(globals::player)) {

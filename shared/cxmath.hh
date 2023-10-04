@@ -35,9 +35,9 @@ constexpr static inline const T ceil(const F x)
     static_assert(std::is_integral_v<T>);
     static_assert(std::is_floating_point_v<F>);
     const T ival = static_cast<T>(x);
-    if(ival == static_cast<F>(ival))
-        return ival;
-    return ival + ((x > 0) ? 1 : 0);
+    if(ival < x)
+        return ival + static_cast<T>(1);
+    return ival;
 }
 
 template<typename T, typename F>

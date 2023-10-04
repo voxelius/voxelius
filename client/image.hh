@@ -23,7 +23,6 @@ public:
     bool valid() const;
     int get_width() const;
     int get_height() const;
-    void get_size(int &width, int &height) const;
     const void *data() const;
     void *data();
 

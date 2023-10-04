@@ -11,7 +11,10 @@ namespace voxel_anims
 extern uint64_t frametime;
 extern uint64_t nextframe;
 extern uint32_t frame;
+} // namespace voxel_anims
 
+namespace voxel_anims
+{
 void init();
 void deinit();
 void update();

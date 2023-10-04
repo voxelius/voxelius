@@ -5,7 +5,6 @@
 #include <client/globals.hh>
 #include <client/input.hh>
 #include <client/pm_look.hh>
-#include <client/screen.hh>
 #include <shared/angle.hh>
 #include <shared/head.hh>
 #include <shared/world.hh>
@@ -35,11 +34,7 @@ static void on_cursor_pos(const CursorPosEvent &event)
 
 void pm_look::init()
 {
-    double width, height;
-    screen::get_size(width, height);
-
-    previous_cx = width / 2.0;
-    previous_cy = height / 2.0;
-
+    previous_cx = globals::window_width / 2.0;
+    previous_cy = globals::window_height / 2.0;
     globals::dispatcher.sink<CursorPosEvent>().connect<&on_cursor_pos>();
 }

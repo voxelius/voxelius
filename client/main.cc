@@ -37,7 +37,7 @@ void client::main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_SAMPLES, 0);
 
-    globals::window = glfwCreateWindow(1280, 720, "Client", nullptr, nullptr);
+    globals::window = glfwCreateWindow(720, 480, "Client", nullptr, nullptr);
 
     if(!globals::window) {
         spdlog::critical("glfw: failed to open a window");
@@ -98,6 +98,8 @@ void client::main()
 
         client_game::update();
 
+        glDisable(GL_BLEND);
+
         // Make sure there is no stray program object
         // being bound to the context. Usually third-party
         // overlay software (such as RivaTuner) injects itself
@@ -105,7 +107,18 @@ void client::main()
         // which creates a visual mess with program pipelines.
         glUseProgram(0);
 
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClearColor(0.0, 0.0, 0.0, 1.0);
+        glClear(GL_COLOR_BUFFER_BIT);
+
         client_game::render();
+
+        glEnable(GL_BLEND);
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+        client_game::draw_ui();
 
         glfwSwapBuffers(globals::window);
 

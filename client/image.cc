@@ -66,12 +66,6 @@ int Image::get_height() const
     return height;
 }
 
-void Image::get_size(int &width, int &height) const
-{
-    width = this->width;
-    height = this->height;
-}
-
 const void *Image::data() const
 {
     return pixels;

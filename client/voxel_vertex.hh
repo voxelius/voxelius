@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_VOXEL_VERTEX_HH
 #define CLIENT_VOXEL_VERTEX_HH
-#include <client/gl_vertexarray.hh>
+#include <client/gl/vertexarray.hh>
 #include <shared/types.hh>
 
 constexpr static const uint32_t VOXEL_VBO_BINDING = 0;

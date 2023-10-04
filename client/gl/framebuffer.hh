@@ -4,8 +4,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_GL_FRAMEBUFFER_HH
 #define CLIENT_GL_FRAMEBUFFER_HH
-#include <client/gl_renderbuffer.hh>
-#include <client/gl_texture.hh>
+#include <client/gl/renderbuffer.hh>
+#include <client/gl/texture.hh>
 #include <shared/cxmath.hh>
 
 namespace gl

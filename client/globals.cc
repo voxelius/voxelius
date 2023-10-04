@@ -4,9 +4,14 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
+#include <client/ui/font.hh>
 #include <shared/world.hh>
 
 GLFWwindow *globals::window = nullptr;
+int globals::window_width = 0;
+int globals::window_height = 0;
+double globals::window_aspect = 1.0;
+unsigned int globals::ui_scale = 1;
 
 double globals::frametime = 0.0;
 double globals::frametime_avg = 0.0;
@@ -21,3 +26,6 @@ GBuffer globals::gbuffer_cutout = {};
 GBuffer globals::gbuffer_blend = {};
 gl::Framebuffer globals::deferred_fbo = {};
 gl::Texture2D globals::deferred_color = {};
+
+ui::Font globals::default_font = {};
+

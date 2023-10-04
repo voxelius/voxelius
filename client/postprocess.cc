@@ -5,10 +5,9 @@
 #include <client/postprocess.hh>
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
-#include <client/gl_program.hh>
-#include <client/gl_sampler.hh>
-#include <client/gl_vertexarray.hh>
-#include <client/screen.hh>
+#include <client/gl/program.hh>
+#include <client/gl/sampler.hh>
+#include <client/gl/vertexarray.hh>
 #include <client/shaders.hh>
 #include <shared/vfs.hh>
 
@@ -63,20 +62,15 @@ void postprocess::render()
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glClearColor(0.0, 0.0, 0.0, 0.0);
 
-    gl::Framebuffer::unbind();
-    glClear(GL_COLOR_BUFFER_BIT);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     globals::deferred_color.bind(0);
 
     sampler.bind(0);
 
-    int width, height;
-    screen::get_size(width, height);
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, globals::window_width, globals::window_height);
 
     vao.bind();
-
     program.bind();
-
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }

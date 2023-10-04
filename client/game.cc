@@ -8,12 +8,15 @@
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
 #include <client/input.hh>
+#include <client/menu.hh>
 #include <client/pm_look.hh>
 #include <client/pm_move.hh>
 #include <client/postprocess.hh>
 #include <client/screen.hh>
 #include <client/shaders.hh>
-#include <client/ui_draw.hh>
+#include <client/ui/font.hh>
+#include <client/ui/label.hh>
+#include <client/ui/rect.hh>
 #include <client/view.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_mesher.hh>
@@ -31,9 +34,6 @@ constexpr static const uint32_t SLATE   = 2;
 constexpr static const uint32_t DIRT    = 3;
 constexpr static const uint32_t GRASS   = 4;
 constexpr static const uint32_t VTEST   = 5;
-
-static const ui::Font *font = nullptr;
-static ui::Label label = {};
 
 static void on_key(const KeyEvent &event)
 {
@@ -65,6 +65,8 @@ static void on_mouse_button(const MouseButtonEvent &event)
 
 static void on_screen_size(const ScreenSizeEvent &event)
 {
+    spdlog::info("{} {}", event.height, globals::ui_scale);
+
     globals::gbuffer_solid.create(event.width, event.height);
     globals::gbuffer_cutout.create(event.width, event.height);
     globals::gbuffer_blend.create(event.width, event.height);
@@ -94,15 +96,22 @@ void client_game::init()
     deferred::init();
     postprocess::init();
 
-    ui::init();
+    if(!globals::default_font.load_image("/fonts/GNU_Unifont_16x16.png", 16, 16))
+    if(!globals::default_font.load_rom("/fonts/IBM_VGA_8x16.bin", 8, 16))
+    if(!globals::default_font.load_rom("/fonts/IBM_VGA_8x14.bin", 8, 14))
+    if(!globals::default_font.load_rom("/fonts/IBM_VGA_8x8.bin", 8, 8)) {
+        spdlog::critical("ui: unable to locate a valid default font");
+        std::terminate();
+    }
+
+    ui::Label::init();
+    ui::Rect::init();
+
+    menu::init();
 
     globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
     globals::dispatcher.sink<MouseButtonEvent>().connect<&on_mouse_button>();
     globals::dispatcher.sink<ScreenSizeEvent>().connect<&on_screen_size>();
-
-    // FIXME FIXME FIXME MOVE THIS SOMEWHERE ELSE
-    font = ui::load_font_image("16x16", "/fonts/unifont16x16.png", 16, 16);
-    label.set(L"Рисуется шрифтом UNIFONT в диапазоне U+0000...U+0FFF");
 }
 
 // Surface level for world generation
@@ -147,41 +156,6 @@ static void generate(const chunk_pos_t &cpos)
 void client_game::init_late()
 {
     screen::init_late();
-
-#if 0
-    vdef::purge();
-    vdef::assign("stone", STONE);
-    vdef::assign("slate", SLATE);
-    vdef::assign("dirt", DIRT);
-    vdef::assign("grass", GRASS);
-    vdef::assign("vtest", VTEST);
-
-    atlas::create(16, 16, vdef::textures.size());
-
-    for(const vfs::path_t &path : vdef::textures) {
-        if(!atlas::load(path)) {
-            spdlog::critical("atlas: {}: load failed", path.string());
-            std::terminate();
-        }
-    }
-
-    voxel_anims::construct();
-
-    for(int x = -8; x < 7; ++x) {
-        for(int z = -8; z < 7; ++z) {
-            for(int y = -1; y < 2; ++y) {
-                generate(chunk_pos_t{x, y, z});
-            }
-        }
-    }
-
-    spdlog::info("spawning local player");
-    globals::player = globals::world.registry.create();
-    globals::world.registry.emplace<PlayerComponent>(globals::player);
-    globals::world.registry.emplace<HeadComponent>(globals::player);
-    globals::world.registry.emplace<TransformComponent>(globals::player);
-    globals::world.registry.emplace<VelocityComponent>(globals::player);
-#endif
 }
 
 void client_game::deinit()
@@ -195,8 +169,12 @@ void client_game::deinit()
     globals::gbuffer_cutout.destroy();
     globals::gbuffer_solid.destroy();
 
-    ui::purge_fonts();
-    ui::deinit();
+    menu::deinit();
+
+    ui::Rect::deinit();
+    ui::Label::deinit();
+
+    globals::default_font.unload();
 
     postprocess::deinit();
     deferred::deinit();
@@ -204,8 +182,6 @@ void client_game::deinit()
     voxel_renderer::deinit();
     voxel_mesher::deinit();
     voxel_anims::deinit();
-
-    label.destroy();
 
     // Certain components have their destructors
     // calling OpenGL API functions, which are
@@ -228,22 +204,17 @@ void client_game::update()
 
 void client_game::update_late()
 {
-    // FIXME: there should be a way to release the cursor
-    //glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
 void client_game::render()
 {
-    //voxel_renderer::render();
-    //deferred::render();
-    //postprocess::render();
-
-    label.set(fmt::format("unix {} frame #{}", globals::curtime / 1000000, globals::framecount));
-
-    // FIXME FIXME FIXME MOVE THIS SOMEWHERE ELSE
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClearColor(0.0, 0.0, 0.0, 1.0);
-    glClear(GL_COLOR_BUFFER_BIT);
-    ui::draw_rect(-320, -240, 640, 480, {1.0, 0.0, 0.0, 1.0});
-    ui::draw_label(-300, 200, label, font, {2.0, 2.0});
+    // voxel_renderer::render();
+    // deferred::render();
+    // postprocess::render();
 }
+
+void client_game::draw_ui()
+{
+    menu::draw_ui();
+}
+

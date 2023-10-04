@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_GL_SAMPLER_HH
 #define CLIENT_GL_SAMPLER_HH
-#include <client/gl_object.hh>
+#include <client/gl/object.hh>
 
 namespace gl
 {

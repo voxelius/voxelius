@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/atlas.hh>
 #include <client/globals.hh>
-#include <client/gl_buffer.hh>
+#include <client/gl/buffer.hh>
 #include <client/shaders.hh>
 #include <client/voxel_anims.hh>
 #include <shared/vdef.hh>

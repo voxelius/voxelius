@@ -6,15 +6,13 @@
 #pragma import common
 
 layout(location = 0) in vec2 texcoord;
-layout(location = 1) in vec2 pixcoord;
 
 layout(location = 0) out vec4 target;
 
 layout(binding = 0) uniform sampler2D image;
 
-layout(std140, binding = 0) uniform UiDraw_UBO {
+layout(std140, binding = 0) uniform RectDraw_UBO {
     vec4 screen;
-    vec4 glyph;
     vec4 color;
     vec4 rect;
 };

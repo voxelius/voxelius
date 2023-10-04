@@ -15,9 +15,6 @@ namespace screen
 {
 void init();
 void init_late();
-void get_size(int &width, int &height);
-void get_size(double &width, double &height);
-double get_aspect();
 } // namespace screen
 
 #endif /* CLIENT_SCREEN_HH */

@@ -5,7 +5,7 @@
 #ifndef CLIENT_GL_PROGRAM_HH
 #define CLIENT_GL_PROGRAM_HH
 #include <array>
-#include <client/gl_shader.hh>
+#include <client/gl/shader.hh>
 #include <spdlog/spdlog.h>
 
 namespace gl
