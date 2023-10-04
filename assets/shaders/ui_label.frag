@@ -13,7 +13,7 @@ layout(location = 0) out vec4 target;
 layout(binding = 0) uniform sampler2D font;
 layout(binding = 1) uniform usampler2D label;
 
-layout(std140, binding = 0) uniform LabelRender_UBO {
+layout(std140, binding = 0) uniform UiDraw_UBO {
     vec4 screen;
     vec4 glyph;
     vec4 color;
@@ -28,3 +28,4 @@ void main(void)
     const float unicode_y = float(1U + unicode / uint(glyph.z)) / glyph.w;
     target = color * texture(font, guv + vec2(unicode_x, 1.0 - unicode_y)).x;
 }
+

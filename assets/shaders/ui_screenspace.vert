@@ -9,7 +9,7 @@
 layout(location = 0) out vec2 texcoord;
 layout(location = 1) out vec2 pixcoord;
 
-layout(std140, binding = 0) uniform LabelRender_UBO {
+layout(std140, binding = 0) uniform UiDraw_UBO {
     vec4 screen;
     vec4 glyph;
     vec4 color;
@@ -32,3 +32,4 @@ void main(void)
     pixcoord = texcoord * rect.zw;
     gl_Position = vec4(ndc.x, -ndc.y, 0.0, 1.0);
 }
+

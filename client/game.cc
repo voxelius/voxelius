@@ -4,17 +4,16 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/atlas.hh>
 #include <client/deferred.hh>
-#include <client/fonts.hh>
 #include <client/game.hh>
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
 #include <client/input.hh>
-#include <client/label.hh>
 #include <client/pm_look.hh>
 #include <client/pm_move.hh>
 #include <client/postprocess.hh>
 #include <client/screen.hh>
 #include <client/shaders.hh>
+#include <client/ui_draw.hh>
 #include <client/view.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_mesher.hh>
@@ -33,8 +32,8 @@ constexpr static const uint32_t DIRT    = 3;
 constexpr static const uint32_t GRASS   = 4;
 constexpr static const uint32_t VTEST   = 5;
 
-static const Font *font = nullptr;
-static Label label = {};
+static const ui::Font *font = nullptr;
+static ui::Label label = {};
 
 static void on_key(const KeyEvent &event)
 {
@@ -95,18 +94,15 @@ void client_game::init()
     deferred::init();
     postprocess::init();
 
-    // FIXME FIXME FIXME MOVE THIS SOMEWHERE ELSE
-    Label::init();
+    ui::init();
 
     globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
     globals::dispatcher.sink<MouseButtonEvent>().connect<&on_mouse_button>();
     globals::dispatcher.sink<ScreenSizeEvent>().connect<&on_screen_size>();
 
     // FIXME FIXME FIXME MOVE THIS SOMEWHERE ELSE
-    font = fonts::load_image("16x16", "/fonts/unifont16x16.png", 16, 16);
-    label.set_text(L"Рисуется шрифтом UNIFONT в диапазоне U+0000...U+0FFF");
-    label.set_position({16U, 16U});
-    label.set_scale({1.5, 2.0});
+    font = ui::load_font_image("16x16", "/fonts/unifont16x16.png", 16, 16);
+    label.set(L"Рисуется шрифтом UNIFONT в диапазоне U+0000...U+0FFF");
 }
 
 // Surface level for world generation
@@ -199,7 +195,8 @@ void client_game::deinit()
     globals::gbuffer_cutout.destroy();
     globals::gbuffer_solid.destroy();
 
-    Label::deinit();
+    ui::purge_fonts();
+    ui::deinit();
 
     postprocess::deinit();
     deferred::deinit();
@@ -208,10 +205,6 @@ void client_game::deinit()
     voxel_mesher::deinit();
     voxel_anims::deinit();
 
-    // FIXME FIXME FIXME MOVE THIS SOMEWHERE ELSE
-    fonts::purge();
-
-    // FIXME FIXME FIXME MOVE THIS SOMEWHERE ELSE
     label.destroy();
 
     // Certain components have their destructors
@@ -245,9 +238,11 @@ void client_game::render()
     //deferred::render();
     //postprocess::render();
 
+    label.set(fmt::format("unix {} frame #{}", globals::curtime / 1000000, globals::framecount));
+
     // FIXME FIXME FIXME MOVE THIS SOMEWHERE ELSE
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
-    Label::draw(label, font);
+    ui::draw(label, font, ui::Rect{{16, 16}, {2.0, 2.0}});
 }

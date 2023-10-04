@@ -7,6 +7,8 @@
 #include <client/gl_texture.hh>
 #include <shared/vfs.hh>
 
+namespace ui
+{
 struct Font final {
     int glyph_width {};
     int glyph_height {};
@@ -14,14 +16,15 @@ struct Font final {
     int texture_cheight {}; // IN CHARACTERS
     gl::Texture2D texture {};
 };
+} // namespace ui
 
-namespace fonts
+namespace ui
 {
-const Font *load_image(const std::string &name, const vfs::path_t &path, int width, int height);
-const Font *load_rom(const std::string &name, const vfs::path_t &path, int width, int height);
-const Font *load_psf(const std::string &name, const vfs::path_t &path, bool unicode);
-const Font *find(const std::string &name);
-void purge();
-} // namespace fonts
+const ui::Font *load_font_rom(const std::string &name, const vfs::path_t &path, int width, int height);
+const ui::Font *load_font_image(const std::string &name, const vfs::path_t &path, int width, int height);
+const ui::Font *load_font_psf(const std::string &name, const vfs::path_t &path, bool unicode);
+const ui::Font *find_font(const std::string &name);
+void purge_fonts();
+} // namespace ui
 
 #endif/* CLIENT_FONTS_HH */
