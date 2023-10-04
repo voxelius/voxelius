@@ -22,10 +22,11 @@ layout(std140, binding = 0) uniform UiDraw_UBO {
 
 void main(void)
 {
-    const vec2 guv = mod(pixcoord, glyph.xy) / glyph.xy / glyph.zw;
     const uint unicode = texture(label, texcoord).x;
-    const float unicode_x = float(0U + unicode % uint(glyph.z)) / glyph.z;
-    const float unicode_y = float(1U + unicode / uint(glyph.z)) / glyph.w;
-    target = color * texture(font, guv + vec2(unicode_x, 1.0 - unicode_y)).x;
+    const float cx = float(0U + unicode % uint(glyph.z)) / glyph.z;
+    const float cy = float(1U + unicode / uint(glyph.z)) / glyph.w;
+    const float gx = mod(pixcoord.x, glyph.x) / glyph.x / glyph.z;
+    const float gy = mod(glyph.y - pixcoord.y, glyph.y) / glyph.y / glyph.w;
+    target = color * texture(font, vec2(cx + gx, 1.0 - cy + gy)).x;
 }
 

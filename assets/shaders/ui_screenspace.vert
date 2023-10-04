@@ -25,11 +25,10 @@ void main(void)
     const vec2 ox[6] = { oa, ob, oc, oc, od, oa };
 
     const vec2 off = ox[gl_VertexID % 6];
-    const vec2 vtx = screen.zw * (rect.xy + off);
-    const vec2 ndc = 2.0 * vtx - 1.0;
+    const vec2 ndc = 2.0 * screen.zw * (rect.xy + off);
 
     texcoord = screenspace_texcoord;
     pixcoord = texcoord * rect.zw;
-    gl_Position = vec4(ndc.x, -ndc.y, 0.0, 1.0);
+    gl_Position = vec4(ndc.x, ndc.y, 0.0, 1.0);
 }
 
