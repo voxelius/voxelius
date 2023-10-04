@@ -78,23 +78,23 @@ void ui::deinit()
     ubo.destroy();
 }
 
-void ui::draw(const ui::Rect &rect)
+void ui::draw_rect(int xpos, int ypos, int width, int height, const vector4_t &color)
 {
     // FIXME
-    int width, height;
-    screen::get_size(width, height);
-    glViewport(0, 0, width, height);
+    int swidth, sheight;
+    screen::get_size(swidth, sheight);
+    glViewport(0, 0, swidth, sheight);
 
     UiDraw_UBO uniforms = {};
-    uniforms.screen.x = width;
-    uniforms.screen.y = height;
+    uniforms.screen.x = swidth;
+    uniforms.screen.y = sheight;
     uniforms.screen.z = 1.0 / uniforms.screen.x;
     uniforms.screen.w = 1.0 / uniforms.screen.y;
-    uniforms.color = rect.color;
-    uniforms.rect.x = rect.position.x;
-    uniforms.rect.y = rect.position.y;
-    uniforms.rect.z = rect.size.x;
-    uniforms.rect.w = rect.size.y;
+    uniforms.color = color;
+    uniforms.rect.x = xpos;
+    uniforms.rect.y = ypos;
+    uniforms.rect.z = width;
+    uniforms.rect.w = height;
 
     ubo.bind_base(GL_UNIFORM_BUFFER, 0);
     ubo.write(0, sizeof(uniforms), &uniforms);
@@ -104,26 +104,26 @@ void ui::draw(const ui::Rect &rect)
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void ui::draw(const ui::Rect &rect, const gl::Texture2D &texture)
+void ui::draw_rect(int xpos, int ypos, int width, int height, const gl::Texture2D &texture, const vector4_t &color)
 {
     // FIXME
-    int width, height;
-    screen::get_size(width, height);
-    glViewport(0, 0, width, height);
+    int swidth, sheight;
+    screen::get_size(swidth, sheight);
+    glViewport(0, 0, swidth, sheight);
 
     texture.bind(0);
     sampler.bind(0);
 
     UiDraw_UBO uniforms = {};
-    uniforms.screen.x = width;
-    uniforms.screen.y = height;
+    uniforms.screen.x = swidth;
+    uniforms.screen.y = sheight;
     uniforms.screen.z = 1.0 / uniforms.screen.x;
     uniforms.screen.w = 1.0 / uniforms.screen.y;
-    uniforms.color = rect.color;
-    uniforms.rect.x = rect.position.x;
-    uniforms.rect.y = rect.position.y;
-    uniforms.rect.z = rect.size.x;
-    uniforms.rect.w = rect.size.y;
+    uniforms.color = color;
+    uniforms.rect.x = xpos;
+    uniforms.rect.y = ypos;
+    uniforms.rect.z = width;
+    uniforms.rect.w = height;
 
     ubo.bind_base(GL_UNIFORM_BUFFER, 0);
     ubo.write(0, sizeof(uniforms), &uniforms);
@@ -133,7 +133,7 @@ void ui::draw(const ui::Rect &rect, const gl::Texture2D &texture)
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void ui::draw(const ui::Label &label, const ui::Font *font, const ui::Rect &rect)
+void ui::draw_label(int xpos, int ypos, const ui::Label &label, const ui::Font *font, const vector2_t &scale, const vector4_t &color)
 {
     if(font != nullptr) {
         font->texture.bind(0);
@@ -143,22 +143,22 @@ void ui::draw(const ui::Label &label, const ui::Font *font, const ui::Rect &rect
         sampler.bind(1);
 
         // FIXME
-        int width, height;
-        screen::get_size(width, height);
-        glViewport(0, 0, width, height);
+        int swidth, sheight;
+        screen::get_size(swidth, sheight);
+        glViewport(0, 0, swidth, sheight);
 
         UiDraw_UBO uniforms = {};
-        uniforms.screen.x = width;
-        uniforms.screen.y = height;
+        uniforms.screen.x = swidth;
+        uniforms.screen.y = sheight;
         uniforms.screen.z = 1.0 / uniforms.screen.x;
         uniforms.screen.w = 1.0 / uniforms.screen.y;
-        uniforms.glyph.x = cxmath::max<float>(rect.size.x, 1.0) * font->glyph_width;
-        uniforms.glyph.y = cxmath::max<float>(rect.size.y, 1.0) * font->glyph_height;
+        uniforms.glyph.x = scale.x * font->glyph_width;
+        uniforms.glyph.y = scale.y * font->glyph_height;
         uniforms.glyph.z = font->texture_cwidth;
         uniforms.glyph.w = font->texture_cheight;
-        uniforms.color = rect.color;
-        uniforms.rect.x = rect.position.x;
-        uniforms.rect.y = rect.position.y;
+        uniforms.color = color;
+        uniforms.rect.x = xpos;
+        uniforms.rect.y = ypos;
         uniforms.rect.z = uniforms.glyph.x * label.get_size();
         uniforms.rect.w = uniforms.glyph.y;
 

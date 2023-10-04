@@ -244,5 +244,6 @@ void client_game::render()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
-    ui::draw(label, font, ui::Rect{{16, 16}, {2.0, 2.0}});
+    ui::draw_rect(0, 0, 640, 480, {1.0, 0.0, 0.0, 1.0});
+    ui::draw_label(16, 16, label, font, {2.0, 2.0});
 }

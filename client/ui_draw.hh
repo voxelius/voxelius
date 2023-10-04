@@ -6,15 +6,14 @@
 #define CLIENT_UI_DRAW_HH
 #include <client/ui_font.hh>
 #include <client/ui_label.hh>
-#include <client/ui_rect.hh>
 
 namespace ui
 {
 void init();
 void deinit();
-void draw(const ui::Rect &rect);
-void draw(const ui::Rect &rect, const gl::Texture2D &texture);
-void draw(const ui::Label &label, const ui::Font *font, const ui::Rect &rect);
+void draw_rect(int xpos, int ypos, int width, int height, const vector4_t &color = {1.0, 1.0, 1.0, 1.0});
+void draw_rect(int xpos, int ypos, int width, int height, const gl::Texture2D &texture, const vector4_t &color = {1.0, 1.0, 1.0, 1.0});
+void draw_label(int xpos, int ypos, const ui::Label &label, const ui::Font *font, const vector2_t &scale = {1.0, 1.0}, const vector4_t &color = {1.0, 1.0, 1.0, 1.0});
 } // namespace ui
 
 #endif/* CLIENT_UI_DRAW_HH */
