@@ -17,7 +17,7 @@ class Texture2D;
 namespace ui
 {
 class Font;
-}
+} // namespace ui
 
 struct GLFWwindow;
 class GBuffer;
@@ -29,8 +29,6 @@ extern GLFWwindow *window;
 extern int window_width;
 extern int window_height;
 extern double window_aspect;
-
-extern unsigned int ui_scale;
 
 extern double cursor_xpos;
 extern double cursor_ypos;
@@ -49,7 +47,9 @@ extern GBuffer gbuffer_blend;
 extern gl::Framebuffer deferred_fbo;
 extern gl::Texture2D deferred_color;
 
-extern ui::Font default_font;
+extern ui::Font unifont_16x16;
+extern ui::Font pc_vga_8x16;
+extern ui::Font pc_vga_8x8;
 } // namespace globals
 
 #endif/* CLIENT_GLOBALS_HH */

@@ -38,19 +38,24 @@ static void init_program(gl::Program &prog, const vfs::path_t &fpath, const gl::
     frag.destroy();
 }
 
-void ui::Rect::set_center(const vector2i_t &center)
+void ui::Rect::set_position(const vector2i_t &value)
 {
-    this->center = center;
+    position = value;
 }
 
-void ui::Rect::set_color(const vector4_t &color)
+void ui::Rect::set_color(const vector4_t &value)
 {
-    this->color = color;
+    color = value;
 }
 
-void ui::Rect::set_size(const vector2u_t &size)
+void ui::Rect::set_size(const vector2u_t &value)
 {
-    this->size = size;
+    size = value;
+}
+
+void ui::Rect::set_scale(unsigned int value)
+{
+    scale = cxmath::max(1U, value);
 }
 
 void ui::Rect::init()
@@ -88,18 +93,16 @@ void ui::Rect::draw(const ui::Rect &rect)
 {
     glViewport(0, 0, globals::window_width, globals::window_height);
 
-    const double scale_xy = globals::ui_scale;
-
     RectDraw_UBO uniforms = {};
     uniforms.screen.x = globals::window_width;
     uniforms.screen.y = globals::window_height;
     uniforms.screen.z = 1.0 / uniforms.screen.x;
     uniforms.screen.w = 1.0 / uniforms.screen.y;
     uniforms.color = rect.color;
-    uniforms.rect.x = scale_xy * rect.center.x;
-    uniforms.rect.y = scale_xy * rect.center.y;
-    uniforms.rect.z = scale_xy * rect.size.x;
-    uniforms.rect.w = scale_xy * rect.size.y;
+    uniforms.rect.x = rect.position.x * rect.scale;
+    uniforms.rect.y = rect.position.y * rect.scale;
+    uniforms.rect.z = rect.size.x * rect.scale;
+    uniforms.rect.w = rect.size.y * rect.scale;
 
     ubo.bind_base(GL_UNIFORM_BUFFER, 0);
     ubo.write(0, sizeof(RectDraw_UBO), &uniforms);
@@ -116,18 +119,16 @@ void ui::Rect::draw(const ui::Rect &rect, const gl::Texture2D &texture)
     texture.bind(0);
     sampler.bind(0);
 
-    const double scale_xy = globals::ui_scale;
-
     RectDraw_UBO uniforms = {};
     uniforms.screen.x = globals::window_width;
     uniforms.screen.y = globals::window_height;
     uniforms.screen.z = 1.0 / uniforms.screen.x;
     uniforms.screen.w = 1.0 / uniforms.screen.y;
     uniforms.color = rect.color;
-    uniforms.rect.x = scale_xy * rect.center.x;
-    uniforms.rect.y = scale_xy * rect.center.y;
-    uniforms.rect.z = scale_xy * rect.size.x;
-    uniforms.rect.w = scale_xy * rect.size.y;
+    uniforms.rect.x = rect.position.x * rect.scale;
+    uniforms.rect.y = rect.position.y * rect.scale;
+    uniforms.rect.z = rect.size.x * rect.scale;
+    uniforms.rect.w = rect.size.y * rect.scale;
 
     ubo.bind_base(GL_UNIFORM_BUFFER, 0);
     ubo.write(0, sizeof(RectDraw_UBO), &uniforms);

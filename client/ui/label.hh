@@ -6,24 +6,29 @@
 #define CLIENT_UI_LABEL_HH
 #include <client/ui/font.hh>
 #include <shared/types.hh>
-#include <string>
 
 namespace ui
 {
 class Label final {
 public:
-    void set_text(const std::wstring &text);
-    void set_center(const vector2i_t &center);
-    void set_color(const vector4_t &color);
-    void set_scale(const vector2_t &scale);
+    void create(int width, int height);
     void destroy();
 
+    void set_text(int line, const std::string &text);
+    void set_text(int line, const std::wstring &text);
+    void set_background(const vector4_t &value);
+    void set_foreground(const vector4_t &value);
+    void set_position(const vector2i_t &value);
+    void set_scale(unsigned int value);
+
 private:
-    int texture_width {};
-    vector2i_t center {};
-    vector4_t color {1.0, 1.0, 1.0, 1.0};
-    vector2_t scale {1.0, 1.0};
+    int width {};
+    int height {};
     gl::Texture2D texture {};
+    vector4_t background {0.0, 0.0, 0.0, 0.0};
+    vector4_t foreground {1.0, 1.0, 1.0, 1.0};
+    vector2i_t position {0, 0};
+    unsigned int scale {1U};
 
 public:
     static void init();
@@ -32,4 +37,5 @@ public:
 };
 } // namespace ui
 
-#endif/* CLIENT_UI_LABEL_HH */
+#endif /* CLIENT_UI_LABEL_HH */
+

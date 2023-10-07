@@ -8,12 +8,14 @@
 #include <client/globals.hh>
 #include <client/shaders.hh>
 #include <client/ui/label.hh>
+#include <sstream>
 #include <vector>
 
 struct LabelDraw_UBO final {
+    vector4f_t background {};
+    vector4f_t foreground {};
     vector4f_t screen {};
     vector4f_t glyph {};
-    vector4f_t color {};
     vector4f_t rect {};
 };
 
@@ -22,50 +24,81 @@ static gl::Program program = {};
 static gl::Sampler sampler = {};
 static gl::VertexArray vao = {};
 
-void ui::Label::set_text(const std::wstring &text)
+void ui::Label::create(int width, int height)
 {
+    this->width = 1 << cxmath::log2(width);
+    this->height = 1 << cxmath::log2(height);
+
+    // We need to fill the texture up
+    // with 0xFFFFFFFF which is a magic
+    // constant for an invisible character
     std::vector<uint32_t> pixels = {};
-    const int last_width = texture_width;
+    pixels.resize(this->width * this->height, 0xFFFFFFFF);
 
-    texture_width = text.size();
-    pixels.resize(texture_width);
-
-    for(int i = 0; i < texture_width; ++i) {
-        // NOTE: this assumes the string contains UTF-16
-        // without surrogates or simply a pure UTF-32.
-        pixels[i] = static_cast<uint32_t>(text[i]);
-    }
-
-    if(!texture.get() || (texture_width > last_width)) {
-        texture.create();
-        texture.storage(texture_width, 1, PixelFormat::R32_UINT);
-    }
-
-    texture.write(0, 0, texture_width, 1, PixelFormat::R32_UINT, pixels.data());
-}
-
-void ui::Label::set_center(const vector2i_t &center)
-{
-    this->center = center;
-}
-
-void ui::Label::set_color(const vector4_t &color)
-{
-    this->color = color;
-}
-
-void ui::Label::set_scale(const vector2_t &scale)
-{
-    this->scale = scale;
+    texture.create();
+    texture.storage(this->width, this->height, PixelFormat::R32_UINT);
+    texture.write(0, 0, this->width, this->height, PixelFormat::R32_UINT, pixels.data());
 }
 
 void ui::Label::destroy()
 {
-    texture_width = 0;
-    center = vector2i_t{};
-    color = {1.0, 1.0, 1.0, 1.0};
-    scale = {1.0, 1.0};
+    width = 0;
+    height = 0;
     texture.destroy();
+}
+
+void ui::Label::set_text(int line, const std::string &text)
+{
+    std::vector<uint32_t> pixels = {};
+    pixels.resize(width, 0xFFFFFFFF);
+
+    // We only can write up to <width> characters
+    const size_t size = cxmath::min<size_t>(text.size(), width);
+
+    for(size_t i = 0; i < size; ++i) {
+        // NOTE: this assumes the input string contains UTF-8
+        // without multubyte sequences, practically ASCII.
+        pixels[i] = static_cast<uint32_t>(text[i]);
+    }
+
+    texture.write(0, height - line - 1, width, 1, PixelFormat::R32_UINT, pixels.data());
+}
+
+void ui::Label::set_text(int line, const std::wstring &text)
+{
+    std::vector<uint32_t> pixels = {};
+    pixels.resize(width, 0xFFFFFFFF);
+
+    // We only can write up to <width> characters
+    const size_t size = cxmath::min<size_t>(text.size(), width);
+
+    for(size_t i = 0; i < size; ++i) {
+        // NOTE: this assumes the input string contains
+        // UTF-16 without surrogates or just pure UTF-32.
+        pixels[i] = static_cast<uint32_t>(text[i]);
+    }
+
+    texture.write(0, height - line - 1, width, 1, PixelFormat::R32_UINT, pixels.data());
+}
+
+void ui::Label::set_background(const vector4_t &value)
+{
+    background = value;
+}
+
+void ui::Label::set_foreground(const vector4_t &value)
+{
+    foreground = value;
+}
+
+void ui::Label::set_position(const vector2i_t &value)
+{
+    position = value;
+}
+
+void ui::Label::set_scale(unsigned int value)
+{
+    scale = cxmath::max(1U, value);
 }
 
 void ui::Label::init()
@@ -110,7 +143,7 @@ void ui::Label::deinit()
     ubo.destroy();
 }
 
-void ui::Label::draw(const ui::Label &label, const ui::Font &font)
+void ui::Label::draw(const Label &label, const Font &font)
 {
     glViewport(0, 0, globals::window_width, globals::window_height);
 
@@ -120,22 +153,21 @@ void ui::Label::draw(const ui::Label &label, const ui::Font &font)
     sampler.bind(0);
     sampler.bind(1);
 
-    const double scale_xy = globals::ui_scale;
-
     LabelDraw_UBO uniforms = {};
+    uniforms.background = label.background;
+    uniforms.foreground = label.foreground;
     uniforms.screen.x = globals::window_width;
     uniforms.screen.y = globals::window_height;
     uniforms.screen.z = 1.0 / uniforms.screen.x;
     uniforms.screen.w = 1.0 / uniforms.screen.y;
-    uniforms.glyph.x = label.scale.x * scale_xy * font.get_glyph_width();
-    uniforms.glyph.y = label.scale.y * scale_xy * font.get_glyph_height();
+    uniforms.glyph.x = font.get_glyph_width() * label.scale;
+    uniforms.glyph.y = font.get_glyph_height() * label.scale;
     uniforms.glyph.z = font.get_texture_cwidth();
     uniforms.glyph.w = font.get_texture_cheight();
-    uniforms.color = label.color;
-    uniforms.rect.x = scale_xy * label.center.x;
-    uniforms.rect.y = scale_xy * label.center.y;
-    uniforms.rect.z = uniforms.glyph.x * label.texture_width;
-    uniforms.rect.w = uniforms.glyph.y;
+    uniforms.rect.x = label.position.x * label.scale;
+    uniforms.rect.y = label.position.y * label.scale;
+    uniforms.rect.z = uniforms.glyph.x * label.width;
+    uniforms.rect.w = uniforms.glyph.y * label.height;
 
     ubo.bind_base(GL_UNIFORM_BUFFER, 0);
     ubo.write(0, sizeof(LabelDraw_UBO), &uniforms);

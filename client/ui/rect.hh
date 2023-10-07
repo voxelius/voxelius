@@ -11,14 +11,16 @@ namespace ui
 {
 class Rect final {
 public:
-    void set_center(const vector2i_t &center);
-    void set_color(const vector4_t &color);
-    void set_size(const vector2u_t &size);
+    void set_position(const vector2i_t &value);
+    void set_color(const vector4_t &value);
+    void set_size(const vector2u_t &value);
+    void set_scale(unsigned int value);
 
 private:
-    vector2i_t center {};
+    vector2i_t position {};
     vector4_t color {1.0, 1.0, 1.0, 1.0};
     vector2u_t size {1U, 1U};
+    unsigned int scale {1U};
 
 public:
     static void init();

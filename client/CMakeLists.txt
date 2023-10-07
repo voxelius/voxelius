@@ -1,5 +1,6 @@
 add_library(client STATIC
     "${CMAKE_CURRENT_LIST_DIR}/atlas.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/debug_overlay.cc"
     "${CMAKE_CURRENT_LIST_DIR}/deferred.cc"
     "${CMAKE_CURRENT_LIST_DIR}/game.cc"
     "${CMAKE_CURRENT_LIST_DIR}/gbuffer.cc"
@@ -7,7 +8,6 @@ add_library(client STATIC
     "${CMAKE_CURRENT_LIST_DIR}/image.cc"
     "${CMAKE_CURRENT_LIST_DIR}/input.cc"
     "${CMAKE_CURRENT_LIST_DIR}/main.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/menu.cc"
     "${CMAKE_CURRENT_LIST_DIR}/pm_look.cc"
     "${CMAKE_CURRENT_LIST_DIR}/pm_move.cc"
     "${CMAKE_CURRENT_LIST_DIR}/postprocess.cc"

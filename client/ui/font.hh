@@ -11,9 +11,9 @@ namespace ui
 {
 class Font final {
 public:
-    bool load_image(const vfs::path_t &path, int width, int height);
     bool load_rom(const vfs::path_t &path, int width, int height);
-    void unload();
+    bool load_image(const vfs::path_t &path, int width, int height);
+    void destroy();
 
     int get_glyph_width() const;
     int get_glyph_height() const;
@@ -30,4 +30,4 @@ private:
 };
 } // namespace ui
 
-#endif/* CLIENT_FONTS_HH */
+#endif/* CLIENT_UI_FONT_HH */

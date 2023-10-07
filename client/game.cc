@@ -3,12 +3,12 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/atlas.hh>
+#include <client/debug_overlay.hh>
 #include <client/deferred.hh>
 #include <client/game.hh>
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
 #include <client/input.hh>
-#include <client/menu.hh>
 #include <client/pm_look.hh>
 #include <client/pm_move.hh>
 #include <client/postprocess.hh>
@@ -65,8 +65,6 @@ static void on_mouse_button(const MouseButtonEvent &event)
 
 static void on_screen_size(const ScreenSizeEvent &event)
 {
-    spdlog::info("{} {}", event.height, globals::ui_scale);
-
     globals::gbuffer_solid.create(event.width, event.height);
     globals::gbuffer_cutout.create(event.width, event.height);
     globals::gbuffer_blend.create(event.width, event.height);
@@ -96,18 +94,28 @@ void client_game::init()
     deferred::init();
     postprocess::init();
 
-    if(!globals::default_font.load_image("/fonts/GNU_Unifont_16x16.png", 16, 16))
-    if(!globals::default_font.load_rom("/fonts/IBM_VGA_8x16.bin", 8, 16))
-    if(!globals::default_font.load_rom("/fonts/IBM_VGA_8x14.bin", 8, 14))
-    if(!globals::default_font.load_rom("/fonts/IBM_VGA_8x8.bin", 8, 8)) {
-        spdlog::critical("ui: unable to locate a valid default font");
+    const vfs::path_t unifont_16x16_path = "/fonts/unifont_16x16.png";
+    if(!globals::unifont_16x16.load_image(unifont_16x16_path, 16, 16)) {
+        spdlog::critical("{}: load failed", unifont_16x16_path.string());
+        std::terminate();
+    }
+
+    const vfs::path_t pc_vga_8x16_path = "/fonts/pc_vga_8x16.bin";
+    if(!globals::pc_vga_8x16.load_rom(pc_vga_8x16_path, 8, 16)) {
+        spdlog::critical("{}: load failed", pc_vga_8x16_path.string());
+        std::terminate();
+    }
+
+    const vfs::path_t pc_vga_8x8_path = "/fonts/pc_vga_8x8.bin";
+    if(!globals::pc_vga_8x8.load_rom(pc_vga_8x8_path, 8, 8)) {
+        spdlog::critical("{}: load failed", pc_vga_8x8_path.string());
         std::terminate();
     }
 
     ui::Label::init();
     ui::Rect::init();
 
-    menu::init();
+    debug_overlay::init();
 
     globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
     globals::dispatcher.sink<MouseButtonEvent>().connect<&on_mouse_button>();
@@ -156,6 +164,39 @@ static void generate(const chunk_pos_t &cpos)
 void client_game::init_late()
 {
     screen::init_late();
+
+    vdef::purge();
+    vdef::assign("stone", STONE);
+    vdef::assign("slate", SLATE);
+    vdef::assign("dirt", DIRT);
+    vdef::assign("grass", GRASS);
+    vdef::assign("vtest", VTEST);
+
+    atlas::create(16, 16, vdef::textures.size());
+
+    for(const vfs::path_t &path : vdef::textures) {
+        if(!atlas::load(path)) {
+            spdlog::critical("atlas: {}: load failed", path.string());
+            std::terminate();
+        }
+    }
+
+    voxel_anims::construct();
+
+    for(int x = -8; x < 7; ++x) {
+        for(int z = -8; z < 7; ++z) {
+            for(int y = -1; y < 2; ++y) {
+                generate(chunk_pos_t{x, y, z});
+            }
+        }
+    }
+
+    spdlog::info("spawning local player");
+    globals::player = globals::world.registry.create();
+    globals::world.registry.emplace<PlayerComponent>(globals::player);
+    globals::world.registry.emplace<HeadComponent>(globals::player);
+    globals::world.registry.emplace<TransformComponent>(globals::player);
+    globals::world.registry.emplace<VelocityComponent>(globals::player);
 }
 
 void client_game::deinit()
@@ -169,12 +210,14 @@ void client_game::deinit()
     globals::gbuffer_cutout.destroy();
     globals::gbuffer_solid.destroy();
 
-    menu::deinit();
+    debug_overlay::deinit();
 
     ui::Rect::deinit();
     ui::Label::deinit();
 
-    globals::default_font.unload();
+    globals::pc_vga_8x8.destroy();
+    globals::pc_vga_8x16.destroy();
+    globals::unifont_16x16.destroy();
 
     postprocess::deinit();
     deferred::deinit();
@@ -204,17 +247,26 @@ void client_game::update()
 
 void client_game::update_late()
 {
+    // FIXME: there should be a way to release the cursor
+    glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
 void client_game::render()
 {
-    // voxel_renderer::render();
-    // deferred::render();
-    // postprocess::render();
-}
+    glDisable(GL_BLEND);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
 
-void client_game::draw_ui()
-{
-    menu::draw_ui();
+    voxel_renderer::render();
+    deferred::render();
+    postprocess::render();
+
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    debug_overlay::render2D();
 }
 

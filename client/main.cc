@@ -107,18 +107,7 @@ void client::main()
         // which creates a visual mess with program pipelines.
         glUseProgram(0);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glClearColor(0.0, 0.0, 0.0, 1.0);
-        glClear(GL_COLOR_BUFFER_BIT);
-
         client_game::render();
-
-        glEnable(GL_BLEND);
-        glBlendEquation(GL_FUNC_ADD);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-        client_game::draw_ui();
 
         glfwSwapBuffers(globals::window);
 

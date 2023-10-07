@@ -13,7 +13,6 @@ static void on_framebuffer_size_event(GLFWwindow *window, int width, int height)
     globals::window_width = width;
     globals::window_height = height;
     globals::window_aspect = static_cast<double>(width) / static_cast<double>(height);
-    globals::ui_scale = cxmath::max(1U, cxmath::ceil<unsigned int>(static_cast<double>(height) / 480.0));
 
     globals::dispatcher.trigger(ScreenSizeEvent {
         .width = globals::window_width,
