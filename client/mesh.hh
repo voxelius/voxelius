@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_MESH_HH
 #define CLIENT_MESH_HH
-#include <client/gl/buffer.hh>
+#include <client/gl_buffer.hh>
 #include <vector>
 
 struct Mesh final {

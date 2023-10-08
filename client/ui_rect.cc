@@ -2,12 +2,12 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#include <client/gl/program.hh>
-#include <client/gl/sampler.hh>
-#include <client/gl/vertexarray.hh>
+#include <client/gl_program.hh>
+#include <client/gl_sampler.hh>
+#include <client/gl_vertexarray.hh>
 #include <client/globals.hh>
 #include <client/shaders.hh>
-#include <client/ui/rect.hh>
+#include <client/ui_rect.hh>
 
 struct RectDraw_UBO final {
     vector4f_t screen {};
@@ -137,4 +137,3 @@ void ui::Rect::draw(const ui::Rect &rect, const gl::Texture2D &texture)
     program_tex.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
-

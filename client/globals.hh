@@ -19,6 +19,7 @@ namespace ui
 class Font;
 } // namespace ui
 
+class BitmapFont;
 struct GLFWwindow;
 class GBuffer;
 class World;

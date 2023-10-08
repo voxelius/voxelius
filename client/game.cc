@@ -14,9 +14,8 @@
 #include <client/postprocess.hh>
 #include <client/screen.hh>
 #include <client/shaders.hh>
-#include <client/ui/font.hh>
-#include <client/ui/label.hh>
-#include <client/ui/rect.hh>
+#include <client/ui_rect.hh>
+#include <client/ui_text.hh>
 #include <client/view.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_mesher.hh>
@@ -101,19 +100,19 @@ void client_game::init()
     }
 
     const vfs::path_t pc_vga_8x16_path = "/fonts/pc_vga_8x16.bin";
-    if(!globals::pc_vga_8x16.load_rom(pc_vga_8x16_path, 8, 16)) {
+    if(!globals::pc_vga_8x16.load_vga_rom(pc_vga_8x16_path, 8, 16)) {
         spdlog::critical("{}: load failed", pc_vga_8x16_path.string());
         std::terminate();
     }
 
     const vfs::path_t pc_vga_8x8_path = "/fonts/pc_vga_8x8.bin";
-    if(!globals::pc_vga_8x8.load_rom(pc_vga_8x8_path, 8, 8)) {
+    if(!globals::pc_vga_8x8.load_vga_rom(pc_vga_8x8_path, 8, 8)) {
         spdlog::critical("{}: load failed", pc_vga_8x8_path.string());
         std::terminate();
     }
 
-    ui::Label::init();
     ui::Rect::init();
+    ui::Text::init();
 
     debug_overlay::init();
 
@@ -212,12 +211,12 @@ void client_game::deinit()
 
     debug_overlay::deinit();
 
+    ui::Text::deinit();
     ui::Rect::deinit();
-    ui::Label::deinit();
 
-    globals::pc_vga_8x8.destroy();
-    globals::pc_vga_8x16.destroy();
-    globals::unifont_16x16.destroy();
+    globals::pc_vga_8x8.unload();
+    globals::pc_vga_8x16.unload();
+    globals::unifont_16x16.unload();
 
     postprocess::deinit();
     deferred::deinit();

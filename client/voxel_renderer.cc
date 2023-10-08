@@ -5,9 +5,9 @@
 #include <client/atlas.hh>
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
-#include <client/gl/program.hh>
-#include <client/gl/sampler.hh>
-#include <client/gl/vertexarray.hh>
+#include <client/gl_program.hh>
+#include <client/gl_sampler.hh>
+#include <client/gl_vertexarray.hh>
 #include <client/input.hh>
 #include <client/shaders.hh>
 #include <client/view.hh>

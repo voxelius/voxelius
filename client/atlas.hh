@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_ATLAS_HH
 #define CLIENT_ATLAS_HH
-#include <client/gl/texture.hh>
+#include <client/gl_texture.hh>
 #include <shared/vfs.hh>
 
 struct AtlasTexture final {

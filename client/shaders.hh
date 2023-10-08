@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_SHADERS_HH
 #define CLIENT_SHADERS_HH
-#include <client/gl/shader.hh>
+#include <client/gl_shader.hh>
 #include <shared/vfs.hh>
 
 namespace shaders

@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
-#include <client/ui/font.hh>
+#include <client/ui_font.hh>
 #include <shared/world.hh>
 
 GLFWwindow *globals::window = nullptr;

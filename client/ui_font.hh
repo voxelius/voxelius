@@ -4,16 +4,16 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_UI_FONT_HH
 #define CLIENT_UI_FONT_HH
-#include <client/gl/texture.hh>
+#include <client/gl_texture.hh>
 #include <shared/vfs.hh>
 
 namespace ui
 {
 class Font final {
 public:
-    bool load_rom(const vfs::path_t &path, int width, int height);
     bool load_image(const vfs::path_t &path, int width, int height);
-    void destroy();
+    bool load_vga_rom(const vfs::path_t &path, int width, int height);
+    void unload();
 
     int get_glyph_width() const;
     int get_glyph_height() const;
