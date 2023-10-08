@@ -9,7 +9,7 @@
 layout(location = 0) out vec2 texcoord;
 layout(location = 1) out vec2 pixcoord;
 
-layout(std140, binding = 0) uniform LabelDraw_UBO {
+layout(std140, binding = 0) uniform UI_Draw_UBO {
     vec4 background;
     vec4 foreground;
     vec4 screen;

@@ -3,19 +3,20 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/atlas.hh>
-#include <client/debug_overlay.hh>
 #include <client/deferred.hh>
 #include <client/game.hh>
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
 #include <client/input.hh>
+#include <client/menu.hh>
 #include <client/pm_look.hh>
 #include <client/pm_move.hh>
 #include <client/postprocess.hh>
 #include <client/screen.hh>
 #include <client/shaders.hh>
-#include <client/ui_rect.hh>
-#include <client/ui_text.hh>
+#include <client/ui_draw.hh>
+#include <client/ui_font.hh>
+#include <client/ui_immediate.hh>
 #include <client/view.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_mesher.hh>
@@ -111,16 +112,17 @@ void client_game::init()
         std::terminate();
     }
 
-    ui::Rect::init();
-    ui::Text::init();
+    ui::draw::init();
+    ui::im::init();
 
-    debug_overlay::init();
+    menu::init();
 
     globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
     globals::dispatcher.sink<MouseButtonEvent>().connect<&on_mouse_button>();
     globals::dispatcher.sink<ScreenSizeEvent>().connect<&on_screen_size>();
 }
 
+#if 0
 // Surface level for world generation
 constexpr static const int64_t SURFACE = 0;
 
@@ -159,11 +161,13 @@ static void generate(const chunk_pos_t &cpos)
         chunk->voxels = voxels;
     }
 }
+#endif
 
 void client_game::init_late()
 {
     screen::init_late();
 
+#if 0
     vdef::purge();
     vdef::assign("stone", STONE);
     vdef::assign("slate", SLATE);
@@ -196,6 +200,7 @@ void client_game::init_late()
     globals::world.registry.emplace<HeadComponent>(globals::player);
     globals::world.registry.emplace<TransformComponent>(globals::player);
     globals::world.registry.emplace<VelocityComponent>(globals::player);
+#endif
 }
 
 void client_game::deinit()
@@ -209,10 +214,9 @@ void client_game::deinit()
     globals::gbuffer_cutout.destroy();
     globals::gbuffer_solid.destroy();
 
-    debug_overlay::deinit();
+    menu::deinit();
 
-    ui::Text::deinit();
-    ui::Rect::deinit();
+    ui::draw::deinit();
 
     globals::pc_vga_8x8.unload();
     globals::pc_vga_8x16.unload();
@@ -246,8 +250,10 @@ void client_game::update()
 
 void client_game::update_late()
 {
-    // FIXME: there should be a way to release the cursor
-    glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // UNDONE: game state
+    //glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+    ui::im::update_late();
 }
 
 void client_game::render()
@@ -261,11 +267,8 @@ void client_game::render()
     deferred::render();
     postprocess::render();
 
-    glEnable(GL_BLEND);
-    glBlendEquation(GL_FUNC_ADD);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    ui::draw::prepare();
 
-    debug_overlay::render2D();
+    menu::draw();
 }
 

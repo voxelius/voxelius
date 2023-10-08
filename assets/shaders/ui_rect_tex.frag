@@ -6,19 +6,21 @@
 #pragma import common
 
 layout(location = 0) in vec2 texcoord;
+layout(location = 1) in vec2 pixcoord;
 
 layout(location = 0) out vec4 target;
 
 layout(binding = 0) uniform sampler2D image;
 
-layout(std140, binding = 0) uniform RectDraw_UBO {
+layout(std140, binding = 0) uniform UI_Draw_UBO {
+    vec4 background;
+    vec4 foreground;
     vec4 screen;
-    vec4 color;
+    vec4 glyph;
     vec4 rect;
 };
 
 void main(void)
 {
-    target = color * texture(image, texcoord);
+    target = foreground * texture(image, texcoord);
 }
-

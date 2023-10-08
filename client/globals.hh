@@ -31,9 +31,6 @@ extern int window_width;
 extern int window_height;
 extern double window_aspect;
 
-extern double cursor_xpos;
-extern double cursor_ypos;
-
 extern double frametime;
 extern double frametime_avg;
 extern uint64_t curtime;

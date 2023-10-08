@@ -19,7 +19,6 @@ void deferred::init()
 {
     gl::Shader vert = {};
     gl::Shader frag = {};
-    std::string source = {};
 
     vert.create(GL_VERTEX_SHADER);
     frag.create(GL_FRAGMENT_SHADER);

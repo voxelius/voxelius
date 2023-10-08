@@ -13,7 +13,7 @@ layout(location = 0) out vec4 target;
 layout(binding = 0) uniform sampler2D font;
 layout(binding = 1) uniform usampler2D label;
 
-layout(std140, binding = 0) uniform LabelDraw_UBO {
+layout(std140, binding = 0) uniform UI_Draw_UBO {
     vec4 background;
     vec4 foreground;
     vec4 screen;

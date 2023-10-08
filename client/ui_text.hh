@@ -4,36 +4,30 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_UI_TEXT_HH
 #define CLIENT_UI_TEXT_HH
-#include <client/ui_font.hh>
-#include <shared/types.hh>
+#include <client/gl_texture.hh>
+#include <string>
 
 namespace ui
 {
 class Text final {
 public:
     void create(int width, int height);
+    void set(int line, const std::string &value);
+    void set(int line, const std::wstring &value);
     void destroy();
 
-    void set_text(int line, const std::string &text);
-    void set_text(int line, const std::wstring &text);
-    void set_background(const vector4_t &value);
-    void set_foreground(const vector4_t &value);
-    void set_position(const vector2i_t &value);
-    void set_scale(unsigned int value);
+    int get_max_text_width() const;
+    int get_max_text_height() const;
+    int get_texture_width() const;
+    int get_texture_height() const;
+    const gl::Texture2D &get() const;
 
 private:
-    int width {};
-    int height {};
+    int max_text_width {};
+    int max_text_height {};
+    int texture_width {};
+    int texture_height {};
     gl::Texture2D texture {};
-    vector4_t background {0.0, 0.0, 0.0, 0.0};
-    vector4_t foreground {1.0, 1.0, 1.0, 1.0};
-    vector2i_t position {0, 0};
-    unsigned int scale {1U};
-
-public:
-    static void init();
-    static void deinit();
-    static void draw(const Text &text, const Font &font);
 };
 } // namespace ui
 
