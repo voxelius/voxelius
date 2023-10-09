@@ -29,7 +29,7 @@
 
 static void on_framebuffer_size(const FramebufferSizeEvent &event)
 {
-    const double norm = 360.0;
+    const double norm = 240.0;
     const double dheight = event.height;
     globals::ui_scale = cxmath::max(1U, cxmath::ceil<unsigned int>(dheight / norm));
 

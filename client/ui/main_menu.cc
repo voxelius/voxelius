@@ -159,7 +159,7 @@ void main_menu::draw_ui()
     const int tstep1 = globals::pc_vga_8x16.get_glyph_height() * 2U;
     const int tstep2 = globals::pc_vga_8x8.get_glyph_height() * 2U + 4U;
     const int bstep = 2 * style.button_margin.y + globals::pc_vga_8x8.get_glyph_height();
-    vector2i_t pos = {globals::window_width * 0.03125, globals::window_height * 0.10};
+    vector2i_t pos = {globals::window_width * 0.0625 / globals::ui_scale, globals::window_height * 0.15 / globals::ui_scale};
 
     canvas::text(globals::ui_scale * pos.x, globals::ui_scale * pos.y, title1, globals::pc_vga_8x16, globals::ui_scale * 2U);
     pos.y += tstep1;
