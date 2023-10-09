@@ -2,4 +2,4 @@
 # tracks dependencies as just directories
 # instead of separate repositories. This makes
 # GitHub's language tracker to go nuts!
-
+deps/* linguist-vendored
