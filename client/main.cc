@@ -2,23 +2,26 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#include <client/event/framebuffer_size.hh>
+#include <client/event/keyboard_key.hh>
+#include <client/event/mouse_button.hh>
+#include <client/event/mouse_move.hh>
+#include <client/event/mouse_scroll.hh>
 #include <client/game.hh>
-#include <client/glfw_events.hh>
 #include <client/globals.hh>
-#include <client/main.hh>
 #include <client/image.hh>
+#include <client/main.hh>
 #include <shared/cmdline.hh>
 #include <shared/epoch.hh>
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
+#include <glad/gl.h>
 
 static void on_glfw_error(int code, const char *message)
 {
     spdlog::error("glfw: {}", message);
 }
 
-static void on_framebuffer_size_event(GLFWwindow *window, int width, int height)
+static void on_framebuffer_size(GLFWwindow *window, int width, int height)
 {
     globals::window_width = width;
     globals::window_height = height;
@@ -31,9 +34,9 @@ static void on_framebuffer_size_event(GLFWwindow *window, int width, int height)
     });
 }
 
-static void on_key_event(GLFWwindow *window, int key, int scancode, int action, int mods)
+static void on_key(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
-    globals::dispatcher.trigger(KeyEvent {
+    globals::dispatcher.trigger(KeyboardKeyEvent {
         .key = key,
         .scancode = scancode,
         .action = action,
@@ -41,7 +44,7 @@ static void on_key_event(GLFWwindow *window, int key, int scancode, int action, 
     });
 }
 
-static void on_mouse_button_event(GLFWwindow *window, int button, int action, int mods)
+static void on_mouse_button(GLFWwindow *window, int button, int action, int mods)
 {
     globals::dispatcher.trigger(MouseButtonEvent {
         .button = button,
@@ -50,17 +53,17 @@ static void on_mouse_button_event(GLFWwindow *window, int button, int action, in
     });
 }
 
-static void on_cursor_pos_event(GLFWwindow *window, double xpos, double ypos)
+static void on_cursor_pos(GLFWwindow *window, double xpos, double ypos)
 {
-    globals::dispatcher.trigger(CursorPosEvent {
+    globals::dispatcher.trigger(MouseMoveEvent {
         .xpos = xpos, 
         .ypos = ypos,
     });
 }
 
-static void on_scroll_event(GLFWwindow *window, double dx, double dy)
+static void on_scroll(GLFWwindow *window, double dx, double dy)
 {
-    globals::dispatcher.trigger(ScrollEvent {
+    globals::dispatcher.trigger(MouseScrollEvent {
         .dx = dx,
         .dy = dy,
     });
@@ -93,11 +96,11 @@ void client::main()
         std::terminate();
     }
 
-    glfwSetFramebufferSizeCallback(globals::window, &on_framebuffer_size_event);
-    glfwSetKeyCallback(globals::window, &on_key_event);
-    glfwSetMouseButtonCallback(globals::window, &on_mouse_button_event);
-    glfwSetCursorPosCallback(globals::window, &on_cursor_pos_event);
-    glfwSetScrollCallback(globals::window, &on_scroll_event);
+    glfwSetFramebufferSizeCallback(globals::window, &on_framebuffer_size);
+    glfwSetKeyCallback(globals::window, &on_key);
+    glfwSetMouseButtonCallback(globals::window, &on_mouse_button);
+    glfwSetCursorPosCallback(globals::window, &on_cursor_pos);
+    glfwSetScrollCallback(globals::window, &on_scroll);
 
     Image image = {};
 
@@ -142,7 +145,7 @@ void client::main()
 
     int wwidth, wheight;
     glfwGetFramebufferSize(globals::window, &wwidth, &wheight);
-    on_framebuffer_size_event(globals::window, wwidth, wheight);
+    on_framebuffer_size(globals::window, wwidth, wheight);
 
     client_game::init_late();
 
@@ -178,7 +181,7 @@ void client::main()
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(0, 0, globals::window_width, globals::window_height);
-        client_game::draw_ui();
+        client_game::draw_gui();
 
         glfwSwapBuffers(globals::window);
 

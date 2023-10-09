@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_IMAGE_HH
 #define CLIENT_IMAGE_HH
-#include <client/pixel_format.hh>
+#include <client/render/pixel_format.hh>
 #include <shared/mixin.hh>
 #include <shared/vfs.hh>
 #include <string>

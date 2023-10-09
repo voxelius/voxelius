@@ -2,18 +2,13 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef CLIENT_GAME_HH
-#define CLIENT_GAME_HH
+#ifndef SHARED_EVENT_CHUNK_CREATE_HH
+#define SHARED_EVENT_CHUNK_CREATE_HH
+#include <shared/world/chunks.hh>
 
-namespace client_game
-{
-void init();
-void init_late();
-void deinit();
-void update();
-void update_late();
-void render();
-void draw_gui();
-} // namespace client_game
+struct ChunkCreateEvent final {
+    Chunk *chunk {nullptr};
+    chunk_pos_t cpos {};
+};
 
-#endif /* CLIENT_GAME_HH */
+#endif /* SHARED_EVENT_CHUNK_CREATE_HH */

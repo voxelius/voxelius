@@ -1,0 +1,141 @@
+// SPDX-License-Identifier: MPL-2.0
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#include <shared/entity/chunk.hh>
+#include <shared/event/chunk_create.hh>
+#include <shared/event/chunk_remove.hh>
+#include <shared/event/voxel_set.hh>
+#include <shared/world/chunks.hh>
+#include <shared/globals.hh>
+#include <unordered_map>
+
+// FIXME: speed! The standard hashmap implementation is
+// comically slow, use a faster hashmap implementation!
+// The probable candidate is https://github.com/ktprime/emhash
+std::unordered_map<chunk_pos_t, Chunk *> map {};
+
+Chunk *chunks::create(const chunk_pos_t &cpos)
+{
+    Chunk *chunk = chunks::find(cpos);
+
+    if(chunk == nullptr) {
+        chunk = new Chunk{};
+        chunk->voxels.fill(NULL_VOXEL);
+        chunk->entity = globals::registry.create();
+
+        auto &comp = globals::registry.emplace<ChunkComponent>(chunk->entity);
+        comp.ptr = chunk;
+        comp.cpos = cpos;
+
+        map.emplace(cpos, chunk);
+
+        globals::dispatcher.trigger(ChunkCreateEvent {
+            .chunk = chunk,
+            .cpos = cpos,
+        });
+    }
+
+    return chunk;
+}
+
+Chunk *chunks::find(const chunk_pos_t &cpos)
+{
+    if(const auto it = map.find(cpos); it != map.cend())
+        return it->second;
+    return nullptr;
+}
+
+void chunks::remove(const chunk_pos_t &cpos)
+{
+    if(const auto it = map.find(cpos); it != map.cend()) {
+        globals::dispatcher.enqueue(ChunkRemoveEvent {
+            .chunk = it->second,
+            .cpos = cpos,
+        });
+
+        globals::registry.destroy(it->second->entity);
+
+        delete it->second;
+
+        map.erase(it);
+    }
+}
+
+void chunks::remove_all()
+{
+    for(auto it = map.begin(); it != map.end();) {
+        globals::dispatcher.enqueue(ChunkRemoveEvent {
+            .chunk = it->second,
+            .cpos = it->first,
+        });
+
+        globals::registry.destroy(it->second->entity);
+
+        delete it->second;
+
+        it = map.erase(it);
+    }
+
+    map.clear();
+}
+
+voxel_t chunks::get_voxel(const voxel_pos_t &vpos)
+{
+    const auto cpos = coord::to_chunk(vpos);
+    const auto lpos = coord::to_local(vpos);
+    const auto index = coord::to_index(lpos);
+    if(const auto it = map.find(cpos); it != map.cend())
+        return it->second->voxels[index];
+    return NULL_VOXEL;
+}
+
+voxel_t chunks::get_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos)
+{
+    const auto p_vpos = coord::to_voxel(cpos, lpos);
+    const auto p_cpos = coord::to_chunk(p_vpos);
+    const auto p_lpos = coord::to_local(p_vpos);
+    const auto index = coord::to_index(p_lpos);
+    if(const auto it = map.find(p_cpos); it != map.cend())
+        return it->second->voxels[index];
+    return NULL_VOXEL;
+}
+
+void chunks::set_voxel(const voxel_pos_t &vpos, voxel_t voxel)
+{
+    const auto cpos = coord::to_chunk(vpos);
+    const auto lpos = coord::to_local(vpos);
+    const auto index = coord::to_index(lpos);
+
+    Chunk *chunk = chunks::create(cpos);
+    chunk->voxels[index] = voxel;
+
+    globals::dispatcher.enqueue(VoxelSetEvent {
+        .chunk = chunk,
+        .voxel = voxel,
+        .cpos = cpos,
+        .lpos = lpos,
+        .vpos = vpos,
+        .index = index,
+    });
+}
+
+void chunks::set_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos, voxel_t voxel)
+{
+    const auto p_vpos = coord::to_voxel(cpos, lpos);
+    const auto p_cpos = coord::to_chunk(p_vpos);
+    const auto p_lpos = coord::to_local(p_vpos);
+    const auto index = coord::to_index(p_lpos);
+
+    Chunk *chunk = chunks::create(p_cpos);
+    chunk->voxels[index] = voxel;
+
+    globals::dispatcher.enqueue(VoxelSetEvent {
+        .chunk = chunk,
+        .voxel = voxel,
+        .cpos = p_cpos,
+        .lpos = p_lpos,
+        .vpos = p_vpos,
+        .index = index,
+    });
+}

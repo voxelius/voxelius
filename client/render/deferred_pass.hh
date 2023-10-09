@@ -2,7 +2,14 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#include <shared/globals.hh>
+#ifndef CLIENT_RENDER_DEFERRED_PASS_HH
+#define CLIENT_RENDER_DEFERRED_PASS_HH
 
-entt::registry globals::registry = {};
-entt::dispatcher globals::dispatcher = {};
+namespace deferred_pass
+{
+void init();
+void deinit();
+void render();
+} // namespace deferred_pass
+
+#endif /* CLIENT_RENDER_DEFERRED_PASS_HH */

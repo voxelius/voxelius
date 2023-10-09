@@ -4,16 +4,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_GLOBALS_HH
 #define CLIENT_GLOBALS_HH
-#include <entt/fwd.hpp>
 #include <shared/globals.hh>
 #include <shared/types.hh>
-
-enum class GameUiScreen {
-    Undefined = 0,  // Nothing is drawn
-    MainMenu,       // Main menu (gameui_menu)
-    ServerBrowser,  // Server browser (gameui_servers)
-    Settings,       // Settings (gameui_settings)
-};
 
 namespace gl
 {
@@ -21,11 +13,7 @@ class Framebuffer;
 class Texture2D;
 } // namespace gl
 
-namespace ui
-{
 class Font;
-} // namespace ui
-
 struct GLFWwindow;
 class GBuffer;
 class World;
@@ -42,7 +30,6 @@ extern double frametime_avg;
 extern uint64_t curtime;
 extern uint64_t framecount;
 
-extern World world;
 extern entt::entity player;
 
 extern GBuffer gbuffer_solid;
@@ -51,13 +38,9 @@ extern GBuffer gbuffer_blend;
 extern gl::Framebuffer deferred_fbo;
 extern gl::Texture2D deferred_color;
 
-extern ui::Font unifont_16x16;
-extern ui::Font pc_vga_8x16;
-extern ui::Font pc_vga_8x8;
-
-extern unsigned int gameui_scale;
-extern GameUiScreen gameui_screen;
-extern bool gameui_visible;
+extern Font unifont_16x16;
+extern Font pc_vga_8x16;
+extern Font pc_vga_8x8;
 } // namespace globals
 
-#endif/* CLIENT_GLOBALS_HH */
+#endif /* CLIENT_GLOBALS_HH */
