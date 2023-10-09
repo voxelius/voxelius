@@ -8,6 +8,13 @@
 #include <shared/globals.hh>
 #include <shared/types.hh>
 
+enum class GameUiScreen {
+    Undefined = 0,  // Nothing is drawn
+    MainMenu,       // Main menu (gameui_menu)
+    ServerBrowser,  // Server browser (gameui_servers)
+    Settings,       // Settings (gameui_settings)
+};
+
 namespace gl
 {
 class Framebuffer;
@@ -19,7 +26,6 @@ namespace ui
 class Font;
 } // namespace ui
 
-class BitmapFont;
 struct GLFWwindow;
 class GBuffer;
 class World;
@@ -48,6 +54,10 @@ extern gl::Texture2D deferred_color;
 extern ui::Font unifont_16x16;
 extern ui::Font pc_vga_8x16;
 extern ui::Font pc_vga_8x8;
+
+extern unsigned int gameui_scale;
+extern GameUiScreen gameui_screen;
+extern bool gameui_visible;
 } // namespace globals
 
 #endif/* CLIENT_GLOBALS_HH */

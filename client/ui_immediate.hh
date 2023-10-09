@@ -25,7 +25,6 @@ struct Style final {
     vector4_t button_foreground[BUTTON_STATES] {};
     vector2i_t button_margin {0, 0};
 };
-
 } // namespace ui::im
 
 namespace ui::im

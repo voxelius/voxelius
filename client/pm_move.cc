@@ -3,8 +3,8 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <bitset>
+#include <client/glfw_events.hh>
 #include <client/globals.hh>
-#include <client/input.hh>
 #include <client/pm_move.hh>
 #include <shared/const.hh>
 #include <shared/head.hh>
@@ -65,18 +65,20 @@ void pm_move::update()
     if(globals::world.registry.valid(globals::player)) {
         vector3_t direction = {0.0, 0.0, 0.0};
 
-        if(move_keys[MOVE_FD])
-            direction += DIR_FORWARD;
-        if(move_keys[MOVE_BK])
-            direction -= DIR_FORWARD;
-        if(move_keys[MOVE_LF])
-            direction -= DIR_RIGHT;
-        if(move_keys[MOVE_RT])
-            direction += DIR_RIGHT;
-        if(move_keys[MOVE_UP])
-            direction += DIR_UP;
-        if(move_keys[MOVE_DN])
-            direction -= DIR_UP;
+        if(!globals::gameui_visible) {
+            if(move_keys[MOVE_FD])
+                direction += DIR_FORWARD;
+            if(move_keys[MOVE_BK])
+                direction -= DIR_FORWARD;
+            if(move_keys[MOVE_LF])
+                direction -= DIR_RIGHT;
+            if(move_keys[MOVE_RT])
+                direction += DIR_RIGHT;
+            if(move_keys[MOVE_UP])
+                direction += DIR_UP;
+            if(move_keys[MOVE_DN])
+                direction -= DIR_UP;
+        }
 
         const auto &head = globals::world.registry.get<HeadComponent>(globals::player);
         auto &velocity = globals::world.registry.get<VelocityComponent>(globals::player);

@@ -78,23 +78,6 @@ void ui::draw::deinit()
     ubo.destroy();
 }
 
-void ui::draw::prepare()
-{
-    glViewport(0, 0, globals::window_width, globals::window_height);
-
-    glEnable(GL_BLEND);
-    glBlendEquation(GL_FUNC_ADD);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    sampler.bind(0);
-    sampler.bind(1);
-
-    ubo.bind_base(GL_UNIFORM_BUFFER, 0);
-
-    vao.bind();
-}
-
 void ui::draw::rect(int xpos, int ypos, int width, int height)
 {
     ui::draw::rect(xpos, ypos, width, height, ui::WHITE);
@@ -114,7 +97,9 @@ void ui::draw::rect(int xpos, int ypos, int width, int height, const vector4_t &
     uniforms.rect.w = height;
 
     ubo.write(0, sizeof(UI_Draw_UBO), &uniforms);
+    ubo.bind_base(GL_UNIFORM_BUFFER, 0);
 
+    vao.bind();
     program_rect_col.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
@@ -127,6 +112,7 @@ void ui::draw::rect(int xpos, int ypos, int width, int height, const gl::Texture
 void ui::draw::rect(int xpos, int ypos, int width, int height, const vector4_t &color, const gl::Texture2D &texture)
 {
     texture.bind(0);
+    sampler.bind(0);
 
     UI_Draw_UBO uniforms = {};
     uniforms.foreground = color;
@@ -140,7 +126,9 @@ void ui::draw::rect(int xpos, int ypos, int width, int height, const vector4_t &
     uniforms.rect.w = height;
 
     ubo.write(0, sizeof(UI_Draw_UBO), &uniforms);
+    ubo.bind_base(GL_UNIFORM_BUFFER, 0);
 
+    vao.bind();
     program_rect_tex.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
@@ -175,6 +163,9 @@ void ui::draw::text(int xpos, int ypos, const ui::Text &text, const ui::Font &fo
     font.get().bind(0);
     text.get().bind(1);
 
+    sampler.bind(0);
+    sampler.bind(1);
+
     UI_Draw_UBO uniforms = {};
     uniforms.background = bg;
     uniforms.foreground = fg;
@@ -192,7 +183,9 @@ void ui::draw::text(int xpos, int ypos, const ui::Text &text, const ui::Font &fo
     uniforms.rect.w = uniforms.glyph.y * text.get_texture_height();
 
     ubo.write(0, sizeof(UI_Draw_UBO), &uniforms);
+    ubo.bind_base(GL_UNIFORM_BUFFER, 0);
 
+    vao.bind();
     program_text.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }

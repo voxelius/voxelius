@@ -2,19 +2,14 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef CLIENT_SCREEN_HH
-#define CLIENT_SCREEN_HH
+#ifndef CLIENT_GAMEUI_MENU_HH
+#define CLIENT_GAMEUI_MENU_HH
 
-struct ScreenSizeEvent final {
-    int width {};
-    int height {};
-    double aspect {1.0};
-};
-
-namespace screen
+namespace gameui_menu
 {
 void init();
-void init_late();
-} // namespace screen
+void deinit();
+void draw_ui();
+} // namespace gameui_menu
 
-#endif /* CLIENT_SCREEN_HH */
+#endif/* CLIENT_GAMEUI_MENU_HH */

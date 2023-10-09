@@ -30,3 +30,6 @@ ui::Font globals::unifont_16x16 = {};
 ui::Font globals::pc_vga_8x16 = {};
 ui::Font globals::pc_vga_8x8 = {};
 
+unsigned int globals::gameui_scale = 1U;
+GameUiScreen globals::gameui_screen = GameUiScreen::Undefined;
+bool globals::gameui_visible = true;

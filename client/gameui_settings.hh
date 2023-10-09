@@ -2,14 +2,14 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef CLIENT_MENU_HH
-#define CLIENT_MENU_HH
+#ifndef CLIENT_GAMEUI_SETTINGS_HH
+#define CLIENT_GAMEUI_SETTINGS_HH
 
-namespace menu
+namespace gameui_settings
 {
 void init();
 void deinit();
-void draw();
-} // namespace menu
+void draw_ui();
+} // namespace gameui_settings
 
-#endif/* CLIENT_MENU_HH */
+#endif/* CLIENT_GAMEUI_SETTINGS_HH */

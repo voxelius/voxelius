@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#include <client/glfw_events.hh>
 #include <client/globals.hh>
-#include <client/input.hh>
 #include <client/pm_look.hh>
 #include <shared/angle.hh>
 #include <shared/head.hh>
@@ -17,7 +17,7 @@ static double previous_cy = 0.0;
 
 static void on_cursor_pos(const CursorPosEvent &event)
 {
-    if(globals::world.registry.valid(globals::player)) {
+    if(!globals::gameui_visible && globals::world.registry.valid(globals::player)) {
         const double dx = event.xpos - previous_cx;
         const double dy = event.ypos - previous_cy;
 

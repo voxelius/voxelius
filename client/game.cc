@@ -5,14 +5,15 @@
 #include <client/atlas.hh>
 #include <client/deferred.hh>
 #include <client/game.hh>
+#include <client/gameui_menu.hh>
+#include <client/gameui_servers.hh>
+#include <client/gameui_settings.hh>
 #include <client/gbuffer.hh>
+#include <client/glfw_events.hh>
 #include <client/globals.hh>
-#include <client/input.hh>
-#include <client/menu.hh>
 #include <client/pm_look.hh>
 #include <client/pm_move.hh>
 #include <client/postprocess.hh>
-#include <client/screen.hh>
 #include <client/shaders.hh>
 #include <client/ui_draw.hh>
 #include <client/ui_font.hh>
@@ -22,33 +23,12 @@
 #include <client/voxel_mesher.hh>
 #include <client/voxel_renderer.hh>
 #include <client/voxel_vertex.hh>
-#include <shared/head.hh>
 #include <shared/inertial.hh>
-#include <shared/player.hh>
-#include <shared/transform.hh>
-#include <shared/velocity.hh>
 #include <spdlog/spdlog.h>
-
-constexpr static const uint32_t STONE   = 1;
-constexpr static const uint32_t SLATE   = 2;
-constexpr static const uint32_t DIRT    = 3;
-constexpr static const uint32_t GRASS   = 4;
-constexpr static const uint32_t VTEST   = 5;
-
-static void on_key(const KeyEvent &event)
-{
-    if(event.action == GLFW_PRESS) {
-        if(event.key == GLFW_KEY_ESCAPE) {
-            spdlog::info("GLFW_KEY_ESCAPE has been pressed, exiting");
-            glfwSetWindowShouldClose(globals::window, true);
-            return;
-        }
-    }
-}
 
 static void on_mouse_button(const MouseButtonEvent &event)
 {
-    if(event.action == GLFW_PRESS) {
+    if(!globals::gameui_visible && event.action == GLFW_PRESS) {
         RayDDA ray = {};
         ViewValues vv = {};
         view::get_values(vv);
@@ -63,8 +43,11 @@ static void on_mouse_button(const MouseButtonEvent &event)
     }
 }
 
-static void on_screen_size(const ScreenSizeEvent &event)
+static void on_framebuffer_size(const FramebufferSizeEvent &event)
 {
+    const double dheight = event.height;
+    globals::gameui_scale = cxmath::max(1U, cxmath::ceil<unsigned int>(dheight / 240.0));
+
     globals::gbuffer_solid.create(event.width, event.height);
     globals::gbuffer_cutout.create(event.width, event.height);
     globals::gbuffer_blend.create(event.width, event.height);
@@ -78,9 +61,6 @@ static void on_screen_size(const ScreenSizeEvent &event)
 
 void client_game::init()
 {
-    input::init();
-    screen::init();
-
     shaders::init();
     VoxelVertex::init();
 
@@ -115,92 +95,21 @@ void client_game::init()
     ui::draw::init();
     ui::im::init();
 
-    menu::init();
+    gameui_menu::init();
+    gameui_servers::init();
+    gameui_settings::init();
 
-    globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
+    // Start in main menu
+    globals::gameui_screen = GameUiScreen::MainMenu;
+    globals::gameui_visible = true;
+
     globals::dispatcher.sink<MouseButtonEvent>().connect<&on_mouse_button>();
-    globals::dispatcher.sink<ScreenSizeEvent>().connect<&on_screen_size>();
+    globals::dispatcher.sink<FramebufferSizeEvent>().connect<&on_framebuffer_size>();
 }
-
-#if 0
-// Surface level for world generation
-constexpr static const int64_t SURFACE = 0;
-
-#include <glm/gtc/noise.hpp>
-
-static voxel_t voxel_at(const voxel_pos_t &vpos)
-{
-    int64_t surf = SURFACE + 8.0 * glm::simplex(vector2_t{vpos.x, vpos.z} / 48.0);
-    if(vpos.y <= surf - 8)
-        return make_voxel(STONE, NULL_VOXEL_STATE);
-    if(vpos.y <= surf - 1)
-        return make_voxel(DIRT, NULL_VOXEL_STATE);
-    if(vpos.y <= surf)
-        return make_voxel(GRASS, NULL_VOXEL_STATE);
-    return NULL_VOXEL;
-}
-
-static void generate(const chunk_pos_t &cpos)
-{
-    spdlog::trace("generating {} {} {}", cpos.x, cpos.y, cpos.z);
-
-    bool empty = true;
-    voxel_array_t voxels = {};
-
-    for(size_t i = 0; i < CHUNK_VOLUME; ++i) {
-        const auto lpos = coord::to_local(i);
-        const auto vpos = coord::to_voxel(cpos, lpos);
-        const auto voxel = voxel_at(vpos);
-        if(voxel != NULL_VOXEL)
-            empty = false;
-        voxels[i] = voxel;
-    }
-
-    if(!empty) {
-        Chunk *chunk = globals::world.create_chunk(cpos);
-        chunk->voxels = voxels;
-    }
-}
-#endif
 
 void client_game::init_late()
 {
-    screen::init_late();
 
-#if 0
-    vdef::purge();
-    vdef::assign("stone", STONE);
-    vdef::assign("slate", SLATE);
-    vdef::assign("dirt", DIRT);
-    vdef::assign("grass", GRASS);
-    vdef::assign("vtest", VTEST);
-
-    atlas::create(16, 16, vdef::textures.size());
-
-    for(const vfs::path_t &path : vdef::textures) {
-        if(!atlas::load(path)) {
-            spdlog::critical("atlas: {}: load failed", path.string());
-            std::terminate();
-        }
-    }
-
-    voxel_anims::construct();
-
-    for(int x = -8; x < 7; ++x) {
-        for(int z = -8; z < 7; ++z) {
-            for(int y = -1; y < 2; ++y) {
-                generate(chunk_pos_t{x, y, z});
-            }
-        }
-    }
-
-    spdlog::info("spawning local player");
-    globals::player = globals::world.registry.create();
-    globals::world.registry.emplace<PlayerComponent>(globals::player);
-    globals::world.registry.emplace<HeadComponent>(globals::player);
-    globals::world.registry.emplace<TransformComponent>(globals::player);
-    globals::world.registry.emplace<VelocityComponent>(globals::player);
-#endif
 }
 
 void client_game::deinit()
@@ -214,7 +123,9 @@ void client_game::deinit()
     globals::gbuffer_cutout.destroy();
     globals::gbuffer_solid.destroy();
 
-    menu::deinit();
+    gameui_settings::deinit();
+    gameui_servers::deinit();
+    gameui_menu::deinit();
 
     ui::draw::deinit();
 
@@ -250,25 +161,39 @@ void client_game::update()
 
 void client_game::update_late()
 {
-    // UNDONE: game state
-    //glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    int cursor_mode = GLFW_CURSOR_DISABLED;
+    if(globals::gameui_screen != GameUiScreen::Undefined && globals::gameui_visible)
+        cursor_mode = GLFW_CURSOR_NORMAL;
+    glfwSetInputMode(globals::window, GLFW_CURSOR, cursor_mode);
 
     ui::im::update_late();
 }
 
 void client_game::render()
 {
-    glDisable(GL_BLEND);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glClearColor(0.0, 0.0, 0.0, 1.0);
-    glClear(GL_COLOR_BUFFER_BIT);
-
     voxel_renderer::render();
     deferred::render();
     postprocess::render();
-
-    ui::draw::prepare();
-
-    menu::draw();
 }
 
+void client_game::draw_ui()
+{
+    if(globals::gameui_visible) {
+        if(globals::world.registry.valid(globals::player)) {
+            const vector4_t splash = {0.0, 0.0, 0.0, 0.75};
+            ui::draw::rect(0, 0, globals::window_width, globals::window_height, splash);
+        }
+
+        switch(globals::gameui_screen) {
+            case GameUiScreen::MainMenu:
+                gameui_menu::draw_ui();
+                break;
+            case GameUiScreen::ServerBrowser:
+                gameui_servers::draw_ui();
+                break;
+            case GameUiScreen::Settings:
+                gameui_settings::draw_ui();
+                break;
+        }
+    }
+}

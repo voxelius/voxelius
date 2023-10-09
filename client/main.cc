@@ -3,6 +3,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/game.hh>
+#include <client/glfw_events.hh>
 #include <client/globals.hh>
 #include <client/main.hh>
 #include <client/image.hh>
@@ -15,6 +16,54 @@
 static void on_glfw_error(int code, const char *message)
 {
     spdlog::error("glfw: {}", message);
+}
+
+static void on_framebuffer_size_event(GLFWwindow *window, int width, int height)
+{
+    globals::window_width = width;
+    globals::window_height = height;
+    globals::window_aspect = static_cast<double>(width) / static_cast<double>(height);
+
+    globals::dispatcher.trigger(FramebufferSizeEvent {
+        .width = globals::window_width,
+        .height = globals::window_height,
+        .aspect = globals::window_aspect,
+    });
+}
+
+static void on_key_event(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+    globals::dispatcher.trigger(KeyEvent {
+        .key = key,
+        .scancode = scancode,
+        .action = action,
+        .mods = mods,
+    });
+}
+
+static void on_mouse_button_event(GLFWwindow *window, int button, int action, int mods)
+{
+    globals::dispatcher.trigger(MouseButtonEvent {
+        .button = button,
+        .action = action,
+        .mods = mods,
+    });
+}
+
+static void on_cursor_pos_event(GLFWwindow *window, double xpos, double ypos)
+{
+    globals::dispatcher.trigger(CursorPosEvent {
+        .xpos = xpos, 
+        .ypos = ypos,
+    });
+}
+
+static void on_scroll_event(GLFWwindow *window, double dx, double dy)
+{
+    globals::dispatcher.trigger(ScrollEvent {
+        .dx = dx,
+        .dy = dy,
+    });
 }
 
 static void on_opengl_message(uint32_t source, uint32_t type, uint32_t id, uint32_t severity, int32_t length, const char *message, const void *param)
@@ -43,6 +92,12 @@ void client::main()
         spdlog::critical("glfw: failed to open a window");
         std::terminate();
     }
+
+    glfwSetFramebufferSizeCallback(globals::window, &on_framebuffer_size_event);
+    glfwSetKeyCallback(globals::window, &on_key_event);
+    glfwSetMouseButtonCallback(globals::window, &on_mouse_button_event);
+    glfwSetCursorPosCallback(globals::window, &on_cursor_pos_event);
+    glfwSetScrollCallback(globals::window, &on_scroll_event);
 
     Image image = {};
 
@@ -84,6 +139,11 @@ void client::main()
     globals::framecount = 0;
 
     client_game::init();
+
+    int wwidth, wheight;
+    glfwGetFramebufferSize(globals::window, &wwidth, &wheight);
+    on_framebuffer_size_event(globals::window, wwidth, wheight);
+
     client_game::init_late();
 
     uint64_t last_curtime = globals::curtime;
@@ -107,7 +167,18 @@ void client::main()
         // which creates a visual mess with program pipelines.
         glUseProgram(0);
 
+        glDisable(GL_BLEND);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClearColor(0.0, 0.0, 0.0, 1.0);
+        glClear(GL_COLOR_BUFFER_BIT);
         client_game::render();
+
+        glEnable(GL_BLEND);
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, globals::window_width, globals::window_height);
+        client_game::draw_ui();
 
         glfwSwapBuffers(globals::window);
 

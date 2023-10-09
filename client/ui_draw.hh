@@ -17,7 +17,6 @@ namespace ui::draw
 {
 void init();
 void deinit();
-void prepare();
 
 void rect(int xpos, int ypos, int width, int height);
 void rect(int xpos, int ypos, int width, int height, const vector4_t &color);

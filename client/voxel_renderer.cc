@@ -8,13 +8,13 @@
 #include <client/gl_program.hh>
 #include <client/gl_sampler.hh>
 #include <client/gl_vertexarray.hh>
-#include <client/input.hh>
 #include <client/shaders.hh>
 #include <client/view.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_mesher.hh>
 #include <client/voxel_renderer.hh>
 #include <client/voxel_vertex.hh>
+#include <GLFW/glfw3.h>
 #include <shared/types.hh>
 #include <shared/vfs.hh>
 #include <shared/world.hh>
