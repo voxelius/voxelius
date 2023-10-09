@@ -21,8 +21,8 @@ Chunk *chunks::create(const chunk_pos_t &cpos)
 
     if(chunk == nullptr) {
         chunk = new Chunk{};
-        chunk->voxels.fill(NULL_VOXEL);
         chunk->entity = globals::registry.create();
+        chunk->voxels.fill(NULL_VOXEL);
 
         auto &comp = globals::registry.emplace<ChunkComponent>(chunk->entity);
         comp.ptr = chunk;

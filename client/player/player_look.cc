@@ -16,7 +16,7 @@ static double previous_cy = 0.0;
 
 static void on_mouse_move(const MouseMoveEvent &event)
 {
-    if(!false/*globals::gameui_visible*/ && globals::registry.valid(globals::player)) {
+    if(!globals::ui_screen && globals::registry.valid(globals::player)) {
         const double dx = event.xpos - previous_cx;
         const double dy = event.ypos - previous_cy;
 

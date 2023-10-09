@@ -41,6 +41,9 @@ extern gl::Texture2D deferred_color;
 extern Font unifont_16x16;
 extern Font pc_vga_8x16;
 extern Font pc_vga_8x8;
+
+extern unsigned int ui_scale;
+extern unsigned int ui_screen;
 } // namespace globals
 
 #endif /* CLIENT_GLOBALS_HH */

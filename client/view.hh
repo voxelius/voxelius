@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef CLIENT_RENDER_VIEW_HH
-#define CLIENT_RENDER_VIEW_HH
+#ifndef CLIENT_VIEW_HH
+#define CLIENT_VIEW_HH
 #include <shared/world/coord.hh>
 
 struct ViewValues final {
@@ -27,4 +27,4 @@ const chunk_pos_t &get_cpos();
 void get_values(ViewValues &vv);
 } // namespace view
 
-#endif/* CLIENT_VIEW_HH */
+#endif/* CLIENT_HH */

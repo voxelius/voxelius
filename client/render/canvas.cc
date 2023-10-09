@@ -23,9 +23,9 @@ struct Canvas_UBO final {
 };
 
 static gl::Buffer ubo = {};
-static gl::Program program_text = {};
 static gl::Program program_rect_col = {};
 static gl::Program program_rect_tex = {};
+static gl::Program program_text = {};
 static gl::Sampler sampler = {};
 static gl::VertexArray vao = {};
 
@@ -48,12 +48,35 @@ static void init_program(gl::Program &prog, const vfs::path_t &fpath, const gl::
 
 void canvas::init()
 {
+    ubo.create();
+    ubo.storage(sizeof(Canvas_UBO), nullptr, GL_DYNAMIC_STORAGE_BIT);
 
+    gl::Shader vert = {};
+    vert.create(GL_VERTEX_SHADER);
+
+    if(!shaders::compile(vert, "/shaders/canvas_common.vert"))
+        std::terminate();
+    init_program(program_rect_col, "/shaders/canvas_rect_col.frag", vert);
+    init_program(program_rect_tex, "/shaders/canvas_rect_tex.frag", vert);
+    init_program(program_text, "/shaders/canvas_text.frag", vert);
+
+    sampler.create();
+    sampler.parameter(GL_TEXTURE_WRAP_S, GL_REPEAT);
+    sampler.parameter(GL_TEXTURE_WRAP_T, GL_REPEAT);
+    sampler.parameter(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    sampler.parameter(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    vao.create();
 }
 
 void canvas::deinit()
 {
-
+    vao.destroy();
+    sampler.destroy();
+    program_rect_tex.destroy();
+    program_rect_col.destroy();
+    program_text.destroy();
+    ubo.destroy();
 }
 
 void canvas::rect(int xpos, int ypos, int width, int height)
@@ -267,8 +290,8 @@ void canvas::text(int xpos, int ypos, const Text &text, const Font &font, unsign
     uniforms.glyph.y = font.get_glyph_height() * scale;
     uniforms.glyph.z = font.get_texture_cwidth();
     uniforms.glyph.w = font.get_texture_cheight();
-    uniforms.rect.x = xpos * scale;
-    uniforms.rect.y = ypos * scale;
+    uniforms.rect.x = xpos;
+    uniforms.rect.y = ypos;
     uniforms.rect.z = uniforms.glyph.x * text.get_texture_width();
     uniforms.rect.w = uniforms.glyph.y * text.get_texture_height();
 
@@ -335,8 +358,8 @@ void canvas::text(int xpos, int ypos, const Text &text, const Font &font, const 
     uniforms.glyph.y = font.get_glyph_height() * scale;
     uniforms.glyph.z = font.get_texture_cwidth();
     uniforms.glyph.w = font.get_texture_cheight();
-    uniforms.rect.x = xpos * scale;
-    uniforms.rect.y = ypos * scale;
+    uniforms.rect.x = xpos;
+    uniforms.rect.y = ypos;
     uniforms.rect.z = uniforms.glyph.x * text.get_texture_width();
     uniforms.rect.w = uniforms.glyph.y * text.get_texture_height();
 
@@ -403,8 +426,8 @@ void canvas::text(int xpos, int ypos, const Text &text, const Font &font, const 
     uniforms.glyph.y = font.get_glyph_height() * scale;
     uniforms.glyph.z = font.get_texture_cwidth();
     uniforms.glyph.w = font.get_texture_cheight();
-    uniforms.rect.x = xpos * scale;
-    uniforms.rect.y = ypos * scale;
+    uniforms.rect.x = xpos;
+    uniforms.rect.y = ypos;
     uniforms.rect.z = uniforms.glyph.x * text.get_texture_width();
     uniforms.rect.w = uniforms.glyph.y * text.get_texture_height();
 

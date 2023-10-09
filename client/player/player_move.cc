@@ -63,7 +63,7 @@ void player_move::update()
     if(globals::registry.valid(globals::player)) {
         vector3_t direction = {0.0, 0.0, 0.0};
 
-        if(!false/*globals::gameui_visible*/) {
+        if(!globals::ui_screen) {
             if(move_keys[MOVE_FD])
                 direction += DIR_FORWARD;
             if(move_keys[MOVE_BK])

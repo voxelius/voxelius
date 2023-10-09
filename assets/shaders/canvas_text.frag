@@ -7,15 +7,18 @@
 
 layout(location = 0) in vec2 texcoord;
 layout(location = 1) in vec2 pixcoord;
+layout(location = 2) in vec4 colormod;
 
 layout(location = 0) out vec4 target;
 
 layout(binding = 0) uniform sampler2D font;
 layout(binding = 1) uniform usampler2D label;
 
-layout(std140, binding = 0) uniform UI_Draw_UBO {
-    vec4 background;
-    vec4 foreground;
+layout(std140, binding = 0) uniform Canvas_UBO {
+    vec4 col_ul; // foreground
+    vec4 col_ur; // background
+    vec4 col_dl;
+    vec4 col_dr;
     vec4 screen;
     vec4 glyph;
     vec4 rect;
@@ -30,7 +33,7 @@ void main(void)
         const float gx = mod(pixcoord.x, glyph.x) / glyph.x / glyph.z;
         const float gy = mod(pixcoord.y, glyph.y) / glyph.y / glyph.w;
         const vec4 fnt = texture(font, vec2(cx + gx, 1.0 - cy + gy));
-        target = mix(background, foreground, fnt.r);
+        target = mix(col_ur, col_ul, fnt.r);
     }
     else {
         // 0xFFFFFFFF is the assumed null

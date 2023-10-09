@@ -7,12 +7,17 @@
 
 layout(location = 0) in vec2 texcoord;
 layout(location = 1) in vec2 pixcoord;
+layout(location = 2) in vec4 colormod;
 
 layout(location = 0) out vec4 target;
 
-layout(std140, binding = 0) uniform UI_Draw_UBO {
-    vec4 background;
-    vec4 foreground;
+layout(binding = 0) uniform sampler2D image;
+
+layout(std140, binding = 0) uniform Canvas_UBO {
+    vec4 col_ul;
+    vec4 col_ur;
+    vec4 col_dl;
+    vec4 col_dr;
     vec4 screen;
     vec4 glyph;
     vec4 rect;
@@ -20,6 +25,5 @@ layout(std140, binding = 0) uniform UI_Draw_UBO {
 
 void main(void)
 {
-    target = foreground;
+    target = colormod * texture(image, texcoord);
 }
-

@@ -8,12 +8,12 @@
 #include <client/render/gl/vertexarray.hh>
 #include <client/render/gbuffer.hh>
 #include <client/render/shaders.hh>
-#include <client/render/view.hh>
 #include <client/render/voxel_anims.hh>
 #include <client/render/voxel_atlas.hh>
 #include <client/render/voxel_renderer.hh>
 #include <client/render/voxel_vertex.hh>
 #include <client/globals.hh>
+#include <client/view.hh>
 #include <shared/entity/chunk.hh>
 #include <shared/world/chunks.hh>
 #include <spdlog/fmt/fmt.h>

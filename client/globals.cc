@@ -5,6 +5,7 @@
 #include <client/render/gl/framebuffer.hh>
 #include <client/render/font.hh>
 #include <client/render/gbuffer.hh>
+#include <client/ui/screen.hh>
 #include <client/globals.hh>
 
 GLFWwindow *globals::window = nullptr;
@@ -28,3 +29,6 @@ gl::Texture2D globals::deferred_color = {};
 Font globals::unifont_16x16 = {};
 Font globals::pc_vga_8x16 = {};
 Font globals::pc_vga_8x8 = {};
+
+unsigned int globals::ui_scale = 1U;
+unsigned int globals::ui_screen = ui::SCR_NONE;
