@@ -2,11 +2,11 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#include <client/canvas_font.hh>
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
 #include <client/glxx/framebuffer.hh>
-#include <client/ui/canvas_font.hh>
-#include <client/ui/gameui_screen.hh>
+#include <client/ui_screen.hh>
 
 GLFWwindow *globals::window = nullptr;
 int globals::window_width = 0;
@@ -29,6 +29,5 @@ glxx::Texture2D globals::deferred_color = {};
 canvas::Font globals::font_8px = {};
 canvas::Font globals::font_16px = {};
 
-double globals::ui_scale = 1.0;
-
-unsigned int globals::gameui_screen = GAMEUI_NO_SCREEN;
+unsigned int globals::ui_scale = 1U;
+unsigned int globals::ui_screen = ui::SCREEN_NONE;

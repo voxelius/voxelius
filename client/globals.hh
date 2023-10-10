@@ -45,9 +45,8 @@ extern glxx::Texture2D deferred_color;
 extern canvas::Font font_8px;
 extern canvas::Font font_16px;
 
-extern double ui_scale; // UNDONE: settings
-
-extern unsigned int gameui_screen;
+extern unsigned int ui_scale;
+extern unsigned int ui_screen;
 } // namespace globals
 
 #endif /* CLIENT_GLOBALS_HH */

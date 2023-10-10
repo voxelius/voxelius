@@ -2,14 +2,14 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#include <client/canvas_font.hh>
+#include <client/canvas_text.hh>
+#include <client/canvas.hh>
 #include <client/globals.hh>
 #include <client/glxx/program.hh>
 #include <client/glxx/sampler.hh>
 #include <client/glxx/vertexarray.hh>
 #include <client/shaders.hh>
-#include <client/ui/canvas_font.hh>
-#include <client/ui/canvas_text.hh>
-#include <client/ui/canvas.hh>
 #include <shared/color.hh>
 
 struct Canvas_UBO final {
@@ -79,7 +79,7 @@ void canvas::deinit()
     ubo.destroy();
 }
 
-void canvas::rect(int xpos, int ypos, int width, int height)
+void canvas::draw_rect(int xpos, int ypos, int width, int height)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = COL_WHITE;
@@ -105,7 +105,7 @@ void canvas::rect(int xpos, int ypos, int width, int height)
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::rect(int xpos, int ypos, int width, int height, const vector4_t &color)
+void canvas::draw_rect(int xpos, int ypos, int width, int height, const vector4_t &color)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = color;
@@ -131,7 +131,7 @@ void canvas::rect(int xpos, int ypos, int width, int height, const vector4_t &co
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::rect(int xpos, int ypos, int width, int height, const glxx::Texture2D &texture)
+void canvas::draw_rect(int xpos, int ypos, int width, int height, const glxx::Texture2D &texture)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = COL_WHITE;
@@ -161,7 +161,7 @@ void canvas::rect(int xpos, int ypos, int width, int height, const glxx::Texture
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::rect(int xpos, int ypos, int width, int height, const vector4_t &color, const glxx::Texture2D &texture)
+void canvas::draw_rect(int xpos, int ypos, int width, int height, const vector4_t &color, const glxx::Texture2D &texture)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = color;
@@ -191,7 +191,7 @@ void canvas::rect(int xpos, int ypos, int width, int height, const vector4_t &co
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::rect_h(int xpos, int ypos, int width, int height, const vector4_t &colx, const vector4_t &coly)
+void canvas::draw_rect_h(int xpos, int ypos, int width, int height, const vector4_t &colx, const vector4_t &coly)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = colx;
@@ -217,7 +217,7 @@ void canvas::rect_h(int xpos, int ypos, int width, int height, const vector4_t &
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::rect_v(int xpos, int ypos, int width, int height, const vector4_t &colx, const vector4_t &coly)
+void canvas::draw_rect_v(int xpos, int ypos, int width, int height, const vector4_t &colx, const vector4_t &coly)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = colx;
@@ -243,7 +243,7 @@ void canvas::rect_v(int xpos, int ypos, int width, int height, const vector4_t &
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font)
+void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = COL_WHITE;
@@ -277,7 +277,7 @@ void canvas::text(int xpos, int ypos, const canvas::Text &text, const canvas::Fo
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, double scale)
+void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, unsigned int scale)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = COL_WHITE;
@@ -286,8 +286,8 @@ void canvas::text(int xpos, int ypos, const canvas::Text &text, const canvas::Fo
     uniforms.screen.y = globals::window_height;
     uniforms.screen.z = 1.0 / uniforms.screen.x;
     uniforms.screen.w = 1.0 / uniforms.screen.y;
-    uniforms.glyph.x = font.get_glyph_width() * scale;
-    uniforms.glyph.y = font.get_glyph_height() * scale;
+    uniforms.glyph.x = font.get_glyph_width() * static_cast<double>(scale);
+    uniforms.glyph.y = font.get_glyph_height() * static_cast<double>(scale);
     uniforms.glyph.z = font.get_texture_cwidth();
     uniforms.glyph.w = font.get_texture_cheight();
     uniforms.rect.x = xpos;
@@ -311,7 +311,7 @@ void canvas::text(int xpos, int ypos, const canvas::Text &text, const canvas::Fo
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4_t &fg)
+void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4_t &fg)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = fg;
@@ -345,7 +345,7 @@ void canvas::text(int xpos, int ypos, const canvas::Text &text, const canvas::Fo
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4_t &fg, double scale)
+void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4_t &fg, unsigned int scale)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = fg;
@@ -354,8 +354,8 @@ void canvas::text(int xpos, int ypos, const canvas::Text &text, const canvas::Fo
     uniforms.screen.y = globals::window_height;
     uniforms.screen.z = 1.0 / uniforms.screen.x;
     uniforms.screen.w = 1.0 / uniforms.screen.y;
-    uniforms.glyph.x = font.get_glyph_width() * scale;
-    uniforms.glyph.y = font.get_glyph_height() * scale;
+    uniforms.glyph.x = font.get_glyph_width() * static_cast<double>(scale);
+    uniforms.glyph.y = font.get_glyph_height() * static_cast<double>(scale);
     uniforms.glyph.z = font.get_texture_cwidth();
     uniforms.glyph.w = font.get_texture_cheight();
     uniforms.rect.x = xpos;
@@ -379,7 +379,7 @@ void canvas::text(int xpos, int ypos, const canvas::Text &text, const canvas::Fo
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4_t &fg, const vector4_t &bg)
+void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4_t &fg, const vector4_t &bg)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = fg;
@@ -413,7 +413,7 @@ void canvas::text(int xpos, int ypos, const canvas::Text &text, const canvas::Fo
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4_t &fg, const vector4_t &bg, double scale)
+void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4_t &fg, const vector4_t &bg, unsigned int scale)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = fg;
@@ -422,8 +422,8 @@ void canvas::text(int xpos, int ypos, const canvas::Text &text, const canvas::Fo
     uniforms.screen.y = globals::window_height;
     uniforms.screen.z = 1.0 / uniforms.screen.x;
     uniforms.screen.w = 1.0 / uniforms.screen.y;
-    uniforms.glyph.x = font.get_glyph_width() * scale;
-    uniforms.glyph.y = font.get_glyph_height() * scale;
+    uniforms.glyph.x = font.get_glyph_width() * static_cast<double>(scale);
+    uniforms.glyph.y = font.get_glyph_height() * static_cast<double>(scale);
     uniforms.glyph.z = font.get_texture_cwidth();
     uniforms.glyph.w = font.get_texture_cheight();
     uniforms.rect.x = xpos;

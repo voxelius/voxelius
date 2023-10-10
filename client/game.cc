@@ -2,6 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#include <client/canvas_font.hh>
+#include <client/canvas.hh>
 #include <client/deferred_pass.hh>
 #include <client/event/framebuffer_size.hh>
 #include <client/final_pass.hh>
@@ -11,11 +13,9 @@
 #include <client/player_look.hh>
 #include <client/player_move.hh>
 #include <client/shaders.hh>
-#include <client/ui/canvas_font.hh>
-#include <client/ui/canvas.hh>
-#include <client/ui/gameui_screen.hh>
-#include <client/ui/imgui.hh>
-#include <client/ui/main_menu.hh>
+#include <client/ui_imgui.hh>
+#include <client/ui_main_menu.hh>
+#include <client/ui_screen.hh>
 #include <client/view.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_atlas.hh>
@@ -28,9 +28,7 @@
 
 static void on_framebuffer_size(const FramebufferSizeEvent &event)
 {
-    const double norm = 240.0;
-    const double dheight = event.height;
-    globals::ui_scale = cxmath::max(1U, cxmath::floor<unsigned int>(dheight / norm));
+    globals::ui_scale = cxmath::max(1U, cxmath::floor<unsigned int>(static_cast<double>(event.height) / 240.0));
 
     globals::gbuffer_solid.create(event.width, event.height);
     globals::gbuffer_cutout.create(event.width, event.height);
@@ -72,12 +70,11 @@ void client_game::init()
 
     canvas::init();
 
-    imgui::init();
-
-    main_menu::init();
+    ui::imgui::init();
+    ui::main_menu::init();
 
     // We start in the main menu
-    globals::gameui_screen = GAMEUI_MAIN_MENU;
+    globals::ui_screen = ui::SCREEN_MAIN_MENU;
 
     globals::dispatcher.sink<FramebufferSizeEvent>().connect<&on_framebuffer_size>();
 }
@@ -98,7 +95,7 @@ void client_game::deinit()
     globals::gbuffer_cutout.destroy();
     globals::gbuffer_solid.destroy();
 
-    main_menu::deinit();
+    ui::main_menu::deinit();
 
     canvas::deinit();
 
@@ -136,7 +133,7 @@ void client_game::update()
 
 void client_game::update_late()
 {
-    if(globals::gameui_screen) {
+    if(globals::ui_screen) {
         glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         glfwSetInputMode(globals::window, GLFW_RAW_MOUSE_MOTION, false);
     }
@@ -145,7 +142,7 @@ void client_game::update_late()
         glfwSetInputMode(globals::window, GLFW_RAW_MOUSE_MOTION, true);
     }
 
-    imgui::update_late();
+    ui::imgui::update_late();
 }
 
 void client_game::render()
@@ -155,22 +152,23 @@ void client_game::render()
     final_pass::render();
 }
 
-void client_game::draw_gui()
+void client_game::render_ui()
 {
-    if(globals::gameui_screen) {
-        if(globals::registry.valid(globals::player)) {
-            const vector4_t spx = {0.0, 0.0, 0.0, 0.99};
-            const vector4_t spy = {0.0, 0.0, 0.0, 0.75};
-            canvas::rect_h(0, 0, globals::window_width, globals::window_height, spx, spy);
+    if(globals::ui_screen) {
+        if(!globals::registry.valid(globals::player)) {
+            const double cv = 0.5 + 0.5 * cos(0.25 * globals::curtime * 1.0e-6);
+            const double sv = 0.5 + 0.5 * sin(0.25 * globals::curtime * 1.0e-6);
+            const vector4_t col = {cv, sv, 1.0, 1.0};
+            canvas::draw_rect(0, 0, globals::window_width, globals::window_height, col);
         }
 
-        switch(globals::gameui_screen) {
-            case GAMEUI_MAIN_MENU:
-                main_menu::draw_ui();
-                break;
-            case GAMEUI_SERVER_LIST:
-                break;
-            case GAMEUI_SETTINGS_MAIN:
+        const vector4_t spx = {0.0, 0.0, 0.0, 0.99};
+        const vector4_t spy = {0.0, 0.0, 0.0, 0.50};
+        canvas::draw_rect_h(0, 0, globals::window_width, globals::window_height, spx, spy);
+
+        switch(globals::ui_screen) {
+            case ui::SCREEN_MAIN_MENU:
+                ui::main_menu::render_ui();
                 break;
         }
     }

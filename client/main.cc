@@ -183,7 +183,7 @@ void client::main()
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(0, 0, globals::window_width, globals::window_height);
-        client_game::draw_gui();
+        client_game::render_ui();
 
         glfwSwapBuffers(globals::window);
 

@@ -2,8 +2,8 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#include <client/canvas_font.hh>
 #include <client/image.hh>
-#include <client/ui/canvas_font.hh>
 #include <shared/cxmath.hh>
 
 bool canvas::Font::load_image(const vfs::path_t &path, int width, int height)
