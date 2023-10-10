@@ -7,13 +7,17 @@
 #include <shared/globals.hh>
 #include <shared/types.hh>
 
-namespace gl
+namespace glxx
 {
 class Framebuffer;
 class Texture2D;
-} // namespace gl
+} // namespace glxx
 
-class Font;
+namespace canvas
+{
+class Font;    
+} // namespace canvas
+
 struct GLFWwindow;
 class GBuffer;
 class World;
@@ -35,15 +39,15 @@ extern entt::entity player;
 extern GBuffer gbuffer_solid;
 extern GBuffer gbuffer_cutout;
 extern GBuffer gbuffer_blend;
-extern gl::Framebuffer deferred_fbo;
-extern gl::Texture2D deferred_color;
+extern glxx::Framebuffer deferred_fbo;
+extern glxx::Texture2D deferred_color;
 
-extern Font font_8x8;
-extern Font font_8x16;
-extern Font font_16x16;
+extern canvas::Font font_8px;
+extern canvas::Font font_16px;
 
-extern unsigned int ui_scale;
-extern unsigned int ui_screen;
+extern double ui_scale; // UNDONE: settings
+
+extern unsigned int gameui_screen;
 } // namespace globals
 
 #endif /* CLIENT_GLOBALS_HH */

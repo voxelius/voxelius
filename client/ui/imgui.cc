@@ -4,11 +4,11 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/event/mouse_button.hh>
 #include <client/event/mouse_move.hh>
-#include <client/render/canvas.hh>
-#include <client/render/font.hh>
-#include <client/render/text.hh>
-#include <client/ui/imgui.hh>
 #include <client/globals.hh>
+#include <client/ui/canvas_font.hh>
+#include <client/ui/canvas_text.hh>
+#include <client/ui/canvas.hh>
+#include <client/ui/imgui.hh>
 
 static int cursor_xpos = 0;
 static int cursor_ypos = 0;
@@ -46,7 +46,7 @@ void imgui::update_late()
         mouse_left += 1;
 }
 
-bool imgui::button(int xpos, int ypos, const Text &text, const Font &font, const imgui::Style &style)
+bool imgui::button(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const imgui::Style &style)
 {
     const int iscale = static_cast<int>(globals::ui_scale);
 
@@ -62,24 +62,24 @@ bool imgui::button(int xpos, int ypos, const Text &text, const Font &font, const
 
     const int rxx = rx + rw;
     const int ryy = ry + rh;
-    const bool hover = ((cursor_xpos >= rx) && (cursor_xpos <= rxx) && (cursor_ypos >= ry) && (cursor_ypos <= ryy));
+    const bool hover = ((cursor_xpos >= rx) && (cursor_xpos < rxx) && (cursor_ypos >= ry) && (cursor_ypos < ryy));
 
     vector4_t background = {};
     vector4_t foreground = {};
 
     if(hover) {
         if(mouse_left) {
-            background = style.button_background[imgui::BUTTON_PRESS];
-            foreground = style.button_foreground[imgui::BUTTON_PRESS];
+            background = style.button_background_press;
+            foreground = style.button_foreground_press;
         }
         else {
-            background = style.button_background[imgui::BUTTON_HOVER];
-            foreground = style.button_foreground[imgui::BUTTON_HOVER];
+            background = style.button_background_hover;
+            foreground = style.button_foreground_hover;
         }
     }
     else {
-        background = style.button_background[imgui::BUTTON_IDLE];
-        foreground = style.button_foreground[imgui::BUTTON_IDLE];
+        background = style.button_background;
+        foreground = style.button_foreground;
     }
 
     canvas::rect(rx, ry, rw, rh, background);

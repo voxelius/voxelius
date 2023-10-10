@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef SHARED_EVENT_VOXEL_SET_HH
 #define SHARED_EVENT_VOXEL_SET_HH
-#include <shared/world/chunks.hh>
+#include <shared/chunks.hh>
 
 struct VoxelSetEvent final {
     Chunk *chunk {nullptr};

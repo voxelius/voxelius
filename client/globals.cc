@@ -2,11 +2,11 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#include <client/render/gl/framebuffer.hh>
-#include <client/render/font.hh>
-#include <client/render/gbuffer.hh>
-#include <client/ui/screen.hh>
+#include <client/gbuffer.hh>
 #include <client/globals.hh>
+#include <client/glxx/framebuffer.hh>
+#include <client/ui/canvas_font.hh>
+#include <client/ui/gameui_screen.hh>
 
 GLFWwindow *globals::window = nullptr;
 int globals::window_width = 0;
@@ -23,12 +23,12 @@ entt::entity globals::player = entt::null;
 GBuffer globals::gbuffer_solid = {};
 GBuffer globals::gbuffer_cutout = {};
 GBuffer globals::gbuffer_blend = {};
-gl::Framebuffer globals::deferred_fbo = {};
-gl::Texture2D globals::deferred_color = {};
+glxx::Framebuffer globals::deferred_fbo = {};
+glxx::Texture2D globals::deferred_color = {};
 
-Font globals::font_8x8 = {};
-Font globals::font_8x16 = {};
-Font globals::font_16x16 = {};
+canvas::Font globals::font_8px = {};
+canvas::Font globals::font_16px = {};
 
-unsigned int globals::ui_scale = 1U;
-unsigned int globals::ui_screen = ui::SCR_NONE;
+double globals::ui_scale = 1.0;
+
+unsigned int globals::gameui_screen = GAMEUI_NO_SCREEN;

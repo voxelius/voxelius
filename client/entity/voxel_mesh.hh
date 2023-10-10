@@ -4,8 +4,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_ENTITY_VOXEL_MESH_HH
 #define CLIENT_ENTITY_VOXEL_MESH_HH
-#include <client/render/mesh.hh>
-#include <shared/world/vdef.hh>
+#include <client/mesh.hh>
+#include <shared/vdef.hh>
 
 struct VoxelMeshComponent final {
     std::array<Mesh, NUM_VOXEL_DRAW> meshes {};

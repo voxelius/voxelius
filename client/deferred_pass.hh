@@ -2,13 +2,14 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef SHARED_ENTITY_CHUNK_HH
-#define SHARED_ENTITY_CHUNK_HH
-#include <shared/chunks.hh>
+#ifndef CLIENT_DEFERRED_PASS_HH
+#define CLIENT_DEFERRED_PASS_HH
 
-struct ChunkComponent final {
-    Chunk *ptr {nullptr};
-    chunk_pos_t cpos {};
-};
+namespace deferred_pass
+{
+void init();
+void deinit();
+void render();
+} // namespace deferred_pass
 
-#endif /* SHARED_ENTITY_CHUNK_HH */
+#endif /* CLIENT_DEFERRED_PASS_HH */

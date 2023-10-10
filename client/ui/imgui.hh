@@ -6,19 +6,21 @@
 #define CLIENT_UI_IMGUI_HH
 #include <shared/color.hh>
 
-struct Font;
-struct Text;
+namespace canvas
+{
+class Font;
+class Text;
+} // namespace canvas
 
 namespace imgui
 {
-constexpr static const unsigned int BUTTON_IDLE = 0U;
-constexpr static const unsigned int BUTTON_HOVER = 1U;
-constexpr static const unsigned int BUTTON_PRESS = 2U;
-constexpr static const unsigned int BUTTON_STATES = 3U;
-
 struct Style final {
-    vector4_t button_background[BUTTON_STATES] {};
-    vector4_t button_foreground[BUTTON_STATES] {};
+    vector4_t button_background {COL_TRANSPARENT};
+    vector4_t button_background_hover {COL_TRANSPARENT};
+    vector4_t button_background_press {COL_TRANSPARENT};
+    vector4_t button_foreground {COL_WHITE};
+    vector4_t button_foreground_hover {COL_WHITE};
+    vector4_t button_foreground_press {COL_WHITE};
     vector2i_t button_margin {0, 0};
 };
 } // namespace imgui
@@ -27,7 +29,7 @@ namespace imgui
 {
 void init();
 void update_late();
-bool button(int xpos, int ypos, const Text &text, const Font &font, const Style &style);
+bool button(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const Style &style);
 } // namespace imgui
 
 #endif /* CLIENT_UI_IMGUI_HH */

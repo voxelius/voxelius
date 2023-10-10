@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_VIEW_HH
 #define CLIENT_VIEW_HH
-#include <shared/world/coord.hh>
+#include <shared/coord.hh>
 
 struct ViewValues final {
     vector3_t angles {};

@@ -3,41 +3,44 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/event/keyboard_key.hh>
-#include <client/render/canvas.hh>
-#include <client/render/font.hh>
-#include <client/render/text.hh>
+#include <client/globals.hh>
+#include <client/ui/canvas_font.hh>
+#include <client/ui/canvas_text.hh>
+#include <client/ui/canvas.hh>
+#include <client/ui/gameui_screen.hh>
 #include <client/ui/imgui.hh>
 #include <client/ui/main_menu.hh>
-#include <client/ui/screen.hh>
-#include <client/globals.hh>
 
-#include <client/render/voxel_anims.hh>
-#include <client/render/voxel_atlas.hh>
+#include <client/voxel_anims.hh>
+#include <client/voxel_atlas.hh>
+#include <shared/chunks.hh>
 #include <shared/entity/head.hh>
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
-#include <shared/world/chunks.hh>
-#include <shared/world/vdef.hh>
+#include <shared/vdef.hh>
 #include <spdlog/spdlog.h>
 
 static imgui::Style style = {};
-static Text title1 = {};
-static Text title2 = {};
-static Text button = {};
+static canvas::Text title1 = {};
+static canvas::Text title2 = {};
+static canvas::Text button = {};
 
 static void on_keyboard_key(const KeyboardKeyEvent &event)
 {
+    // Allow showing and hiding the main menu
+    // only when we are connected to a server
     if(globals::registry.valid(globals::player)) {
         if(event.key == GLFW_KEY_ESCAPE && event.action == GLFW_PRESS) {
-            switch(globals::ui_screen) {
-                case ui::SCR_NONE:
-                    globals::ui_screen = ui::SCR_MAIN_MENU;
+            switch(globals::gameui_screen) {
+                case GAMEUI_NO_SCREEN:
+                    globals::gameui_screen = GAMEUI_MAIN_MENU;
                     break;
-                case ui::SCR_MAIN_MENU:
-                    globals::ui_screen = ui::SCR_NONE;
+                case GAMEUI_MAIN_MENU:
+                    globals::gameui_screen = GAMEUI_NO_SCREEN;
                     break;
             }
+
         }
     }
 }
@@ -123,18 +126,18 @@ static void very_stupid_stub()
         globals::registry.emplace<TransformComponent>(globals::player);
         globals::registry.emplace<VelocityComponent>(globals::player);
 
-        globals::ui_screen = ui::SCR_NONE;
+        globals::gameui_screen = GAMEUI_NO_SCREEN;
     }
 }
 
 void main_menu::init()
 {
-    style.button_background[imgui::BUTTON_IDLE] = COL_TRANSPARENT;
-    style.button_background[imgui::BUTTON_HOVER] = vector4_t{1.0, 1.0, 1.0, 0.125};
-    style.button_background[imgui::BUTTON_PRESS] = vector4_t{1.0, 1.0, 1.0, 0.250};
-    style.button_foreground[imgui::BUTTON_IDLE] = COL_LIGHT_GRAY;
-    style.button_foreground[imgui::BUTTON_HOVER] = COL_WHITE;
-    style.button_foreground[imgui::BUTTON_PRESS] = COL_WHITE;
+    style.button_background = COL_TRANSPARENT;
+    style.button_background_hover = vector4_t{1.0, 1.0, 1.0, 0.125};
+    style.button_background_press = vector4_t{1.0, 1.0, 1.0, 0.250};
+    style.button_foreground = COL_LIGHT_GRAY;
+    style.button_foreground_hover = COL_WHITE;
+    style.button_foreground_press = COL_WHITE;
     style.button_margin = vector2i_t{4, 4};
 
     title1.create(32, 1);
@@ -156,50 +159,51 @@ void main_menu::deinit()
 
 void main_menu::draw_ui()
 {
-    const int tstep1 = globals::font_8x16.get_glyph_height() * 2U;
-    const int tstep2 = globals::font_8x16.get_glyph_height() * 2U + 4U;
-    const int bstep = 2 * style.button_margin.y + globals::font_8x16.get_glyph_height();
-    vector2i_t pos = {globals::window_width * 0.0625 / globals::ui_scale, globals::window_height * 0.15 / globals::ui_scale};
+    const int tstep1 = globals::font_16px.get_glyph_height() * 2U;
+    const int tstep2 = globals::font_8px.get_glyph_height() * 2U + 4U;
+    const int bstep = 2 * style.button_margin.y + globals::font_8px.get_glyph_height();
+    const int xstart = globals::window_width * 0.0625 / globals::ui_scale;
+    const int ystart = globals::window_height * 0.15 / globals::ui_scale;
+    vector2i_t pos{xstart, ystart};
 
-    canvas::text(globals::ui_scale * pos.x, globals::ui_scale * pos.y, title1, globals::font_8x16, globals::ui_scale * 2U);
+    canvas::text(globals::ui_scale * pos.x, globals::ui_scale * pos.y, title1, globals::font_16px, globals::ui_scale * 2U);
     pos.y += tstep1;
 
-    canvas::text(globals::ui_scale * pos.x, globals::ui_scale * pos.y, title2, globals::font_8x16, globals::ui_scale);
+    canvas::text(globals::ui_scale * pos.x, globals::ui_scale * pos.y, title2, globals::font_8px, globals::ui_scale);
     pos.y += tstep2;
 
     if(globals::registry.valid(globals::player)) {
         button.set(0, L"Back to Game");
-        if(imgui::button(pos.x, pos.y, button, globals::font_8x16, style))
-            globals::ui_screen = ui::SCR_NONE;
-        pos.y += bstep;
+        if(imgui::button(pos.x, pos.y, button, globals::font_8px, style))
+            globals::gameui_screen = GAMEUI_NO_SCREEN;
+        pos.y += bstep * 1.5;
     }
     else {
         button.set(0, L"DEBUG SESSION");
-        if(imgui::button(pos.x, pos.y, button, globals::font_8x16, style))
+        if(imgui::button(pos.x, pos.y, button, globals::font_8px, style))
             very_stupid_stub();
-        pos.y += bstep;
-
-        button.set(0, L"Join a Server");
-        if(imgui::button(pos.x, pos.y, button, globals::font_8x16, style))
-            globals::ui_screen = ui::SCR_SERVER_BROWSER;
-        pos.y += bstep;
+        pos.y += bstep * 1.5;
     }
 
+    button.set(0, L"Join a Server");
+    if(imgui::button(pos.x, pos.y, button, globals::font_8px, style))
+        spdlog::info("We can't open that screen yet!");
+    pos.y += bstep;
+
     button.set(0, L"Settings");
-    if(imgui::button(pos.x, pos.y, button, globals::font_8x16, style))
-        globals::ui_screen = ui::SCR_SETTINGS;
+    if(imgui::button(pos.x, pos.y, button, globals::font_8px, style))
+        spdlog::info("We can't open that screen yet!");
     pos.y += bstep;
 
     if(globals::registry.valid(globals::player)) {
         button.set(0, L"Disconnect");
-        if(imgui::button(pos.x, pos.y, button, globals::font_8x16, style))
+        if(imgui::button(pos.x, pos.y, button, globals::font_8px, style))
             spdlog::info("We can't disconnect yet!");
         pos.y += bstep;
     }
-    else {
-        button.set(0, L"Quit");
-        if(imgui::button(pos.x, pos.y, button, globals::font_8x16, style))
-            glfwSetWindowShouldClose(globals::window, true);
-        pos.y += bstep;
-    }
+
+    button.set(0, L"Quit");
+    if(imgui::button(pos.x, pos.y, button, globals::font_8px, style))
+        glfwSetWindowShouldClose(globals::window, true);
+    pos.y += bstep;
 }
