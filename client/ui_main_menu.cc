@@ -18,7 +18,7 @@ static ui::Style style = {};
 static canvas::Text title = {};
 static canvas::Text button = {};
 
-constexpr static const int BUTTON_HEIGHT = 16;
+constexpr static const int BUTTON_HEIGHT = 20;
 
 static void on_keyboard_key(const KeyboardKeyEvent &event)
 {
@@ -75,22 +75,22 @@ void ui::main_menu::render_ui()
     ypos += BUTTON_HEIGHT;
 
     button.set(0, L"DEBUG SESSION");
-    if(ui::imgui::button(xstart, ypos, BUTTON_HEIGHT, button, globals::font_8px, style))
+    if(ui::imgui::button(xstart, ypos, BUTTON_HEIGHT, button, globals::font_16px, style))
         debug_session::run();
     ypos += BUTTON_HEIGHT;
 
     button.set(0, L"Join a Server");
-    if(ui::imgui::button(xstart, ypos, BUTTON_HEIGHT, button, globals::font_8px, style))
+    if(ui::imgui::button(xstart, ypos, BUTTON_HEIGHT, button, globals::font_16px, style))
         spdlog::info("We can't connect to servers yet!");
     ypos += BUTTON_HEIGHT;
 
     button.set(0, L"Settings");
-    if(ui::imgui::button(xstart, ypos, BUTTON_HEIGHT, button, globals::font_8px, style))
+    if(ui::imgui::button(xstart, ypos, BUTTON_HEIGHT, button, globals::font_16px, style))
         spdlog::info("We don't have settings yet!");
     ypos += BUTTON_HEIGHT;
 
     button.set(0, L"Quit Game");
-    if(ui::imgui::button(xstart, ypos, BUTTON_HEIGHT, button, globals::font_8px, style))
+    if(ui::imgui::button(xstart, ypos, BUTTON_HEIGHT, button, globals::font_16px, style))
         glfwSetWindowShouldClose(globals::window, true);
     ypos += BUTTON_HEIGHT;
 }

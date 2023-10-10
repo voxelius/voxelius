@@ -56,15 +56,16 @@ void client_game::init()
     deferred_pass::init();
     final_pass::init();
 
-    const vfs::path_t font_8px_path = "/fonts/pc_vga_8x8.bin";
-    if(!globals::font_8px.load_vga_rom(font_8px_path, 8, 8)) {
-        spdlog::critical("{}: load failed", font_8px_path.string());
+    if(!globals::font_8px.load("/textures/font/cga_8x8.png", 8, 8))
+    if(!globals::font_8px.load("/textures/font/msx_8x8.png", 8, 8)) {
+        spdlog::critical("font_8px: unable to locate a valid font atlas");
         std::terminate();
     }
 
-    const vfs::path_t font_16px_path = "/fonts/pc_vga_8x16.bin";
-    if(!globals::font_16px.load_vga_rom(font_16px_path, 8, 16)) {
-        spdlog::critical("{}: load failed", font_16px_path.string());
+    if(!globals::font_16px.load("/textures/font/unscii_8x16.png", 8, 16))
+    if(!globals::font_16px.load("/textures/font/unifont_16x16.png", 16, 16))
+    if(!globals::font_16px.load("/textures/font/vga_8x16.png", 8, 16)) {
+        spdlog::critical("font_16px: unable to locate a valid font atlas");
         std::terminate();
     }
 

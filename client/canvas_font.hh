@@ -11,8 +11,7 @@ namespace canvas
 {
 class Font final {
 public:
-    bool load_image(const vfs::path_t &path, int width, int height);
-    bool load_vga_rom(const vfs::path_t &path, int width, int height);
+    bool load(const vfs::path_t &path, int width, int height);
     void unload();
 
     int get_glyph_width() const;
