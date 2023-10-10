@@ -26,9 +26,9 @@ GBuffer globals::gbuffer_blend = {};
 gl::Framebuffer globals::deferred_fbo = {};
 gl::Texture2D globals::deferred_color = {};
 
-Font globals::unifont_16x16 = {};
-Font globals::pc_vga_8x16 = {};
-Font globals::pc_vga_8x8 = {};
+Font globals::font_8x8 = {};
+Font globals::font_8x16 = {};
+Font globals::font_16x16 = {};
 
 unsigned int globals::ui_scale = 1U;
 unsigned int globals::ui_screen = ui::SCR_NONE;

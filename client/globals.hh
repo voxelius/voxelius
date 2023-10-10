@@ -38,9 +38,9 @@ extern GBuffer gbuffer_blend;
 extern gl::Framebuffer deferred_fbo;
 extern gl::Texture2D deferred_color;
 
-extern Font unifont_16x16;
-extern Font pc_vga_8x16;
-extern Font pc_vga_8x8;
+extern Font font_8x8;
+extern Font font_8x16;
+extern Font font_16x16;
 
 extern unsigned int ui_scale;
 extern unsigned int ui_screen;

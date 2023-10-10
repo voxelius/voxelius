@@ -29,9 +29,9 @@
 
 static void on_framebuffer_size(const FramebufferSizeEvent &event)
 {
-    const double norm = 240.0;
+    const double norm = 480.0;
     const double dheight = event.height;
-    globals::ui_scale = cxmath::max(1U, cxmath::ceil<unsigned int>(dheight / norm));
+    globals::ui_scale = cxmath::max(2U, cxmath::ceil<unsigned int>(dheight / norm));
 
     globals::gbuffer_solid.create(event.width, event.height);
     globals::gbuffer_cutout.create(event.width, event.height);
@@ -59,21 +59,24 @@ void client_game::init()
     deferred_pass::init();
     final_pass::init();
 
-    const vfs::path_t unifont_16x16_path = "/fonts/unifont_16x16.png";
-    if(!globals::unifont_16x16.load_image(unifont_16x16_path, 16, 16)) {
-        spdlog::critical("{}: load failed", unifont_16x16_path.string());
+    // UNDONE: find a 8x8 bitmap unicode font
+    // UNDONE: maybe possibly make our own
+    const vfs::path_t font_8x8_path = "/fonts/pc_vga_8x8.bin";
+    if(!globals::font_8x8.load_vga_rom(font_8x8_path, 8, 8)) {
+        spdlog::critical("{}: load failed", font_8x8_path.string());
         std::terminate();
     }
 
-    const vfs::path_t pc_vga_8x16_path = "/fonts/pc_vga_8x16.bin";
-    if(!globals::pc_vga_8x16.load_vga_rom(pc_vga_8x16_path, 8, 16)) {
-        spdlog::critical("{}: load failed", pc_vga_8x16_path.string());
+    const vfs::path_t font_8x16_path = "/fonts/univga_8x16.png";
+    if(!globals::font_8x16.load_image(font_8x16_path, 8, 16)) {
+        spdlog::critical("{}: load failed", font_8x16_path.string());
         std::terminate();
     }
 
-    const vfs::path_t pc_vga_8x8_path = "/fonts/pc_vga_8x8.bin";
-    if(!globals::pc_vga_8x8.load_vga_rom(pc_vga_8x8_path, 8, 8)) {
-        spdlog::critical("{}: load failed", pc_vga_8x8_path.string());
+    // Unifont manages the niche of a 16x16 bitmap font just fine
+    const vfs::path_t font_16x16_path = "/fonts/unifont_16x16.png";
+    if(!globals::font_16x16.load_image(font_16x16_path, 16, 16)) {
+        spdlog::critical("{}: load failed", font_16x16_path.string());
         std::terminate();
     }
 
@@ -109,9 +112,9 @@ void client_game::deinit()
 
     canvas::deinit();
 
-    globals::pc_vga_8x8.unload();
-    globals::pc_vga_8x16.unload();
-    globals::unifont_16x16.unload();
+    globals::font_16x16.unload();
+    globals::font_8x16.unload();
+    globals::font_8x8.unload();
 
     final_pass::deinit();
     deferred_pass::deinit();

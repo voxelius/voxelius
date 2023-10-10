@@ -96,7 +96,7 @@ void client::main()
         std::terminate();
     }
 
-    glfwSetWindowSizeLimits(globals::window, 320, 240, GLFW_DONT_CARE, GLFW_DONT_CARE);
+    glfwSetWindowSizeLimits(globals::window, 640, 480, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
     glfwSetFramebufferSizeCallback(globals::window, &on_framebuffer_size);
     glfwSetKeyCallback(globals::window, &on_key);

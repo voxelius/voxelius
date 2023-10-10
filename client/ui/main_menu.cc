@@ -156,47 +156,50 @@ void main_menu::deinit()
 
 void main_menu::draw_ui()
 {
-    const int tstep1 = globals::pc_vga_8x16.get_glyph_height() * 2U;
-    const int tstep2 = globals::pc_vga_8x8.get_glyph_height() * 2U + 4U;
-    const int bstep = 2 * style.button_margin.y + globals::pc_vga_8x8.get_glyph_height();
+    const int tstep1 = globals::font_8x16.get_glyph_height() * 2U;
+    const int tstep2 = globals::font_8x16.get_glyph_height() * 2U + 4U;
+    const int bstep = 2 * style.button_margin.y + globals::font_8x16.get_glyph_height();
     vector2i_t pos = {globals::window_width * 0.0625 / globals::ui_scale, globals::window_height * 0.15 / globals::ui_scale};
 
-    canvas::text(globals::ui_scale * pos.x, globals::ui_scale * pos.y, title1, globals::pc_vga_8x16, globals::ui_scale * 2U);
+    canvas::text(globals::ui_scale * pos.x, globals::ui_scale * pos.y, title1, globals::font_8x16, globals::ui_scale * 2U);
     pos.y += tstep1;
 
-    canvas::text(globals::ui_scale * pos.x, globals::ui_scale * pos.y, title2, globals::pc_vga_8x8, globals::ui_scale);
+    canvas::text(globals::ui_scale * pos.x, globals::ui_scale * pos.y, title2, globals::font_8x16, globals::ui_scale);
     pos.y += tstep2;
 
     if(globals::registry.valid(globals::player)) {
         button.set(0, L"Back to Game");
-        if(imgui::button(pos.x, pos.y, button, globals::pc_vga_8x8, style))
+        if(imgui::button(pos.x, pos.y, button, globals::font_8x16, style))
             globals::ui_screen = ui::SCR_NONE;
         pos.y += bstep;
-
-        button.set(0, L"Disconnect");
-        if(imgui::button(pos.x, pos.y, button, globals::pc_vga_8x8, style))
-            spdlog::info("We can't disconnect yet!");
-        pos.y += bstep * 1.5;
     }
     else {
         button.set(0, L"DEBUG SESSION");
-        if(imgui::button(pos.x, pos.y, button, globals::pc_vga_8x8, style))
+        if(imgui::button(pos.x, pos.y, button, globals::font_8x16, style))
             very_stupid_stub();
-        pos.y += bstep * 1.5;
+        pos.y += bstep;
+
+        button.set(0, L"Join a Server");
+        if(imgui::button(pos.x, pos.y, button, globals::font_8x16, style))
+            globals::ui_screen = ui::SCR_SERVER_BROWSER;
+        pos.y += bstep;
     }
 
-    button.set(0, L"Join a Server");
-    if(imgui::button(pos.x, pos.y, button, globals::pc_vga_8x8, style))
-        globals::ui_screen = ui::SCR_SERVER_BROWSER;
-    pos.y += bstep;
-
     button.set(0, L"Settings");
-    if(imgui::button(pos.x, pos.y, button, globals::pc_vga_8x8, style))
+    if(imgui::button(pos.x, pos.y, button, globals::font_8x16, style))
         globals::ui_screen = ui::SCR_SETTINGS;
     pos.y += bstep;
 
-    button.set(0, L"Quit");
-    if(imgui::button(pos.x, pos.y, button, globals::pc_vga_8x8, style))
-        glfwSetWindowShouldClose(globals::window, true);
-    pos.y += bstep;
+    if(globals::registry.valid(globals::player)) {
+        button.set(0, L"Disconnect");
+        if(imgui::button(pos.x, pos.y, button, globals::font_8x16, style))
+            spdlog::info("We can't disconnect yet!");
+        pos.y += bstep;
+    }
+    else {
+        button.set(0, L"Quit");
+        if(imgui::button(pos.x, pos.y, button, globals::font_8x16, style))
+            glfwSetWindowShouldClose(globals::window, true);
+        pos.y += bstep;
+    }
 }
