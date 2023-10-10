@@ -63,7 +63,7 @@ void client_game::init()
     }
 
     if(!globals::font_16px.load("/textures/font/unscii_8x16.png", 8, 16))
-    if(!globals::font_16px.load("/textures/font/unifont_16x16.png", 16, 16))
+    if(!globals::font_16px.load("/textures/font/unifont_8x16.png", 8, 16))
     if(!globals::font_16px.load("/textures/font/vga_8x16.png", 8, 16)) {
         spdlog::critical("font_16px: unable to locate a valid font atlas");
         std::terminate();
