@@ -10,15 +10,12 @@
 #include <client/globals.hh>
 #include <client/ui_imgui.hh>
 #include <client/ui_main_menu.hh>
-#include <client/ui_main_menu.hh>
 #include <client/ui_screen.hh>
 #include <spdlog/spdlog.h>
 
 static ui::Style style = {};
 static canvas::Text title = {};
 static canvas::Text button = {};
-
-constexpr static const int BUTTON_HEIGHT = 20;
 
 static void on_keyboard_key(const KeyboardKeyEvent &event)
 {
@@ -38,12 +35,17 @@ static void on_keyboard_key(const KeyboardKeyEvent &event)
 
 void ui::main_menu::init()
 {
+    style.label.background = COL_TRANSPARENT;
+    style.label.foreground = COL_WHITE;
+    style.label.shadow = {0.25, 0.25, 0.25, 1.0};
+
     style.button.background_default = COL_TRANSPARENT;
-    style.button.background_hovered = {1.0, 1.0, 1.0, 0.125};
-    style.button.background_pressed = {1.0, 1.0, 1.0, 0.250};
-    style.button.foreground_default = COL_LIGHT_GRAY;
+    style.button.background_hovered = {1.0, 1.0, 1.0, 1.0 / 16.0};
+    style.button.background_pressed = {1.0, 1.0, 1.0, 1.0 / 4.0};
+    style.button.foreground_default = COL_WHITE;
     style.button.foreground_hovered = COL_WHITE;
     style.button.foreground_pressed = COL_WHITE;
+    style.button.text_shadow = {0.25, 0.25, 0.25, 1.0};
     style.button.text_border = vector2i_t{4, 4};
 
     title.create(64, 1);
@@ -62,35 +64,36 @@ void ui::main_menu::render_ui()
 {
     const int xstart = (0.125 * globals::window_width) / globals::ui_scale;
     const int ystart = (0.125 * globals::window_height) / globals::ui_scale;
+    const int button_height = globals::font_16px.get_glyph_height() + 2 * style.button.text_border.y;
 
     int ypos = ystart;
 
     title.set(0, L"Voxelius");
-    canvas::draw_text(xstart * globals::ui_scale, ypos * globals::ui_scale, title, globals::font_16px, globals::ui_scale * 2U);
-    ypos += globals::font_16px.get_glyph_height() * 2U;
+    ui::imgui::label(xstart, ypos, title, globals::font_8px, style, 4U);
+    ypos += globals::font_8px.get_glyph_height() * 4U;
 
     title.set(0, L"Indev 0.0.1");
-    canvas::draw_text(xstart * globals::ui_scale, ypos * globals::ui_scale, title, globals::font_8px, globals::ui_scale);
+    ui::imgui::label(xstart, ypos, title, globals::font_8px, style, 1U);
     ypos += globals::font_8px.get_glyph_height();
-    ypos += BUTTON_HEIGHT;
+    ypos += button_height;
 
     button.set(0, L"DEBUG SESSION");
-    if(ui::imgui::button(xstart, ypos, BUTTON_HEIGHT, button, globals::font_16px, style))
+    if(ui::imgui::button(xstart, ypos, button, globals::font_16px, style))
         debug_session::run();
-    ypos += BUTTON_HEIGHT;
+    ypos += button_height;
 
     button.set(0, L"Join a Server");
-    if(ui::imgui::button(xstart, ypos, BUTTON_HEIGHT, button, globals::font_16px, style))
-        spdlog::info("We can't connect to servers yet!");
-    ypos += BUTTON_HEIGHT;
+    if(ui::imgui::button(xstart, ypos, button, globals::font_16px, style))
+        globals::ui_screen = ui::SCREEN_SERVER_LIST;
+    ypos += button_height;
 
     button.set(0, L"Settings");
-    if(ui::imgui::button(xstart, ypos, BUTTON_HEIGHT, button, globals::font_16px, style))
-        spdlog::info("We don't have settings yet!");
-    ypos += BUTTON_HEIGHT;
+    if(ui::imgui::button(xstart, ypos, button, globals::font_16px, style))
+        globals::ui_screen = ui::SCREEN_SETTINGS_MAIN;
+    ypos += button_height;
 
     button.set(0, L"Quit Game");
-    if(ui::imgui::button(xstart, ypos, BUTTON_HEIGHT, button, globals::font_16px, style))
+    if(ui::imgui::button(xstart, ypos, button, globals::font_16px, style))
         glfwSetWindowShouldClose(globals::window, true);
-    ypos += BUTTON_HEIGHT;
+    ypos += button_height;
 }

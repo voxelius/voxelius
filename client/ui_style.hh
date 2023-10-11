@@ -8,6 +8,12 @@
 
 namespace ui
 {
+struct LabelStyle final {
+    vector4_t background {COL_TRANSPARENT};
+    vector4_t foreground {COL_WHITE};
+    vector4_t shadow {COL_TRANSPARENT};
+};
+
 struct ButtonStyle final {
     vector4_t background_default {COL_TRANSPARENT};
     vector4_t background_hovered {COL_TRANSPARENT};
@@ -15,16 +21,22 @@ struct ButtonStyle final {
     vector4_t foreground_default {COL_WHITE};
     vector4_t foreground_hovered {COL_WHITE};
     vector4_t foreground_pressed {COL_WHITE};
+    vector4_t text_shadow {COL_TRANSPARENT};
     vector2i_t text_border {0, 0};
 };
 
 struct SliderStyle final {
-    vector4_t background {COL_TRANSPARENT};
-    vector4_t foreground_drag {COL_WHITE};
-    vector4_t foreground_text {COL_WHITE};
+    vector4_t background_default {COL_TRANSPARENT};
+    vector4_t background_hovered {COL_TRANSPARENT};
+    vector4_t foreground_default {COL_WHITE};
+    vector4_t foreground_hovered {COL_WHITE};
+    vector4_t foreground_pressed {COL_WHITE};
+    vector4_t text_color {COL_WHITE};
+    vector2i_t text_border {0, 0};
 };
 
 struct Style final {
+    LabelStyle label {};
     ButtonStyle button {};
     SliderStyle slider {};
 };

@@ -9,10 +9,12 @@
 #include <client/event/mouse_move.hh>
 #include <client/globals.hh>
 #include <client/ui_imgui.hh>
+#include <cwchar>
 
 static int cursor_xpos = 0;
 static int cursor_ypos = 0;
 static uint16_t buttons[GLFW_MOUSE_BUTTON_LAST + 1] = {};
+static canvas::Text slider_text = {};
 
 static void on_mouse_button(const MouseButtonEvent &event)
 {
@@ -40,6 +42,11 @@ void ui::imgui::init()
     globals::dispatcher.sink<MouseMoveEvent>().connect<&on_mouse_move>();
 }
 
+void ui::imgui::deinit()
+{
+    slider_text.destroy();
+}
+
 void ui::imgui::update_late()
 {
     for(size_t i = 0; i <= GLFW_MOUSE_BUTTON_LAST; ++i) {
@@ -49,23 +56,42 @@ void ui::imgui::update_late()
     }
 }
 
-bool ui::imgui::button(int xpos, int ypos, int height, const canvas::Text &text, const canvas::Font &font, const ui::Style &style)
+void ui::imgui::label(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const ui::Style &style, unsigned int scale)
+{
+    const int iscale = globals::ui_scale;
+    const int fscale = iscale * static_cast<int>(scale);
+
+    const int tx = iscale * xpos;
+    const int ty = iscale * ypos;
+
+    const int soff = iscale * font.get_glyph_width() / 8;
+    const int sx = tx + soff;
+    const int sy = ty + soff;
+
+    canvas::draw_text(sx, sy, text, font, style.label.shadow, style.label.background, fscale);
+    canvas::draw_text(tx, ty, text, font, style.label.foreground, style.label.background, fscale);
+}
+
+bool ui::imgui::button(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const ui::Style &style)
 {
     const int iscale = globals::ui_scale;
 
     const int bx = iscale * style.button.text_border.x;
     const int by = iscale * style.button.text_border.y;
 
+    const int tx = iscale * xpos + bx;
+    const int ty = iscale * ypos + by;
     const int tw = iscale * font.get_glyph_width() * text.get_max_text_width();
     const int th = iscale * font.get_glyph_height() * text.get_max_text_height();
 
     const int rx = iscale * xpos;
     const int ry = iscale * ypos;
-    const int rw = bx + by + tw;
-    const int rh = iscale * height;
+    const int rw = 2 * bx + tw;
+    const int rh = 2 * by + th;
 
-    const int tx = rx + bx;
-    const int ty = ry + (rh - th) / 2;
+    const int soff = iscale * font.get_glyph_width() / 8;
+    const int sx = tx + soff;
+    const int sy = ty + soff;
 
     const int rxx = rx + rw;
     const int ryy = ry + rh;
@@ -90,9 +116,15 @@ bool ui::imgui::button(int xpos, int ypos, int height, const canvas::Text &text,
     }
 
     canvas::draw_rect(rx, ry, rw, rh, background);
-    canvas::draw_text(tx, ty, text, font, globals::ui_scale);
+    canvas::draw_text(sx, sy, text, font, style.button.text_shadow, globals::ui_scale);
+    canvas::draw_text(tx, ty, text, font, foreground, globals::ui_scale);
 
     if(hover)
         return buttons[GLFW_MOUSE_BUTTON_LEFT] == 1;
     return false;
+}
+
+void ui::imgui::slider(int xpos, int ypos, double &out, double min, double max, double step, const canvas::Text &text, const canvas::Font &font, const ui::Style &style)
+{
+    // I am working on it...
 }
