@@ -62,25 +62,25 @@ void ui::imgui::label(int xpos, int ypos, const canvas::Text &text, const canvas
     const int sx = tx + ss;
     const int sy = ty + ss;
 
-    canvas::draw_text(sx, sy, text, font, style.label.text_shadow, style.label.text_background, fscale);
-    canvas::draw_text(tx, ty, text, font, style.label.text_foreground, style.label.text_background, fscale);
+    canvas::draw_text(sx, sy, text, font, style.text_shadow, style.text_background, fscale);
+    canvas::draw_text(tx, ty, text, font, style.text_default, style.text_background, fscale);
 }
 
 bool ui::imgui::button(int xpos, int ypos, int width, const canvas::Text &text, const canvas::Font &font, const ui::Style &style)
 {
     const int iscale = globals::ui_scale;
 
-    const int mx = iscale * style.button.text_margin.x;
-    const int my = iscale * style.button.text_margin.y;
+    const int px = iscale * style.rect_text_padding.x;
+    const int py = iscale * style.rect_text_padding.y;
 
-    const int tx = iscale * xpos + mx;
-    const int ty = iscale * ypos + my;
+    const int tx = iscale * xpos + px;
+    const int ty = iscale * ypos + py;
     const int th = iscale * font.get_glyph_height() * text.get_max_text_height();
 
     const int rx = iscale * xpos;
     const int ry = iscale * ypos;
     const int rw = iscale * width;
-    const int rh = 2 * my + th;
+    const int rh = 2 * py + th;
 
     const int sx = tx + iscale;
     const int sy = ty + iscale;
@@ -94,22 +94,22 @@ bool ui::imgui::button(int xpos, int ypos, int width, const canvas::Text &text, 
 
     if(hover) {
         if(buttons[GLFW_MOUSE_BUTTON_LEFT]) {
-            rect_col = style.button.rect_pressed;
-            text_col = style.button.text_pressed;
+            rect_col = style.rect_pressed;
+            text_col = style.text_pressed;
         }
         else {
-            rect_col = style.button.rect_hovered;
-            text_col = style.button.text_hovered;
+            rect_col = style.rect_hovered;
+            text_col = style.text_hovered;
         }
     }
     else {
-        rect_col = style.button.rect_default;
-        text_col = style.button.text_default;
+        rect_col = style.rect_default;
+        text_col = style.text_default;
     }
 
     canvas::draw_rect(rx, ry, rw, rh, rect_col);
-    canvas::draw_text(sx, sy, text, font, style.button.text_shadow, globals::ui_scale);
-    canvas::draw_text(tx, ty, text, font, text_col, globals::ui_scale);
+    canvas::draw_text(sx, sy, text, font, style.text_shadow, COL_TRANSPARENT, globals::ui_scale);
+    canvas::draw_text(tx, ty, text, font, text_col, COL_TRANSPARENT, globals::ui_scale);
 
     if(hover)
         return buttons[GLFW_MOUSE_BUTTON_LEFT] == 1;
@@ -126,22 +126,21 @@ void ui::imgui::slider(int xpos, int ypos, int width, double &value, const canva
     ui::imgui::slider(xpos, ypos, width, value, text, font, style, min, max, 0.0);
 }
 
-#include <spdlog/spdlog.h>
 void ui::imgui::slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style, double min, double max, double step)
 {
     const int iscale = globals::ui_scale;
 
-    const int mx = iscale * style.button.text_margin.x;
-    const int my = iscale * style.button.text_margin.y;
+    const int px = iscale * style.rect_text_padding.x;
+    const int py = iscale * style.rect_text_padding.y;
 
-    const int tx = iscale * xpos + mx;
-    const int ty = iscale * ypos + my;
+    const int tx = iscale * xpos + px;
+    const int ty = iscale * ypos + py;
     const int th = iscale * font.get_glyph_height() * text.get_max_text_height();
 
     const int rx = iscale * xpos;
     const int ry = iscale * ypos;
     const int rw = iscale * width;
-    const int rh = 2 * my + th;
+    const int rh = 2 * py + th;
 
     const int sx = tx + iscale;
     const int sy = ty + iscale;
@@ -171,24 +170,24 @@ void ui::imgui::slider(int xpos, int ypos, int width, double &value, const canva
 
     if(hover) {
         if(buttons[GLFW_MOUSE_BUTTON_LEFT]) {
-            rect_col = style.slider.rect_pressed;
-            text_col = style.slider.text_pressed;
-            line_col = style.slider.line_pressed;
+            rect_col = style.rect_pressed;
+            text_col = style.text_pressed;
+            line_col = style.slider_pressed;
         }
         else {
-            rect_col = style.slider.rect_hovered;
-            text_col = style.slider.text_hovered;
-            line_col = style.slider.line_hovered;
+            rect_col = style.rect_hovered;
+            text_col = style.text_hovered;
+            line_col = style.slider_hovered;
         }
     }
     else {
-        rect_col = style.slider.rect_default;
-        text_col = style.slider.text_default;
-        line_col = style.slider.line_default;
+        rect_col = style.rect_default;
+        text_col = style.text_default;
+        line_col = style.slider_default;
     }
 
     canvas::draw_rect(rx, ry, rw, rh, rect_col);
     canvas::draw_rect(lx, ry, lw, rh, line_col);
-    canvas::draw_text(sx, sy, text, font, style.button.text_shadow, globals::ui_scale);
-    canvas::draw_text(tx, ty, text, font, text_col, globals::ui_scale);
+    canvas::draw_text(sx, sy, text, font, style.text_shadow, COL_TRANSPARENT, globals::ui_scale);
+    canvas::draw_text(tx, ty, text, font, text_col, COL_TRANSPARENT, globals::ui_scale);
 }

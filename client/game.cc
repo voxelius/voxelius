@@ -170,9 +170,10 @@ void client_game::render_ui()
             canvas::draw_rect(0, 0, globals::window_width, globals::window_height, col);
         }
 
-        const vector4_t spx = {0.0, 0.0, 0.0, 0.99};
-        const vector4_t spy = {0.0, 0.0, 0.0, 0.50};
+        const vector4_t spx = {0.0, 0.0, 0.0, 1.0};
+        const vector4_t spy = {0.0, 0.0, 0.0, 0.0};
         canvas::draw_rect_h(0, 0, globals::window_width, globals::window_height, spx, spy);
+        canvas::draw_rect_h(0, 0, globals::window_width, globals::window_height, spy, spx);
 
         switch(globals::ui_screen) {
             case ui::SCREEN_MAIN_MENU:
@@ -181,7 +182,7 @@ void client_game::render_ui()
             case ui::SCREEN_SERVER_LIST:
                 ui::server_list::render_ui();
                 break;
-            case ui::SCREEN_SETTINGS_MAIN:
+            case ui::SCREEN_SETTINGS:
                 ui::settings::render_ui();
                 break;
         }

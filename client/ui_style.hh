@@ -8,42 +8,23 @@
 
 namespace ui
 {
-struct LabelStyle final {
-    vector4_t text_background {COL_TRANSPARENT};
-    vector4_t text_foreground {COL_WHITE};
-    vector4_t text_shadow {COL_TRANSPARENT};
-};
-
-struct ButtonStyle final {
-    vector4_t rect_default {COL_TRANSPARENT};
-    vector4_t rect_hovered {COL_TRANSPARENT};
-    vector4_t rect_pressed {COL_TRANSPARENT};
-    vector4_t text_default {COL_WHITE};
-    vector4_t text_hovered {COL_WHITE};
-    vector4_t text_pressed {COL_WHITE};
-    vector4_t text_shadow {COL_TRANSPARENT};
-    vector2i_t text_margin {0, 0};
-};
-
-struct SliderStyle final {
-    vector4_t rect_default {COL_TRANSPARENT};
-    vector4_t rect_hovered {COL_TRANSPARENT};
-    vector4_t rect_pressed {COL_TRANSPARENT};
-    vector4_t text_default {COL_WHITE};
-    vector4_t text_hovered {COL_WHITE};
-    vector4_t text_pressed {COL_WHITE};
-    vector4_t text_shadow {COL_TRANSPARENT};
-    vector4_t line_default {COL_LIGHT_GRAY};
-    vector4_t line_hovered {COL_LIGHT_GRAY};
-    vector4_t line_pressed {COL_LIGHT_GRAY};
-    vector2i_t text_margin {0, 0};
-};
-
 struct Style final {
-    LabelStyle label {};
-    ButtonStyle button {};
-    SliderStyle slider {};
+    vector4_t rect_default {COL_TRANSPARENT};
+    vector4_t rect_hovered {COL_TRANSPARENT};
+    vector4_t rect_pressed {COL_TRANSPARENT};
+    vector2i_t rect_text_padding {0, 0};
+
+    vector4_t text_default {COL_WHITE};
+    vector4_t text_hovered {COL_WHITE};
+    vector4_t text_pressed {COL_WHITE};
+    vector4_t text_shadow {COL_TRANSPARENT};
+    vector4_t text_background {COL_TRANSPARENT};
+
+    vector4_t slider_default {COL_LIGHT_GRAY};
+    vector4_t slider_hovered {COL_LIGHT_GRAY};
+    vector4_t slider_pressed {COL_LIGHT_GRAY};
 };
+
 } // namespace ui
 
 #endif /* CLIENT_UI_STYLE_HH */

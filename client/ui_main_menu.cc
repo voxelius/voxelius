@@ -11,13 +11,9 @@
 #include <client/ui_imgui.hh>
 #include <client/ui_main_menu.hh>
 #include <client/ui_screen.hh>
-#include <spdlog/fmt/fmt.h>
-#include <spdlog/fmt/xchar.h>
-#include <spdlog/spdlog.h>
 
 static ui::Style style = {};
-static canvas::Text title = {};
-static canvas::Text button = {};
+static canvas::Text text = {};
 
 static void on_key(const KeyEvent &event)
 {
@@ -37,84 +33,63 @@ static void on_key(const KeyEvent &event)
 
 void ui::main_menu::init()
 {
-    style.label.text_background = COL_TRANSPARENT;
-    style.label.text_foreground = COL_WHITE;
-    style.label.text_shadow = {0.25, 0.25, 0.25, 1.0};
+    style.rect_default = {0.0, 0.0, 0.0, 0.5};
+    style.rect_hovered = {1.0, 1.0, 1.0, 0.5};
+    style.rect_pressed = {1.0, 1.0, 1.0, 1.0};
+    style.rect_text_padding = vector2i_t{2, 2};
+    style.text_shadow = {0.25, 0.25, 0.25, 0.5};
 
-    style.button.rect_default = COL_TRANSPARENT;
-    style.button.rect_hovered = {1.0, 1.0, 1.0, 1.0 / 16.0};
-    style.button.rect_pressed = {1.0, 1.0, 1.0, 1.0 / 4.0};
-    style.button.text_default = COL_WHITE;
-    style.button.text_hovered = COL_WHITE;
-    style.button.text_pressed = COL_WHITE;
-    style.button.text_shadow = {0.25, 0.25, 0.25, 1.0};
-    style.button.text_margin = vector2i_t{2, 2};
-
-    style.slider.rect_default = COL_TRANSPARENT;
-    style.slider.rect_hovered = {1.0, 1.0, 1.0, 1.0 / 16.0};
-    style.slider.rect_pressed = {1.0, 1.0, 1.0, 1.0 / 4.0};
-    style.slider.text_default = COL_WHITE;
-    style.slider.text_hovered = COL_WHITE;
-    style.slider.text_pressed = COL_WHITE;
-    style.slider.text_shadow = {0.25, 0.25, 0.25, 1.0};
-    style.slider.line_default = COL_LIGHT_GRAY;
-    style.slider.line_hovered = COL_LIGHT_GRAY;
-    style.slider.line_pressed = COL_LIGHT_GRAY;
-    style.slider.text_margin = vector2i_t{2, 2};
-
-    title.create(64, 1);
-    button.create(64, 1);
+    text.create(64, 1);
 
     globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
 }
 
 void ui::main_menu::deinit()
 {
-    button.destroy();
-    title.destroy();
+    text.destroy();
 }
 
 void ui::main_menu::render_ui()
 {
-    const int xstart = (0.125 * globals::window_width) / globals::ui_scale;
-    const int ystart = (0.125 * globals::window_height) / globals::ui_scale;
-    const int button_height = globals::font_16px.get_glyph_height() + 2 * style.button.text_margin.y;
-    const int button_width = 128;
+    int xpos;
+    int ypos;
 
-    int ypos = ystart;
+    const int xstart = globals::window_width / 8 / globals::ui_scale;
+    const int ystart = globals::window_height / 8 / globals::ui_scale;
 
-    title.set(0, L"Voxelius");
-    ui::imgui::label(xstart, ypos, title, globals::font_8px, style, 4U);
+    const int btn_width = 196;
+    const int btn_height = globals::font_16px.get_glyph_height() + 2 * style.rect_text_padding.y;
+    const int btn_ystep = btn_height + 8;
+
+    xpos = xstart;
+    ypos = ystart;
+
+    text.set(0, L"Voxelius");
+    ui::imgui::label(xpos, ypos, text, globals::font_8px, style, 4U);
     ypos += globals::font_8px.get_glyph_height() * 4.5;
 
-    title.set(0, L"Indev 0.0.1");
-    ui::imgui::label(xstart, ypos, title, globals::font_8px, style, 1U);
+    text.set(0, L"Indev 0.0.1");
+    ui::imgui::label(xpos, ypos, text, globals::font_8px, style, 1U);
     ypos += globals::font_8px.get_glyph_height();
-    ypos += button_height / 2;
+    ypos += btn_ystep;
 
-    button.set(0, L"DEBUG SESSION");
-    if(ui::imgui::button(xstart, ypos, button_width, button, globals::font_16px, style))
+    text.set(0, L"DEBUG SESSION");
+    if(ui::imgui::button(xstart, ypos, btn_width, text, globals::font_16px, style))
         debug_session::run();
-    ypos += button_height;
+    ypos += btn_ystep;
 
-    button.set(0, L"Join a Server");
-    if(ui::imgui::button(xstart, ypos, button_width, button, globals::font_16px, style))
+    text.set(0, L"Join a Server");
+    if(ui::imgui::button(xstart, ypos, btn_width, text, globals::font_16px, style))
         globals::ui_screen = ui::SCREEN_SERVER_LIST;
-    ypos += button_height;
+    ypos += btn_ystep;
 
-    button.set(0, L"Settings");
-    if(ui::imgui::button(xstart, ypos, button_width, button, globals::font_16px, style))
-        globals::ui_screen = ui::SCREEN_SETTINGS_MAIN;
-    ypos += button_height;
+    text.set(0, L"Settings");
+    if(ui::imgui::button(xstart, ypos, btn_width, text, globals::font_16px, style))
+        globals::ui_screen = ui::SCREEN_SETTINGS;
+    ypos += btn_ystep;
 
-    button.set(0, L"Quit Game");
-    if(ui::imgui::button(xstart, ypos, button_width, button, globals::font_16px, style))
+    text.set(0, L"Quit Game");
+    if(ui::imgui::button(xstart, ypos, btn_width, text, globals::font_16px, style))
         glfwSetWindowShouldClose(globals::window, true);
-    ypos += button_height;
-
-    // Test
-    static double value = 90.0;
-    button.set(0, fmt::format(L"FOV: {}", static_cast<int>(value)));
-    ui::imgui::slider(xstart, ypos, button_width, value, button, globals::font_16px, style, 60, 120, 1);
-    ypos += button_height;
+    ypos += btn_ystep;
 }
