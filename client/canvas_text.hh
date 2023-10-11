@@ -12,6 +12,7 @@ namespace canvas
 class Text final {
 public:
     void create(int width, int height);
+    void set(int line, const std::string &value);
     void set(int line, const std::wstring &value);
     void destroy();
 

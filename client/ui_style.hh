@@ -9,30 +9,34 @@
 namespace ui
 {
 struct LabelStyle final {
-    vector4_t background {COL_TRANSPARENT};
-    vector4_t foreground {COL_WHITE};
-    vector4_t shadow {COL_TRANSPARENT};
+    vector4_t text_background {COL_TRANSPARENT};
+    vector4_t text_foreground {COL_WHITE};
+    vector4_t text_shadow {COL_TRANSPARENT};
 };
 
 struct ButtonStyle final {
-    vector4_t background_default {COL_TRANSPARENT};
-    vector4_t background_hovered {COL_TRANSPARENT};
-    vector4_t background_pressed {COL_TRANSPARENT};
-    vector4_t foreground_default {COL_WHITE};
-    vector4_t foreground_hovered {COL_WHITE};
-    vector4_t foreground_pressed {COL_WHITE};
+    vector4_t rect_default {COL_TRANSPARENT};
+    vector4_t rect_hovered {COL_TRANSPARENT};
+    vector4_t rect_pressed {COL_TRANSPARENT};
+    vector4_t text_default {COL_WHITE};
+    vector4_t text_hovered {COL_WHITE};
+    vector4_t text_pressed {COL_WHITE};
     vector4_t text_shadow {COL_TRANSPARENT};
-    vector2i_t text_border {0, 0};
+    vector2i_t text_margin {0, 0};
 };
 
 struct SliderStyle final {
-    vector4_t background_default {COL_TRANSPARENT};
-    vector4_t background_hovered {COL_TRANSPARENT};
-    vector4_t foreground_default {COL_WHITE};
-    vector4_t foreground_hovered {COL_WHITE};
-    vector4_t foreground_pressed {COL_WHITE};
-    vector4_t text_color {COL_WHITE};
-    vector2i_t text_border {0, 0};
+    vector4_t rect_default {COL_TRANSPARENT};
+    vector4_t rect_hovered {COL_TRANSPARENT};
+    vector4_t rect_pressed {COL_TRANSPARENT};
+    vector4_t text_default {COL_WHITE};
+    vector4_t text_hovered {COL_WHITE};
+    vector4_t text_pressed {COL_WHITE};
+    vector4_t text_shadow {COL_TRANSPARENT};
+    vector4_t line_default {COL_LIGHT_GRAY};
+    vector4_t line_hovered {COL_LIGHT_GRAY};
+    vector4_t line_pressed {COL_LIGHT_GRAY};
+    vector2i_t text_margin {0, 0};
 };
 
 struct Style final {

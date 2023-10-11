@@ -16,15 +16,16 @@ class Text;
 namespace ui::imgui
 {
 void init();
-void deinit();
 void update_late();
 } // namespace ui::imgui
 
 namespace ui::imgui
 {
 void label(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const Style &style, unsigned int scale);
-bool button(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const Style &style);
-void slider(int xpos, int ypos, double &out, double min, double max, double step, const canvas::Text &text, const canvas::Font &font, const Style &style);
+bool button(int xpos, int ypos, int width, const canvas::Text &text, const canvas::Font &font, const Style &style);
+void slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style);
+void slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style, double min, double max);
+void slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style, double min, double max, double step);
 } // namespace ui::imgui
 
 #endif /* CLIENT_UI_IMGUI_HH */

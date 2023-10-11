@@ -11,6 +11,8 @@
 #include <client/ui_imgui.hh>
 #include <client/ui_main_menu.hh>
 #include <client/ui_screen.hh>
+#include <spdlog/fmt/fmt.h>
+#include <spdlog/fmt/xchar.h>
 #include <spdlog/spdlog.h>
 
 static ui::Style style = {};
@@ -35,18 +37,30 @@ static void on_keyboard_key(const KeyboardKeyEvent &event)
 
 void ui::main_menu::init()
 {
-    style.label.background = COL_TRANSPARENT;
-    style.label.foreground = COL_WHITE;
-    style.label.shadow = {0.25, 0.25, 0.25, 1.0};
+    style.label.text_background = COL_TRANSPARENT;
+    style.label.text_foreground = COL_WHITE;
+    style.label.text_shadow = {0.25, 0.25, 0.25, 1.0};
 
-    style.button.background_default = COL_TRANSPARENT;
-    style.button.background_hovered = {1.0, 1.0, 1.0, 1.0 / 16.0};
-    style.button.background_pressed = {1.0, 1.0, 1.0, 1.0 / 4.0};
-    style.button.foreground_default = COL_WHITE;
-    style.button.foreground_hovered = COL_WHITE;
-    style.button.foreground_pressed = COL_WHITE;
+    style.button.rect_default = COL_TRANSPARENT;
+    style.button.rect_hovered = {1.0, 1.0, 1.0, 1.0 / 16.0};
+    style.button.rect_pressed = {1.0, 1.0, 1.0, 1.0 / 4.0};
+    style.button.text_default = COL_WHITE;
+    style.button.text_hovered = COL_WHITE;
+    style.button.text_pressed = COL_WHITE;
     style.button.text_shadow = {0.25, 0.25, 0.25, 1.0};
-    style.button.text_border = vector2i_t{4, 4};
+    style.button.text_margin = vector2i_t{4, 4};
+
+    style.slider.rect_default = COL_TRANSPARENT;
+    style.slider.rect_hovered = {1.0, 1.0, 1.0, 1.0 / 16.0};
+    style.slider.rect_pressed = {1.0, 1.0, 1.0, 1.0 / 4.0};
+    style.slider.text_default = COL_WHITE;
+    style.slider.text_hovered = COL_WHITE;
+    style.slider.text_pressed = COL_WHITE;
+    style.slider.text_shadow = {0.25, 0.25, 0.25, 1.0};
+    style.slider.line_default = COL_LIGHT_GRAY;
+    style.slider.line_hovered = COL_LIGHT_GRAY;
+    style.slider.line_pressed = COL_LIGHT_GRAY;
+    style.slider.text_margin = vector2i_t{4, 4};
 
     title.create(64, 1);
     button.create(64, 1);
@@ -64,36 +78,43 @@ void ui::main_menu::render_ui()
 {
     const int xstart = (0.125 * globals::window_width) / globals::ui_scale;
     const int ystart = (0.125 * globals::window_height) / globals::ui_scale;
-    const int button_height = globals::font_16px.get_glyph_height() + 2 * style.button.text_border.y;
+    const int button_height = globals::font_16px.get_glyph_height() + 2 * style.button.text_margin.y;
+    const int button_width = 128;
 
     int ypos = ystart;
 
     title.set(0, L"Voxelius");
     ui::imgui::label(xstart, ypos, title, globals::font_8px, style, 4U);
-    ypos += globals::font_8px.get_glyph_height() * 4U;
+    ypos += globals::font_8px.get_glyph_height() * 4.5;
 
     title.set(0, L"Indev 0.0.1");
     ui::imgui::label(xstart, ypos, title, globals::font_8px, style, 1U);
     ypos += globals::font_8px.get_glyph_height();
-    ypos += button_height;
+    ypos += button_height / 2;
 
     button.set(0, L"DEBUG SESSION");
-    if(ui::imgui::button(xstart, ypos, button, globals::font_16px, style))
+    if(ui::imgui::button(xstart, ypos, button_width, button, globals::font_16px, style))
         debug_session::run();
     ypos += button_height;
 
     button.set(0, L"Join a Server");
-    if(ui::imgui::button(xstart, ypos, button, globals::font_16px, style))
+    if(ui::imgui::button(xstart, ypos, button_width, button, globals::font_16px, style))
         globals::ui_screen = ui::SCREEN_SERVER_LIST;
     ypos += button_height;
 
     button.set(0, L"Settings");
-    if(ui::imgui::button(xstart, ypos, button, globals::font_16px, style))
+    if(ui::imgui::button(xstart, ypos, button_width, button, globals::font_16px, style))
         globals::ui_screen = ui::SCREEN_SETTINGS_MAIN;
     ypos += button_height;
 
     button.set(0, L"Quit Game");
-    if(ui::imgui::button(xstart, ypos, button, globals::font_16px, style))
+    if(ui::imgui::button(xstart, ypos, button_width, button, globals::font_16px, style))
         glfwSetWindowShouldClose(globals::window, true);
+    ypos += button_height;
+
+    // Test
+    static double value = 90.0;
+    button.set(0, fmt::format(L"FOV: {}", static_cast<int>(value)));
+    ui::imgui::slider(xstart, ypos, button_width, value, button, globals::font_16px, style, 60, 120, 1);
     ypos += button_height;
 }
