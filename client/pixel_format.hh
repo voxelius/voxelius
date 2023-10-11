@@ -5,6 +5,7 @@
 #ifndef CLIENT_PIXEL_FORMAT_HH
 #define CLIENT_PIXEL_FORMAT_HH
 #include <glad/gl.h>
+#include <stdint.h>
 
 enum class PixelFormat {
     R8_UNORM,
