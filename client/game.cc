@@ -15,9 +15,9 @@
 #include <client/shaders.hh>
 #include <client/ui_imgui.hh>
 #include <client/ui_main_menu.hh>
+#include <client/ui_options.hh>
 #include <client/ui_screen.hh>
 #include <client/ui_server_list.hh>
-#include <client/ui_settings.hh>
 #include <client/view.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_atlas.hh>
@@ -77,7 +77,7 @@ void client_game::init()
 
     ui::main_menu::init();
     ui::server_list::init();
-    ui::settings::init();
+    ui::options::init();
 
     // We start in the main menu
     globals::ui_screen = ui::SCREEN_MAIN_MENU;
@@ -101,7 +101,7 @@ void client_game::deinit()
     globals::gbuffer_cutout.destroy();
     globals::gbuffer_solid.destroy();
 
-    ui::settings::deinit();
+    ui::options::deinit();
     ui::server_list::deinit();
     ui::main_menu::deinit();
 
@@ -183,8 +183,8 @@ void client_game::render_ui()
             case ui::SCREEN_SERVER_LIST:
                 ui::server_list::render_ui();
                 break;
-            case ui::SCREEN_SETTINGS:
-                ui::settings::render_ui();
+            case ui::SCREEN_OPTIONS:
+                ui::options::render_ui();
                 break;
         }
     }

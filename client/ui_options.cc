@@ -8,8 +8,8 @@
 #include <client/event/key.hh>
 #include <client/globals.hh>
 #include <client/ui_imgui.hh>
+#include <client/ui_options.hh>
 #include <client/ui_screen.hh>
-#include <client/ui_settings.hh>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/fmt/xchar.h>
 
@@ -40,7 +40,7 @@ static void on_key(const KeyEvent &event)
 {
     if(event.key == GLFW_KEY_ESCAPE && event.action == GLFW_PRESS) {
         switch(globals::ui_screen) {
-            case ui::SCREEN_SETTINGS:
+            case ui::SCREEN_OPTIONS:
                 close_screen();
                 break;
         }
@@ -57,7 +57,7 @@ static void draw_general(int xpos, int ypos, int width, int ystep)
     }
 }
 
-void ui::settings::init()
+void ui::options::init()
 {
     category_names[CATEGORY_GENERAL] = L"General";
     category_pages[CATEGORY_GENERAL] = 2;
@@ -85,12 +85,12 @@ void ui::settings::init()
     globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
 }
 
-void ui::settings::deinit()
+void ui::options::deinit()
 {
     text.destroy();
 }
 
-void ui::settings::render_ui()
+void ui::options::render_ui()
 {
     int xpos;
     int ypos;

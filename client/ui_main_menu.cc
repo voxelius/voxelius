@@ -83,9 +83,9 @@ void ui::main_menu::render_ui()
         globals::ui_screen = ui::SCREEN_SERVER_LIST;
     ypos += btn_ystep;
 
-    text.set(0, L"Settings");
+    text.set(0, L"Options");
     if(ui::imgui::button(xpos, ypos, btn_width, text, globals::font_16px, style))
-        globals::ui_screen = ui::SCREEN_SETTINGS;
+        globals::ui_screen = ui::SCREEN_OPTIONS;
     ypos += btn_ystep;
 
     text.set(0, L"Quit Game");
