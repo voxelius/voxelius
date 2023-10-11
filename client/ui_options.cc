@@ -5,7 +5,7 @@
 #include <client/canvas_font.hh>
 #include <client/canvas_text.hh>
 #include <client/canvas.hh>
-#include <client/event/key.hh>
+#include <client/event/keyboard_key.hh>
 #include <client/globals.hh>
 #include <client/ui_imgui.hh>
 #include <client/ui_options.hh>
@@ -36,7 +36,7 @@ static void close_screen()
     category_page = 0;
 }
 
-static void on_key(const KeyEvent &event)
+static void on_keyboard_key(const KeyboardKeyEvent &event)
 {
     if(event.key == GLFW_KEY_ESCAPE && event.action == GLFW_PRESS) {
         switch(globals::ui_screen) {
@@ -47,12 +47,11 @@ static void on_key(const KeyEvent &event)
     }
 }
 
-static void draw_general(int xpos, int ypos, int width, int ystep)
+static void draw_graphics(int xpos, int ypos, int width, int ystep)
 {
     if(category_page == 0) {
-        static double fov = 90.0;
-        text.set(0, fmt::format(L"FOV: {}", fov));
-        ui::imgui::slider(xpos, ypos, width, fov, text, globals::font_16px, style, 60, 120, 1);
+        text.set(0, fmt::format(L"FOV: {}", globals::config_fov));
+        ui::imgui::slider(xpos, ypos, width, globals::config_fov, text, globals::font_16px, style, 60, 120, 1);
         ypos += ystep;
     }
 }
@@ -60,12 +59,12 @@ static void draw_general(int xpos, int ypos, int width, int ystep)
 void ui::options::init()
 {
     category_names[CATEGORY_GENERAL] = L"General";
-    category_pages[CATEGORY_GENERAL] = 2;
-    category_draws[CATEGORY_GENERAL] = &draw_general;
+    category_pages[CATEGORY_GENERAL] = 1;
+    category_draws[CATEGORY_GENERAL] = nullptr;
 
     category_names[CATEGORY_GRAPHICS] = L"Graphics";
     category_pages[CATEGORY_GRAPHICS] = 1;
-    category_draws[CATEGORY_GRAPHICS] = nullptr;
+    category_draws[CATEGORY_GRAPHICS] = &draw_graphics;
 
     category_names[CATEGORY_CONTROLS] = L"Controls";
     category_pages[CATEGORY_CONTROLS] = 1;
@@ -82,7 +81,7 @@ void ui::options::init()
 
     text.create(64, 1);
 
-    globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
+    globals::dispatcher.sink<KeyboardKeyEvent>().connect<&on_keyboard_key>();
 }
 
 void ui::options::deinit()

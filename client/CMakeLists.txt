@@ -1,4 +1,5 @@
 add_library(client STATIC
+    "${CMAKE_CURRENT_LIST_DIR}/camera.cc"
     "${CMAKE_CURRENT_LIST_DIR}/canvas_font.cc"
     "${CMAKE_CURRENT_LIST_DIR}/canvas_text.cc"
     "${CMAKE_CURRENT_LIST_DIR}/canvas.cc"
@@ -17,7 +18,6 @@ add_library(client STATIC
     "${CMAKE_CURRENT_LIST_DIR}/ui_main_menu.cc"
     "${CMAKE_CURRENT_LIST_DIR}/ui_options.cc"
     "${CMAKE_CURRENT_LIST_DIR}/ui_server_list.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/view.cc"
     "${CMAKE_CURRENT_LIST_DIR}/voxel_anims.cc"
     "${CMAKE_CURRENT_LIST_DIR}/voxel_atlas.cc"
     "${CMAKE_CURRENT_LIST_DIR}/voxel_mesher.cc"

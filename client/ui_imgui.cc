@@ -5,7 +5,7 @@
 #include <client/canvas_font.hh>
 #include <client/canvas_text.hh>
 #include <client/canvas.hh>
-#include <client/event/cursor_pos.hh>
+#include <client/event/cursor_move.hh>
 #include <client/event/mouse_button.hh>
 #include <client/globals.hh>
 #include <client/ui_imgui.hh>
@@ -15,7 +15,7 @@ static int cursor_xpos = 0;
 static int cursor_ypos = 0;
 static uint16_t buttons[GLFW_MOUSE_BUTTON_LAST + 1] = {};
 
-static void on_cursor_pos(const CursorPosEvent &event)
+static void on_cursor_move(const CursorMoveEvent &event)
 {
     cursor_xpos = event.xpos;
     cursor_ypos = event.ypos;
@@ -37,7 +37,7 @@ static void on_mouse_button(const MouseButtonEvent &event)
 
 void ui::imgui::init()
 {
-    globals::dispatcher.sink<CursorPosEvent>().connect<&on_cursor_pos>();
+    globals::dispatcher.sink<CursorMoveEvent>().connect<&on_cursor_move>();
     globals::dispatcher.sink<MouseButtonEvent>().connect<&on_mouse_button>();
 }
 
@@ -154,13 +154,10 @@ bool ui::imgui::slider(int xpos, int ypos, int width, double &value, const canva
 
     double new_value = value;
 
-    if(hover) {
-        if(buttons[GLFW_MOUSE_BUTTON_LEFT]) {
-            const auto lcur = static_cast<double>(cursor_xpos - rx - (lw / 2));
-            const auto lmax = static_cast<double>(rw - lw);
-            new_value = lcur / lmax * (max - min) + min;
-        }
-
+    if(hover && buttons[GLFW_MOUSE_BUTTON_LEFT]) {
+        const auto lcur = static_cast<double>(cursor_xpos - rx - (lw / 2));
+        const auto lmax = static_cast<double>(rw - lw);
+        new_value = lcur / lmax * (max - min) + min;
         if(step != 0.0)
             new_value = cxmath::floor<int>(new_value / step) * step;
         new_value = cxmath::clamp(new_value, min, max);

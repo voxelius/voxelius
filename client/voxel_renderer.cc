@@ -2,6 +2,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#include <client/camera.hh>
 #include <client/entity/voxel_mesh.hh>
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
@@ -9,7 +10,6 @@
 #include <client/glxx/sampler.hh>
 #include <client/glxx/vertexarray.hh>
 #include <client/shaders.hh>
-#include <client/view.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_atlas.hh>
 #include <client/voxel_renderer.hh>
@@ -94,11 +94,6 @@ void voxel_renderer::deinit()
 
 void voxel_renderer::render()
 {
-    ViewValues vv = {};
-    VoxelRender_UBO uniforms = {};
-
-    view::get_values(vv);
-
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
@@ -120,7 +115,8 @@ void voxel_renderer::render()
 
     sampler.bind(0);
 
-    uniforms.viewmat = vv.matrix;
+    VoxelRender_UBO uniforms = {};
+    uniforms.viewmat = camera::get_matrix();
     uniforms.timings.x = voxel_anims::frame;
     ubo.bind_base(GL_UNIFORM_BUFFER, 1);
 
@@ -142,6 +138,8 @@ void voxel_renderer::render()
             chunks_blend.push_back(entity);
     }
 
+    const auto cam_cpos = camera::get_chunk_pos();
+
     program_solid.bind();
     globals::gbuffer_solid.get_framebuffer().bind();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -150,7 +148,7 @@ void voxel_renderer::render()
         const auto &mesh = globals::registry.get<VoxelMeshComponent>(entity);
         const auto &mref = mesh.meshes[VOXEL_DRAW_SOLID];
 
-        const auto wcpos = coord::to_world(chunk.cpos - vv.cpos);
+        const auto wcpos = coord::to_world(chunk.cpos - cam_cpos);
         uniforms.chunk = vector4_t{wcpos.x, wcpos.y, wcpos.z, 0.0};
         ubo.write(0, sizeof(uniforms), &uniforms);
 

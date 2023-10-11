@@ -47,6 +47,8 @@ extern canvas::Font font_16px;
 
 extern unsigned int ui_scale;
 extern unsigned int ui_screen;
+
+extern double config_fov;
 } // namespace globals
 
 #endif /* CLIENT_GLOBALS_HH */

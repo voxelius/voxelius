@@ -2,10 +2,11 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#include <client/camera.hh>
 #include <client/canvas_font.hh>
 #include <client/canvas.hh>
 #include <client/deferred_pass.hh>
-#include <client/event/framebuffer_size.hh>
+#include <client/event/window_resize.hh>
 #include <client/final_pass.hh>
 #include <client/game.hh>
 #include <client/gbuffer.hh>
@@ -18,7 +19,6 @@
 #include <client/ui_options.hh>
 #include <client/ui_screen.hh>
 #include <client/ui_server_list.hh>
-#include <client/view.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_atlas.hh>
 #include <client/voxel_mesher.hh>
@@ -28,7 +28,7 @@
 #include <shared/chunks.hh>
 #include <shared/inertial.hh>
 
-static void on_framebuffer_size(const FramebufferSizeEvent &event)
+static void on_window_resize(const WindowResizeEvent &event)
 {
     globals::ui_scale = cxmath::max(1U, cxmath::floor<unsigned int>(static_cast<double>(event.height) / 240.0));
 
@@ -82,7 +82,7 @@ void client_game::init()
     // We start in the main menu
     globals::ui_screen = ui::SCREEN_MAIN_MENU;
 
-    globals::dispatcher.sink<FramebufferSizeEvent>().connect<&on_framebuffer_size>();
+    globals::dispatcher.sink<WindowResizeEvent>().connect<&on_window_resize>();
 }
 
 void client_game::init_late()
@@ -133,7 +133,7 @@ void client_game::update()
 
     inertial::update(globals::frametime);
 
-    view::update();
+    camera::update();
 
     voxel_anims::update();
     voxel_mesher::update();

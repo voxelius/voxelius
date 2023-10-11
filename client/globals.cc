@@ -31,3 +31,5 @@ canvas::Font globals::font_16px = {};
 
 unsigned int globals::ui_scale = 1U;
 unsigned int globals::ui_screen = ui::SCREEN_NONE;
+
+double globals::config_fov = 90.0;
