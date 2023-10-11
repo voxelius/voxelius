@@ -27,46 +27,46 @@ static void on_framebuffer_size(GLFWwindow *window, int width, int height)
     globals::window_height = height;
     globals::window_aspect = static_cast<double>(width) / static_cast<double>(height);
 
-    globals::dispatcher.trigger(FramebufferSizeEvent {
-        .width = globals::window_width,
-        .height = globals::window_height,
-        .aspect = globals::window_aspect,
-    });
+    FramebufferSizeEvent event = {};
+    event.width = globals::window_width;
+    event.height = globals::window_height;
+    event.aspect = globals::window_aspect;
+    globals::dispatcher.trigger(event);
 }
 
 static void on_key(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
-    globals::dispatcher.trigger(KeyboardKeyEvent {
-        .key = key,
-        .scancode = scancode,
-        .action = action,
-        .mods = mods,
-    });
+    KeyboardKeyEvent event = {};
+    event.key = key;
+    event.scancode = scancode;
+    event.action = action;
+    event.mods = mods;
+    globals::dispatcher.trigger(event);
 }
 
 static void on_mouse_button(GLFWwindow *window, int button, int action, int mods)
 {
-    globals::dispatcher.trigger(MouseButtonEvent {
-        .button = button,
-        .action = action,
-        .mods = mods,
-    });
+    MouseButtonEvent event = {};
+    event.button = button;
+    event.action = action;
+    event.mods = mods;
+    globals::dispatcher.trigger(event);
 }
 
 static void on_cursor_pos(GLFWwindow *window, double xpos, double ypos)
 {
-    globals::dispatcher.trigger(MouseMoveEvent {
-        .xpos = xpos, 
-        .ypos = ypos,
-    });
+    MouseMoveEvent event = {};
+    event.xpos = xpos;
+    event.ypos = ypos;
+    globals::dispatcher.trigger(event);
 }
 
 static void on_scroll(GLFWwindow *window, double dx, double dy)
 {
-    globals::dispatcher.trigger(MouseScrollEvent {
-        .dx = dx,
-        .dy = dy,
-    });
+    MouseScrollEvent event = {};
+    event.dx = dx;
+    event.dx = dy;
+    globals::dispatcher.trigger(event);
 }
 
 static void on_opengl_message(uint32_t source, uint32_t type, uint32_t id, uint32_t severity, int32_t length, const char *message, const void *param)

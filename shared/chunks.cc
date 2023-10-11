@@ -30,10 +30,10 @@ Chunk *chunks::create(const chunk_pos_t &cpos)
 
         map.emplace(cpos, chunk);
 
-        globals::dispatcher.trigger(ChunkCreateEvent {
-            .chunk = chunk,
-            .cpos = cpos,
-        });
+        ChunkCreateEvent event = {};
+        event.chunk = chunk;
+        event.cpos = cpos;
+        globals::dispatcher.trigger(event);
     }
 
     return chunk;
@@ -49,10 +49,10 @@ Chunk *chunks::find(const chunk_pos_t &cpos)
 void chunks::remove(const chunk_pos_t &cpos)
 {
     if(const auto it = map.find(cpos); it != map.cend()) {
-        globals::dispatcher.enqueue(ChunkRemoveEvent {
-            .chunk = it->second,
-            .cpos = cpos,
-        });
+        ChunkCreateEvent event = {};
+        event.chunk = it->second;
+        event.cpos = cpos;
+        globals::dispatcher.trigger(event);
 
         globals::registry.destroy(it->second->entity);
 
@@ -65,10 +65,10 @@ void chunks::remove(const chunk_pos_t &cpos)
 void chunks::remove_all()
 {
     for(auto it = map.begin(); it != map.end();) {
-        globals::dispatcher.enqueue(ChunkRemoveEvent {
-            .chunk = it->second,
-            .cpos = it->first,
-        });
+        ChunkCreateEvent event = {};
+        event.chunk = it->second;
+        event.cpos = it->first;
+        globals::dispatcher.trigger(event);
 
         globals::registry.destroy(it->second->entity);
 
@@ -110,14 +110,14 @@ void chunks::set_voxel(const voxel_pos_t &vpos, voxel_t voxel)
     Chunk *chunk = chunks::create(cpos);
     chunk->voxels[index] = voxel;
 
-    globals::dispatcher.enqueue(VoxelSetEvent {
-        .chunk = chunk,
-        .voxel = voxel,
-        .cpos = cpos,
-        .lpos = lpos,
-        .vpos = vpos,
-        .index = index,
-    });
+    VoxelSetEvent event = {};
+    event.chunk = chunk;
+    event.voxel = voxel;
+    event.cpos = cpos;
+    event.lpos = lpos;
+    event.vpos = vpos;
+    event.index = index;
+    globals::dispatcher.trigger(event);
 }
 
 void chunks::set_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos, voxel_t voxel)
@@ -130,12 +130,12 @@ void chunks::set_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos, voxel_t
     Chunk *chunk = chunks::create(p_cpos);
     chunk->voxels[index] = voxel;
 
-    globals::dispatcher.enqueue(VoxelSetEvent {
-        .chunk = chunk,
-        .voxel = voxel,
-        .cpos = p_cpos,
-        .lpos = p_lpos,
-        .vpos = p_vpos,
-        .index = index,
-    });
+    VoxelSetEvent event = {};
+    event.chunk = chunk;
+    event.voxel = voxel;
+    event.cpos = p_cpos;
+    event.lpos = p_lpos;
+    event.vpos = p_vpos;
+    event.index = index;
+    globals::dispatcher.trigger(event);
 }

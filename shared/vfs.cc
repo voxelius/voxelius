@@ -18,7 +18,9 @@ bool vfs::deinit()
 bool vfs::set_write_path(const vfs::path_t &path)
 {
     // Thanks to PQCraft for pointing out u8string exists
-    return PHYSFS_setWriteDir(path.u8string().c_str());
+    // FIX: not that big of a thanks if you consider it to be
+    // only a C++20 (and maybe GNU C++ as well) feature
+    return PHYSFS_setWriteDir(path.string().c_str());
 }
 
 bool vfs::create_directories(const vfs::path_t &path)
@@ -29,13 +31,17 @@ bool vfs::create_directories(const vfs::path_t &path)
 bool vfs::mount(const vfs::path_t &path, const vfs::path_t &mountpoint, bool append)
 {
     // Thanks to PQCraft for pointing out u8string exists
-    return PHYSFS_mount(path.u8string().c_str(), mountpoint.string().c_str(), append ? 1 : 0);
+    // FIX: not that big of a thanks if you consider it to be
+    // only a C++20 (and maybe GNU C++ as well) feature
+    return PHYSFS_mount(path.string().c_str(), mountpoint.string().c_str(), append ? 1 : 0);
 }
 
 bool vfs::umount(const vfs::path_t &path)
 {
     // Thanks to PQCraft for pointing out u8string exists
-    return PHYSFS_unmount(path.u8string().c_str());
+    // FIX: not that big of a thanks if you consider it to be
+    // only a C++20 (and maybe GNU C++ as well) feature
+    return PHYSFS_unmount(path.string().c_str());
 }
 
 bool vfs::exists(const vfs::path_t &path)
