@@ -34,9 +34,9 @@ static void on_key(const KeyEvent &event)
 void ui::main_menu::init()
 {
     style.rect_default = {0.0, 0.0, 0.0, 0.5};
-    style.rect_hovered = {1.0, 1.0, 1.0, 0.5};
-    style.rect_pressed = {1.0, 1.0, 1.0, 1.0};
-    style.rect_text_padding = vector2i_t{2, 2};
+    style.rect_hovered = {0.5, 0.5, 0.5, 0.5};
+    style.rect_pressed = {0.5, 0.5, 0.5, 1.0};
+    style.rect_text_padding = vector2i_t{4, 2};
     style.text_shadow = {0.25, 0.25, 0.25, 0.5};
 
     text.create(64, 1);
@@ -74,22 +74,22 @@ void ui::main_menu::render_ui()
     ypos += btn_ystep;
 
     text.set(0, L"DEBUG SESSION");
-    if(ui::imgui::button(xstart, ypos, btn_width, text, globals::font_16px, style))
+    if(ui::imgui::button(xpos, ypos, btn_width, text, globals::font_16px, style))
         debug_session::run();
     ypos += btn_ystep;
 
     text.set(0, L"Join a Server");
-    if(ui::imgui::button(xstart, ypos, btn_width, text, globals::font_16px, style))
+    if(ui::imgui::button(xpos, ypos, btn_width, text, globals::font_16px, style))
         globals::ui_screen = ui::SCREEN_SERVER_LIST;
     ypos += btn_ystep;
 
     text.set(0, L"Settings");
-    if(ui::imgui::button(xstart, ypos, btn_width, text, globals::font_16px, style))
+    if(ui::imgui::button(xpos, ypos, btn_width, text, globals::font_16px, style))
         globals::ui_screen = ui::SCREEN_SETTINGS;
     ypos += btn_ystep;
 
     text.set(0, L"Quit Game");
-    if(ui::imgui::button(xstart, ypos, btn_width, text, globals::font_16px, style))
+    if(ui::imgui::button(xpos, ypos, btn_width, text, globals::font_16px, style))
         glfwSetWindowShouldClose(globals::window, true);
     ypos += btn_ystep;
 }

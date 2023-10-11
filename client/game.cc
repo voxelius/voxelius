@@ -166,8 +166,9 @@ void client_game::render_ui()
         if(!globals::registry.valid(globals::player)) {
             const double cv = 0.5 + 0.5 * cos(0.25 * globals::curtime * 1.0e-6);
             const double sv = 0.5 + 0.5 * sin(0.25 * globals::curtime * 1.0e-6);
-            const vector4_t col = {cv, sv, 1.0, 1.0};
-            canvas::draw_rect(0, 0, globals::window_width, globals::window_height, col);
+            const vector4_t colz = {cv, sv, 1.0, 1.0};
+            const vector4_t colw = {1.0, cv, sv, 1.0};
+            canvas::draw_rect_v(0, 0, globals::window_width, globals::window_height, colz, colw);
         }
 
         const vector4_t spx = {0.0, 0.0, 0.0, 1.0};

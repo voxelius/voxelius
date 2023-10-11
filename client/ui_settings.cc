@@ -72,13 +72,13 @@ void ui::settings::init()
     category_draws[CATEGORY_CONTROLS] = nullptr;
 
     style.rect_default = {0.0, 0.0, 0.0, 0.5};
-    style.rect_hovered = {1.0, 1.0, 1.0, 0.5};
-    style.rect_pressed = {1.0, 1.0, 1.0, 1.0};
-    style.rect_text_padding = vector2i_t{2, 2};
+    style.rect_hovered = {0.5, 0.5, 0.5, 0.5};
+    style.rect_pressed = {0.5, 0.5, 0.5, 1.0};
+    style.rect_text_padding = vector2i_t{4, 2};
     style.text_shadow = {0.25, 0.25, 0.25, 0.5};
-    style.slider_default = {0.5, 0.5, 0.5, 1.0};
-    style.slider_hovered = {0.5, 0.5, 0.5, 1.0};
-    style.slider_pressed = {0.5, 0.5, 0.5, 1.0};
+    style.slider_default = {0.8, 0.8, 0.8, 1.0};
+    style.slider_hovered = {0.8, 0.8, 0.8, 1.0};
+    style.slider_pressed = {0.1, 0.1, 0.1, 1.0};
 
     text.create(64, 1);
 
@@ -103,7 +103,7 @@ void ui::settings::render_ui()
     const int csel_xstep = csel_width + 16;
     const int csel_ystep = csel_height + 8;
 
-    const int psel_width = csel_height; // square
+    const int psel_width = 2 * (globals::font_16px.get_glyph_width() + style.rect_text_padding.x);
     const int psel_height = csel_height;
     const int psel_xstep = psel_width + 2;
     const int psel_ystep = psel_height + 16;
@@ -149,7 +149,7 @@ void ui::settings::render_ui()
     xpos += psel_xstep;
 
     text.set(0, L">>");
-    if(ui::imgui::button(xpos, ypos, psel_height, text, globals::font_16px, style))
+    if(ui::imgui::button(xpos, ypos, psel_width, text, globals::font_16px, style))
         category_page += 1;
     xpos += psel_xstep;
 

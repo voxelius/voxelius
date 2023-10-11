@@ -116,17 +116,17 @@ bool ui::imgui::button(int xpos, int ypos, int width, const canvas::Text &text, 
     return false;
 }
 
-void ui::imgui::slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style)
+bool ui::imgui::slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style)
 {
-    ui::imgui::slider(xpos, ypos, width, value, text, font, style, std::numeric_limits<double>::min(), std::numeric_limits<double>::max(), 0.0);
+    return ui::imgui::slider(xpos, ypos, width, value, text, font, style, std::numeric_limits<double>::min(), std::numeric_limits<double>::max(), 0.0);
 }
 
-void ui::imgui::slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style, double min, double max)
+bool ui::imgui::slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style, double min, double max)
 {
-    ui::imgui::slider(xpos, ypos, width, value, text, font, style, min, max, 0.0);
+    return ui::imgui::slider(xpos, ypos, width, value, text, font, style, min, max, 0.0);
 }
 
-void ui::imgui::slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style, double min, double max, double step)
+bool ui::imgui::slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style, double min, double max, double step)
 {
     const int iscale = globals::ui_scale;
 
@@ -152,16 +152,18 @@ void ui::imgui::slider(int xpos, int ypos, int width, double &value, const canva
     const int ryy = ry + rh;
     const bool hover = ((cursor_xpos >= rx) && (cursor_xpos < rxx) && (cursor_ypos >= ry) && (cursor_ypos < ryy));
 
+    double new_value = value;
+
     if(hover) {
         if(buttons[GLFW_MOUSE_BUTTON_LEFT]) {
             const auto lcur = static_cast<double>(cursor_xpos - rx - (lw / 2));
             const auto lmax = static_cast<double>(rw - lw);
-            value = lcur / lmax * (max - min) + min;
+            new_value = lcur / lmax * (max - min) + min;
         }
 
         if(step != 0.0)
-            value = cxmath::floor<int>(value / step) * step;
-        value = cxmath::clamp(value, min, max);
+            new_value = cxmath::floor<int>(new_value / step) * step;
+        new_value = cxmath::clamp(new_value, min, max);
     }
 
     vector4_t rect_col = {};
@@ -190,4 +192,11 @@ void ui::imgui::slider(int xpos, int ypos, int width, double &value, const canva
     canvas::draw_rect(lx, ry, lw, rh, line_col);
     canvas::draw_text(sx, sy, text, font, style.text_shadow, COL_TRANSPARENT, globals::ui_scale);
     canvas::draw_text(tx, ty, text, font, text_col, COL_TRANSPARENT, globals::ui_scale);
+
+    if(new_value != value) {
+        value = new_value;
+        return true;
+    }
+
+    return false;
 }

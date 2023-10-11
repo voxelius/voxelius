@@ -23,9 +23,9 @@ namespace ui::imgui
 {
 void label(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const Style &style, unsigned int scale);
 bool button(int xpos, int ypos, int width, const canvas::Text &text, const canvas::Font &font, const Style &style);
-void slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style);
-void slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style, double min, double max);
-void slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style, double min, double max, double step);
+bool slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style);
+bool slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style, double min, double max);
+bool slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style, double min, double max, double step);
 } // namespace ui::imgui
 
 #endif /* CLIENT_UI_IMGUI_HH */
