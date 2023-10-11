@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 project(spdlog VERSION 1.11.0 LANGUAGES CXX)
 add_library(spdlog STATIC
     "${CMAKE_CURRENT_LIST_DIR}/src/async.cpp"
