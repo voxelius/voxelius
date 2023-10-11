@@ -48,7 +48,7 @@ void ui::main_menu::init()
     style.button.text_hovered = COL_WHITE;
     style.button.text_pressed = COL_WHITE;
     style.button.text_shadow = {0.25, 0.25, 0.25, 1.0};
-    style.button.text_margin = vector2i_t{4, 4};
+    style.button.text_margin = vector2i_t{2, 2};
 
     style.slider.rect_default = COL_TRANSPARENT;
     style.slider.rect_hovered = {1.0, 1.0, 1.0, 1.0 / 16.0};
@@ -60,7 +60,7 @@ void ui::main_menu::init()
     style.slider.line_default = COL_LIGHT_GRAY;
     style.slider.line_hovered = COL_LIGHT_GRAY;
     style.slider.line_pressed = COL_LIGHT_GRAY;
-    style.slider.text_margin = vector2i_t{4, 4};
+    style.slider.text_margin = vector2i_t{2, 2};
 
     title.create(64, 1);
     button.create(64, 1);

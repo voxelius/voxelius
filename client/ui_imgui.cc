@@ -126,6 +126,7 @@ void ui::imgui::slider(int xpos, int ypos, int width, double &value, const canva
     ui::imgui::slider(xpos, ypos, width, value, text, font, style, min, max, 0.0);
 }
 
+#include <spdlog/spdlog.h>
 void ui::imgui::slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style, double min, double max, double step)
 {
     const int iscale = globals::ui_scale;
@@ -152,8 +153,13 @@ void ui::imgui::slider(int xpos, int ypos, int width, double &value, const canva
     const int ryy = ry + rh;
     const bool hover = ((cursor_xpos >= rx) && (cursor_xpos < rxx) && (cursor_ypos >= ry) && (cursor_ypos < ryy));
 
-    if(hover && buttons[GLFW_MOUSE_BUTTON_LEFT]) {
-        value = static_cast<double>(cursor_xpos - rx - lw / 2) / static_cast<double>(rw - lw) * (max - min) + min;
+    if(hover) {
+        if(buttons[GLFW_MOUSE_BUTTON_LEFT]) {
+            const auto lcur = static_cast<double>(cursor_xpos - rx - (lw / 2));
+            const auto lmax = static_cast<double>(rw - lw);
+            value = lcur / lmax * (max - min) + min;
+        }
+
         if(step != 0.0)
             value = cxmath::floor<int>(value / step) * step;
         value = cxmath::clamp(value, min, max);
