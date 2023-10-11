@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MPL-2.0
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+// file, You can obtain one at http://mozila.org/MPL/2.0/.
+#include <client/event/cursor_pos.hh>
 #include <client/event/framebuffer_size.hh>
-#include <client/event/keyboard_key.hh>
+#include <client/event/key.hh>
 #include <client/event/mouse_button.hh>
-#include <client/event/mouse_move.hh>
-#include <client/event/mouse_scroll.hh>
+#include <client/event/scroll.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
 #include <client/image.hh>
@@ -36,7 +36,7 @@ static void on_framebuffer_size(GLFWwindow *window, int width, int height)
 
 static void on_key(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
-    KeyboardKeyEvent event = {};
+    KeyEvent event = {};
     event.key = key;
     event.scancode = scancode;
     event.action = action;
@@ -55,7 +55,7 @@ static void on_mouse_button(GLFWwindow *window, int button, int action, int mods
 
 static void on_cursor_pos(GLFWwindow *window, double xpos, double ypos)
 {
-    MouseMoveEvent event = {};
+    CursorPosEvent event = {};
     event.xpos = xpos;
     event.ypos = ypos;
     globals::dispatcher.trigger(event);
@@ -63,7 +63,7 @@ static void on_cursor_pos(GLFWwindow *window, double xpos, double ypos)
 
 static void on_scroll(GLFWwindow *window, double dx, double dy)
 {
-    MouseScrollEvent event = {};
+    ScrollEvent event = {};
     event.dx = dx;
     event.dx = dy;
     globals::dispatcher.trigger(event);

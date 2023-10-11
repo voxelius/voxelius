@@ -5,8 +5,8 @@
 #include <client/canvas_font.hh>
 #include <client/canvas_text.hh>
 #include <client/canvas.hh>
+#include <client/event/cursor_pos.hh>
 #include <client/event/mouse_button.hh>
-#include <client/event/mouse_move.hh>
 #include <client/globals.hh>
 #include <client/ui_imgui.hh>
 #include <limits>
@@ -14,6 +14,12 @@
 static int cursor_xpos = 0;
 static int cursor_ypos = 0;
 static uint16_t buttons[GLFW_MOUSE_BUTTON_LAST + 1] = {};
+
+static void on_cursor_pos(const CursorPosEvent &event)
+{
+    cursor_xpos = event.xpos;
+    cursor_ypos = event.ypos;
+}
 
 static void on_mouse_button(const MouseButtonEvent &event)
 {
@@ -29,16 +35,10 @@ static void on_mouse_button(const MouseButtonEvent &event)
     }
 }
 
-static void on_mouse_move(const MouseMoveEvent &event)
-{
-    cursor_xpos = event.xpos;
-    cursor_ypos = event.ypos;
-}
-
 void ui::imgui::init()
 {
+    globals::dispatcher.sink<CursorPosEvent>().connect<&on_cursor_pos>();
     globals::dispatcher.sink<MouseButtonEvent>().connect<&on_mouse_button>();
-    globals::dispatcher.sink<MouseMoveEvent>().connect<&on_mouse_move>();
 }
 
 void ui::imgui::update_late()
