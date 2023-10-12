@@ -21,6 +21,27 @@ void canvas::Text::create(int width, int height)
     texture.write(0, 0, texture_width, texture_height, PixelFormat::R32_UINT, pixels.data());
 }
 
+void canvas::Text::set(int line, const std::string &value)
+{
+    std::vector<uint32_t> pixels = {};
+    pixels.resize(texture_width, 0xFFFFFFFF);
+
+    // We only can write up to <width> characters
+    const int size = cxmath::min<int>(value.size(), texture_width);
+
+    for(int i = 0; i < size; ++i) {
+        // NOTE: this assumes the input string contains
+        // UTF-8 without sequences aka just pure ASCII.
+        pixels[i] = static_cast<uint32_t>(value[i]);
+    }
+
+    if(size > max_text_width)
+        max_text_width = size;
+    if(line >= max_text_height)
+        max_text_height = line + 1;
+    texture.write(0, texture_height - line - 1, texture_width, 1, PixelFormat::R32_UINT, pixels.data());
+}
+
 void canvas::Text::set(int line, const std::wstring &value)
 {
     std::vector<uint32_t> pixels = {};

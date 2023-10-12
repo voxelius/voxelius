@@ -7,6 +7,7 @@
 #include <client/canvas.hh>
 #include <client/event/keyboard_key.hh>
 #include <client/globals.hh>
+#include <client/options.hh>
 #include <client/ui_imgui.hh>
 #include <client/ui_options.hh>
 #include <client/ui_screen.hh>
@@ -14,9 +15,10 @@
 #include <spdlog/fmt/xchar.h>
 
 constexpr static const int CATEGORY_GENERAL = 0;
-constexpr static const int CATEGORY_GRAPHICS = 1;
-constexpr static const int CATEGORY_CONTROLS = 2;
-constexpr static const int NUM_CATEGORIES = 3;
+constexpr static const int CATEGORY_CONTROLS = 1;
+constexpr static const int CATEGORY_GRAPHICS = 2;
+constexpr static const int CATEGORY_SOUND = 3;
+constexpr static const int NUM_CATEGORIES = 4;
 
 using draw_page_t = void(*)(int xpos, int ypos, int width, int ystep);
 
@@ -47,11 +49,25 @@ static void on_keyboard_key(const KeyboardKeyEvent &event)
     }
 }
 
-static void draw_graphics(int xpos, int ypos, int width, int ystep)
+static void draw_general(int xpos, int ypos, int width, int ystep)
 {
     if(category_page == 0) {
-        text.set(0, fmt::format(L"FOV: {}", globals::config_fov));
-        ui::imgui::slider(xpos, ypos, width, globals::config_fov, text, globals::font_16px, style, 60, 120, 1);
+        text.set(0, fmt::format("FOV: {}", globals::options.general.fov));
+        ui::imgui::slider(xpos, ypos, width, globals::options.general.fov, text, globals::font_16px, style, 60, 120, 1);
+        ypos += ystep;
+    }
+}
+
+static void draw_controls(int xpos, int ypos, int width, int ystep)
+{
+    if(category_page == 0) {
+        text.set(0, fmt::format("Sensitivity: {:.02f}", globals::options.controls.sensitivity));
+        ui::imgui::slider(xpos, ypos, width, globals::options.controls.sensitivity, text, globals::font_16px, style, 0.05, 0.5, 0.05);
+        ypos += ystep;
+
+        text.set(0, fmt::format("Raw mouse: {}", globals::options.controls.raw_mouse ? "ON" : "OFF"));
+        if(ui::imgui::button(xpos, ypos, width, text, globals::font_16px, style))
+            globals::options.controls.raw_mouse = !globals::options.controls.raw_mouse;
         ypos += ystep;
     }
 }
@@ -60,15 +76,19 @@ void ui::options::init()
 {
     category_names[CATEGORY_GENERAL] = L"General";
     category_pages[CATEGORY_GENERAL] = 1;
-    category_draws[CATEGORY_GENERAL] = nullptr;
-
-    category_names[CATEGORY_GRAPHICS] = L"Graphics";
-    category_pages[CATEGORY_GRAPHICS] = 1;
-    category_draws[CATEGORY_GRAPHICS] = &draw_graphics;
+    category_draws[CATEGORY_GENERAL] = &draw_general;
 
     category_names[CATEGORY_CONTROLS] = L"Controls";
     category_pages[CATEGORY_CONTROLS] = 1;
-    category_draws[CATEGORY_CONTROLS] = nullptr;
+    category_draws[CATEGORY_CONTROLS] = &draw_controls;
+
+    category_names[CATEGORY_GRAPHICS] = L"Graphics";
+    category_pages[CATEGORY_GRAPHICS] = 1;
+    category_draws[CATEGORY_GRAPHICS] = nullptr;
+
+    category_names[CATEGORY_SOUND] = L"Sound";
+    category_pages[CATEGORY_SOUND] = 1;
+    category_draws[CATEGORY_SOUND] = nullptr;
 
     style.rect_default = {0.0, 0.0, 0.0, 0.5};
     style.rect_hovered = {0.5, 0.5, 0.5, 0.5};

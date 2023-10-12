@@ -4,6 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/event/cursor_move.hh>
 #include <client/globals.hh>
+#include <client/options.hh>
 #include <client/player_look.hh>
 #include <shared/angle.hh>
 #include <shared/entity/head.hh>
@@ -17,12 +18,13 @@ static double previous_cy = 0.0;
 static void on_cursor_move(const CursorMoveEvent &event)
 {
     if(!globals::ui_screen && globals::registry.valid(globals::player)) {
+        const double sensitivity = globals::options.controls.sensitivity;
         const double dx = event.xpos - previous_cx;
         const double dy = event.ypos - previous_cy;
 
         auto &head = globals::registry.get<HeadComponent>(globals::player);
-        head.angles.x -= cxmath::radians(dy) * 0.25; // UNDONE
-        head.angles.y -= cxmath::radians(dx) * 0.25;
+        head.angles.x -= cxmath::radians(dy) * sensitivity;
+        head.angles.y -= cxmath::radians(dx) * sensitivity;
         head.angles.x = cxmath::clamp(head.angles.x, PITCH_MIN, PITCH_MAX);
         head.angles = angle::wrap_180_n(head.angles);
     }

@@ -9,11 +9,6 @@
 
 namespace camera
 {
-extern double fov;
-} // namespace camera
-
-namespace camera
-{
 void update();
 const vector3_t &get_position();
 const vector3_t &get_euler_anlgles();

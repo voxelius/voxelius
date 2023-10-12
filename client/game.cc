@@ -11,6 +11,7 @@
 #include <client/game.hh>
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
+#include <client/options.hh>
 #include <client/player_look.hh>
 #include <client/player_move.hh>
 #include <client/shaders.hh>
@@ -45,6 +46,8 @@ static void on_window_resize(const WindowResizeEvent &event)
 
 void client_game::init()
 {
+    Options::read("options.conf", globals::options);
+
     shaders::init();
     VoxelVertex::init();
 
@@ -125,6 +128,8 @@ void client_game::deinit()
     // by the time destructor on globals::registry
     // is called, turning shutdown into a segfault
     globals::registry.clear();
+
+    Options::write("options.conf", globals::options);
 }
 
 void client_game::update()
@@ -147,7 +152,7 @@ void client_game::update_late()
     }
     else {
         glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        glfwSetInputMode(globals::window, GLFW_RAW_MOUSE_MOTION, true);
+        glfwSetInputMode(globals::window, GLFW_RAW_MOUSE_MOTION, globals::options.controls.raw_mouse);
     }
 
     ui::imgui::update_late();

@@ -6,7 +6,10 @@
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
 #include <client/glxx/framebuffer.hh>
+#include <client/options.hh>
 #include <client/ui_screen.hh>
+
+Options globals::options = {};
 
 GLFWwindow *globals::window = nullptr;
 int globals::window_width = 0;
@@ -31,5 +34,3 @@ canvas::Font globals::font_16px = {};
 
 unsigned int globals::ui_scale = 1U;
 unsigned int globals::ui_screen = ui::SCREEN_NONE;
-
-double globals::config_fov = 90.0;
