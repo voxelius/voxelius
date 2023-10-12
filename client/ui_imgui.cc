@@ -7,6 +7,7 @@
 #include <client/canvas.hh>
 #include <client/event/cursor_move.hh>
 #include <client/event/mouse_button.hh>
+#include <client/event/mouse_scroll.hh>
 #include <client/globals.hh>
 #include <client/ui_imgui.hh>
 #include <limits>
@@ -14,6 +15,8 @@
 static int cursor_xpos = 0;
 static int cursor_ypos = 0;
 static uint16_t buttons[GLFW_MOUSE_BUTTON_LAST + 1] = {};
+static int scroll_dx = 0;
+static int scroll_dy = 0;
 
 static void on_cursor_move(const CursorMoveEvent &event)
 {
@@ -35,10 +38,17 @@ static void on_mouse_button(const MouseButtonEvent &event)
     }
 }
 
+static void on_mouse_scroll(const MouseScrollEvent &event)
+{
+    scroll_dx += event.dx;
+    scroll_dy += event.dy;
+}
+
 void ui::imgui::init()
 {
     globals::dispatcher.sink<CursorMoveEvent>().connect<&on_cursor_move>();
     globals::dispatcher.sink<MouseButtonEvent>().connect<&on_mouse_button>();
+    globals::dispatcher.sink<MouseScrollEvent>().connect<&on_mouse_scroll>();
 }
 
 void ui::imgui::update_late()
@@ -48,6 +58,9 @@ void ui::imgui::update_late()
             continue;
         buttons[i] += 1;
     }
+
+    scroll_dx = 0;
+    scroll_dy = 0;
 }
 
 void ui::imgui::label(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const ui::Style &style, unsigned int scale)
@@ -154,12 +167,20 @@ bool ui::imgui::slider(int xpos, int ypos, int width, double &value, const canva
 
     double new_value = value;
 
-    if(hover && buttons[GLFW_MOUSE_BUTTON_LEFT]) {
-        const auto lcur = static_cast<double>(cursor_xpos - rx - (lw / 2));
-        const auto lmax = static_cast<double>(rw - lw);
-        new_value = lcur / lmax * (max - min) + min;
+    if(hover) {
+        if(buttons[GLFW_MOUSE_BUTTON_LEFT]) {
+            const auto lcur = static_cast<double>(cursor_xpos - rx - (lw / 2));
+            const auto lmax = static_cast<double>(rw - lw);
+            new_value = lcur / lmax * (max - min) + min;
+        }
+        else if(scroll_dx || scroll_dy) {
+            const auto lstep = step ? step : 0.01;
+            new_value += lstep * scroll_dx;
+            new_value += lstep * scroll_dy;
+        }
+
         if(step != 0.0)
-            new_value = cxmath::floor<int>(new_value / step) * step;
+            new_value = round(new_value / step) * step;
         new_value = cxmath::clamp(new_value, min, max);
     }
 

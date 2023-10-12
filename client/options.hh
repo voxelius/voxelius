@@ -6,31 +6,27 @@
 #define CLIENT_OPTIONS_HH
 #include <shared/vfs.hh>
 
-struct OptionsGeneral final {
-    double fov {90.0};
-};
+namespace options::general
+{
+extern std::string username;
+} // namespace options::general
 
-struct OptionsControls final {
-    bool raw_mouse {true};
-    double sensitivity {0.25};
-};
+namespace options::controls
+{
+extern bool mouse_rawinput;
+extern double mouse_sensitivity;
+} // namespace options::controls
 
-struct OptionsGraphics final {
-    // Nothing yet
-};
+namespace options::graphics
+{
+extern double camera_fov;
+extern unsigned int view_distance;
+} // namespace options::graphics
 
-struct OptionsSound final {
-    // Nothing yet
-};
-
-struct Options final {
-    OptionsGeneral general {};
-    OptionsControls controls {};
-    OptionsGraphics graphics {};
-    OptionsSound sound {};
-
-    static void read(const vfs::path_t &path, Options &out);
-    static void write(const vfs::path_t &path, const Options &in);
-};
+namespace options
+{
+void load();
+void save();
+} // namespace options
 
 #endif /* CLIENT_OPTIONS_HH */

@@ -46,7 +46,7 @@ static void on_window_resize(const WindowResizeEvent &event)
 
 void client_game::init()
 {
-    Options::read("options.conf", globals::options);
+    options::load();
 
     shaders::init();
     VoxelVertex::init();
@@ -129,7 +129,7 @@ void client_game::deinit()
     // is called, turning shutdown into a segfault
     globals::registry.clear();
 
-    Options::write("options.conf", globals::options);
+    options::save();
 }
 
 void client_game::update()
@@ -152,7 +152,7 @@ void client_game::update_late()
     }
     else {
         glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        glfwSetInputMode(globals::window, GLFW_RAW_MOUSE_MOTION, globals::options.controls.raw_mouse);
+        glfwSetInputMode(globals::window, GLFW_RAW_MOUSE_MOTION, options::controls::mouse_rawinput);
     }
 
     ui::imgui::update_late();

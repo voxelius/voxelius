@@ -18,7 +18,7 @@ static double previous_cy = 0.0;
 static void on_cursor_move(const CursorMoveEvent &event)
 {
     if(!globals::ui_screen && globals::registry.valid(globals::player)) {
-        const double sensitivity = globals::options.controls.sensitivity;
+        const double sensitivity = options::controls::mouse_sensitivity;
         const double dx = event.xpos - previous_cx;
         const double dy = event.ypos - previous_cy;
 

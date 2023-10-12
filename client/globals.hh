@@ -19,14 +19,11 @@ class Font;
 } // namespace canvas
 
 struct GLFWwindow;
-struct Options;
 class GBuffer;
 class World;
 
 namespace globals
 {
-extern Options options;
-
 extern GLFWwindow *window;
 extern int window_width;
 extern int window_height;

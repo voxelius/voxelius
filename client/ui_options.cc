@@ -49,26 +49,31 @@ static void on_keyboard_key(const KeyboardKeyEvent &event)
     }
 }
 
-static void draw_general(int xpos, int ypos, int width, int ystep)
+static void draw_controls(int xpos, int ypos, int width, int ystep)
 {
     if(category_page == 0) {
-        text.set(0, fmt::format("FOV: {}", globals::options.general.fov));
-        ui::imgui::slider(xpos, ypos, width, globals::options.general.fov, text, globals::font_16px, style, 60, 120, 1);
+        text.set(0, fmt::format(L"Raw input: {}", options::controls::mouse_rawinput));
+        if(ui::imgui::button(xpos, ypos, width, text, globals::font_16px, style))
+            options::controls::mouse_rawinput = !options::controls::mouse_rawinput;
+        ypos += ystep;
+
+        text.set(0, fmt::format(L"Sensitivity: {:.02f}", options::controls::mouse_sensitivity));
+        ui::imgui::slider(xpos, ypos, width, options::controls::mouse_sensitivity, text, globals::font_16px, style, 0.05, 0.5, 0.01);
         ypos += ystep;
     }
 }
 
-static void draw_controls(int xpos, int ypos, int width, int ystep)
+static void draw_graphics(int xpos, int ypos, int width, int ystep)
 {
     if(category_page == 0) {
-        text.set(0, fmt::format("Sensitivity: {:.02f}", globals::options.controls.sensitivity));
-        ui::imgui::slider(xpos, ypos, width, globals::options.controls.sensitivity, text, globals::font_16px, style, 0.05, 0.5, 0.05);
+        text.set(0, fmt::format("FOV: {:.0f}", options::graphics::camera_fov));
+        ui::imgui::slider(xpos, ypos, width, options::graphics::camera_fov, text, globals::font_16px, style, 60, 120, 1);
         ypos += ystep;
 
-        text.set(0, fmt::format("Raw mouse: {}", globals::options.controls.raw_mouse ? "ON" : "OFF"));
-        if(ui::imgui::button(xpos, ypos, width, text, globals::font_16px, style))
-            globals::options.controls.raw_mouse = !globals::options.controls.raw_mouse;
-        ypos += ystep;
+        double view_distance_f = options::graphics::view_distance;
+        text.set(0, fmt::format("View distance: {}", options::graphics::view_distance));
+        ui::imgui::slider(xpos, ypos, width, view_distance_f, text, globals::font_16px, style, 1, 32, 1);
+        options::graphics::view_distance = view_distance_f;
     }
 }
 
@@ -76,15 +81,15 @@ void ui::options::init()
 {
     category_names[CATEGORY_GENERAL] = L"General";
     category_pages[CATEGORY_GENERAL] = 1;
-    category_draws[CATEGORY_GENERAL] = &draw_general;
+    category_draws[CATEGORY_GENERAL] = nullptr;
 
     category_names[CATEGORY_CONTROLS] = L"Controls";
-    category_pages[CATEGORY_CONTROLS] = 1;
+    category_pages[CATEGORY_CONTROLS] = 2;
     category_draws[CATEGORY_CONTROLS] = &draw_controls;
 
     category_names[CATEGORY_GRAPHICS] = L"Graphics";
     category_pages[CATEGORY_GRAPHICS] = 1;
-    category_draws[CATEGORY_GRAPHICS] = nullptr;
+    category_draws[CATEGORY_GRAPHICS] = &draw_graphics;
 
     category_names[CATEGORY_SOUND] = L"Sound";
     category_pages[CATEGORY_SOUND] = 1;
@@ -114,12 +119,12 @@ void ui::options::render_ui()
     int xpos;
     int ypos;
 
-    const int xstart = globals::window_width / 8 / globals::ui_scale;
-    const int ystart = globals::window_height / 8 / globals::ui_scale;
+    const int xstart = globals::window_width / 16 / globals::ui_scale;
+    const int ystart = globals::window_height / 16 / globals::ui_scale;
 
     const int csel_width = 96;
     const int csel_height = globals::font_16px.get_glyph_height() + 2 * style.rect_text_padding.y;
-    const int csel_xstep = csel_width + 16;
+    const int csel_xstep = csel_width + 8;
     const int csel_ystep = csel_height + 8;
 
     const int psel_width = 2 * (globals::font_16px.get_glyph_width() + style.rect_text_padding.x);
@@ -128,7 +133,7 @@ void ui::options::render_ui()
     const int psel_ystep = psel_height + 16;
 
     const int val_width = globals::window_width / globals::ui_scale - 2 * xstart - csel_xstep;
-    const int val_ystep = csel_ystep;
+    const int val_ystep = csel_height + 2;
 
 
     //

@@ -54,8 +54,8 @@ void ui::main_menu::render_ui()
     int xpos;
     int ypos;
 
-    const int xstart = globals::window_width / 8 / globals::ui_scale;
-    const int ystart = globals::window_height / 8 / globals::ui_scale;
+    const int xstart = globals::window_width / 16 / globals::ui_scale;
+    const int ystart = globals::window_height / 16 / globals::ui_scale;
 
     const int btn_width = 196;
     const int btn_height = globals::font_16px.get_glyph_height() + 2 * style.rect_text_padding.y;

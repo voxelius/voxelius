@@ -23,7 +23,7 @@ void camera::update()
     cam_direction = vector3_t{};
     cam_chunk_local = vector3f_t{};
     cam_chunk_pos = chunk_pos_t{};
-    cam_matrix = glm::perspective(cxmath::radians(globals::options.general.fov), globals::window_aspect, 0.01, 1024.0);
+    cam_matrix = glm::perspective(cxmath::radians(options::graphics::camera_fov), globals::window_aspect, 0.01, 1024.0);
 
     if(globals::registry.valid(globals::player)) {
         const auto &head = globals::registry.get<HeadComponent>(globals::player);

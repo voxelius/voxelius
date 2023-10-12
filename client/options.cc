@@ -4,43 +4,38 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/options.hh>
 #include <shared/properties.hh>
+#include <spdlog/spdlog.h>
 
-void Options::read(const vfs::path_t &path, Options &out)
+constexpr static const char *CONFIG_PATH = "options.conf";
+
+std::string options::general::username = "player";
+
+bool options::controls::mouse_rawinput = true;
+double options::controls::mouse_sensitivity = 0.25;
+
+double options::graphics::camera_fov = 90.0;
+unsigned int options::graphics::view_distance = 8U;
+
+void options::load()
 {
     Properties properties = {};
-
-    if(properties.read(path)) {
-        // General
-        out.general.fov = properties.get_int("general", "fov", 90);
-
-        // Controls
-        out.controls.raw_mouse = properties.get_bool("controls", "raw_mouse", true);
-        out.controls.sensitivity = properties.get_double("controls", "sensitivity", 0.25);
-
-        // Graphics
-        // Nothing yet
-
-        // Sound
-        // Nothing yet
+    if(properties.read(CONFIG_PATH)) {
+        options::general::username = properties.get_string("general", "username", "player");
+        options::controls::mouse_rawinput = properties.get_bool("controls", "mouse_rawinput", true);
+        options::controls::mouse_sensitivity = properties.get_double("controls", "mouse_sensitivity", 0.25);
+        options::graphics::camera_fov = properties.get_int("graphics", "camera_fov", 90);
+        options::graphics::view_distance = properties.get_int("graphics", "view_distance", 8);
     }
 }
 
-void Options::write(const vfs::path_t &path, const Options &in)
+void options::save()
 {
     Properties properties = {};
-
-    // General
-    properties.set_int("general", "fov", in.general.fov);
-
-    // Controls
-    properties.set_bool("controls", "raw_mouse", in.controls.raw_mouse);
-    properties.set_double("controls", "sensitivity", in.controls.sensitivity);
-
-    // Graphics
-    // Nothing yet
-
-    // Sound
-    // Nothing yet
-
-    properties.write(path);
+    properties.set_string("general", "username", options::general::username);
+    properties.set_bool("controls", "mouse_rawinput", options::controls::mouse_rawinput);
+    properties.set_double("controls", "mouse_sensitivity", options::controls::mouse_sensitivity);
+    properties.set_int("graphics", "camera_fov", options::graphics::camera_fov);
+    properties.set_int("graphics", "view_distance", options::graphics::view_distance);
+    properties.write(CONFIG_PATH);
 }
+
