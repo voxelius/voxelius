@@ -7,10 +7,12 @@
 #include <client/canvas.hh>
 #include <client/event/keyboard_key.hh>
 #include <client/globals.hh>
-#include <client/options.hh>
 #include <client/ui_imgui.hh>
-#include <client/ui_options.hh>
 #include <client/ui_screen.hh>
+#include <client/ui_settings.hh>
+#include <shared/config.hh>
+#include <client/player_look.hh>
+#include <client/camera.hh>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/fmt/xchar.h>
 
@@ -42,23 +44,38 @@ static void on_keyboard_key(const KeyboardKeyEvent &event)
 {
     if(event.key == GLFW_KEY_ESCAPE && event.action == GLFW_PRESS) {
         switch(globals::ui_screen) {
-            case ui::SCREEN_OPTIONS:
+            case ui::SCREEN_SETTINGS:
                 close_screen();
                 break;
         }
     }
 }
 
+static void draw_general(int xpos, int ypos, int width, int ystep)
+{
+    text.set(0, L"Nothing to see here");
+    ui::imgui::label(xpos, ypos, text, globals::font_16px, style, 1U);
+    ypos += globals::font_16px.get_glyph_height();
+
+    text.set(0, fmt::format(L"WIP for {} years", globals::curtime / 1000000));
+    ui::imgui::label(xpos, ypos, text, globals::font_16px, style, 1U);
+    ypos += globals::font_16px.get_glyph_height();
+}
+
 static void draw_controls(int xpos, int ypos, int width, int ystep)
 {
     if(category_page == 0) {
-        text.set(0, fmt::format(L"Raw input: {}", options::controls::mouse_rawinput));
+        bool raw_input = player_look::raw_input.get_value();
+        text.set(0, fmt::format(L"Raw input: {}", raw_input));
         if(ui::imgui::button(xpos, ypos, width, text, globals::font_16px, style))
-            options::controls::mouse_rawinput = !options::controls::mouse_rawinput;
+            raw_input = !raw_input;
+        player_look::raw_input.set_value(raw_input);
         ypos += ystep;
 
-        text.set(0, fmt::format(L"Sensitivity: {:.02f}", options::controls::mouse_sensitivity));
-        ui::imgui::slider(xpos, ypos, width, options::controls::mouse_sensitivity, text, globals::font_16px, style, 0.05, 0.5, 0.01);
+        double sensitivity = player_look::sensitivity.get_value();
+        text.set(0, fmt::format(L"Sensitivity: {:.02f}", sensitivity));
+        if(ui::imgui::slider(xpos, ypos, width, sensitivity, text, globals::font_16px, style, 0.05, 0.5, 0.01))
+            player_look::sensitivity.set_value(sensitivity);
         ypos += ystep;
     }
 }
@@ -66,22 +83,32 @@ static void draw_controls(int xpos, int ypos, int width, int ystep)
 static void draw_graphics(int xpos, int ypos, int width, int ystep)
 {
     if(category_page == 0) {
-        text.set(0, fmt::format("FOV: {:.0f}", options::graphics::camera_fov));
-        ui::imgui::slider(xpos, ypos, width, options::graphics::camera_fov, text, globals::font_16px, style, 60, 120, 1);
+        double fov = camera::fov.get_value();
+        text.set(0, fmt::format("FOV: {:.0f}", fov));
+        if(ui::imgui::slider(xpos, ypos, width, fov, text, globals::font_16px, style, 54, 120, 1))
+            camera::fov.set_value(fov);
         ypos += ystep;
 
-        double view_distance_f = options::graphics::view_distance;
-        text.set(0, fmt::format("View distance: {}", options::graphics::view_distance));
-        ui::imgui::slider(xpos, ypos, width, view_distance_f, text, globals::font_16px, style, 1, 32, 1);
-        options::graphics::view_distance = view_distance_f;
+        double view_distance = camera::view_distance.get_value();
+        text.set(0, fmt::format("View distance: {}", view_distance));
+        if(ui::imgui::slider(xpos, ypos, width, view_distance, text, globals::font_16px, style, 1, 32, 1))
+            camera::view_distance.set_value(view_distance);
+        ypos += ystep;
     }
 }
 
-void ui::options::init()
+static void draw_sound(int xpos, int ypos, int width, int ystep)
+{
+    text.set(0, L"There's no sound yet");
+    ui::imgui::label(xpos, ypos, text, globals::font_16px, style, 1U);
+    ypos += globals::font_16px.get_glyph_height();
+}
+
+void ui::settings::init()
 {
     category_names[CATEGORY_GENERAL] = L"General";
     category_pages[CATEGORY_GENERAL] = 1;
-    category_draws[CATEGORY_GENERAL] = nullptr;
+    category_draws[CATEGORY_GENERAL] = &draw_general;
 
     category_names[CATEGORY_CONTROLS] = L"Controls";
     category_pages[CATEGORY_CONTROLS] = 2;
@@ -93,7 +120,7 @@ void ui::options::init()
 
     category_names[CATEGORY_SOUND] = L"Sound";
     category_pages[CATEGORY_SOUND] = 1;
-    category_draws[CATEGORY_SOUND] = nullptr;
+    category_draws[CATEGORY_SOUND] = &draw_sound;
 
     style.rect_default = {0.0, 0.0, 0.0, 0.5};
     style.rect_hovered = {0.5, 0.5, 0.5, 0.5};
@@ -109,12 +136,12 @@ void ui::options::init()
     globals::dispatcher.sink<KeyboardKeyEvent>().connect<&on_keyboard_key>();
 }
 
-void ui::options::deinit()
+void ui::settings::deinit()
 {
     text.destroy();
 }
 
-void ui::options::render_ui()
+void ui::settings::render_ui()
 {
     int xpos;
     int ypos;
@@ -122,7 +149,7 @@ void ui::options::render_ui()
     const int xstart = globals::window_width / 16 / globals::ui_scale;
     const int ystart = globals::window_height / 16 / globals::ui_scale;
 
-    const int csel_width = 96;
+    const int csel_width = 110;
     const int csel_height = globals::font_16px.get_glyph_height() + 2 * style.rect_text_padding.y;
     const int csel_xstep = csel_width + 8;
     const int csel_ystep = csel_height + 8;
@@ -149,7 +176,9 @@ void ui::options::render_ui()
     ypos += csel_ystep + 8;
 
     for(int i = 0; i < NUM_CATEGORIES; ++i) {
-        text.set(0, category_names[i]);
+        if(i == category_index)
+            text.set(0, fmt::format(L"> {}", category_names[i]));
+        else text.set(0, category_names[i]);
 
         if(ui::imgui::button(xpos, ypos, csel_width, text, globals::font_16px, style)) {
             category_index = i;

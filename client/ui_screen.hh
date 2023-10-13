@@ -10,7 +10,7 @@ namespace ui
 constexpr static const unsigned int SCREEN_NONE = 0U;
 constexpr static const unsigned int SCREEN_MAIN_MENU = 1U;
 constexpr static const unsigned int SCREEN_SERVER_LIST = 2U;
-constexpr static const unsigned int SCREEN_OPTIONS = 3U;
+constexpr static const unsigned int SCREEN_SETTINGS = 3U;
 } // namespace ui
 
 #endif /* CLIENT_UI_SCREEN_HH */

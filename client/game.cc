@@ -11,14 +11,13 @@
 #include <client/game.hh>
 #include <client/gbuffer.hh>
 #include <client/globals.hh>
-#include <client/options.hh>
 #include <client/player_look.hh>
 #include <client/player_move.hh>
 #include <client/shaders.hh>
 #include <client/ui_imgui.hh>
 #include <client/ui_main_menu.hh>
-#include <client/ui_options.hh>
 #include <client/ui_screen.hh>
+#include <client/ui_settings.hh>
 #include <client/ui_server_list.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_atlas.hh>
@@ -27,10 +26,13 @@
 #include <client/voxel_vertex.hh>
 #include <GLFW/glfw3.h>
 #include <shared/chunks.hh>
+#include <shared/config.hh>
 #include <shared/inertial.hh>
 
 static void on_window_resize(const WindowResizeEvent &event)
 {
+    // Reasoning behind scaling only by the screen height:
+    //  YOU CAN LOOK TO THE SIDE OF YOUR MONITOR BUT YOU ABSOLUTELY CANNOT LOOK PHYSICALLY BELOW IT
     globals::ui_scale = cxmath::max(1U, cxmath::floor<unsigned int>(static_cast<double>(event.height) / 240.0));
 
     globals::gbuffer_solid.create(event.width, event.height);
@@ -46,13 +48,13 @@ static void on_window_resize(const WindowResizeEvent &event)
 
 void client_game::init()
 {
-    options::load();
-
     shaders::init();
     VoxelVertex::init();
 
     player_look::init();
     player_move::init();
+
+    camera::init();
 
     voxel_anims::init();
     voxel_mesher::init();
@@ -80,7 +82,7 @@ void client_game::init()
 
     ui::main_menu::init();
     ui::server_list::init();
-    ui::options::init();
+    ui::settings::init();
 
     // We start in the main menu
     globals::ui_screen = ui::SCREEN_MAIN_MENU;
@@ -104,7 +106,7 @@ void client_game::deinit()
     globals::gbuffer_cutout.destroy();
     globals::gbuffer_solid.destroy();
 
-    ui::options::deinit();
+    ui::settings::deinit();
     ui::server_list::deinit();
     ui::main_menu::deinit();
 
@@ -128,8 +130,6 @@ void client_game::deinit()
     // by the time destructor on globals::registry
     // is called, turning shutdown into a segfault
     globals::registry.clear();
-
-    options::save();
 }
 
 void client_game::update()
@@ -150,9 +150,9 @@ void client_game::update_late()
         glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         glfwSetInputMode(globals::window, GLFW_RAW_MOUSE_MOTION, false);
     }
-    else {
+    else if(globals::registry.valid(globals::player)) {
         glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        glfwSetInputMode(globals::window, GLFW_RAW_MOUSE_MOTION, options::controls::mouse_rawinput);
+        glfwSetInputMode(globals::window, GLFW_RAW_MOUSE_MOTION, player_look::raw_input.get_value());
     }
 
     ui::imgui::update_late();
@@ -188,8 +188,8 @@ void client_game::render_ui()
             case ui::SCREEN_SERVER_LIST:
                 ui::server_list::render_ui();
                 break;
-            case ui::SCREEN_OPTIONS:
-                ui::options::render_ui();
+            case ui::SCREEN_SETTINGS:
+                ui::settings::render_ui();
                 break;
         }
     }

@@ -17,6 +17,8 @@ static int cursor_ypos = 0;
 static uint16_t buttons[GLFW_MOUSE_BUTTON_LAST + 1] = {};
 static int scroll_dx = 0;
 static int scroll_dy = 0;
+static uint64_t element_id = 0U;
+static uint64_t focused_id = UINT64_MAX;
 
 static void on_cursor_move(const CursorMoveEvent &event)
 {
@@ -27,14 +29,11 @@ static void on_cursor_move(const CursorMoveEvent &event)
 static void on_mouse_button(const MouseButtonEvent &event)
 {
     if(event.action == GLFW_PRESS) {
-        // Non-zero counters are increased
-        // every frame in ui::imgui::update_late
-        buttons[event.button] = 1;
+        buttons[event.button] = 1U;
     }
     else {
-        // Zero values are treated as if the
-        // counter was stopped and wasn't supposed to increase
-        buttons[event.button] = 0;
+        buttons[event.button] = 0U;
+        focused_id = UINT64_MAX;
     }
 }
 
@@ -56,11 +55,13 @@ void ui::imgui::update_late()
     for(size_t i = 0; i <= GLFW_MOUSE_BUTTON_LAST; ++i) {
         if(!buttons[i])
             continue;
-        buttons[i] += 1;
+        buttons[i] += 1U;
     }
 
     scroll_dx = 0;
     scroll_dy = 0;
+
+    element_id = 0U;
 }
 
 void ui::imgui::label(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const ui::Style &style, unsigned int scale)
@@ -77,6 +78,8 @@ void ui::imgui::label(int xpos, int ypos, const canvas::Text &text, const canvas
 
     canvas::draw_text(sx, sy, text, font, style.text_shadow, style.text_background, fscale);
     canvas::draw_text(tx, ty, text, font, style.text_default, style.text_background, fscale);
+
+    element_id += 1U;
 }
 
 bool ui::imgui::button(int xpos, int ypos, int width, const canvas::Text &text, const canvas::Font &font, const ui::Style &style)
@@ -100,12 +103,21 @@ bool ui::imgui::button(int xpos, int ypos, int width, const canvas::Text &text, 
 
     const int rxx = rx + rw;
     const int ryy = ry + rh;
-    const bool hover = ((cursor_xpos >= rx) && (cursor_xpos < rxx) && (cursor_ypos >= ry) && (cursor_ypos < ryy));
+    const bool intersect = (cursor_xpos >= rx && cursor_xpos < rxx && cursor_ypos >= ry && cursor_ypos < ryy);
+    const bool hovered = (intersect && focused_id == UINT64_MAX);
+
+    if(intersect && buttons[GLFW_MOUSE_BUTTON_LEFT] == 1U)
+        focused_id = element_id;
+    const bool focused = (element_id == focused_id);
 
     vector4d_t rect_col = {};
     vector4d_t text_col = {};
 
-    if(hover) {
+    if(focused) {
+        rect_col = style.rect_pressed;
+        text_col = style.text_pressed;
+    }
+    else if(hovered) {
         if(buttons[GLFW_MOUSE_BUTTON_LEFT]) {
             rect_col = style.rect_pressed;
             text_col = style.text_pressed;
@@ -124,8 +136,10 @@ bool ui::imgui::button(int xpos, int ypos, int width, const canvas::Text &text, 
     canvas::draw_text(sx, sy, text, font, style.text_shadow, COL_TRANSPARENT, globals::ui_scale);
     canvas::draw_text(tx, ty, text, font, text_col, COL_TRANSPARENT, globals::ui_scale);
 
-    if(hover)
-        return buttons[GLFW_MOUSE_BUTTON_LEFT] == 1;
+    element_id += 1U;
+
+    if(focused || hovered)
+        return buttons[GLFW_MOUSE_BUTTON_LEFT] == 1U;
     return false;
 }
 
@@ -141,6 +155,8 @@ bool ui::imgui::slider(int xpos, int ypos, int width, double &value, const canva
 
 bool ui::imgui::slider(int xpos, int ypos, int width, double &value, const canvas::Text &text, const canvas::Font &font, const Style &style, double min, double max, double step)
 {
+    double new_value = value;
+
     const int iscale = globals::ui_scale;
 
     const int px = iscale * style.rect_text_padding.x;
@@ -163,32 +179,38 @@ bool ui::imgui::slider(int xpos, int ypos, int width, double &value, const canva
 
     const int rxx = rx + rw;
     const int ryy = ry + rh;
-    const bool hover = ((cursor_xpos >= rx) && (cursor_xpos < rxx) && (cursor_ypos >= ry) && (cursor_ypos < ryy));
+    const bool intersect = (cursor_xpos >= rx && cursor_xpos < rxx && cursor_ypos >= ry && cursor_ypos < ryy);
+    const bool hovered = (intersect && focused_id == UINT64_MAX);
 
-    double new_value = value;
+    if(intersect && buttons[GLFW_MOUSE_BUTTON_LEFT] == 1U)
+        focused_id = element_id;
+    const bool focused = (element_id == focused_id);
 
-    if(hover) {
-        if(buttons[GLFW_MOUSE_BUTTON_LEFT]) {
-            const auto lcur = static_cast<double>(cursor_xpos - rx - (lw / 2));
-            const auto lmax = static_cast<double>(rw - lw);
-            new_value = lcur / lmax * (max - min) + min;
-        }
-        else if(scroll_dx || scroll_dy) {
-            const auto lstep = step ? step : 0.01;
-            new_value += lstep * scroll_dx;
-            new_value += lstep * scroll_dy;
-        }
-
-        if(step != 0.0)
-            new_value = round(new_value / step) * step;
-        new_value = cxmath::clamp(new_value, min, max);
+    if(focused || (hovered && buttons[GLFW_MOUSE_BUTTON_LEFT])) {
+        const auto lcur = static_cast<double>(cursor_xpos - rx - (lw / 2));
+        const auto lmax = static_cast<double>(rw - lw);
+        new_value = lcur / lmax * (max - min) + min;
     }
+    else if(hovered && (scroll_dx || scroll_dy)) {
+        const auto lstep = step ? step : 0.01;
+        new_value += lstep * scroll_dx;
+        new_value += lstep * scroll_dy;
+    }
+
+    if(step != 0.0)
+        new_value = round(new_value / step) * step;
+    new_value = cxmath::clamp(new_value, min, max);
 
     vector4d_t rect_col = {};
     vector4d_t text_col = {};
     vector4d_t line_col = {};
 
-    if(hover) {
+    if(focused) {
+        rect_col = style.rect_pressed;
+        text_col = style.text_pressed;
+        line_col = style.slider_pressed;
+    }
+    else if(hovered) {
         if(buttons[GLFW_MOUSE_BUTTON_LEFT]) {
             rect_col = style.rect_pressed;
             text_col = style.text_pressed;
@@ -210,6 +232,8 @@ bool ui::imgui::slider(int xpos, int ypos, int width, double &value, const canva
     canvas::draw_rect(lx, ry, lw, rh, line_col);
     canvas::draw_text(sx, sy, text, font, style.text_shadow, COL_TRANSPARENT, globals::ui_scale);
     canvas::draw_text(tx, ty, text, font, text_col, COL_TRANSPARENT, globals::ui_scale);
+
+    element_id += 1;
 
     if(new_value != value) {
         value = new_value;

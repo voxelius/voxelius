@@ -5,6 +5,18 @@
 #ifndef CLIENT_PLAYER_LOOK_HH
 #define CLIENT_PLAYER_LOOK_HH
 
+namespace config
+{
+class Boolean;
+class Number;
+} // namespace config
+
+namespace player_look
+{
+extern config::Boolean raw_input;
+extern config::Number sensitivity;
+} // namespace player_look
+
 namespace player_look
 {
 void init();

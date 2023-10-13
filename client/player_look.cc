@@ -4,9 +4,9 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/event/cursor_move.hh>
 #include <client/globals.hh>
-#include <client/options.hh>
 #include <client/player_look.hh>
 #include <shared/angle.hh>
+#include <shared/config.hh>
 #include <shared/entity/head.hh>
 
 constexpr static const double PITCH_MIN = -1.0 * cxmath::radians(89.9);
@@ -15,10 +15,13 @@ constexpr static const double PITCH_MAX = +1.0 * cxmath::radians(89.9);
 static double previous_cx = 0.0;
 static double previous_cy = 0.0;
 
+config::Boolean player_look::raw_input = config::Boolean{true};
+config::Number player_look::sensitivity = config::Number{0.25};
+
 static void on_cursor_move(const CursorMoveEvent &event)
 {
     if(!globals::ui_screen && globals::registry.valid(globals::player)) {
-        const double sensitivity = options::controls::mouse_sensitivity;
+        const double sensitivity = player_look::sensitivity.get_value();
         const double dx = event.xpos - previous_cx;
         const double dy = event.ypos - previous_cy;
 
@@ -37,5 +40,7 @@ void player_look::init()
 {
     previous_cx = globals::window_width / 2.0;
     previous_cy = globals::window_height / 2.0;
+    config::add_variable("player_look.raw_input", player_look::raw_input);
+    config::add_variable("player_look.sensitivity", player_look::sensitivity);
     globals::dispatcher.sink<CursorMoveEvent>().connect<&on_cursor_move>();
 }

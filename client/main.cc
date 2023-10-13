@@ -13,6 +13,7 @@
 #include <client/main.hh>
 #include <glad/gl.h>
 #include <shared/cmdline.hh>
+#include <shared/config.hh>
 #include <shared/epoch.hh>
 #include <spdlog/spdlog.h>
 
@@ -101,6 +102,9 @@ void client::main()
         std::terminate();
     }
 
+    // The UI is scaled against a spherical monitor in vacuum
+    // with the height of 240 pixels. The closest legal (VGA)
+    // resolution we can get with that height is the crusty 320x240
     glfwSetWindowSizeLimits(globals::window, 320, 240, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
     glfwSetFramebufferSizeCallback(globals::window, &on_framebuffer_size);
@@ -155,6 +159,9 @@ void client::main()
     on_framebuffer_size(globals::window, wwidth, wheight);
 
     client_game::init_late();
+
+    config::load_file("client.conf");
+    config::load_cmdline();
 
     uint64_t last_curtime = globals::curtime;
 
@@ -214,4 +221,6 @@ void client::main()
 
     glfwDestroyWindow(globals::window);
     glfwTerminate();
+
+    config::save_file("client.conf");
 }

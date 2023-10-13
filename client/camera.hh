@@ -7,8 +7,20 @@
 #include <entt/entity/entity.hpp>
 #include <shared/coord.hh>
 
+namespace config
+{
+class Number;
+} // namespace config
+
 namespace camera
 {
+extern config::Number fov;
+extern config::Number view_distance;
+} // namespace camera
+
+namespace camera
+{
+void init();
 void update();
 const vector3d_t &get_position();
 const vector3d_t &get_euler_anlgles();

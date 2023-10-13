@@ -54,12 +54,12 @@ void ui::main_menu::render_ui()
     int xpos;
     int ypos;
 
-    const int xstart = globals::window_width / 16 / globals::ui_scale;
-    const int ystart = globals::window_height / 16 / globals::ui_scale;
-
     const int btn_width = 196;
     const int btn_height = globals::font_16px.get_glyph_height() + 2 * style.rect_text_padding.y;
     const int btn_ystep = btn_height + 8;
+
+    const int xstart = globals::window_width / 16 / globals::ui_scale;
+    const int ystart = globals::window_height / 16 / globals::ui_scale;
 
     xpos = xstart;
     ypos = ystart;
@@ -83,9 +83,9 @@ void ui::main_menu::render_ui()
         globals::ui_screen = ui::SCREEN_SERVER_LIST;
     ypos += btn_ystep;
 
-    text.set(0, L"Options");
+    text.set(0, L"Settings");
     if(ui::imgui::button(xpos, ypos, btn_width, text, globals::font_16px, style))
-        globals::ui_screen = ui::SCREEN_OPTIONS;
+        globals::ui_screen = ui::SCREEN_SETTINGS;
     ypos += btn_ystep;
 
     text.set(0, L"Quit Game");

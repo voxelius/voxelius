@@ -4,10 +4,13 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/camera.hh>
 #include <client/globals.hh>
-#include <client/options.hh>
+#include <shared/config.hh>
 #include <shared/entity/head.hh>
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
+
+config::Number camera::fov = config::Number{75.0};
+config::Number camera::view_distance = config::Number{16};
 
 static vector3d_t cam_position = {};
 static vector3d_t cam_euler_angles = {};
@@ -16,17 +19,23 @@ static vector3f_t cam_chunk_local = {};
 static chunk_pos_t cam_chunk_pos = {};
 static matrix4x4f_t cam_matrix = {};
 
+void camera::init()
+{
+    config::add_variable("camera.fov", camera::fov);
+    config::add_variable("camera.view_distance", camera::view_distance);
+}
+
 void camera::update()
 {
-    const double fov = options::graphics::camera_fov;
-    const double z_max = options::graphics::view_distance * CHUNK_SIZE;
+    const double fov = cxmath::radians(camera::fov.get_value());
+    const double zfar = cxmath::floor<int>(camera::view_distance.get_value()) * CHUNK_SIZE;
 
     cam_position = vector3d_t{};
     cam_euler_angles = vector3d_t{};
     cam_direction = vector3d_t{};
     cam_chunk_local = vector3f_t{};
     cam_chunk_pos = chunk_pos_t{};
-    cam_matrix = glm::perspective(cxmath::radians(fov), globals::window_aspect, 0.01, z_max);
+    cam_matrix = glm::perspective(fov, globals::window_aspect, 0.01, zfar);
 
     if(globals::registry.valid(globals::player)) {
         const auto &head = globals::registry.get<HeadComponent>(globals::player);

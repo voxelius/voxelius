@@ -5,11 +5,11 @@
 #ifndef CLIENT_UI_OPTIONS_HH
 #define CLIENT_UI_OPTIONS_HH
 
-namespace ui::options
+namespace ui::settings
 {
 void init();
 void deinit();
 void render_ui();
-} // namespace ui::options
+} // namespace ui::settings
 
 #endif /* CLIENT_UI_OPTIONS_HH */
