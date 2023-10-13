@@ -102,8 +102,8 @@ bool ui::imgui::button(int xpos, int ypos, int width, const canvas::Text &text, 
     const int ryy = ry + rh;
     const bool hover = ((cursor_xpos >= rx) && (cursor_xpos < rxx) && (cursor_ypos >= ry) && (cursor_ypos < ryy));
 
-    vector4_t rect_col = {};
-    vector4_t text_col = {};
+    vector4d_t rect_col = {};
+    vector4d_t text_col = {};
 
     if(hover) {
         if(buttons[GLFW_MOUSE_BUTTON_LEFT]) {
@@ -184,9 +184,9 @@ bool ui::imgui::slider(int xpos, int ypos, int width, double &value, const canva
         new_value = cxmath::clamp(new_value, min, max);
     }
 
-    vector4_t rect_col = {};
-    vector4_t text_col = {};
-    vector4_t line_col = {};
+    vector4d_t rect_col = {};
+    vector4d_t text_col = {};
+    vector4d_t line_col = {};
 
     if(hover) {
         if(buttons[GLFW_MOUSE_BUTTON_LEFT]) {

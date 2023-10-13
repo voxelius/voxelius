@@ -7,7 +7,7 @@
 #include <shared/types.hh>
 
 struct VelocityComponent final {
-    vector3_t value {};
+    vector3d_t value {};
 };
 
 #endif /* SHARED_ENTITY_VELOCITY_HH */

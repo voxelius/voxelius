@@ -7,7 +7,7 @@
 #include <shared/types.hh>
 
 struct HeadComponent final {
-    vector2_t angles {};
+    vector2d_t angles {};
 };
 
 #endif /* SHARED_ENTITY_HEAD_HH */

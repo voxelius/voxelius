@@ -84,7 +84,7 @@ void canvas::draw_rect(int xpos, int ypos, int width, int height)
     canvas::draw_rect(xpos, ypos, width, height, COL_WHITE);
 }
 
-void canvas::draw_rect(int xpos, int ypos, int width, int height, const vector4_t &color)
+void canvas::draw_rect(int xpos, int ypos, int width, int height, const vector4d_t &color)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = color;
@@ -140,7 +140,7 @@ void canvas::draw_rect(int xpos, int ypos, int width, int height, const glxx::Te
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::draw_rect(int xpos, int ypos, int width, int height, const vector4_t &color, const glxx::Texture2D &texture)
+void canvas::draw_rect(int xpos, int ypos, int width, int height, const vector4d_t &color, const glxx::Texture2D &texture)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = color;
@@ -170,7 +170,7 @@ void canvas::draw_rect(int xpos, int ypos, int width, int height, const vector4_
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::draw_rect_h(int xpos, int ypos, int width, int height, const vector4_t &colx, const vector4_t &coly)
+void canvas::draw_rect_h(int xpos, int ypos, int width, int height, const vector4d_t &colx, const vector4d_t &coly)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = colx;
@@ -196,7 +196,7 @@ void canvas::draw_rect_h(int xpos, int ypos, int width, int height, const vector
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::draw_rect_v(int xpos, int ypos, int width, int height, const vector4_t &colx, const vector4_t &coly)
+void canvas::draw_rect_v(int xpos, int ypos, int width, int height, const vector4d_t &colx, const vector4d_t &coly)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = colx;
@@ -232,22 +232,22 @@ void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canva
     canvas::draw_text(xpos, ypos, text, font, COL_WHITE, COL_TRANSPARENT, scale);
 }
 
-void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4_t &fg)
+void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4d_t &fg)
 {
     canvas::draw_text(xpos, ypos, text, font, fg, COL_TRANSPARENT, 1U);
 }
 
-void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4_t &fg, unsigned int scale)
+void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4d_t &fg, unsigned int scale)
 {
     canvas::draw_text(xpos, ypos, text, font, fg, COL_TRANSPARENT, scale);
 }
 
-void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4_t &fg, const vector4_t &bg)
+void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4d_t &fg, const vector4d_t &bg)
 {
     canvas::draw_text(xpos, ypos, text, font, fg, bg, 1U);
 }
 
-void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4_t &fg, const vector4_t &bg, unsigned int scale)
+void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4d_t &fg, const vector4d_t &bg, unsigned int scale)
 {
     Canvas_UBO uniforms = {};
     uniforms.col_ul = fg;

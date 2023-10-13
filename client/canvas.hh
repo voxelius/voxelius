@@ -19,18 +19,18 @@ void init();
 void deinit();
 
 void draw_rect(int xpos, int ypos, int width, int height);
-void draw_rect(int xpos, int ypos, int width, int height, const vector4_t &color);
+void draw_rect(int xpos, int ypos, int width, int height, const vector4d_t &color);
 void draw_rect(int xpos, int ypos, int width, int height, const glxx::Texture2D &texture);
-void draw_rect(int xpos, int ypos, int width, int height, const vector4_t &color, const glxx::Texture2D &texture);
-void draw_rect_h(int xpos, int ypos, int width, int height, const vector4_t &colx, const vector4_t &coly);
-void draw_rect_v(int xpos, int ypos, int width, int height, const vector4_t &colx, const vector4_t &coly);
+void draw_rect(int xpos, int ypos, int width, int height, const vector4d_t &color, const glxx::Texture2D &texture);
+void draw_rect_h(int xpos, int ypos, int width, int height, const vector4d_t &colx, const vector4d_t &coly);
+void draw_rect_v(int xpos, int ypos, int width, int height, const vector4d_t &colx, const vector4d_t &coly);
 
 void draw_text(int xpos, int ypos, const Text &text, const Font &font);
 void draw_text(int xpos, int ypos, const Text &text, const Font &font, unsigned int scale);
-void draw_text(int xpos, int ypos, const Text &text, const Font &font, const vector4_t &fg);
-void draw_text(int xpos, int ypos, const Text &text, const Font &font, const vector4_t &fg, unsigned int scale);
-void draw_text(int xpos, int ypos, const Text &text, const Font &font, const vector4_t &fg, const vector4_t &bg);
-void draw_text(int xpos, int ypos, const Text &text, const Font &font, const vector4_t &fg, const vector4_t &bg, unsigned int scale);
+void draw_text(int xpos, int ypos, const Text &text, const Font &font, const vector4d_t &fg);
+void draw_text(int xpos, int ypos, const Text &text, const Font &font, const vector4d_t &fg, unsigned int scale);
+void draw_text(int xpos, int ypos, const Text &text, const Font &font, const vector4d_t &fg, const vector4d_t &bg);
+void draw_text(int xpos, int ypos, const Text &text, const Font &font, const vector4d_t &fg, const vector4d_t &bg, unsigned int scale);
 } // namespace canvas
 
 #endif /* CLIENT_CANVAS_HH */

@@ -10,9 +10,9 @@
 namespace camera
 {
 void update();
-const vector3_t &get_position();
-const vector3_t &get_euler_anlgles();
-const vector3_t &get_direction();
+const vector3d_t &get_position();
+const vector3d_t &get_euler_anlgles();
+const vector3d_t &get_direction();
 const vector3f_t &get_chunk_local();
 const chunk_pos_t &get_chunk_pos();
 const matrix4x4f_t &get_matrix();

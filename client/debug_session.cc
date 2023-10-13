@@ -28,7 +28,7 @@ constexpr static const int64_t SURFACE = 0;
 
 static voxel_t voxel_at(const voxel_pos_t &vpos)
 {
-    int64_t surf = SURFACE + 8.0 * glm::simplex(vector2_t{vpos.x, vpos.z} / 48.0);
+    int64_t surf = SURFACE + 8.0 * glm::simplex(vector2d_t{vpos.x, vpos.z} / 48.0);
     if(vpos.y <= surf - 8)
         return make_voxel(STONE, NULL_VOXEL_STATE);
     if(vpos.y <= surf - 1)

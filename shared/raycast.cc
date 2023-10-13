@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <shared/raycast.hh>
 
-bool raycast::dda(RayDDA &out, const vector3_t &start, const vector3_t &direction, double max_distance)
+bool raycast::dda(RayDDA &out, const vector3d_t &start, const vector3d_t &direction, double max_distance)
 {
     Chunk *chunk = nullptr;
 

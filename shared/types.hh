@@ -33,24 +33,24 @@ using vector2u_t = glm::vec<2, uint32_t, glm::packed_highp>;
 using vector3u_t = glm::vec<3, uint32_t, glm::packed_highp>;
 using vector4u_t = glm::vec<4, uint32_t, glm::packed_highp>;
 
-using quaternion_t = glm::qua<double, glm::packed_highp>;
-using vector2_t = glm::vec<2, double, glm::packed_highp>;
-using vector3_t = glm::vec<3, double, glm::packed_highp>;
-using vector4_t = glm::vec<4, double, glm::packed_highp>;
+using quaterniond_t = glm::qua<double, glm::packed_highp>;
+using vector2d_t = glm::vec<2, double, glm::packed_highp>;
+using vector3d_t = glm::vec<3, double, glm::packed_highp>;
+using vector4d_t = glm::vec<4, double, glm::packed_highp>;
 
-constexpr static const vector3_t DIR_FORWARD = vector3_t{0.0, 0.0, -1.0};
-constexpr static const vector3_t DIR_RIGHT = vector3_t{1.0, 0.0, 0.0};
-constexpr static const vector3_t DIR_UP = vector3_t{0.0, 1.0, 0.0};
+constexpr static const vector3d_t DIR_FORWARD = vector3d_t{0.0, 0.0, -1.0};
+constexpr static const vector3d_t DIR_RIGHT = vector3d_t{1.0, 0.0, 0.0};
+constexpr static const vector3d_t DIR_UP = vector3d_t{0.0, 1.0, 0.0};
 
 constexpr static const vector3f_t FDIR_FORWARD = vector3f_t{DIR_FORWARD};
 constexpr static const vector3f_t FDIR_RIGHT = vector3f_t{DIR_RIGHT};
 constexpr static const vector3f_t FDIR_UP = vector3f_t{DIR_UP};
 
-constexpr static const vector3_t HDIR_NORTH = vector3_t{0.0, 0.0, -1.0};
-constexpr static const vector3_t HDIR_SOUTH = vector3_t{0.0, 0.0, +1.0};
-constexpr static const vector3_t HDIR_EAST = vector3_t{+1.0, 0.0, 0.0};
-constexpr static const vector3_t HDIR_WEST = vector3_t{-1.0, 0.0, 0.0};
-constexpr static const vector3_t HDIR_UP = vector3_t{0.0, +1.0, 0.0};
-constexpr static const vector3_t HDIR_DN = vector3_t{0.0, -1.0, 0.0};
+constexpr static const vector3d_t HDIR_NORTH = vector3d_t{0.0, 0.0, -1.0};
+constexpr static const vector3d_t HDIR_SOUTH = vector3d_t{0.0, 0.0, +1.0};
+constexpr static const vector3d_t HDIR_EAST = vector3d_t{+1.0, 0.0, 0.0};
+constexpr static const vector3d_t HDIR_WEST = vector3d_t{-1.0, 0.0, 0.0};
+constexpr static const vector3d_t HDIR_UP = vector3d_t{0.0, +1.0, 0.0};
+constexpr static const vector3d_t HDIR_DN = vector3d_t{0.0, -1.0, 0.0};
 
 #endif/* SHARED_TYPES_HH */

@@ -9,20 +9,20 @@
 namespace ui
 {
 struct Style final {
-    vector4_t rect_default {COL_TRANSPARENT};
-    vector4_t rect_hovered {COL_TRANSPARENT};
-    vector4_t rect_pressed {COL_TRANSPARENT};
+    vector4d_t rect_default {COL_TRANSPARENT};
+    vector4d_t rect_hovered {COL_TRANSPARENT};
+    vector4d_t rect_pressed {COL_TRANSPARENT};
     vector2i_t rect_text_padding {0, 0};
 
-    vector4_t text_default {COL_WHITE};
-    vector4_t text_hovered {COL_WHITE};
-    vector4_t text_pressed {COL_WHITE};
-    vector4_t text_shadow {COL_TRANSPARENT};
-    vector4_t text_background {COL_TRANSPARENT};
+    vector4d_t text_default {COL_WHITE};
+    vector4d_t text_hovered {COL_WHITE};
+    vector4d_t text_pressed {COL_WHITE};
+    vector4d_t text_shadow {COL_TRANSPARENT};
+    vector4d_t text_background {COL_TRANSPARENT};
 
-    vector4_t slider_default {COL_LIGHT_GRAY};
-    vector4_t slider_hovered {COL_LIGHT_GRAY};
-    vector4_t slider_pressed {COL_LIGHT_GRAY};
+    vector4d_t slider_default {COL_LIGHT_GRAY};
+    vector4d_t slider_hovered {COL_LIGHT_GRAY};
+    vector4d_t slider_pressed {COL_LIGHT_GRAY};
 };
 
 } // namespace ui

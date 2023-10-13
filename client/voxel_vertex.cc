@@ -47,7 +47,7 @@ constexpr static const char *voxel_vertex_vert = R"glsl(
     }
 )glsl";
 
-VoxelVertex::VoxelVertex(const vector3_t &position, unsigned int shade, const vector3_t &normal, uint16_t toffset, uint16_t tframes, const vector2_t &uv)
+VoxelVertex::VoxelVertex(const vector3d_t &position, unsigned int shade, const vector3d_t &normal, uint16_t toffset, uint16_t tframes, const vector2d_t &uv)
 {
     // vvdat_i[0]: 3x10-bit vertex position
     vvdat_i[0] |= (static_cast<uint32_t>(position.x / 16.0 * 768.0) & 0x3FF) << 22;
