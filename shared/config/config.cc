@@ -5,6 +5,7 @@
 #include <shared/cmdline.hh>
 #include <shared/config/config.hh>
 #include <spdlog/fmt/fmt.h>
+#include <sstream>
 #include <unordered_map>
 
 static std::unordered_map<std::string, config::IVariable *> map = {};
