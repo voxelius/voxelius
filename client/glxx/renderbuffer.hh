@@ -52,4 +52,4 @@ inline void glxx::Renderbuffer::storage(int width, int height, PixelFormat forma
     glNamedRenderbufferStorage(handle, detail::get_pixel_format_gpu(format), width, height);
 }
 
-#endif/* CLIENT_GLXX_RENDERBUFFER_HH */
+#endif /* CLIENT_GLXX_RENDERBUFFER_HH */

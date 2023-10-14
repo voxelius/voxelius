@@ -4,7 +4,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/camera.hh>
 #include <client/entity/voxel_mesh.hh>
-#include <client/gbuffer.hh>
 #include <client/globals.hh>
 #include <client/glxx/program.hh>
 #include <client/glxx/sampler.hh>
@@ -14,25 +13,23 @@
 #include <client/voxel_atlas.hh>
 #include <client/voxel_renderer.hh>
 #include <client/voxel_vertex.hh>
+#include <entt/entity/registry.hpp>
 #include <GLFW/glfw3.h>
-#include <shared/chunks.hh>
+#include <glm/mat4x4.hpp>
 #include <shared/entity/chunk.hh>
+#include <shared/world.hh>
 #include <spdlog/fmt/fmt.h>
 
 struct VoxelRender_UBO final {
-    matrix4x4f_t viewmat {};
-    vector4u_t timings {};
-    vector4f_t chunk {};
+    glm::fmat4x4 viewmat {};
+    glm::uvec4 timings {};
+    glm::fvec4 chunk {};
 };
 
 static glxx::Buffer ubo = {};
 static glxx::Sampler sampler = {};
 static glxx::VertexArray vao = {};
 static glxx::Program program_solid = {};
-
-static std::vector<entt::entity> chunks_solid = {};
-static std::vector<entt::entity> chunks_cutout = {};
-static std::vector<entt::entity> chunks_blend = {};
 
 static void init_program(glxx::Program &prog, const std::string &name)
 {
@@ -73,17 +70,13 @@ void voxel_renderer::init()
 
     VoxelVertex::setup(vao);
 
-    init_program(program_solid, "gbuffer_solid");
-    // init_program(program_cutout, "gbuffer_cutout");
-    // init_program(program_blend, "gbuffer_blend");
+    init_program(program_solid, "voxel_solid");
+    // init_program(program_cutout, "voxel_cutout");
+    // init_program(program_blend, "voxel_blend");
 }
 
 void voxel_renderer::deinit()
 {
-    chunks_blend.clear();
-    chunks_cutout.clear();
-    chunks_solid.clear();
-
     program_solid.destroy();
 
     vao.destroy();
@@ -106,9 +99,6 @@ void voxel_renderer::render()
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    glClearDepthf(1.0);
-
     vao.bind();
 
     voxel_atlas::get().bind(0);
@@ -118,42 +108,21 @@ void voxel_renderer::render()
     VoxelRender_UBO uniforms = {};
     uniforms.viewmat = camera::get_matrix();
     uniforms.timings.x = voxel_anims::frame;
-    ubo.bind_base(GL_UNIFORM_BUFFER, 1);
+    ubo.bind_base(GL_UNIFORM_BUFFER, 0);
 
     voxel_anims::bind_ssbo();
 
-    glViewport(0, 0, globals::window_width, globals::window_height);
-
-    chunks_solid.clear();
-    chunks_cutout.clear();
-    chunks_blend.clear();
-
-    const auto group = globals::registry.group(entt::get<VoxelMeshComponent, ChunkComponent>);
-    for(const auto [entity, mesh, chunk] : group.each()) {
-        if(mesh.meshes[VOXEL_DRAW_SOLID].vertices)
-            chunks_solid.push_back(entity);
-        if(mesh.meshes[VOXEL_DRAW_CUTOUT].vertices)
-            chunks_cutout.push_back(entity);
-        if(mesh.meshes[VOXEL_DRAW_BLEND].vertices)
-            chunks_blend.push_back(entity);
-    }
-
     const auto cam_cpos = camera::get_chunk_pos();
+    const auto group = globals::registry.group(entt::get<VoxelMeshComponent, ChunkComponent>);
 
     program_solid.bind();
-    globals::gbuffer_solid.get_framebuffer().bind();
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    for(const auto entity : chunks_solid) {
-        const auto &chunk = globals::registry.get<ChunkComponent>(entity);
-        const auto &mesh = globals::registry.get<VoxelMeshComponent>(entity);
-        const auto &mref = mesh.meshes[VOXEL_DRAW_SOLID];
-
-        const auto wcpos = coord::to_world(chunk.cpos - cam_cpos);
-        uniforms.chunk = vector4d_t{wcpos.x, wcpos.y, wcpos.z, 0.0};
-        ubo.write(0, sizeof(uniforms), &uniforms);
-
-        vao.set_vertex_buffer(VOXEL_VBO_BINDING, mref.vbo, sizeof(VoxelVertex));
-
-        glDrawArrays(GL_TRIANGLES, 0, mref.vertices);
+    for(const auto [entity, mesh, chunk] : group.each()) {
+        if(mesh.meshes[VOXEL_DRAW_SOLID].vertices) {
+            const auto wcpos = coord::to_world(chunk.cpos - cam_cpos);
+            uniforms.chunk = glm::fvec4{wcpos.x, wcpos.y, wcpos.z, 0.0};
+            ubo.write(0, sizeof(uniforms), &uniforms);
+            vao.set_vertex_buffer(VOXEL_VBO_BINDING, mesh.meshes[VOXEL_DRAW_SOLID].vbo, sizeof(VoxelVertex));
+            glDrawArrays(GL_TRIANGLES, 0, mesh.meshes[VOXEL_DRAW_SOLID].vertices);
+        }
     }
 }

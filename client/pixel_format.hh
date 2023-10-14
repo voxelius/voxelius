@@ -283,4 +283,4 @@ static inline uint32_t get_pixel_format_gpu(PixelFormat format)
 }
 } // namespace detail
 
-#endif/* CLIENT_PIXEL_FORMAT_HH */
+#endif /* CLIENT_PIXEL_FORMAT_HH */

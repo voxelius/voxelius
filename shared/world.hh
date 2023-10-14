@@ -4,30 +4,21 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef SHARED_CHUNKS_HH
 #define SHARED_CHUNKS_HH
-#include <array>
-#include <entt/entity/entity.hpp>
+#include <shared/chunk.hh>
 #include <shared/coord.hh>
-#include <shared/voxel.hh>
 
-using voxel_array_t = std::array<voxel_t, CHUNK_VOLUME>;
-
-struct Chunk final {
-    entt::entity entity {entt::null};
-    voxel_array_t voxels {};
-};
-
-namespace chunks
+namespace world
 {
-Chunk *create(const chunk_pos_t &cpos);
-Chunk *find(const chunk_pos_t &cpos);
-void remove(const chunk_pos_t &cpos);
-void remove_all();
+Chunk *create_chunk(const chunk_pos_t &cpos);
+Chunk *find_chunk(const chunk_pos_t &cpos);
+void remove_chunk(const chunk_pos_t &cpos);
+void remove_all_chunks();
 
 voxel_t get_voxel(const voxel_pos_t &vpos);
 voxel_t get_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos);
 
 void set_voxel(const voxel_pos_t &vpos, voxel_t voxel);
 void set_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos, voxel_t voxel);
-} // namespace chunks
+} // namespace world
 
 #endif /* SHARED_CHUNKS_HH */

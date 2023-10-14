@@ -104,4 +104,4 @@ inline void glxx::VertexArray::unbind()
     glBindVertexArray(0);
 }
 
-#endif/* CLIENT_GLXX_VERTEXARRAY_HH */
+#endif /* CLIENT_GLXX_VERTEXARRAY_HH */

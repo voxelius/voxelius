@@ -4,8 +4,12 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef SHARED_CXMATH_HH
 #define SHARED_CXMATH_HH
-#include <shared/types.hh>
 #include <type_traits>
+#include <stddef.h>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 namespace cxmath
 {
@@ -93,4 +97,4 @@ constexpr static inline const size_t array_size(T(&)[L])
 }
 } // namespace cxmath
 
-#endif/* SHARED_CXMATH_HH */
+#endif /* SHARED_CXMATH_HH */

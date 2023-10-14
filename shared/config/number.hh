@@ -5,7 +5,6 @@
 #ifndef SHARED_CONFIG_NUMBER_HH
 #define SHARED_CONFIG_NUMBER_HH
 #include <shared/config/variable.hh>
-#include <shared/cxmath.hh>
 #include <sstream>
 
 namespace config

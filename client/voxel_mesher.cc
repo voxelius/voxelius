@@ -7,12 +7,15 @@
 #include <client/voxel_atlas.hh>
 #include <client/voxel_mesher.hh>
 #include <client/voxel_vertex.hh>
-#include <shared/chunks.hh>
+#include <entt/entity/registry.hpp>
+#include <entt/signal/dispatcher.hpp>
 #include <shared/entity/chunk.hh>
 #include <shared/event/chunk_create.hh>
 #include <shared/event/chunk_remove.hh>
-#include <shared/event/voxel_set.hh>
+#include <shared/event/chunk_update.hh>
 #include <shared/vdef.hh>
+#include <shared/world.hh>
+#include <spdlog/spdlog.h>
 #include <thread_pool.hpp>
 
 using VoxelMeshBuilder = MeshBuilder<VoxelVertex>;
@@ -73,7 +76,7 @@ static const local_pos_t get_face_direction(voxel_face_t face)
     }
 }
 
-class VoxelMeshWorker final : public mixin::NonCopyable {
+class VoxelMeshWorker final : public NonCopyable {
 public:
     // OPTIMIZATION:
     // Instead of using any thread locking mechanisms to
@@ -101,7 +104,7 @@ public:
 
 void VoxelMeshWorker::preserve_chunk(const chunk_pos_t &cpos)
 {
-    if(const Chunk *chunk = chunks::find(cpos)) {
+    if(const Chunk *chunk = world::find_chunk(cpos)) {
         const auto idx = get_chunk_cache_id(this->cpos, cpos);
         chunks[idx] = Chunk{*chunk};
     }
@@ -220,7 +223,6 @@ void VoxelMeshWorker::process()
                 const unsigned int u = (d + 1U) % 3U;
                 const unsigned int v = (d + 2U) % 3U;
                 const local_pos_t q = get_face_direction(face);
-                const vector3d_t normal = vector3d_t{q.x, q.y, q.z};
 
                 local_pos_t x = {0, 0, 0};
 
@@ -269,7 +271,7 @@ void VoxelMeshWorker::process()
                                 x[u] = i;
                                 x[v] = j;
 
-                                vector3d_t pos = vector3d_t{x};
+                                glm::dvec3 pos = glm::dvec3{x};
 
                                 if(q[d] < 0) {
                                     // Since we increased x[d] before, faces
@@ -279,59 +281,59 @@ void VoxelMeshWorker::process()
                                     pos[d] += static_cast<double>(q[d]);
                                 }
 
-                                vector2d_t uvs[4] = {};
-                                vector2d_t tc = vector2d_t{qw, qh};
+                                glm::dvec2 uvs[4] = {};
+                                glm::dvec2 tc = glm::dvec2{qw, qh};
                                 unsigned int shade = 0U;
 
                                 switch(face) {
                                     case VOXEL_FACE_WEST:
-                                        uvs[0] = vector2d_t{0.0, 0.0};
-                                        uvs[1] = vector2d_t{tc.y, 0.0};
-                                        uvs[2] = vector2d_t{tc.y, tc.x};
-                                        uvs[3] = vector2d_t{0.0, tc.x};
+                                        uvs[0] = glm::dvec2{0.0, 0.0};
+                                        uvs[1] = glm::dvec2{tc.y, 0.0};
+                                        uvs[2] = glm::dvec2{tc.y, tc.x};
+                                        uvs[3] = glm::dvec2{0.0, tc.x};
                                         shade = 1U; // 0.6
                                         break;
                                     case VOXEL_FACE_EAST:
-                                        uvs[0] = vector2d_t{tc.y, 0.0};
-                                        uvs[1] = vector2d_t{tc.y, tc.x};
-                                        uvs[2] = vector2d_t{0.0, tc.x};
-                                        uvs[3] = vector2d_t{0.0, 0.0};
+                                        uvs[0] = glm::dvec2{tc.y, 0.0};
+                                        uvs[1] = glm::dvec2{tc.y, tc.x};
+                                        uvs[2] = glm::dvec2{0.0, tc.x};
+                                        uvs[3] = glm::dvec2{0.0, 0.0};
                                         shade = 1U; // 0.6
                                         break;
                                     case VOXEL_FACE_SOUTH:
-                                        uvs[0] = vector2d_t{0.0, 0.0};
-                                        uvs[1] = vector2d_t{tc.x, 0.0};
-                                        uvs[2] = vector2d_t{tc.x, tc.y};
-                                        uvs[3] = vector2d_t{0.0, tc.y};
+                                        uvs[0] = glm::dvec2{0.0, 0.0};
+                                        uvs[1] = glm::dvec2{tc.x, 0.0};
+                                        uvs[2] = glm::dvec2{tc.x, tc.y};
+                                        uvs[3] = glm::dvec2{0.0, tc.y};
                                         shade = 2U; // 0.8
                                         break;
                                     case VOXEL_FACE_NORTH:
-                                        uvs[0] = vector2d_t{0.0, 0.0};
-                                        uvs[1] = vector2d_t{0.0, tc.y};
-                                        uvs[2] = vector2d_t{tc.x, tc.y};
-                                        uvs[3] = vector2d_t{tc.x, 0.0};
+                                        uvs[0] = glm::dvec2{0.0, 0.0};
+                                        uvs[1] = glm::dvec2{0.0, tc.y};
+                                        uvs[2] = glm::dvec2{tc.x, tc.y};
+                                        uvs[3] = glm::dvec2{tc.x, 0.0};
                                         shade = 2U; // 0.8
                                         break;
                                     case VOXEL_FACE_TOP:
-                                        uvs[0] = vector2d_t{0.0, tc.x};
-                                        uvs[1] = vector2d_t{0.0, 0.0};
-                                        uvs[2] = vector2d_t{tc.y, 0.0};
-                                        uvs[3] = vector2d_t{tc.y, tc.x};
+                                        uvs[0] = glm::dvec2{0.0, tc.x};
+                                        uvs[1] = glm::dvec2{0.0, 0.0};
+                                        uvs[2] = glm::dvec2{tc.y, 0.0};
+                                        uvs[3] = glm::dvec2{tc.y, tc.x};
                                         shade = 3U; // 1.0
                                         break;
                                     case VOXEL_FACE_BOTTOM:
-                                        uvs[0] = vector2d_t{tc.y, tc.x};
-                                        uvs[1] = vector2d_t{0.0, tc.x};
-                                        uvs[2] = vector2d_t{0.0, 0.0};
-                                        uvs[3] = vector2d_t{tc.y, 0.0};
+                                        uvs[0] = glm::dvec2{tc.y, tc.x};
+                                        uvs[1] = glm::dvec2{0.0, tc.x};
+                                        uvs[2] = glm::dvec2{0.0, 0.0};
+                                        uvs[3] = glm::dvec2{tc.y, 0.0};
                                         shade = 0U; // 0.4
                                         break;
                                 }
 
-                                vector3d_t du = {0.0, 0.0, 0.0};
+                                glm::dvec3 du = {0.0, 0.0, 0.0};
                                 du[u] = static_cast<double>(qw);
 
-                                vector3d_t dv = {0.0, 0.0, 0.0};
+                                glm::dvec3 dv = {0.0, 0.0, 0.0};
                                 dv[v] = static_cast<double>(qh);
 
                                 VoxelVertex verts[4] = {};
@@ -339,16 +341,16 @@ void VoxelMeshWorker::process()
                                 const uint16_t tframes = vtex.paths.size();
 
                                 if(q[d] < 0) {
-                                    verts[0] = VoxelVertex{pos,             shade, normal, toffset, tframes, uvs[0]};
-                                    verts[1] = VoxelVertex{pos + dv,        shade, normal, toffset, tframes, uvs[1]};
-                                    verts[2] = VoxelVertex{pos + du + dv,   shade, normal, toffset, tframes, uvs[2]};
-                                    verts[3] = VoxelVertex{pos + du,        shade, normal, toffset, tframes, uvs[3]};
+                                    verts[0] = VoxelVertex{pos,             shade, toffset, tframes, uvs[0]};
+                                    verts[1] = VoxelVertex{pos + dv,        shade, toffset, tframes, uvs[1]};
+                                    verts[2] = VoxelVertex{pos + du + dv,   shade, toffset, tframes, uvs[2]};
+                                    verts[3] = VoxelVertex{pos + du,        shade, toffset, tframes, uvs[3]};
                                 }
                                 else {
-                                    verts[0] = VoxelVertex{pos,             shade, normal, toffset, tframes, uvs[0]};
-                                    verts[1] = VoxelVertex{pos + du,        shade, normal, toffset, tframes, uvs[1]};
-                                    verts[2] = VoxelVertex{pos + dv + du,   shade, normal, toffset, tframes, uvs[2]};
-                                    verts[3] = VoxelVertex{pos + dv,        shade, normal, toffset, tframes, uvs[3]};
+                                    verts[0] = VoxelVertex{pos,             shade, toffset, tframes, uvs[0]};
+                                    verts[1] = VoxelVertex{pos + du,        shade, toffset, tframes, uvs[1]};
+                                    verts[2] = VoxelVertex{pos + dv + du,   shade, toffset, tframes, uvs[2]};
+                                    verts[3] = VoxelVertex{pos + dv,        shade, toffset, tframes, uvs[3]};
                                 }
 
                                 VoxelMeshBuilder &builder = builders[info->draw];
@@ -432,7 +434,7 @@ static void on_chunk_create(const ChunkCreateEvent &event)
     globals::registry.emplace_or_replace<NeedsMeshingComponent>(event.chunk->entity);
 
     for(const auto ncpos : neighbours) {
-        if(const Chunk *nchunk = chunks::find(ncpos)) {
+        if(const Chunk *nchunk = world::find_chunk(ncpos)) {
             globals::registry.emplace_or_replace<NeedsMeshingComponent>(nchunk->entity);
         }
     }
@@ -446,7 +448,7 @@ static void on_chunk_remove(const ChunkRemoveEvent &event)
     it->second->cancelled = true;
 }
 
-static void on_voxel_set(const VoxelSetEvent &event)
+static void on_chunk_update(const ChunkUpdateEvent &event)
 {
     globals::registry.emplace_or_replace<NeedsMeshingComponent>(event.chunk->entity);
 
@@ -474,7 +476,7 @@ static void on_voxel_set(const VoxelSetEvent &event)
     }
 
     for(const chunk_pos_t &ncpos : neighbours) {
-        if(const Chunk *nchunk = chunks::find(ncpos)) {
+        if(const Chunk *nchunk = world::find_chunk(ncpos)) {
             globals::registry.emplace_or_replace<NeedsMeshingComponent>(nchunk->entity);
         }
     }
@@ -484,7 +486,7 @@ void voxel_mesher::init()
 {
     globals::dispatcher.sink<ChunkCreateEvent>().connect<&on_chunk_create>();
     globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
-    globals::dispatcher.sink<VoxelSetEvent>().connect<&on_voxel_set>();
+    globals::dispatcher.sink<ChunkUpdateEvent>().connect<&on_chunk_update>();
 }
 
 void voxel_mesher::deinit()
@@ -503,7 +505,7 @@ void voxel_mesher::update()
     for(auto worker = workers.begin(); worker != workers.end();) {
         if(worker->second->future.valid()) {
             if(worker->second->future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-                if(const Chunk *chunk = chunks::find(worker->second->cpos)) {
+                if(const Chunk *chunk = world::find_chunk(worker->second->cpos)) {
                     worker->second->finalize(chunk->entity);
                     ++num_finalized;
                 }

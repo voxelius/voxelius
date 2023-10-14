@@ -4,13 +4,14 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_GLOBALS_HH
 #define CLIENT_GLOBALS_HH
+#include <entt/entity/entity.hpp>
 #include <shared/globals.hh>
-#include <shared/types.hh>
 
 namespace glxx
 {
 class Framebuffer;
 class Texture2D;
+class Renderbuffer;
 } // namespace glxx
 
 namespace canvas
@@ -19,15 +20,15 @@ class Font;
 } // namespace canvas
 
 struct GLFWwindow;
-class GBuffer;
 class World;
 
 namespace globals
 {
 extern GLFWwindow *window;
-extern int window_width;
-extern int window_height;
-extern double window_aspect;
+
+extern int width;
+extern int height;
+extern double aspect;
 
 extern double frametime;
 extern double frametime_avg;
@@ -36,11 +37,9 @@ extern uint64_t framecount;
 
 extern entt::entity player;
 
-extern GBuffer gbuffer_solid;
-extern GBuffer gbuffer_cutout;
-extern GBuffer gbuffer_blend;
-extern glxx::Framebuffer deferred_fbo;
-extern glxx::Texture2D deferred_color;
+extern glxx::Framebuffer world_fbo;
+extern glxx::Texture2D world_fbo_color;
+extern glxx::Renderbuffer world_fbo_depth;
 
 extern canvas::Font font_8px;
 extern canvas::Font font_16px;

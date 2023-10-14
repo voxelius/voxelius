@@ -6,6 +6,10 @@
 #include <client/event/keyboard_key.hh>
 #include <client/globals.hh>
 #include <client/player_move.hh>
+#include <entt/entity/registry.hpp>
+#include <entt/signal/dispatcher.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <shared/const.hh>
 #include <shared/entity/head.hh>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
@@ -61,8 +65,7 @@ void player_move::init()
 void player_move::update()
 {
     if(globals::registry.valid(globals::player)) {
-        vector3d_t direction = {0.0, 0.0, 0.0};
-
+        glm::dvec3 direction = {0.0, 0.0, 0.0};
         if(!globals::ui_screen) {
             if(move_keys[MOVE_FD])
                 direction += DIR_FORWARD;
@@ -80,6 +83,6 @@ void player_move::update()
 
         const auto &head = globals::registry.get<HeadComponent>(globals::player);
         auto &velocity = globals::registry.get<VelocityComponent>(globals::player);
-        velocity.value = quaterniond_t{vector3d_t{head.angles.x, head.angles.y, 0.0}} * direction * 16.0;
+        velocity.linear = glm::dquat{glm::dvec3{head.angles.x, head.angles.y, 0.0}} * direction * 16.0;
     }
 }

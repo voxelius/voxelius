@@ -151,4 +151,4 @@ inline bool glxx::Texture2DArray::write(int layer, int x, int y, int width, int 
     return false;
 }
 
-#endif/* CLIENT_GLXX_TEXTURE_HH */
+#endif /* CLIENT_GLXX_TEXTURE_HH */

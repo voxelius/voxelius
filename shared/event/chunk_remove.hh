@@ -4,7 +4,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef SHARED_EVENT_CHUNK_REMOVE_HH
 #define SHARED_EVENT_CHUNK_REMOVE_HH
-#include <shared/chunks.hh>
+#include <shared/chunk.hh>
+#include <shared/coord.hh>
 
 struct ChunkRemoveEvent final {
     Chunk *chunk {nullptr};

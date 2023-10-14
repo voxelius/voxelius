@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_VOXEL_ANIMS_HH
 #define CLIENT_VOXEL_ANIMS_HH
-#include <shared/types.hh>
+#include <stdint.h>
 
 namespace voxel_anims
 {
@@ -22,4 +22,4 @@ void construct();
 void bind_ssbo();
 } // namespace voxel_anims
 
-#endif/* CLIENT_VOXEL_ANIMS_HH */
+#endif /* CLIENT_VOXEL_ANIMS_HH */

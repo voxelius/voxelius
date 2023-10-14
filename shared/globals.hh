@@ -4,8 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef SHARED_GLOBALS_HH
 #define SHARED_GLOBALS_HH
-#include <entt/entity/registry.hpp>
-#include <entt/signal/dispatcher.hpp>
+#include <entt/fwd.hpp>
 
 namespace globals
 {

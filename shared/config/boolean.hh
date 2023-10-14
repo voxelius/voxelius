@@ -27,7 +27,7 @@ inline config::Boolean::Boolean(bool default_value)
 
 inline void config::Boolean::from_string(const std::string &sval)
 {
-    value = (atof(sval.c_str()) || !sval.compare("true"));
+    value = atof(sval.c_str()) || !sval.compare("true");
 }
 
 inline const std::string config::Boolean::to_string() const

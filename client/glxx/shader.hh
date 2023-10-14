@@ -116,4 +116,4 @@ inline constexpr uint32_t glxx::Shader::get_stage() const
     return stage;
 }
 
-#endif/* CLIENT_GLXX_SHADER_HH */
+#endif /* CLIENT_GLXX_SHADER_HH */

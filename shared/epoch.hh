@@ -13,4 +13,4 @@ uint64_t milliseconds();
 uint64_t seconds();
 } // namespace epoch
 
-#endif/* SHARED_EPOCH_HH */
+#endif /* SHARED_EPOCH_HH */

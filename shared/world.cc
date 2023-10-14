@@ -2,12 +2,14 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#include <shared/chunks.hh>
+#include <entt/entity/registry.hpp>
+#include <entt/signal/dispatcher.hpp>
 #include <shared/entity/chunk.hh>
 #include <shared/event/chunk_create.hh>
 #include <shared/event/chunk_remove.hh>
-#include <shared/event/voxel_set.hh>
+#include <shared/event/chunk_update.hh>
 #include <shared/globals.hh>
+#include <shared/world.hh>
 #include <unordered_map>
 
 // FIXME: speed! The standard hashmap implementation is
@@ -15,9 +17,9 @@
 // The probable candidate is https://github.com/ktprime/emhash
 std::unordered_map<chunk_pos_t, Chunk *> map {};
 
-Chunk *chunks::create(const chunk_pos_t &cpos)
+Chunk *world::create_chunk(const chunk_pos_t &cpos)
 {
-    Chunk *chunk = chunks::find(cpos);
+    Chunk *chunk = world::find_chunk(cpos);
 
     if(chunk == nullptr) {
         chunk = new Chunk{};
@@ -25,7 +27,7 @@ Chunk *chunks::create(const chunk_pos_t &cpos)
         chunk->voxels.fill(NULL_VOXEL);
 
         auto &comp = globals::registry.emplace<ChunkComponent>(chunk->entity);
-        comp.ptr = chunk;
+        comp.chunk = chunk;
         comp.cpos = cpos;
 
         map.emplace(cpos, chunk);
@@ -39,14 +41,14 @@ Chunk *chunks::create(const chunk_pos_t &cpos)
     return chunk;
 }
 
-Chunk *chunks::find(const chunk_pos_t &cpos)
+Chunk *world::find_chunk(const chunk_pos_t &cpos)
 {
     if(const auto it = map.find(cpos); it != map.cend())
         return it->second;
     return nullptr;
 }
 
-void chunks::remove(const chunk_pos_t &cpos)
+void world::remove_chunk(const chunk_pos_t &cpos)
 {
     if(const auto it = map.find(cpos); it != map.cend()) {
         ChunkCreateEvent event = {};
@@ -62,7 +64,7 @@ void chunks::remove(const chunk_pos_t &cpos)
     }
 }
 
-void chunks::remove_all()
+void world::remove_all_chunks()
 {
     for(auto it = map.begin(); it != map.end();) {
         ChunkCreateEvent event = {};
@@ -80,7 +82,7 @@ void chunks::remove_all()
     map.clear();
 }
 
-voxel_t chunks::get_voxel(const voxel_pos_t &vpos)
+voxel_t world::get_voxel(const voxel_pos_t &vpos)
 {
     const auto cpos = coord::to_chunk(vpos);
     const auto lpos = coord::to_local(vpos);
@@ -90,7 +92,7 @@ voxel_t chunks::get_voxel(const voxel_pos_t &vpos)
     return NULL_VOXEL;
 }
 
-voxel_t chunks::get_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos)
+voxel_t world::get_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos)
 {
     const auto p_vpos = coord::to_voxel(cpos, lpos);
     const auto p_cpos = coord::to_chunk(p_vpos);
@@ -101,16 +103,16 @@ voxel_t chunks::get_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos)
     return NULL_VOXEL;
 }
 
-void chunks::set_voxel(const voxel_pos_t &vpos, voxel_t voxel)
+void world::set_voxel(const voxel_pos_t &vpos, voxel_t voxel)
 {
     const auto cpos = coord::to_chunk(vpos);
     const auto lpos = coord::to_local(vpos);
     const auto index = coord::to_index(lpos);
 
-    Chunk *chunk = chunks::create(cpos);
+    Chunk *chunk = world::create_chunk(cpos);
     chunk->voxels[index] = voxel;
 
-    VoxelSetEvent event = {};
+    ChunkUpdateEvent event = {};
     event.chunk = chunk;
     event.voxel = voxel;
     event.cpos = cpos;
@@ -120,17 +122,17 @@ void chunks::set_voxel(const voxel_pos_t &vpos, voxel_t voxel)
     globals::dispatcher.trigger(event);
 }
 
-void chunks::set_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos, voxel_t voxel)
+void world::set_voxel(const chunk_pos_t &cpos, const local_pos_t &lpos, voxel_t voxel)
 {
     const auto p_vpos = coord::to_voxel(cpos, lpos);
     const auto p_cpos = coord::to_chunk(p_vpos);
     const auto p_lpos = coord::to_local(p_vpos);
     const auto index = coord::to_index(p_lpos);
 
-    Chunk *chunk = chunks::create(p_cpos);
+    Chunk *chunk = world::create_chunk(p_cpos);
     chunk->voxels[index] = voxel;
 
-    VoxelSetEvent event = {};
+    ChunkUpdateEvent event = {};
     event.chunk = chunk;
     event.voxel = voxel;
     event.cpos = p_cpos;

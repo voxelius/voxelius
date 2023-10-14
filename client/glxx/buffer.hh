@@ -75,4 +75,4 @@ inline void glxx::Buffer::read(size_t offset, size_t size, void *data) const
     glGetNamedBufferSubData(handle, static_cast<GLintptr>(offset), static_cast<GLsizeiptr>(size), data);
 }
 
-#endif/* CLIENT_GLXX_BUFFER_HH */
+#endif /* CLIENT_GLXX_BUFFER_HH */

@@ -86,4 +86,4 @@ inline void glxx::Framebuffer::unbind()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-#endif/* CLIENT_GLXX_FRAMEBUFFER_HH */
+#endif /* CLIENT_GLXX_FRAMEBUFFER_HH */

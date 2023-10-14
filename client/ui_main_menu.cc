@@ -11,6 +11,8 @@
 #include <client/ui_imgui.hh>
 #include <client/ui_main_menu.hh>
 #include <client/ui_screen.hh>
+#include <entt/entity/registry.hpp>
+#include <entt/signal/dispatcher.hpp>
 
 static ui::Style style = {};
 static canvas::Text text = {};
@@ -36,7 +38,7 @@ void ui::main_menu::init()
     style.rect_default = {0.0, 0.0, 0.0, 0.5};
     style.rect_hovered = {0.5, 0.5, 0.5, 0.5};
     style.rect_pressed = {0.5, 0.5, 0.5, 1.0};
-    style.rect_text_padding = vector2i_t{4, 2};
+    style.rect_text_padding = glm::ivec2{4, 2};
     style.text_shadow = {0.25, 0.25, 0.25, 0.5};
 
     text.create(64, 1);
@@ -49,7 +51,7 @@ void ui::main_menu::deinit()
     text.destroy();
 }
 
-void ui::main_menu::render_ui()
+void ui::main_menu::render()
 {
     int xpos;
     int ypos;
@@ -58,8 +60,8 @@ void ui::main_menu::render_ui()
     const int btn_height = globals::font_16px.get_glyph_height() + 2 * style.rect_text_padding.y;
     const int btn_ystep = btn_height + 8;
 
-    const int xstart = globals::window_width / 16 / globals::ui_scale;
-    const int ystart = globals::window_height / 16 / globals::ui_scale;
+    const int xstart = globals::width / 16 / globals::ui_scale;
+    const int ystart = globals::height / 16 / globals::ui_scale;
 
     xpos = xstart;
     ypos = ystart;

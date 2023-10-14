@@ -4,7 +4,6 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef SHARED_CONFIG_VARIABLE_HH
 #define SHARED_CONFIG_VARIABLE_HH
-#include <shared/mixin.hh>
 #include <string>
 
 namespace config

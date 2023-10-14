@@ -4,10 +4,11 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef SHARED_ENTITY_CHUNK_HH
 #define SHARED_ENTITY_CHUNK_HH
-#include <shared/chunks.hh>
+#include <shared/chunk.hh>
+#include <shared/coord.hh>
 
 struct ChunkComponent final {
-    Chunk *ptr {nullptr};
+    Chunk *chunk {nullptr};
     chunk_pos_t cpos {};
 };
 

@@ -4,11 +4,11 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef SHARED_ENTITY_TRANSFORM_HH
 #define SHARED_ENTITY_TRANSFORM_HH
-#include <shared/types.hh>
+#include <glm/vec3.hpp>
 
 struct TransformComponent final {
-    vector3d_t position {};
-    vector3d_t angles {};
+    glm::dvec3 angles {};
+    glm::dvec3 position {};
 };
 
 #endif /* SHARED_ENTITY_TRANSFORM_HH */

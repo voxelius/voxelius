@@ -16,4 +16,4 @@ bool has_value(const std::string &key);
 bool get_value(const std::string &key, std::string &value);
 } // namespace cmdline
 
-#endif/* SHARED_CMDLINE_HH */
+#endif /* SHARED_CMDLINE_HH */

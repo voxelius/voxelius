@@ -10,6 +10,7 @@
 #include <client/ui_imgui.hh>
 #include <client/ui_screen.hh>
 #include <client/ui_server_list.hh>
+#include <entt/signal/dispatcher.hpp>
 
 static void on_keyboard_key(const KeyboardKeyEvent &event)
 {
@@ -33,7 +34,7 @@ void ui::server_list::deinit()
 
 }
 
-void ui::server_list::render_ui()
+void ui::server_list::render()
 {
 
 }

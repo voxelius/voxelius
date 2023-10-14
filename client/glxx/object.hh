@@ -7,12 +7,13 @@
 #include <glad/gl.h>
 #include <shared/mixin.hh>
 #include <stddef.h>
+#include <stdint.h>
 #include <utility>
 
 namespace glxx
 {
 template<typename T>
-class Object : public mixin::NonCopyable {
+class Object : public NonCopyable {
 public:
     Object() = default;
     virtual ~Object();
@@ -49,4 +50,4 @@ inline constexpr uint32_t glxx::Object<T>::get() const
     return handle;
 }
 
-#endif/* CLIENT_GLXX_OBJECT_HH */
+#endif /* CLIENT_GLXX_OBJECT_HH */

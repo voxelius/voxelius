@@ -7,9 +7,8 @@
 #include <client/pixel_format.hh>
 #include <shared/mixin.hh>
 #include <shared/vfs.hh>
-#include <string>
 
-class Image final : public mixin::NonCopyable {
+class Image final : public NonCopyable {
 public:
     constexpr static const PixelFormat GRAYSCALE = PixelFormat::R8_UNORM;
     constexpr static const PixelFormat RGBA = PixelFormat::R8G8B8A8_UNORM;
@@ -32,4 +31,4 @@ private:
     void *pixels {nullptr};
 };
 
-#endif/* CLIENT_IMAGE_HH */
+#endif /* CLIENT_IMAGE_HH */

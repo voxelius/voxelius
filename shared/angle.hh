@@ -47,4 +47,4 @@ static inline const glm::vec<L, double, Q> wrap_360_p(const glm::vec<L, double, 
 }
 } // namespace angle
 
-#endif/* SHARED_ANGLE_HH */
+#endif /* SHARED_ANGLE_HH */

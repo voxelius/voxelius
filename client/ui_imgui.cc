@@ -10,6 +10,7 @@
 #include <client/event/mouse_scroll.hh>
 #include <client/globals.hh>
 #include <client/ui_imgui.hh>
+#include <entt/signal/dispatcher.hpp>
 #include <limits>
 
 static int cursor_xpos = 0;
@@ -110,8 +111,8 @@ bool ui::imgui::button(int xpos, int ypos, int width, const canvas::Text &text, 
         focused_id = element_id;
     const bool focused = (element_id == focused_id);
 
-    vector4d_t rect_col = {};
-    vector4d_t text_col = {};
+    glm::dvec4 rect_col = {};
+    glm::dvec4 text_col = {};
 
     if(focused) {
         rect_col = style.rect_pressed;
@@ -133,8 +134,8 @@ bool ui::imgui::button(int xpos, int ypos, int width, const canvas::Text &text, 
     }
 
     canvas::draw_rect(rx, ry, rw, rh, rect_col);
-    canvas::draw_text(sx, sy, text, font, style.text_shadow, COL_TRANSPARENT, globals::ui_scale);
-    canvas::draw_text(tx, ty, text, font, text_col, COL_TRANSPARENT, globals::ui_scale);
+    canvas::draw_text(sx, sy, text, font, style.text_shadow, COLOR_TRANSPARENT, globals::ui_scale);
+    canvas::draw_text(tx, ty, text, font, text_col, COLOR_TRANSPARENT, globals::ui_scale);
 
     element_id += 1U;
 
@@ -201,9 +202,9 @@ bool ui::imgui::slider(int xpos, int ypos, int width, double &value, const canva
         new_value = round(new_value / step) * step;
     new_value = cxmath::clamp(new_value, min, max);
 
-    vector4d_t rect_col = {};
-    vector4d_t text_col = {};
-    vector4d_t line_col = {};
+    glm::dvec4 rect_col = {};
+    glm::dvec4 text_col = {};
+    glm::dvec4 line_col = {};
 
     if(focused) {
         rect_col = style.rect_pressed;
@@ -230,8 +231,8 @@ bool ui::imgui::slider(int xpos, int ypos, int width, double &value, const canva
 
     canvas::draw_rect(rx, ry, rw, rh, rect_col);
     canvas::draw_rect(lx, ry, lw, rh, line_col);
-    canvas::draw_text(sx, sy, text, font, style.text_shadow, COL_TRANSPARENT, globals::ui_scale);
-    canvas::draw_text(tx, ty, text, font, text_col, COL_TRANSPARENT, globals::ui_scale);
+    canvas::draw_text(sx, sy, text, font, style.text_shadow, COLOR_TRANSPARENT, globals::ui_scale);
+    canvas::draw_text(tx, ty, text, font, text_col, COLOR_TRANSPARENT, globals::ui_scale);
 
     element_id += 1;
 

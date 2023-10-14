@@ -5,7 +5,7 @@
 #ifndef CLIENT_CANVAS_HH
 #define CLIENT_CANVAS_HH
 #include <client/glxx/texture.hh>
-#include <shared/types.hh>
+#include <shared/const.hh>
 
 namespace canvas
 {
@@ -17,20 +17,21 @@ namespace canvas
 {
 void init();
 void deinit();
+void prepare();
 
 void draw_rect(int xpos, int ypos, int width, int height);
-void draw_rect(int xpos, int ypos, int width, int height, const vector4d_t &color);
+void draw_rect(int xpos, int ypos, int width, int height, const glm::dvec4 &color);
 void draw_rect(int xpos, int ypos, int width, int height, const glxx::Texture2D &texture);
-void draw_rect(int xpos, int ypos, int width, int height, const vector4d_t &color, const glxx::Texture2D &texture);
-void draw_rect_h(int xpos, int ypos, int width, int height, const vector4d_t &colx, const vector4d_t &coly);
-void draw_rect_v(int xpos, int ypos, int width, int height, const vector4d_t &colx, const vector4d_t &coly);
+void draw_rect(int xpos, int ypos, int width, int height, const glm::dvec4 &color, const glxx::Texture2D &texture);
+void draw_rect_h(int xpos, int ypos, int width, int height, const glm::dvec4 &colx, const glm::dvec4 &coly);
+void draw_rect_v(int xpos, int ypos, int width, int height, const glm::dvec4 &colx, const glm::dvec4 &coly);
 
 void draw_text(int xpos, int ypos, const Text &text, const Font &font);
 void draw_text(int xpos, int ypos, const Text &text, const Font &font, unsigned int scale);
-void draw_text(int xpos, int ypos, const Text &text, const Font &font, const vector4d_t &fg);
-void draw_text(int xpos, int ypos, const Text &text, const Font &font, const vector4d_t &fg, unsigned int scale);
-void draw_text(int xpos, int ypos, const Text &text, const Font &font, const vector4d_t &fg, const vector4d_t &bg);
-void draw_text(int xpos, int ypos, const Text &text, const Font &font, const vector4d_t &fg, const vector4d_t &bg, unsigned int scale);
+void draw_text(int xpos, int ypos, const Text &text, const Font &font, const glm::dvec4 &fg);
+void draw_text(int xpos, int ypos, const Text &text, const Font &font, const glm::dvec4 &fg, unsigned int scale);
+void draw_text(int xpos, int ypos, const Text &text, const Font &font, const glm::dvec4 &fg, const glm::dvec4 &bg);
+void draw_text(int xpos, int ypos, const Text &text, const Font &font, const glm::dvec4 &fg, const glm::dvec4 &bg, unsigned int scale);
 } // namespace canvas
 
 #endif /* CLIENT_CANVAS_HH */

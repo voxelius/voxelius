@@ -12,4 +12,4 @@ void deinit();
 void render();
 } // namespace voxel_renderer
 
-#endif/* CLIENT_VOXEL_RENDERER_HH */
+#endif /* CLIENT_VOXEL_RENDERER_HH */

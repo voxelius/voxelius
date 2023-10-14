@@ -4,10 +4,11 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef SHARED_ENTITY_VELOCITY_HH
 #define SHARED_ENTITY_VELOCITY_HH
-#include <shared/types.hh>
+#include <glm/vec3.hpp>
 
 struct VelocityComponent final {
-    vector3d_t value {};
+    glm::dvec3 angular {};
+    glm::dvec3 linear {};
 };
 
 #endif /* SHARED_ENTITY_VELOCITY_HH */

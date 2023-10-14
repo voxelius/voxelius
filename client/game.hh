@@ -13,7 +13,6 @@ void deinit();
 void update();
 void update_late();
 void render();
-void render_ui();
 } // namespace client_game
 
 #endif /* CLIENT_GAME_HH */

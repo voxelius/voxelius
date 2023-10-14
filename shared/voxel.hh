@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef SHARED_VOXEL_HH
 #define SHARED_VOXEL_HH
-#include <shared/types.hh>
+#include <stdint.h>
 
 using voxel_t = uint32_t;
 

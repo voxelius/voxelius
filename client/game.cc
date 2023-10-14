@@ -5,44 +5,44 @@
 #include <client/camera.hh>
 #include <client/canvas_font.hh>
 #include <client/canvas.hh>
-#include <client/deferred_pass.hh>
 #include <client/event/window_resize.hh>
-#include <client/final_pass.hh>
 #include <client/game.hh>
-#include <client/gbuffer.hh>
 #include <client/globals.hh>
+#include <client/glxx/framebuffer.hh>
 #include <client/player_look.hh>
 #include <client/player_move.hh>
 #include <client/shaders.hh>
 #include <client/ui_imgui.hh>
 #include <client/ui_main_menu.hh>
 #include <client/ui_screen.hh>
-#include <client/ui_settings.hh>
 #include <client/ui_server_list.hh>
+#include <client/ui_settings.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_atlas.hh>
 #include <client/voxel_mesher.hh>
 #include <client/voxel_renderer.hh>
 #include <client/voxel_vertex.hh>
+#include <entt/entity/registry.hpp>
+#include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
-#include <shared/chunks.hh>
 #include <shared/inertial.hh>
+#include <shared/world.hh>
+#include <spdlog/spdlog.h>
 
 static void on_window_resize(const WindowResizeEvent &event)
 {
-    // Reasoning behind scaling only by the screen height:
-    //  YOU CAN LOOK TO THE SIDE OF YOUR MONITOR BUT YOU ABSOLUTELY CANNOT LOOK PHYSICALLY BELOW IT
-    globals::ui_scale = cxmath::max(1U, cxmath::floor<unsigned int>(static_cast<double>(event.height) / 240.0));
+    globals::world_fbo.create();
+    globals::world_fbo_color.create();
+    globals::world_fbo_depth.create();
+    globals::world_fbo_color.storage(event.width, event.height, PixelFormat::R8G8B8A8_UNORM);
+    globals::world_fbo_depth.storage(event.width, event.height, PixelFormat::D24_UNORM);
+    globals::world_fbo.attach(GL_COLOR_ATTACHMENT0, globals::world_fbo_color);
+    globals::world_fbo.attach(GL_DEPTH_ATTACHMENT, globals::world_fbo_depth);
+    globals::world_fbo.set_fragment_targets(GL_COLOR_ATTACHMENT0);
 
-    globals::gbuffer_solid.create(event.width, event.height);
-    globals::gbuffer_cutout.create(event.width, event.height);
-    globals::gbuffer_blend.create(event.width, event.height);
-
-    globals::deferred_color.create();
-    globals::deferred_color.storage(event.width, event.height, PixelFormat::R8G8B8A8_UNORM);
-    globals::deferred_fbo.create();
-    globals::deferred_fbo.attach(GL_COLOR_ATTACHMENT0, globals::deferred_color);
-    globals::deferred_fbo.set_fragment_targets(GL_COLOR_ATTACHMENT0);
+    const double norm = 240.0;
+    const double fheight = event.height;
+    globals::ui_scale = cxmath::max(1U, cxmath::floor<unsigned int>(fheight / norm));
 }
 
 void client_game::init()
@@ -58,9 +58,6 @@ void client_game::init()
     voxel_anims::init();
     voxel_mesher::init();
     voxel_renderer::init();
-
-    deferred_pass::init();
-    final_pass::init();
 
     if(!globals::font_8px.load("/textures/font/cga_8x8.png", 8, 8))
     if(!globals::font_8px.load("/textures/font/msx_8x8.png", 8, 8)) {
@@ -98,12 +95,9 @@ void client_game::deinit()
 {
     voxel_atlas::destroy();
 
-    globals::deferred_fbo.destroy();
-    globals::deferred_color.destroy();
-
-    globals::gbuffer_blend.destroy();
-    globals::gbuffer_cutout.destroy();
-    globals::gbuffer_solid.destroy();
+    globals::world_fbo_depth.destroy();
+    globals::world_fbo_color.destroy();
+    globals::world_fbo.destroy();
 
     ui::settings::deinit();
     ui::server_list::deinit();
@@ -114,14 +108,11 @@ void client_game::deinit()
     globals::font_16px.unload();
     globals::font_8px.unload();
 
-    final_pass::deinit();
-    deferred_pass::deinit();
-
     voxel_renderer::deinit();
     voxel_mesher::deinit();
     voxel_anims::deinit();
 
-    chunks::remove_all();
+    world::remove_all_chunks();
 
     // Certain components' fields
     // have destructors to call OpenGL
@@ -159,36 +150,50 @@ void client_game::update_late()
 
 void client_game::render()
 {
-    voxel_renderer::render();
-    deferred_pass::render();
-    final_pass::render();
-}
+    const int width = globals::width;
+    const int height = globals::height;
+    const int swidth = width / camera::pixel_size.value;
+    const int sheight = height / camera::pixel_size.value;
+    
+    glViewport(0, 0, swidth, sheight);
+    glClearColor(0.000, 0.000, 0.000, 1.000);
+    glBindFramebuffer(GL_FRAMEBUFFER, globals::world_fbo.get());
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-void client_game::render_ui()
-{
+    voxel_renderer::render();
+
+    glViewport(0, 0, globals::width, globals::height);
+    glClearColor(0.000, 0.000, 0.000, 1.000);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glBlitNamedFramebuffer(globals::world_fbo.get(), 0, 0, 0, swidth, sheight, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    canvas::prepare();
+
     if(globals::ui_screen) {
         if(!globals::registry.valid(globals::player)) {
             const double cv = 0.5 + 0.5 * cos(0.25 * globals::curtime * 1.0e-6);
             const double sv = 0.5 + 0.5 * sin(0.25 * globals::curtime * 1.0e-6);
-            const vector4d_t colz = {cv, sv, 1.0, 1.0};
-            const vector4d_t colw = {1.0, cv, sv, 1.0};
-            canvas::draw_rect_v(0, 0, globals::window_width, globals::window_height, colz, colw);
+            const glm::dvec4 colz = {cv, sv, 1.0, 1.0};
+            const glm::dvec4 colw = {1.0, cv, sv, 1.0};
+            canvas::draw_rect_v(0, 0, globals::width, globals::height, colz, colw);
         }
 
-        const vector4d_t spx = {0.0, 0.0, 0.0, 1.0};
-        const vector4d_t spy = {0.0, 0.0, 0.0, 0.0};
-        canvas::draw_rect_h(0, 0, globals::window_width, globals::window_height, spx, spy);
-        canvas::draw_rect_h(0, 0, globals::window_width, globals::window_height, spy, spx);
+        const glm::dvec4 spx = {0.0, 0.0, 0.0, 1.0};
+        const glm::dvec4 spy = {0.0, 0.0, 0.0, 0.0};
+        canvas::draw_rect_h(0, 0, globals::width, globals::height, spx, spy);
+        canvas::draw_rect_h(0, 0, globals::width, globals::height, spy, spx);
 
         switch(globals::ui_screen) {
             case ui::SCREEN_MAIN_MENU:
-                ui::main_menu::render_ui();
+                ui::main_menu::render();
                 break;
             case ui::SCREEN_SERVER_LIST:
-                ui::server_list::render_ui();
+                ui::server_list::render();
                 break;
             case ui::SCREEN_SETTINGS:
-                ui::settings::render_ui();
+                ui::settings::render();
                 break;
         }
     }

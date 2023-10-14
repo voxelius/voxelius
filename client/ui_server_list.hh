@@ -9,7 +9,7 @@ namespace ui::server_list
 {
 void init();
 void deinit();
-void render_ui();
+void render();
 } // namespace ui::server_list
 
 #endif /* CLIENT_UI_SERVER_LIST_HH */

@@ -14,4 +14,4 @@ void add(const std::string &name, uint32_t stage, const std::string &source);
 bool compile(glxx::Shader &shader, const vfs::path_t &path);
 } // namespace shaders
 
-#endif/* CLIENT_SHADERS_HH */
+#endif /* CLIENT_SHADERS_HH */

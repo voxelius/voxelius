@@ -5,8 +5,6 @@
 #ifndef SHARED_MIXIN_HH
 #define SHARED_MIXIN_HH
 
-namespace mixin
-{
 class NonCopyable {
 public:
     NonCopyable() = default;
@@ -19,6 +17,5 @@ class NonMovable {
     NonMovable(NonMovable &&rhs) = delete;
     NonMovable &operator=(NonMovable &&rhs) = delete;
 };
-} // namespace mixin
 
-#endif/* SHARED_MIXIN_HH */
+#endif /* SHARED_MIXIN_HH */

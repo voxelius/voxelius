@@ -15,4 +15,4 @@ uint64_t get(const std::vector<uint8_t> &data);
 uint64_t get(const std::string &data);
 } // namespace crc64
 
-#endif/* SHARED_CRC64_HH */
+#endif /* SHARED_CRC64_HH */

@@ -11,6 +11,7 @@
 #include <client/globals.hh>
 #include <client/image.hh>
 #include <client/main.hh>
+#include <entt/signal/dispatcher.hpp>
 #include <glad/gl.h>
 #include <shared/cmdline.hh>
 #include <shared/config/config.hh>
@@ -29,14 +30,14 @@ static void on_glfw_error(int code, const char *message)
 
 static void on_framebuffer_size(GLFWwindow *window, int width, int height)
 {
-    globals::window_width = width;
-    globals::window_height = height;
-    globals::window_aspect = static_cast<double>(width) / static_cast<double>(height);
+    globals::width = width;
+    globals::height = height;
+    globals::aspect = static_cast<double>(width) / static_cast<double>(height);
 
     WindowResizeEvent event = {};
-    event.width = globals::window_width;
-    event.height = globals::window_height;
-    event.aspect = globals::window_aspect;
+    event.width = globals::width;
+    event.height = globals::height;
+    event.aspect = globals::aspect;
     globals::dispatcher.trigger(event);
 }
 
@@ -124,6 +125,7 @@ void client::main()
     }
 
     glfwMakeContextCurrent(globals::window);
+    glfwSwapInterval(1);
 
     if(!gladLoadGL(&glfwGetProcAddress)) {
         spdlog::critical("glad: failed to load function pointers");
@@ -184,18 +186,7 @@ void client::main()
         // which creates a visual mess with program pipelines.
         glUseProgram(0);
 
-        glDisable(GL_BLEND);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glClearColor(0.0, 0.0, 0.0, 1.0);
-        glClear(GL_COLOR_BUFFER_BIT);
         client_game::render();
-
-        glEnable(GL_BLEND);
-        glBlendEquation(GL_FUNC_ADD);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, globals::window_width, globals::window_height);
-        client_game::render_ui();
 
         glfwSwapBuffers(globals::window);
 

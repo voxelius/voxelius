@@ -9,7 +9,7 @@ namespace ui::main_menu
 {
 void init();
 void deinit();
-void render_ui();
+void render();
 } // namespace ui::main_menu
 
 #endif /* CLIENT_UI_MAIN_MENU_HH */

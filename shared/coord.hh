@@ -4,7 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef SHARED_COORD_HH
 #define SHARED_COORD_HH
-#include <functional>
+#include <glm/common.hpp>
 #include <shared/const.hh>
 
 using chunk_pos_t = glm::vec<3, int32_t>;
@@ -57,7 +57,7 @@ constexpr static inline const voxel_pos_t to_voxel(const chunk_pos_t &cpos, cons
     };
 }
 
-constexpr static inline const voxel_pos_t to_voxel(const vector3d_t &wpos)
+constexpr static inline const voxel_pos_t to_voxel(const glm::dvec3 &wpos)
 {
     return voxel_pos_t {
         static_cast<voxel_pos_t::value_type>(wpos.x),
@@ -66,21 +66,21 @@ constexpr static inline const voxel_pos_t to_voxel(const vector3d_t &wpos)
     };
 }
 
-constexpr static inline const vector3d_t to_world(const chunk_pos_t &cpos)
+constexpr static inline const glm::dvec3 to_world(const chunk_pos_t &cpos)
 {
-    return vector3d_t {
-        static_cast<vector3d_t::value_type>(cpos.x << CHUNK_SIZE_LOG2),
-        static_cast<vector3d_t::value_type>(cpos.y << CHUNK_SIZE_LOG2),
-        static_cast<vector3d_t::value_type>(cpos.z << CHUNK_SIZE_LOG2),
+    return glm::dvec3 {
+        static_cast<glm::dvec3::value_type>(cpos.x << CHUNK_SIZE_LOG2),
+        static_cast<glm::dvec3::value_type>(cpos.y << CHUNK_SIZE_LOG2),
+        static_cast<glm::dvec3::value_type>(cpos.z << CHUNK_SIZE_LOG2),
     };
 }
 
-constexpr static inline const vector3d_t to_world(const voxel_pos_t &vpos)
+constexpr static inline const glm::dvec3 to_world(const voxel_pos_t &vpos)
 {
-    return vector3d_t {
-        static_cast<vector3d_t::value_type>(vpos.x),
-        static_cast<vector3d_t::value_type>(vpos.y),
-        static_cast<vector3d_t::value_type>(vpos.z),
+    return glm::dvec3 {
+        static_cast<glm::dvec3::value_type>(vpos.x),
+        static_cast<glm::dvec3::value_type>(vpos.y),
+        static_cast<glm::dvec3::value_type>(vpos.z),
     };
 }
 

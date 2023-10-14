@@ -10,4 +10,4 @@ namespace server
 void main();
 } // namespace server
 
-#endif/* SERVER_MAIN_HH */
+#endif /* SERVER_MAIN_HH */

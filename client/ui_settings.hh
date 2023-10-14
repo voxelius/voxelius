@@ -9,7 +9,7 @@ namespace ui::settings
 {
 void init();
 void deinit();
-void render_ui();
+void render();
 } // namespace ui::settings
 
 #endif /* CLIENT_UI_OPTIONS_HH */

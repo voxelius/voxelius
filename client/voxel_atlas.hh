@@ -22,4 +22,4 @@ const AtlasTexture *find(const uint32_t texture);
 const glxx::Texture2DArray &get();
 } // namespace voxel_atlas
 
-#endif/* CLIENT_VOXEL_ATLAS_HH */
+#endif /* CLIENT_VOXEL_ATLAS_HH */

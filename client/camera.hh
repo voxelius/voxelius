@@ -11,6 +11,7 @@
 namespace camera
 {
 extern config::Double fov;
+extern config::Integer pixel_size;
 extern config::Integer view_distance;
 } // namespace camera
 
@@ -18,12 +19,12 @@ namespace camera
 {
 void init();
 void update();
-const vector3d_t &get_position();
-const vector3d_t &get_euler_anlgles();
-const vector3d_t &get_direction();
-const vector3f_t &get_chunk_local();
+const glm::dvec3 &get_position();
+const glm::dvec3 &get_euler_anlgles();
+const glm::dvec3 &get_direction();
+const glm::fvec3 &get_chunk_local();
 const chunk_pos_t &get_chunk_pos();
-const matrix4x4f_t &get_matrix();
+const glm::fmat4x4 &get_matrix();
 } // namespace camera
 
 #endif /* CLIENT_CAMERA_HH */

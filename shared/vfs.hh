@@ -59,4 +59,4 @@ bool write_bytes(const path_t &path, const std::vector<uint8_t> &in);
 bool write_string(const path_t &path, const std::string &in);
 } // namespace vfs
 
-#endif/* SHARED_VFS_HH */
+#endif /* SHARED_VFS_HH */

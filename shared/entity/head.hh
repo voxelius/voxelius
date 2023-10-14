@@ -4,10 +4,10 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef SHARED_ENTITY_HEAD_HH
 #define SHARED_ENTITY_HEAD_HH
-#include <shared/types.hh>
+#include <glm/vec2.hpp>
 
 struct HeadComponent final {
-    vector2d_t angles {};
+    glm::dvec2 angles {};
 };
 
 #endif /* SHARED_ENTITY_HEAD_HH */

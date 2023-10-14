@@ -12,4 +12,4 @@ void deinit();
 void update();
 } // namespace voxel_mesher
 
-#endif/* CLIENT_VOXEL_MESHER_HH */
+#endif /* CLIENT_VOXEL_MESHER_HH */

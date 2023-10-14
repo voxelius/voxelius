@@ -141,4 +141,4 @@ inline void glxx::Program::unbind()
     glUseProgram(0);
 }
 
-#endif/* CLIENT_GLXX_PROGRAM_HH */
+#endif /* CLIENT_GLXX_PROGRAM_HH */

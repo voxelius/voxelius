@@ -2,11 +2,12 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#ifndef SHARED_EVENT_VOXEL_SET_HH
-#define SHARED_EVENT_VOXEL_SET_HH
-#include <shared/chunks.hh>
+#ifndef SHARED_EVENT_CHUNK_UPDATE_HH
+#define SHARED_EVENT_CHUNK_UPDATE_HH
+#include <shared/chunk.hh>
+#include <shared/coord.hh>
 
-struct VoxelSetEvent final {
+struct ChunkUpdateEvent final {
     Chunk *chunk {nullptr};
     voxel_t voxel {NULL_VOXEL};
     chunk_pos_t cpos {};
@@ -15,4 +16,4 @@ struct VoxelSetEvent final {
     size_t index {};
 };
 
-#endif /* SHARED_EVENT_VOXEL_SET_HH */
+#endif /* SHARED_EVENT_CHUNK_UPDATE_HH */

@@ -15,7 +15,7 @@ constexpr static const voxel_draw_t VOXEL_DRAW_NODRAW   = 0xFFFF;
 constexpr static const voxel_draw_t VOXEL_DRAW_SOLID    = 0x0000;
 constexpr static const voxel_draw_t VOXEL_DRAW_CUTOUT   = 0x0001;
 constexpr static const voxel_draw_t VOXEL_DRAW_BLEND    = 0x0002;
-constexpr static const size_t NUM_VOXEL_DRAW = 3;
+constexpr static const std::size_t NUM_VOXEL_DRAW = 3;
 
 using voxel_face_t = unsigned short;
 constexpr static const voxel_face_t VOXEL_FACE_NORTH    = 0x0000;
@@ -24,7 +24,7 @@ constexpr static const voxel_face_t VOXEL_FACE_EAST     = 0x0002;
 constexpr static const voxel_face_t VOXEL_FACE_WEST     = 0x0003;
 constexpr static const voxel_face_t VOXEL_FACE_TOP      = 0x0004;
 constexpr static const voxel_face_t VOXEL_FACE_BOTTOM   = 0x0005;
-constexpr static const size_t NUM_VOXEL_FACE = 6;
+constexpr static const std::size_t NUM_VOXEL_FACE = 6;
 
 struct VoxelTexture final {
     std::vector<vfs::path_t> paths {};

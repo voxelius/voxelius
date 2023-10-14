@@ -2,9 +2,11 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#include <glm/geometric.hpp>
 #include <shared/raycast.hh>
+#include <shared/world.hh>
 
-bool raycast::dda(RayDDA &out, const vector3d_t &start, const vector3d_t &direction, double max_distance)
+bool raycast::dda(RayDDA &out, const glm::dvec3 &start, const glm::dvec3 &direction, double max_distance)
 {
     Chunk *chunk = nullptr;
 
@@ -32,7 +34,7 @@ bool raycast::dda(RayDDA &out, const vector3d_t &start, const vector3d_t &direct
     }
 
     out.cpos = coord::to_chunk(out.vpos);
-    chunk = chunks::find(out.cpos);
+    chunk = world::find_chunk(out.cpos);
     out.voxel = NULL_VOXEL_ID;
 
     while(out.distance < max_distance) {
@@ -59,7 +61,7 @@ bool raycast::dda(RayDDA &out, const vector3d_t &start, const vector3d_t &direct
 
         const auto ncpos = coord::to_chunk(out.vpos);
         if(ncpos != out.cpos) {
-            chunk = chunks::find(ncpos);
+            chunk = world::find_chunk(ncpos);
             out.cpos = ncpos;
         }
 

@@ -3,10 +3,10 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/shaders.hh>
-#include <cstdio> // std::sscanf
 #include <shared/cmdline.hh>
 #include <spdlog/spdlog.h>
 #include <sstream>
+#include <stdio.h>
 #include <unordered_map>
 
 using module_map_t = std::unordered_map<std::string, std::string>;
@@ -125,7 +125,7 @@ bool shaders::compile(glxx::Shader &shader, const vfs::path_t &path)
     while(vfs::read_line(file, line)) {
         char modname[128] = {};
 
-        if(std::sscanf(line.c_str(), " # pragma import %127[^, \"\t\r\n]", modname) == 1) {
+        if(sscanf(line.c_str(), " # pragma import %127[^, \"\t\r\n]", modname) == 1) {
             if(const module_map_t *map = get_map(shader.get_stage())) {
                 if(const auto it = map->find(modname); it != map->cend()) {
                     oss << fmt::format("/* begin module {} */", modname) << std::endl;

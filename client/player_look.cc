@@ -5,6 +5,8 @@
 #include <client/event/cursor_move.hh>
 #include <client/globals.hh>
 #include <client/player_look.hh>
+#include <entt/entity/registry.hpp>
+#include <entt/signal/dispatcher.hpp>
 #include <shared/angle.hh>
 #include <shared/config/config.hh>
 #include <shared/entity/head.hh>
@@ -37,9 +39,11 @@ static void on_cursor_move(const CursorMoveEvent &event)
 
 void player_look::init()
 {
-    previous_cx = globals::window_width / 2.0;
-    previous_cy = globals::window_height / 2.0;
     config::add("player_look.raw_input", player_look::raw_input);
     config::add("player_look.sensitivity", player_look::sensitivity);
+
+    previous_cx = globals::width / 2;
+    previous_cy = globals::height / 2;
+
     globals::dispatcher.sink<CursorMoveEvent>().connect<&on_cursor_move>();
 }

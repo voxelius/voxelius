@@ -10,16 +10,15 @@
 #include <client/glxx/sampler.hh>
 #include <client/glxx/vertexarray.hh>
 #include <client/shaders.hh>
-#include <shared/color.hh>
 
 struct Canvas_UBO final {
-    vector4f_t col_ul {COL_TRANSPARENT}; // top left or foreground
-    vector4f_t col_ur {COL_TRANSPARENT}; // top right or background
-    vector4f_t col_dl {COL_TRANSPARENT}; // bottom left
-    vector4f_t col_dr {COL_TRANSPARENT}; // bottom right
-    vector4f_t screen {};
-    vector4f_t glyph {};
-    vector4f_t rect {};
+    glm::fvec4 col_ul {COLOR_TRANSPARENT}; // top left or foreground
+    glm::fvec4 col_ur {COLOR_TRANSPARENT}; // top right or background
+    glm::fvec4 col_dl {COLOR_TRANSPARENT}; // bottom left
+    glm::fvec4 col_dr {COLOR_TRANSPARENT}; // bottom right
+    glm::fvec4 screen {};
+    glm::fvec4 glyph {};
+    glm::fvec4 rect {};
 };
 
 static glxx::Buffer ubo = {};
@@ -28,6 +27,7 @@ static glxx::Program program_rect_tex = {};
 static glxx::Program program_text = {};
 static glxx::Sampler sampler = {};
 static glxx::VertexArray vao = {};
+static Canvas_UBO uniforms = {};
 
 static void init_program(glxx::Program &prog, const vfs::path_t &fpath, const glxx::Shader &vert)
 {
@@ -79,32 +79,40 @@ void canvas::deinit()
     ubo.destroy();
 }
 
-void canvas::draw_rect(int xpos, int ypos, int width, int height)
+void canvas::prepare()
 {
-    canvas::draw_rect(xpos, ypos, width, height, COL_WHITE);
+    glDisable(GL_DEPTH_TEST);
+
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    uniforms.screen.x = globals::width;
+    uniforms.screen.y = globals::height;
+    uniforms.screen.z = 1.0 / uniforms.screen.x;
+    uniforms.screen.w = 1.0 / uniforms.screen.y;
+
+    ubo.bind_base(GL_UNIFORM_BUFFER, 0);
+    vao.bind();
 }
 
-void canvas::draw_rect(int xpos, int ypos, int width, int height, const vector4d_t &color)
+void canvas::draw_rect(int xpos, int ypos, int width, int height)
 {
-    Canvas_UBO uniforms = {};
+    canvas::draw_rect(xpos, ypos, width, height, COLOR_WHITE);
+}
+
+void canvas::draw_rect(int xpos, int ypos, int width, int height, const glm::dvec4 &color)
+{
     uniforms.col_ul = color;
     uniforms.col_ur = color;
     uniforms.col_dl = color;
     uniforms.col_dr = color;
-    uniforms.screen.x = globals::window_width;
-    uniforms.screen.y = globals::window_height;
-    uniforms.screen.z = 1.0 / uniforms.screen.x;
-    uniforms.screen.w = 1.0 / uniforms.screen.y;
     uniforms.rect.x = xpos;
     uniforms.rect.y = ypos;
     uniforms.rect.z = width;
     uniforms.rect.w = height;
 
     ubo.write(0, sizeof(Canvas_UBO), &uniforms);
-
-    // FIXME: bind it once and then just draw?
-    ubo.bind_base(GL_UNIFORM_BUFFER, 0);
-    vao.bind();
 
     program_rect_col.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -112,15 +120,10 @@ void canvas::draw_rect(int xpos, int ypos, int width, int height, const vector4d
 
 void canvas::draw_rect(int xpos, int ypos, int width, int height, const glxx::Texture2D &texture)
 {
-    Canvas_UBO uniforms = {};
-    uniforms.col_ul = COL_WHITE;
-    uniforms.col_ur = COL_WHITE;
-    uniforms.col_dl = COL_WHITE;
-    uniforms.col_dr = COL_WHITE;
-    uniforms.screen.x = globals::window_width;
-    uniforms.screen.y = globals::window_height;
-    uniforms.screen.z = 1.0 / uniforms.screen.x;
-    uniforms.screen.w = 1.0 / uniforms.screen.y;
+    uniforms.col_ul = COLOR_WHITE;
+    uniforms.col_ur = COLOR_WHITE;
+    uniforms.col_dl = COLOR_WHITE;
+    uniforms.col_dr = COLOR_WHITE;
     uniforms.rect.x = xpos;
     uniforms.rect.y = ypos;
     uniforms.rect.z = width;
@@ -129,28 +132,18 @@ void canvas::draw_rect(int xpos, int ypos, int width, int height, const glxx::Te
     ubo.write(0, sizeof(Canvas_UBO), &uniforms);
 
     texture.bind(0);
-
     sampler.bind(0);
-
-    // FIXME: bind it once and then just draw?
-    ubo.bind_base(GL_UNIFORM_BUFFER, 0);
-    vao.bind();
 
     program_rect_tex.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::draw_rect(int xpos, int ypos, int width, int height, const vector4d_t &color, const glxx::Texture2D &texture)
+void canvas::draw_rect(int xpos, int ypos, int width, int height, const glm::dvec4 &color, const glxx::Texture2D &texture)
 {
-    Canvas_UBO uniforms = {};
     uniforms.col_ul = color;
     uniforms.col_ur = color;
     uniforms.col_dl = color;
     uniforms.col_dr = color;
-    uniforms.screen.x = globals::window_width;
-    uniforms.screen.y = globals::window_height;
-    uniforms.screen.z = 1.0 / uniforms.screen.x;
-    uniforms.screen.w = 1.0 / uniforms.screen.y;
     uniforms.rect.x = xpos;
     uniforms.rect.y = ypos;
     uniforms.rect.z = width;
@@ -159,64 +152,41 @@ void canvas::draw_rect(int xpos, int ypos, int width, int height, const vector4d
     ubo.write(0, sizeof(Canvas_UBO), &uniforms);
 
     texture.bind(0);
-
     sampler.bind(0);
-
-    // FIXME: bind it once and then just draw?
-    ubo.bind_base(GL_UNIFORM_BUFFER, 0);
-    vao.bind();
 
     program_rect_tex.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::draw_rect_h(int xpos, int ypos, int width, int height, const vector4d_t &colx, const vector4d_t &coly)
+void canvas::draw_rect_h(int xpos, int ypos, int width, int height, const glm::dvec4 &colx, const glm::dvec4 &coly)
 {
-    Canvas_UBO uniforms = {};
     uniforms.col_ul = colx;
     uniforms.col_ur = coly;
     uniforms.col_dl = colx;
     uniforms.col_dr = coly;
-    uniforms.screen.x = globals::window_width;
-    uniforms.screen.y = globals::window_height;
-    uniforms.screen.z = 1.0 / uniforms.screen.x;
-    uniforms.screen.w = 1.0 / uniforms.screen.y;
     uniforms.rect.x = xpos;
     uniforms.rect.y = ypos;
     uniforms.rect.z = width;
     uniforms.rect.w = height;
 
     ubo.write(0, sizeof(Canvas_UBO), &uniforms);
-
-    // FIXME: bind it once and then just draw?
-    ubo.bind_base(GL_UNIFORM_BUFFER, 0);
-    vao.bind();
 
     program_rect_col.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
 }
 
-void canvas::draw_rect_v(int xpos, int ypos, int width, int height, const vector4d_t &colx, const vector4d_t &coly)
+void canvas::draw_rect_v(int xpos, int ypos, int width, int height, const glm::dvec4 &colx, const glm::dvec4 &coly)
 {
-    Canvas_UBO uniforms = {};
     uniforms.col_ul = colx;
     uniforms.col_ur = colx;
     uniforms.col_dl = coly;
     uniforms.col_dr = coly;
-    uniforms.screen.x = globals::window_width;
-    uniforms.screen.y = globals::window_height;
-    uniforms.screen.z = 1.0 / uniforms.screen.x;
-    uniforms.screen.w = 1.0 / uniforms.screen.y;
     uniforms.rect.x = xpos;
     uniforms.rect.y = ypos;
     uniforms.rect.z = width;
     uniforms.rect.w = height;
 
     ubo.write(0, sizeof(Canvas_UBO), &uniforms);
-
-    // FIXME: bind it once and then just draw?
-    ubo.bind_base(GL_UNIFORM_BUFFER, 0);
-    vao.bind();
 
     program_rect_col.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -224,38 +194,33 @@ void canvas::draw_rect_v(int xpos, int ypos, int width, int height, const vector
 
 void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font)
 {
-    canvas::draw_text(xpos, ypos, text, font, COL_WHITE, COL_TRANSPARENT, 1U);
+    canvas::draw_text(xpos, ypos, text, font, COLOR_WHITE, COLOR_TRANSPARENT, 1U);
 }
 
 void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, unsigned int scale)
 {
-    canvas::draw_text(xpos, ypos, text, font, COL_WHITE, COL_TRANSPARENT, scale);
+    canvas::draw_text(xpos, ypos, text, font, COLOR_WHITE, COLOR_TRANSPARENT, scale);
 }
 
-void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4d_t &fg)
+void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const glm::dvec4 &fg)
 {
-    canvas::draw_text(xpos, ypos, text, font, fg, COL_TRANSPARENT, 1U);
+    canvas::draw_text(xpos, ypos, text, font, fg, COLOR_TRANSPARENT, 1U);
 }
 
-void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4d_t &fg, unsigned int scale)
+void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const glm::dvec4 &fg, unsigned int scale)
 {
-    canvas::draw_text(xpos, ypos, text, font, fg, COL_TRANSPARENT, scale);
+    canvas::draw_text(xpos, ypos, text, font, fg, COLOR_TRANSPARENT, scale);
 }
 
-void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4d_t &fg, const vector4d_t &bg)
+void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const glm::dvec4 &fg, const glm::dvec4 &bg)
 {
     canvas::draw_text(xpos, ypos, text, font, fg, bg, 1U);
 }
 
-void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const vector4d_t &fg, const vector4d_t &bg, unsigned int scale)
+void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font, const glm::dvec4 &fg, const glm::dvec4 &bg, unsigned int scale)
 {
-    Canvas_UBO uniforms = {};
     uniforms.col_ul = fg;
     uniforms.col_ur = bg;
-    uniforms.screen.x = globals::window_width;
-    uniforms.screen.y = globals::window_height;
-    uniforms.screen.z = 1.0 / uniforms.screen.x;
-    uniforms.screen.w = 1.0 / uniforms.screen.y;
     uniforms.glyph.x = font.get_glyph_width() * static_cast<double>(scale);
     uniforms.glyph.y = font.get_glyph_height() * static_cast<double>(scale);
     uniforms.glyph.z = font.get_texture_cwidth();
@@ -272,10 +237,6 @@ void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canva
 
     sampler.bind(0);
     sampler.bind(1);
-
-    // FIXME: bind it once and then just draw?
-    ubo.bind_base(GL_UNIFORM_BUFFER, 0);
-    vao.bind();
 
     program_text.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);

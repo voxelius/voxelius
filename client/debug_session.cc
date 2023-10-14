@@ -7,12 +7,14 @@
 #include <client/ui_screen.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_atlas.hh>
-#include <shared/chunks.hh>
+#include <entt/entity/registry.hpp>
+#include <glm/gtc/noise.hpp>
 #include <shared/entity/head.hh>
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
 #include <shared/vdef.hh>
+#include <shared/world.hh>
 #include <spdlog/spdlog.h>
 
 constexpr static const uint32_t STONE   = 1;
@@ -24,11 +26,10 @@ constexpr static const uint32_t VTEST   = 5;
 // Surface level for world generation
 constexpr static const int64_t SURFACE = 0;
 
-#include <glm/gtc/noise.hpp>
 
 static voxel_t voxel_at(const voxel_pos_t &vpos)
 {
-    int64_t surf = SURFACE + 8.0 * glm::simplex(vector2d_t{vpos.x, vpos.z} / 48.0);
+    int64_t surf = SURFACE + 8.0 * glm::simplex(glm::dvec2{vpos.x, vpos.z} / 48.0);
     if(vpos.y <= surf - 8)
         return make_voxel(STONE, NULL_VOXEL_STATE);
     if(vpos.y <= surf - 1)
@@ -43,7 +44,7 @@ static void generate(const chunk_pos_t &cpos)
     spdlog::trace("generating {} {} {}", cpos.x, cpos.y, cpos.z);
 
     bool empty = true;
-    voxel_array_t voxels = {};
+    Chunk::array_type voxels = {};
 
     for(size_t i = 0; i < CHUNK_VOLUME; ++i) {
         const auto lpos = coord::to_local(i);
@@ -55,7 +56,7 @@ static void generate(const chunk_pos_t &cpos)
     }
 
     if(!empty) {
-        Chunk *chunk = chunks::create(cpos);
+        Chunk *chunk = world::create_chunk(cpos);
         chunk->voxels = voxels;
     }
 }

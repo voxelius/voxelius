@@ -86,4 +86,4 @@ inline const vert *MeshBuilder<vert>::data() const
     return vec.data();
 }
 
-#endif/* CLIENT_MESH_HH */
+#endif /* CLIENT_MESH_HH */
