@@ -4,13 +4,13 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/camera.hh>
 #include <client/globals.hh>
-#include <shared/config.hh>
+#include <shared/config/config.hh>
 #include <shared/entity/head.hh>
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
 
-config::Number camera::fov = config::Number{75.0};
-config::Number camera::view_distance = config::Number{16};
+config::Double camera::fov = config::Double{75.0};
+config::Integer camera::view_distance = config::Integer{16};
 
 static vector3d_t cam_position = {};
 static vector3d_t cam_euler_angles = {};
@@ -21,14 +21,14 @@ static matrix4x4f_t cam_matrix = {};
 
 void camera::init()
 {
-    config::add_variable("camera.fov", camera::fov);
-    config::add_variable("camera.view_distance", camera::view_distance);
+    config::add("camera.fov", camera::fov);
+    config::add("camera.view_distance", camera::view_distance);
 }
 
 void camera::update()
 {
-    const double fov = cxmath::radians(camera::fov.get_value());
-    const double zfar = cxmath::floor<int>(camera::view_distance.get_value()) * CHUNK_SIZE;
+    const double fov = cxmath::radians(camera::fov.value);
+    const double zfar = camera::view_distance.value * CHUNK_SIZE;
 
     cam_position = vector3d_t{};
     cam_euler_angles = vector3d_t{};

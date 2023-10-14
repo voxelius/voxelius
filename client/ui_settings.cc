@@ -10,7 +10,6 @@
 #include <client/ui_imgui.hh>
 #include <client/ui_screen.hh>
 #include <client/ui_settings.hh>
-#include <shared/config.hh>
 #include <client/player_look.hh>
 #include <client/camera.hh>
 #include <spdlog/fmt/fmt.h>
@@ -65,17 +64,13 @@ static void draw_general(int xpos, int ypos, int width, int ystep)
 static void draw_controls(int xpos, int ypos, int width, int ystep)
 {
     if(category_page == 0) {
-        bool raw_input = player_look::raw_input.get_value();
-        text.set(0, fmt::format(L"Raw input: {}", raw_input));
+        text.set(0, fmt::format(L"Raw input: {}", player_look::raw_input.value));
         if(ui::imgui::button(xpos, ypos, width, text, globals::font_16px, style))
-            raw_input = !raw_input;
-        player_look::raw_input.set_value(raw_input);
+            player_look::raw_input.value = !player_look::raw_input.value;
         ypos += ystep;
 
-        double sensitivity = player_look::sensitivity.get_value();
-        text.set(0, fmt::format(L"Sensitivity: {:.02f}", sensitivity));
-        if(ui::imgui::slider(xpos, ypos, width, sensitivity, text, globals::font_16px, style, 0.05, 0.5, 0.01))
-            player_look::sensitivity.set_value(sensitivity);
+        text.set(0, fmt::format(L"Sensitivity: {:.02f}", player_look::sensitivity.value));
+        ui::imgui::slider(xpos, ypos, width, player_look::sensitivity.value, text, globals::font_16px, style, 0.05, 0.5, 0.01);
         ypos += ystep;
     }
 }
@@ -83,16 +78,14 @@ static void draw_controls(int xpos, int ypos, int width, int ystep)
 static void draw_graphics(int xpos, int ypos, int width, int ystep)
 {
     if(category_page == 0) {
-        double fov = camera::fov.get_value();
-        text.set(0, fmt::format("FOV: {:.0f}", fov));
-        if(ui::imgui::slider(xpos, ypos, width, fov, text, globals::font_16px, style, 54, 120, 1))
-            camera::fov.set_value(fov);
+        text.set(0, fmt::format("FOV: {:.0f}", camera::fov.value));
+        ui::imgui::slider(xpos, ypos, width, camera::fov.value, text, globals::font_16px, style, 54, 120, 1);
         ypos += ystep;
 
-        double view_distance = camera::view_distance.get_value();
+        double view_distance = camera::view_distance.value;
         text.set(0, fmt::format("View distance: {}", view_distance));
         if(ui::imgui::slider(xpos, ypos, width, view_distance, text, globals::font_16px, style, 1, 32, 1))
-            camera::view_distance.set_value(view_distance);
+            camera::view_distance.value = view_distance;
         ypos += ystep;
     }
 }

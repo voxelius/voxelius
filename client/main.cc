@@ -13,7 +13,7 @@
 #include <client/main.hh>
 #include <glad/gl.h>
 #include <shared/cmdline.hh>
-#include <shared/config.hh>
+#include <shared/config/config.hh>
 #include <shared/epoch.hh>
 #include <spdlog/spdlog.h>
 

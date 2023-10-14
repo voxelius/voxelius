@@ -26,7 +26,6 @@
 #include <client/voxel_vertex.hh>
 #include <GLFW/glfw3.h>
 #include <shared/chunks.hh>
-#include <shared/config.hh>
 #include <shared/inertial.hh>
 
 static void on_window_resize(const WindowResizeEvent &event)
@@ -152,7 +151,7 @@ void client_game::update_late()
     }
     else if(globals::registry.valid(globals::player)) {
         glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        glfwSetInputMode(globals::window, GLFW_RAW_MOUSE_MOTION, player_look::raw_input.get_value());
+        glfwSetInputMode(globals::window, GLFW_RAW_MOUSE_MOTION, player_look::raw_input.value);
     }
 
     ui::imgui::update_late();
