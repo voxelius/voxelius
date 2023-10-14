@@ -170,6 +170,14 @@ void client_game::render()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    glDisable(GL_DEPTH_TEST);
+
+    glEnable(GL_BLEND);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
     glBlitNamedFramebuffer(globals::world_fbo.get(), 0, 0, 0, swidth, sheight, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     canvas::prepare();
