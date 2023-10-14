@@ -11,6 +11,7 @@
 #include <client/glxx/framebuffer.hh>
 #include <client/player_look.hh>
 #include <client/player_move.hh>
+#include <client/screenshot.hh>
 #include <client/shaders.hh>
 #include <client/ui_imgui.hh>
 #include <client/ui_main_menu.hh>
@@ -52,6 +53,8 @@ void client_game::init()
 
     player_look::init();
     player_move::init();
+
+    screenshot::init();
 
     camera::init();
 

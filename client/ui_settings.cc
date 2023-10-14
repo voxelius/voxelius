@@ -176,13 +176,18 @@ void ui::settings::render()
     ypos += csel_ystep + 8;
 
     for(int i = 0; i < NUM_CATEGORIES; ++i) {
-        if(i == category_index)
-            text.set(0, fmt::format(L"> {}", category_names[i]));
-        else text.set(0, fmt::format(L"  {}", category_names[i]));
-
-        if(ui::imgui::button(xpos, ypos, csel_width, text, globals::font_16px, style)) {
-            category_index = i;
-            category_page = 0;
+        if(i == category_index) {
+            text.set(0, category_names[i]);
+            const int tx = xpos + style.rect_text_padding.x;
+            const int ty = ypos + style.rect_text_padding.y;
+            ui::imgui::label(tx, ty, text, globals::font_16px, style, 1U);
+        }
+        else {
+            text.set(0, category_names[i]);
+            if(ui::imgui::button(xpos, ypos, csel_width, text, globals::font_16px, style)) {
+                category_index = i;
+                category_page = 0;
+            }
         }
 
         ypos += csel_ystep;
