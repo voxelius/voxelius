@@ -83,6 +83,6 @@ void player_move::update()
 
         const auto &head = globals::registry.get<HeadComponent>(globals::player);
         auto &velocity = globals::registry.get<VelocityComponent>(globals::player);
-        velocity.linear = glm::dquat{glm::dvec3{head.angles.x, head.angles.y, 0.0}} * direction * 16.0;
+        velocity.linear = glm::dquat{glm::dvec3{0.0, head.angles.y, 0.0}} * direction * 16.0;
     }
 }
