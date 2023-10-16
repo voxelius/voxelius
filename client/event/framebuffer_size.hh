@@ -5,7 +5,7 @@
 #ifndef CLIENT_EVENT_WINDOW_RESIZE_HH
 #define CLIENT_EVENT_WINDOW_RESIZE_HH
 
-struct WindowResizeEvent final {
+struct FramebufferSizeEvent final {
     int width {};
     int height {};
     double aspect {};

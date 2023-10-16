@@ -2,11 +2,11 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozila.org/MPL/2.0/.
-#include <client/event/cursor_move.hh>
-#include <client/event/keyboard_key.hh>
+#include <client/event/cursor_pos.hh>
+#include <client/event/key.hh>
 #include <client/event/mouse_button.hh>
-#include <client/event/mouse_scroll.hh>
-#include <client/event/window_resize.hh>
+#include <client/event/scroll.hh>
+#include <client/event/framebuffer_size.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
 #include <client/image.hh>
@@ -28,22 +28,30 @@ static void on_glfw_error(int code, const char *message)
     spdlog::error("glfw: {}", message);
 }
 
+static void on_cursor_pos(GLFWwindow *window, double xpos, double ypos)
+{
+    CursorPosEvent event = {};
+    event.xpos = xpos;
+    event.ypos = ypos;
+    globals::dispatcher.trigger(event);
+}
+
 static void on_framebuffer_size(GLFWwindow *window, int width, int height)
 {
     globals::width = width;
     globals::height = height;
     globals::aspect = static_cast<double>(width) / static_cast<double>(height);
 
-    WindowResizeEvent event = {};
+    FramebufferSizeEvent event = {};
     event.width = globals::width;
     event.height = globals::height;
     event.aspect = globals::aspect;
     globals::dispatcher.trigger(event);
 }
 
-static void on_keyboard_key(GLFWwindow *window, int key, int scancode, int action, int mods)
+static void on_key(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
-    KeyboardKeyEvent event = {};
+    KeyEvent event = {};
     event.key = key;
     event.scancode = scancode;
     event.action = action;
@@ -60,17 +68,9 @@ static void on_mouse_button(GLFWwindow *window, int button, int action, int mods
     globals::dispatcher.trigger(event);
 }
 
-static void on_cursor_pos(GLFWwindow *window, double xpos, double ypos)
-{
-    CursorMoveEvent event = {};
-    event.xpos = xpos;
-    event.ypos = ypos;
-    globals::dispatcher.trigger(event);
-}
-
 static void on_scroll(GLFWwindow *window, double dx, double dy)
 {
-    MouseScrollEvent event = {};
+    ScrollEvent event = {};
     event.dx = dx;
     event.dx = dy;
     globals::dispatcher.trigger(event);
@@ -108,10 +108,10 @@ void client::main()
     // resolution we can get with that height is the crusty 320x240
     glfwSetWindowSizeLimits(globals::window, 320, 240, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
-    glfwSetFramebufferSizeCallback(globals::window, &on_framebuffer_size);
-    glfwSetKeyCallback(globals::window, &on_keyboard_key);
-    glfwSetMouseButtonCallback(globals::window, &on_mouse_button);
     glfwSetCursorPosCallback(globals::window, &on_cursor_pos);
+    glfwSetFramebufferSizeCallback(globals::window, &on_framebuffer_size);
+    glfwSetKeyCallback(globals::window, &on_key);
+    glfwSetMouseButtonCallback(globals::window, &on_mouse_button);
     glfwSetScrollCallback(globals::window, &on_scroll);
 
     Image image = {};

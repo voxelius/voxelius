@@ -9,40 +9,34 @@
 
 namespace config
 {
-template<typename value_type>
+template<typename T>
 class Number final : public IVariable {
 public:
     Number() = default;
-    Number(value_type default_value);
+    Number(T default_value);
     virtual void from_string(const std::string &sval) override;
     virtual const std::string to_string() const override;
-    value_type value {};
+    T value {};
 };
 } // namespace config
 
-namespace config
-{
-using Double = Number<double>;
-using Integer = Number<int>;
-} // namespace config
-
-template<typename value_type>
-inline config::Number<value_type>::Number(value_type default_value)
+template<typename T>
+inline config::Number<T>::Number(T default_value)
     : value{default_value}
 {
 
 }
 
-template<typename value_type>
-inline void config::Number<value_type>::from_string(const std::string &sval)
+template<typename T>
+inline void config::Number<T>::from_string(const std::string &sval)
 {
     std::istringstream iss = {};
     iss.str(sval);
     iss >> value;
 }
 
-template<typename value_type>
-inline const std::string config::Number<value_type>::to_string() const
+template<typename T>
+inline const std::string config::Number<T>::to_string() const
 {
     return std::to_string(value);
 }

@@ -8,28 +8,28 @@
 
 namespace config
 {
-class Boolean final : public IVariable {
+class String final : public IVariable {
 public:
-    Boolean() = default;
-    Boolean(const std::string &default_value);
+    String() = default;
+    String(const std::string &default_value);
     virtual void from_string(const std::string &sval) override;
     virtual const std::string to_string() const override;
     std::string value {};
 };
 } // namespace config
 
-inline config::Boolean::Boolean(const std::string &default_value)
+inline config::String::String(const std::string &default_value)
     : value{default_value}
 {
 
 }
 
-inline void config::Boolean::from_string(const std::string &sval)
+inline void config::String::from_string(const std::string &sval)
 {
     value = sval;
 }
 
-inline const std::string config::Boolean::to_string() const
+inline const std::string config::String::to_string() const
 {
     return value;
 }

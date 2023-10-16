@@ -9,13 +9,13 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/mat4x4.hpp>
 #include <shared/config/config.hh>
+#include <shared/config/number.hh>
 #include <shared/entity/head.hh>
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
 
-config::Double camera::fov = config::Double{75.0};
-config::Integer camera::pixel_size = config::Integer{4};
-config::Integer camera::view_distance = config::Integer{16};
+config::Number<double> camera::fov = 75.0;
+config::Number<unsigned int> camera::view_distance = 16U;
 
 static glm::dvec3 cam_position = {};
 static glm::dvec3 cam_euler_angles = {};
@@ -27,7 +27,6 @@ static glm::fmat4x4 cam_matrix = {};
 void camera::init()
 {
     config::add("camera.fov", camera::fov);
-    config::add("camera.pixel_size", camera::pixel_size);
     config::add("camera.view_distance", camera::view_distance);
 }
 

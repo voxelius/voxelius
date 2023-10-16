@@ -5,9 +5,9 @@
 #include <client/canvas_font.hh>
 #include <client/canvas_text.hh>
 #include <client/canvas.hh>
-#include <client/event/cursor_move.hh>
+#include <client/event/cursor_pos.hh>
 #include <client/event/mouse_button.hh>
-#include <client/event/mouse_scroll.hh>
+#include <client/event/scroll.hh>
 #include <client/globals.hh>
 #include <client/ui_imgui.hh>
 #include <entt/signal/dispatcher.hpp>
@@ -21,7 +21,7 @@ static int scroll_dy = 0;
 static uint64_t element_id = 0U;
 static uint64_t focused_id = UINT64_MAX;
 
-static void on_cursor_move(const CursorMoveEvent &event)
+static void on_cursor_pos(const CursorPosEvent &event)
 {
     cursor_xpos = event.xpos;
     cursor_ypos = event.ypos;
@@ -38,7 +38,7 @@ static void on_mouse_button(const MouseButtonEvent &event)
     }
 }
 
-static void on_mouse_scroll(const MouseScrollEvent &event)
+static void on_scroll(const ScrollEvent &event)
 {
     scroll_dx += event.dx;
     scroll_dy += event.dy;
@@ -46,9 +46,9 @@ static void on_mouse_scroll(const MouseScrollEvent &event)
 
 void ui::imgui::init()
 {
-    globals::dispatcher.sink<CursorMoveEvent>().connect<&on_cursor_move>();
+    globals::dispatcher.sink<CursorPosEvent>().connect<&on_cursor_pos>();
     globals::dispatcher.sink<MouseButtonEvent>().connect<&on_mouse_button>();
-    globals::dispatcher.sink<MouseScrollEvent>().connect<&on_mouse_scroll>();
+    globals::dispatcher.sink<ScrollEvent>().connect<&on_scroll>();
 }
 
 void ui::imgui::update_late()

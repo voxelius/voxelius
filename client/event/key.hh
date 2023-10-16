@@ -6,7 +6,7 @@
 #define CLIENT_EVENT_KEYBOARD_KEY_HH
 #include <GLFW/glfw3.h>
 
-struct KeyboardKeyEvent final {
+struct KeyEvent final {
     int key {GLFW_KEY_UNKNOWN};
     int scancode {};
     int action {};

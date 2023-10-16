@@ -5,7 +5,7 @@
 #include <client/camera.hh>
 #include <client/canvas_font.hh>
 #include <client/canvas.hh>
-#include <client/event/window_resize.hh>
+#include <client/event/framebuffer_size.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
 #include <client/glxx/framebuffer.hh>
@@ -26,11 +26,12 @@
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
+#include <shared/config/boolean.hh>
 #include <shared/inertial.hh>
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
 
-static void on_window_resize(const WindowResizeEvent &event)
+static void on_framebuffer_size(const FramebufferSizeEvent &event)
 {
     globals::world_fbo.create();
     globals::world_fbo_color.create();
@@ -86,7 +87,7 @@ void client_game::init()
     // We start in the main menu
     globals::ui_screen = ui::SCREEN_MAIN_MENU;
 
-    globals::dispatcher.sink<WindowResizeEvent>().connect<&on_window_resize>();
+    globals::dispatcher.sink<FramebufferSizeEvent>().connect<&on_framebuffer_size>();
 }
 
 void client_game::init_late()
@@ -153,13 +154,8 @@ void client_game::update_late()
 
 void client_game::render()
 {
-    const int width = globals::width;
-    const int height = globals::height;
-    const int swidth = width / camera::pixel_size.value;
-    const int sheight = height / camera::pixel_size.value;
-    
-    glViewport(0, 0, swidth, sheight);
-    glClearColor(0.000, 0.000, 0.000, 1.000);
+    glViewport(0, 0, globals::width, globals::height);
+    glClearColor(0.529, 0.808, 0.922, 1.000);
     glBindFramebuffer(GL_FRAMEBUFFER, globals::world_fbo.get());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -178,7 +174,7 @@ void client_game::render()
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    glBlitNamedFramebuffer(globals::world_fbo.get(), 0, 0, 0, swidth, sheight, 0, 0, width, height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBlitNamedFramebuffer(globals::world_fbo.get(), 0, 0, 0, globals::width, globals::height, 0, 0, globals::width, globals::height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     canvas::prepare();
 

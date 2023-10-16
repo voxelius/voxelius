@@ -4,13 +4,12 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_PLAYER_LOOK_HH
 #define CLIENT_PLAYER_LOOK_HH
-#include <shared/config/boolean.hh>
-#include <shared/config/number.hh>
+#include <shared/config/variable.hh>
 
 namespace player_look
 {
 extern config::Boolean raw_input;
-extern config::Double sensitivity;
+extern config::Number<double> sensitivity;
 } // namespace player_look
 
 namespace player_look

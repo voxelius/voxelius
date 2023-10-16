@@ -5,14 +5,13 @@
 #ifndef CLIENT_CAMERA_HH
 #define CLIENT_CAMERA_HH
 #include <entt/entity/entity.hpp>
-#include <shared/config/number.hh>
+#include <shared/config/variable.hh>
 #include <shared/coord.hh>
 
 namespace camera
 {
-extern config::Double fov;
-extern config::Integer pixel_size;
-extern config::Integer view_distance;
+extern config::Number<double> fov;
+extern config::Number<unsigned int> view_distance;
 } // namespace camera
 
 namespace camera

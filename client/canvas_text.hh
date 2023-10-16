@@ -6,6 +6,7 @@
 #define CLIENT_CANVAS_TEXT_HH
 #include <client/glxx/texture.hh>
 #include <string>
+#include <vector>
 
 namespace canvas
 {
@@ -28,6 +29,7 @@ private:
     int texture_width {};
     int texture_height {};
     glxx::Texture2D texture {};
+    std::vector<uint32_t> vec {};
 };
 } // namespace canvas
 

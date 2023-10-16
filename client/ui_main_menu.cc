@@ -6,7 +6,7 @@
 #include <client/canvas_text.hh>
 #include <client/canvas.hh>
 #include <client/debug_session.hh>
-#include <client/event/keyboard_key.hh>
+#include <client/event/key.hh>
 #include <client/globals.hh>
 #include <client/ui_imgui.hh>
 #include <client/ui_main_menu.hh>
@@ -17,7 +17,7 @@
 static ui::Style style = {};
 static canvas::Text text = {};
 
-static void on_keyboard_key(const KeyboardKeyEvent &event)
+static void on_key(const KeyEvent &event)
 {
     if(globals::registry.valid(globals::player)) {
         if(event.key == GLFW_KEY_ESCAPE && event.action == GLFW_PRESS) {
@@ -43,7 +43,7 @@ void ui::main_menu::init()
 
     text.create(64, 1);
 
-    globals::dispatcher.sink<KeyboardKeyEvent>().connect<&on_keyboard_key>();
+    globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
 }
 
 void ui::main_menu::deinit()

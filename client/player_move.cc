@@ -3,7 +3,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <bitset>
-#include <client/event/keyboard_key.hh>
+#include <client/event/key.hh>
 #include <client/globals.hh>
 #include <client/player_move.hh>
 #include <entt/entity/registry.hpp>
@@ -23,7 +23,7 @@ constexpr static const size_t MOVE_DN = 5;
 
 static std::bitset<8> move_keys = {};
 
-static void on_keyboard_key(const KeyboardKeyEvent &event)
+static void on_key(const KeyEvent &event)
 {
     const bool act_dn = {event.action == GLFW_PRESS};
     const bool act_up = {event.action == GLFW_RELEASE};
@@ -59,7 +59,7 @@ static void on_keyboard_key(const KeyboardKeyEvent &event)
 
 void player_move::init()
 {
-    globals::dispatcher.sink<KeyboardKeyEvent>().connect<&on_keyboard_key>();
+    globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
 }
 
 void player_move::update()

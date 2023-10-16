@@ -16,4 +16,12 @@ public:
 };
 } // namespace config
 
+namespace config
+{
+class Boolean;
+template<typename T>
+class Number;
+class String;
+} // namespace config
+
 #endif /* SHARED_CONFIG_VARIABLE_HH */
