@@ -92,16 +92,15 @@ void player_move::update()
                 direction -= DIR_RIGHT;
             if(move_keys[MOVE_RT])
                 direction += DIR_RIGHT;
-            if(move_keys[MOVE_UP] == 1U) // Just one frame
-                direction += DIR_UP * 4.0;
         }
 
         const auto &head = globals::registry.get<HeadComponent>(globals::player);
         auto &velocity = globals::registry.get<VelocityComponent>(globals::player);
-        const auto want = glm::dquat{glm::dvec3{0.0, head.angles.y, 0.0}} * direction * 3.0;
+        const auto want = glm::dquat{glm::dvec3{0.0, head.angles.y, 0.0}} * direction * 4.0;
         velocity.linear.x = want.x;
         velocity.linear.z = want.z;
-        velocity.linear.y += want.y;
+        if(move_keys[MOVE_UP] == 1U)
+            velocity.linear.y += 12.0;
         velocity.linear.y -= 0.8;
 
         for(unsigned int k = 0U; k < 8U; ++k) {

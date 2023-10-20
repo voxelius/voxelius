@@ -27,44 +27,72 @@ void vcollide::update(double frametime)
         pbox.min = box.min + frametime * velocity.linear;
         pbox.max = box.max + frametime * velocity.linear;
 
+        const auto center = transform.position + 0.5 * collision.size;
+        const auto pcenter = center + frametime * velocity.linear;
+
         voxel_pos_t vmod = {};
         vmod.x = cxmath::ceil<voxel_pos_t::value_type>(glm::abs(velocity.linear.x));
         vmod.y = cxmath::ceil<voxel_pos_t::value_type>(glm::abs(velocity.linear.y));
         vmod.z = cxmath::ceil<voxel_pos_t::value_type>(glm::abs(velocity.linear.z));
 
         voxel_pos_t vstart = {};
-        vstart.x = cxmath::floor<voxel_pos_t::value_type>(box.min.x) - vmod.x;
-        vstart.y = cxmath::floor<voxel_pos_t::value_type>(box.min.y) - vmod.y;
-        vstart.z = cxmath::floor<voxel_pos_t::value_type>(box.min.z) - vmod.z;
+        vstart.x = cxmath::floor<voxel_pos_t::value_type>(pbox.min.x);
+        vstart.y = cxmath::floor<voxel_pos_t::value_type>(pbox.min.y);
+        vstart.z = cxmath::floor<voxel_pos_t::value_type>(pbox.min.z);
 
         voxel_pos_t vend = {};
-        vend.x = cxmath::floor<voxel_pos_t::value_type>(box.max.x) + vmod.x;
-        vend.y = cxmath::floor<voxel_pos_t::value_type>(box.max.y) + vmod.y;
-        vend.z = cxmath::floor<voxel_pos_t::value_type>(box.max.z) + vmod.z;
+        vend.x = cxmath::floor<voxel_pos_t::value_type>(pbox.max.x);
+        vend.y = cxmath::floor<voxel_pos_t::value_type>(pbox.max.y);
+        vend.z = cxmath::floor<voxel_pos_t::value_type>(pbox.max.z);
 
-        for(auto x = vstart.x; x <= vend.x; ++x) {
-            for(auto y = vstart.y; y <= vend.y; ++y) {
-                for(auto z = vstart.z; z <= vend.z; ++z) {
-                    const auto vpos = voxel_pos_t{x, y, z};
-                    const auto voxel = world::get_voxel(vpos);
+        // PILLOWING: at high velocities, when the object's next sampled position
+        // clips inside a voxel, its velocity is se to zero, which produces
+        // some kind of a pillow effect, setting the speed along respective
+        // axis to zero. The name "pillowing" goes from the fact that it
+        // practically stops you mid air as if you were landing on a pillow.
+        double pillow_dist = std::numeric_limits<double>::infinity();
+        AABB pillow_vbox = {};
 
-                    if(voxel != NULL_VOXEL) {
-                        AABB vbox = {};
-                        vbox.min = coord::to_world(vpos);
-                        vbox.max = vbox.min + 1.0;
+        for(auto x = vstart.x; x <= vend.x; ++x)
+        for(auto y = vstart.y; y <= vend.y; ++y)
+        for(auto z = vstart.z; z <= vend.z; ++z) {
+            const voxel_pos_t vpos = voxel_pos_t{x, y, z};
+            const voxel_t voxel = world::get_voxel(vpos);
 
-                        for(unsigned int d = 0U; d < 3U; ++d) {
-                            AABB tbox = box;
-                            tbox.min[d] = pbox.min[d];
-                            tbox.max[d] = pbox.max[d];
+            if(voxel != NULL_VOXEL) {
+                AABB vbox = {};
+                vbox.min.x = static_cast<double>(vpos.x);
+                vbox.min.y = static_cast<double>(vpos.y);
+                vbox.min.z = static_cast<double>(vpos.z);
+                vbox.max = vbox.min + glm::dvec3{1.0, 1.0, 1.0};
 
-                            if(tbox.intersect(vbox)) {
-                                velocity.linear[d] = 0.0;
-                                continue;
+                for(unsigned int d = 0U; d < 3U; ++d) {
+                    AABB tbox = {};
+                    tbox.min = box.min;
+                    tbox.max = box.max;
+
+                    tbox.min[d] = pbox.min[d];
+                    tbox.max[d] = pbox.max[d];
+
+                    if(tbox.intersect(vbox)) {
+                        velocity.linear[d] = 0.0;
+
+                        if(d == 1U) { // Only for Y axis
+                            if(const auto dist = pcenter[d] - vbox.min[d] - 0.5; dist < pillow_dist) {
+                                pillow_dist = dist;
+                                pillow_vbox = vbox;
                             }
                         }
                     }
                 }
+            }
+        }
+
+        if(pillow_dist < std::numeric_limits<double>::infinity()) {
+            if(pbox.min.y < pillow_vbox.max.y) {
+                // Snap entity to the ground.
+                // UNDONE: set a flag of sorts to true?
+                transform.position.y = pillow_vbox.max.y;
             }
         }
     }
