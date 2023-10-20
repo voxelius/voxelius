@@ -46,7 +46,7 @@ void camera::update()
         const auto &head = globals::registry.get<HeadComponent>(globals::player);
         const auto &transform = globals::registry.get<TransformComponent>(globals::player);
 
-        cam_position = transform.position;
+        cam_position = transform.position + head.offset;
         cam_euler_angles = transform.angles + glm::dvec3{head.angles.x, head.angles.y, 0.0};
         cam_direction = glm::dquat{cam_euler_angles} * DIR_FORWARD;
         cam_chunk_pos = coord::to_chunk(coord::to_voxel(transform.position));

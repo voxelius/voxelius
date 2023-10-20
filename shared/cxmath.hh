@@ -90,6 +90,16 @@ constexpr static inline const T clamp(const T x, const T min, const T max)
     return x;
 }
 
+template<typename T>
+constexpr static inline const T sign(const T x)
+{
+    if(x == static_cast<T>(0))
+        return static_cast<T>(0);
+    else if(std::is_signed_v<T> && (x < static_cast<T>(0)))
+        return static_cast<T>(-1);
+    return static_cast<T>(1);
+}
+
 template<typename T, size_t L>
 constexpr static inline const size_t array_size(T(&)[L])
 {

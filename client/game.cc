@@ -5,6 +5,7 @@
 #include <client/camera.hh>
 #include <client/canvas_font.hh>
 #include <client/canvas.hh>
+#include <client/event/mouse_button.hh>
 #include <client/event/framebuffer_size.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
@@ -28,8 +29,20 @@
 #include <GLFW/glfw3.h>
 #include <shared/config/boolean.hh>
 #include <shared/inertial.hh>
+#include <shared/ray_dda.hh>
+#include <shared/vcollide.hh>
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
+
+static void on_mouse_button(const MouseButtonEvent &event)
+{
+    if(event.action == GLFW_PRESS && event.button == GLFW_MOUSE_BUTTON_LEFT) {
+        RayDDA ray = RayDDA{camera::get_position(), camera::get_direction()};
+        if(ray.propagate(7.0)) {
+            world::set_voxel(ray.vpos, NULL_VOXEL);
+        }
+    }
+}
 
 static void on_framebuffer_size(const FramebufferSizeEvent &event)
 {
@@ -87,6 +100,7 @@ void client_game::init()
     // We start in the main menu
     globals::ui_screen = ui::SCREEN_MAIN_MENU;
 
+    globals::dispatcher.sink<MouseButtonEvent>().connect<&on_mouse_button>();
     globals::dispatcher.sink<FramebufferSizeEvent>().connect<&on_framebuffer_size>();
 }
 
@@ -130,6 +144,7 @@ void client_game::update()
 {
     player_move::update();
 
+    vcollide::update(globals::frametime);
     inertial::update(globals::frametime);
 
     camera::update();

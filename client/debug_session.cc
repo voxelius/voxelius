@@ -9,6 +9,7 @@
 #include <client/voxel_atlas.hh>
 #include <entt/entity/registry.hpp>
 #include <glm/gtc/noise.hpp>
+#include <shared/entity/collision.hh>
 #include <shared/entity/head.hh>
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
@@ -82,10 +83,13 @@ void debug_session::run()
 
         voxel_anims::construct();
 
+        unsigned int w = 0U;
         for(int x = -8; x < 7; ++x) {
             for(int z = -8; z < 7; ++z) {
-                for(int y = -1; y < 2; ++y) {
-                    generate(chunk_pos_t{x, y, z});
+                for(int y = -2; y < 2; ++y) {
+                    generate({x, y, z});
+                    //Chunk *chunk = world::create_chunk(chunk_pos_t{x, y, z});
+                    //chunk->voxels.fill(make_voxel(cxmath::clamp(x * z, -1, 1) + 2, NULL_VOXEL_STATE));
                 }
             }
         }
@@ -93,9 +97,16 @@ void debug_session::run()
         spdlog::info("spawning local player");
         globals::player = globals::registry.create();
         globals::registry.emplace<PlayerComponent>(globals::player);
-        globals::registry.emplace<HeadComponent>(globals::player);
-        globals::registry.emplace<TransformComponent>(globals::player);
         globals::registry.emplace<VelocityComponent>(globals::player);
+
+        auto &head = globals::registry.emplace<HeadComponent>(globals::player);
+        head.offset = glm::dvec3{0.4, 1.4, 0.4};
+
+        auto &transform = globals::registry.emplace<TransformComponent>(globals::player);
+        transform.position.y += 16.0;
+
+        auto &coll = globals::registry.emplace<CollisionComponent>(globals::player);
+        coll.size = glm::dvec3{0.8, 1.8, 0.8};
 
         globals::ui_screen = ui::SCREEN_NONE;
     }

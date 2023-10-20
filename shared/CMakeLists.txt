@@ -1,11 +1,13 @@
 add_library(shared STATIC
+    "${CMAKE_CURRENT_LIST_DIR}/aabb.cc"
     "${CMAKE_CURRENT_LIST_DIR}/cmdline.cc"
     "${CMAKE_CURRENT_LIST_DIR}/config/config.cc"
     "${CMAKE_CURRENT_LIST_DIR}/crc64.cc"
     "${CMAKE_CURRENT_LIST_DIR}/epoch.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
     "${CMAKE_CURRENT_LIST_DIR}/inertial.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/raycast.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/ray_dda.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/vcollide.cc"
     "${CMAKE_CURRENT_LIST_DIR}/vdef.cc"
     "${CMAKE_CURRENT_LIST_DIR}/vfs.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world.cc")
