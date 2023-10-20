@@ -75,14 +75,14 @@ void vcollide::update(double frametime)
                     tbox.max[d] = pbox.max[d];
 
                     if(tbox.intersect(vbox)) {
-                        velocity.linear[d] = 0.0;
-
-                        if(d == 1U) { // Only for Y axis
+                        if((velocity.linear.y < 0.0) && (d == 1U)) {
                             if(const auto dist = pcenter[d] - vbox.min[d] - 0.5; dist < pillow_dist) {
                                 pillow_dist = dist;
                                 pillow_vbox = vbox;
                             }
                         }
+
+                        velocity.linear[d] = 0.0;
                     }
                 }
             }
