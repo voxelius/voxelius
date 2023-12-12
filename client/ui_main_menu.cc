@@ -70,6 +70,7 @@ void ui::main_menu::render()
     ui::imgui::label(xpos, ypos, text, globals::font_8px, style, 4U);
     ypos += globals::font_8px.get_glyph_height() * 4.5;
 
+    // UNDONE: version constant
     text.set(0, L"Indev 0.0.1");
     ui::imgui::label(xpos, ypos, text, globals::font_8px, style, 1U);
     ypos += globals::font_8px.get_glyph_height();

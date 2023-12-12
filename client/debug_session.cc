@@ -9,7 +9,6 @@
 #include <client/voxel_atlas.hh>
 #include <entt/entity/registry.hpp>
 #include <glm/gtc/noise.hpp>
-#include <shared/entity/collision.hh>
 #include <shared/entity/head.hh>
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
@@ -104,9 +103,6 @@ void debug_session::run()
 
         auto &transform = globals::registry.emplace<TransformComponent>(globals::player);
         transform.position.y += 16.0;
-
-        auto &coll = globals::registry.emplace<CollisionComponent>(globals::player);
-        coll.size = glm::dvec3{0.8, 1.8, 0.8};
 
         globals::ui_screen = ui::SCREEN_NONE;
     }

@@ -21,7 +21,7 @@ void canvas::Text::create(int width, int height)
     texture.storage(texture_width, texture_height, PixelFormat::R32_UINT);
     texture.write(0, 0, texture_width, texture_height, PixelFormat::R32_UINT, pixels.data());
 
-    vec.resize(width);
+    vec.resize(texture_width);
 }
 
 void canvas::Text::set(int line, const std::string &value)
