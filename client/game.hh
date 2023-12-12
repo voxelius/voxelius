@@ -4,6 +4,12 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_GAME_HH
 #define CLIENT_GAME_HH
+#include <shared/config/variable.hh>
+
+namespace client_game
+{
+extern config::Number<unsigned int> pixel_size;
+} // namespace client_game
 
 namespace client_game
 {

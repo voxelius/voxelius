@@ -7,6 +7,7 @@
 #include <client/canvas_text.hh>
 #include <client/canvas.hh>
 #include <client/event/key.hh>
+#include <client/game.hh>
 #include <client/globals.hh>
 #include <client/player_look.hh>
 #include <client/ui_imgui.hh>
@@ -69,6 +70,12 @@ static void draw_graphics(int xpos, int ypos, int width, int ystep)
     text.set(0, fmt::format("View distance: {}", camera::view_distance.value));
     if(ui::imgui::slider(xpos, ypos, width, view_distance_v, text, globals::font_16px, style, 1.0, 32.0, 1.0))
         camera::view_distance.value = view_distance_v;
+    ypos += ystep;
+
+    text.set(0, fmt::format("Pixel size: {}", client_game::pixel_size.value));
+    if(ui::imgui::button(xpos, ypos, width, text, globals::font_16px, style))
+        client_game::pixel_size.value += 1U;
+    client_game::pixel_size.value = cxmath::clamp(client_game::pixel_size.value % 9U, 1U, 8U);
     ypos += ystep;
 }
 

@@ -28,10 +28,14 @@
 #include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
 #include <shared/config/boolean.hh>
+#include <shared/config/config.hh>
+#include <shared/config/number.hh>
 #include <shared/inertial.hh>
 #include <shared/ray_dda.hh>
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
+
+config::Number<unsigned int> client_game::pixel_size = 4U;
 
 static void on_mouse_button(const MouseButtonEvent &event)
 {
@@ -63,6 +67,8 @@ static void on_framebuffer_size(const FramebufferSizeEvent &event)
 
 void client_game::init()
 {
+    config::add("game.pixel_size", client_game::pixel_size);
+
     shaders::init();
     VoxelVertex::init();
 
@@ -169,7 +175,10 @@ void client_game::update_late()
 
 void client_game::render()
 {
-    glViewport(0, 0, globals::width, globals::height);
+    const int scaled_width = globals::width / client_game::pixel_size.value;
+    const int scaled_height = globals::height / client_game::pixel_size.value;
+
+    glViewport(0, 0, scaled_width, scaled_height);
     glClearColor(0.529, 0.808, 0.922, 1.000);
     glBindFramebuffer(GL_FRAMEBUFFER, globals::world_fbo.get());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -189,7 +198,7 @@ void client_game::render()
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    glBlitNamedFramebuffer(globals::world_fbo.get(), 0, 0, 0, globals::width, globals::height, 0, 0, globals::width, globals::height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+    glBlitNamedFramebuffer(globals::world_fbo.get(), 0, 0, 0, scaled_width, scaled_height, 0, 0, globals::width, globals::height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     canvas::prepare();
 
