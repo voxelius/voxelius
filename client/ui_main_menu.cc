@@ -13,6 +13,9 @@
 #include <client/ui_screen.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
+#include <shared/version.hh>
+#include <spdlog/fmt/fmt.h>
+#include <spdlog/fmt/xchar.h>
 
 static ui::Style style = {};
 static canvas::Text text = {};
@@ -70,8 +73,7 @@ void ui::main_menu::render()
     ui::imgui::label(xpos, ypos, text, globals::font_8px, style, 4U);
     ypos += globals::font_8px.get_glyph_height() * 4.5;
 
-    // UNDONE: version constant
-    text.set(0, L"Indev 0.0.1");
+    text.set(0, L"Indev " VERSION_STRING_W);
     ui::imgui::label(xpos, ypos, text, globals::font_8px, style, 1U);
     ypos += globals::font_8px.get_glyph_height();
     ypos += btn_ystep;

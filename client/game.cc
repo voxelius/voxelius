@@ -40,7 +40,7 @@ config::Number<unsigned int> client_game::pixel_size = 4U;
 
 static void on_mouse_button(const MouseButtonEvent &event)
 {
-    if(globals::ui_screen) {
+    if(!globals::ui_screen) {
         if(event.action == GLFW_PRESS && event.button == GLFW_MOUSE_BUTTON_LEFT) {
             RayDDA ray = RayDDA{camera::get_position(), camera::get_direction()};
             if(ray.propagate(7.0)) {

@@ -16,6 +16,7 @@
 #include <shared/coord.hh>
 #include <shared/entity/head.hh>
 #include <shared/entity/transform.hh>
+#include <shared/version.hh>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/fmt/xchar.h>
 
@@ -60,10 +61,17 @@ void debug_overlay::render()
 
     int ypos = 8;
 
-    // UNDONE: version constant
-    text.set(0, L"Voxelius Indev 0.0.1");
+    text.set(0, L"Voxelius Indev " VERSION_STRING_W);
     canvas::draw_text(8, ypos, text, globals::font_16px, foreground, background, scale);
-    ypos += ystep + ystep / 4;
+    ypos += ystep;
+
+    if(overlay_level.value >= 2U) {
+        text.set(0, CMAKE_CXX_COMPILER_ID_W L" C++ " CMAKE_CXX_COMPILER_VERSION_W L" " CMAKE_SYSTEM_NAME_W L"/" CMAKE_SYSTEM_PROCESSOR_W);
+        canvas::draw_text(8, ypos, text, globals::font_16px, foreground, background, scale);
+        ypos += ystep;
+    }
+
+    ypos += ystep / 4;
 
     if(overlay_level.value >= 1U) {
         if(globals::curtime >= decim_timer) {
@@ -71,7 +79,7 @@ void debug_overlay::render()
             decim_timer = globals::curtime + 60000;
         }
 
-        text.set(0, fmt::format(L"{:.02f} FPS // {:.03f} ms", 1.0 / decim_frametime, 1000.0 * decim_frametime));
+        text.set(0, fmt::format(L"{:.02f} FPS ({:.03f} ms)", 1.0 / decim_frametime, 1000.0 * decim_frametime));
         canvas::draw_text(8, ypos, text, globals::font_16px, foreground,background, scale);
         ypos += ystep + ystep / 4;
 
@@ -91,7 +99,7 @@ void debug_overlay::render()
                 const auto vpos = coord::to_voxel(transform.position);
                 const auto cpos = coord::to_chunk(vpos);
 
-                text.set(0, fmt::format("Chunk: [{} {} {}], Voxel: [{} {} {}]", cpos.x, cpos.y, cpos.z, vpos.x, vpos.y, vpos.z));
+                text.set(0, fmt::format("Chunk: [{} {} {}] [{} {} {}]", cpos.x, cpos.y, cpos.z, vpos.x, vpos.y, vpos.z));
                 canvas::draw_text(8, ypos, text, globals::font_16px, foreground,background, scale);
                 ypos += ystep;
             }
