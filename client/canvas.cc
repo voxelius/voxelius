@@ -110,6 +110,7 @@ void canvas::draw_rect(int xpos, int ypos, int width, int height, const glm::dve
 
     program_rect_col.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    globals::vertices_drawn += 6;
 }
 
 void canvas::draw_rect(int xpos, int ypos, int width, int height, const glxx::Texture2D &texture)
@@ -130,6 +131,7 @@ void canvas::draw_rect(int xpos, int ypos, int width, int height, const glxx::Te
 
     program_rect_tex.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    globals::vertices_drawn += 6;
 }
 
 void canvas::draw_rect(int xpos, int ypos, int width, int height, const glm::dvec4 &color, const glxx::Texture2D &texture)
@@ -150,6 +152,7 @@ void canvas::draw_rect(int xpos, int ypos, int width, int height, const glm::dve
 
     program_rect_tex.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    globals::vertices_drawn += 6;
 }
 
 void canvas::draw_rect_h(int xpos, int ypos, int width, int height, const glm::dvec4 &colx, const glm::dvec4 &coly)
@@ -167,6 +170,7 @@ void canvas::draw_rect_h(int xpos, int ypos, int width, int height, const glm::d
 
     program_rect_col.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    globals::vertices_drawn += 6;
 }
 
 void canvas::draw_rect_v(int xpos, int ypos, int width, int height, const glm::dvec4 &colx, const glm::dvec4 &coly)
@@ -184,6 +188,7 @@ void canvas::draw_rect_v(int xpos, int ypos, int width, int height, const glm::d
 
     program_rect_col.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    globals::vertices_drawn += 6;
 }
 
 void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canvas::Font &font)
@@ -234,4 +239,5 @@ void canvas::draw_text(int xpos, int ypos, const canvas::Text &text, const canva
 
     program_text.bind();
     glDrawArrays(GL_TRIANGLES, 0, 6);
+    globals::vertices_drawn += 6;
 }

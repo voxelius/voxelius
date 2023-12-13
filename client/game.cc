@@ -5,6 +5,7 @@
 #include <client/camera.hh>
 #include <client/canvas_font.hh>
 #include <client/canvas.hh>
+#include <client/debug_overlay.hh>
 #include <client/event/mouse_button.hh>
 #include <client/event/framebuffer_size.hh>
 #include <client/game.hh>
@@ -98,6 +99,8 @@ void client_game::init()
 
     canvas::init();
 
+    debug_overlay::init();
+
     ui::imgui::init();
 
     ui::main_menu::init();
@@ -127,6 +130,8 @@ void client_game::deinit()
     ui::settings::deinit();
     ui::server_list::deinit();
     ui::main_menu::deinit();
+
+    debug_overlay::deinit();
 
     canvas::deinit();
 
@@ -201,6 +206,8 @@ void client_game::render()
     glBlitNamedFramebuffer(globals::world_fbo.get(), 0, 0, 0, scaled_width, scaled_height, 0, 0, globals::width, globals::height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     canvas::prepare();
+
+    debug_overlay::render();
 
     if(globals::ui_screen) {
         if(!globals::registry.valid(globals::player)) {

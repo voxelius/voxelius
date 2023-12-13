@@ -3,6 +3,7 @@ add_library(client STATIC
     "${CMAKE_CURRENT_LIST_DIR}/canvas_font.cc"
     "${CMAKE_CURRENT_LIST_DIR}/canvas_text.cc"
     "${CMAKE_CURRENT_LIST_DIR}/canvas.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/debug_overlay.cc"
     "${CMAKE_CURRENT_LIST_DIR}/debug_session.cc"
     "${CMAKE_CURRENT_LIST_DIR}/game.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"

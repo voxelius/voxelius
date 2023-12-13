@@ -17,6 +17,7 @@ double globals::frametime = 0.0;
 double globals::frametime_avg = 0.0;
 uint64_t globals::curtime = 0;
 uint64_t globals::framecount = 0;
+size_t globals::vertices_drawn = 0;
 
 entt::entity globals::player = entt::null;
 

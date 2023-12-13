@@ -75,7 +75,7 @@ static void draw_graphics(int xpos, int ypos, int width, int ystep)
     text.set(0, fmt::format("Pixel size: {}", client_game::pixel_size.value));
     if(ui::imgui::button(xpos, ypos, width, text, globals::font_16px, style))
         client_game::pixel_size.value += 1U;
-    client_game::pixel_size.value = cxmath::clamp(client_game::pixel_size.value % 9U, 1U, 8U);
+    client_game::pixel_size.value = cxmath::max(client_game::pixel_size.value % 5U, 1U);
     ypos += ystep;
 }
 

@@ -4,12 +4,14 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #ifndef CLIENT_VOXEL_MESHER_HH
 #define CLIENT_VOXEL_MESHER_HH
+#include <stddef.h>
 
 namespace voxel_mesher
 {
 void init();
 void deinit();
 void update();
+size_t get_queue_size();
 } // namespace voxel_mesher
 
 #endif /* CLIENT_VOXEL_MESHER_HH */

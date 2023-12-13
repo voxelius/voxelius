@@ -49,7 +49,7 @@ bool RayDDA::propagate(double max_distance)
         for(unsigned int d = 0U; d < 3U; ++d) {
             const double u = lengths[(d + 1U) % 3U];
             const double v = lengths[(d + 2U) % 3U];
-            if((lengths[d] < u) && (lengths[d] < v)) {
+            if(lengths[d] < u && lengths[d] < v) {
                 vpos[d] += vstep[d];
                 distance = lengths[d];
                 lengths[d] += lstep[d];
