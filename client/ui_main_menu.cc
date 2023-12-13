@@ -13,7 +13,7 @@
 #include <client/ui_screen.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
-#include <shared/version.hh>
+#include <shared/cmake.hh>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/fmt/xchar.h>
 
@@ -69,11 +69,11 @@ void ui::main_menu::render()
     xpos = xstart;
     ypos = ystart;
 
-    text.set(0, L"Voxelius");
+    text.set(0, "Voxelius");
     ui::imgui::label(xpos, ypos, text, globals::font_8px, style, 4U);
     ypos += globals::font_8px.get_glyph_height() * 4.5;
 
-    text.set(0, L"Indev " VERSION_STRING_W);
+    text.set(0, VOXELIUS_SEMVER);
     ui::imgui::label(xpos, ypos, text, globals::font_8px, style, 1U);
     ypos += globals::font_8px.get_glyph_height();
     ypos += btn_ystep;

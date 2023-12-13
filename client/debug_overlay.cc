@@ -11,12 +11,12 @@
 #include <client/voxel_mesher.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
+#include <shared/cmake.hh>
 #include <shared/config/config.hh>
 #include <shared/config/number.hh>
 #include <shared/coord.hh>
 #include <shared/entity/head.hh>
 #include <shared/entity/transform.hh>
-#include <shared/version.hh>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/fmt/xchar.h>
 
@@ -61,15 +61,9 @@ void debug_overlay::render()
 
     int ypos = 8;
 
-    text.set(0, L"Voxelius Indev " VERSION_STRING_W);
+    text.set(0, "Voxelius " VOXELIUS_SEMVER);
     canvas::draw_text(8, ypos, text, globals::font_16px, foreground, background, scale);
     ypos += ystep;
-
-    if(overlay_level.value >= 2U) {
-        text.set(0, CMAKE_CXX_COMPILER_ID_W L" C++ " CMAKE_CXX_COMPILER_VERSION_W L" " CMAKE_SYSTEM_NAME_W L"/" CMAKE_SYSTEM_PROCESSOR_W);
-        canvas::draw_text(8, ypos, text, globals::font_16px, foreground, background, scale);
-        ypos += ystep;
-    }
 
     ypos += ystep / 4;
 
@@ -99,22 +93,16 @@ void debug_overlay::render()
                 const auto vpos = coord::to_voxel(transform.position);
                 const auto cpos = coord::to_chunk(vpos);
 
-                text.set(0, fmt::format("Chunk: [{} {} {}] [{} {} {}]", cpos.x, cpos.y, cpos.z, vpos.x, vpos.y, vpos.z));
+                text.set(0, fmt::format("Chunk: [{} {} {}]", cpos.x, cpos.y, cpos.z));
+                canvas::draw_text(8, ypos, text, globals::font_16px, foreground,background, scale);
+                ypos += ystep;
+
+                text.set(0, fmt::format("Voxel: [{} {} {}]", vpos.x, vpos.y, vpos.z));
                 canvas::draw_text(8, ypos, text, globals::font_16px, foreground,background, scale);
                 ypos += ystep;
             }
 
             ypos += ystep / 4;
         }
-    }
-
-    if(overlay_level.value >= 2U) {
-        text.set(0, fmt::format("Vertices drawn: {}", globals::vertices_drawn));
-        canvas::draw_text(8, ypos, text, globals::font_16px, foreground,background, scale);
-        ypos += ystep;
-
-        text.set(0, fmt::format(L"Mesher queue size: {}", voxel_mesher::get_queue_size()));
-        canvas::draw_text(8, ypos, text, globals::font_16px, foreground,background, scale);
-        ypos += ystep;
     }
 }

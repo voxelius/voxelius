@@ -34,7 +34,6 @@ extern double frametime;
 extern double frametime_avg;
 extern uint64_t curtime;
 extern uint64_t framecount;
-extern size_t vertices_drawn;
 
 extern entt::entity player;
 

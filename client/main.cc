@@ -172,7 +172,6 @@ void client::main()
         globals::frametime = static_cast<double>(globals::curtime - last_curtime) / 1000000.0;
         globals::frametime_avg += globals::frametime;
         globals::frametime_avg *= 0.5;
-        globals::vertices_drawn = 0;
 
         last_curtime = globals::curtime;
 

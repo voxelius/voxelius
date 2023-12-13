@@ -548,8 +548,3 @@ void voxel_mesher::update()
         spdlog::debug("voxel_mesher: {} {}", num_finalized, num_queued);
     }
 }
-
-size_t voxel_mesher::get_queue_size()
-{
-    return workers_pool.get_tasks_queued();
-}

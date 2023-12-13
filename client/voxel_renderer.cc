@@ -123,7 +123,6 @@ void voxel_renderer::render()
             ubo.write(0, sizeof(uniforms), &uniforms);
             vao.set_vertex_buffer(VOXEL_VBO_BINDING, mesh.meshes[VOXEL_DRAW_SOLID].vbo, sizeof(VoxelVertex));
             glDrawArrays(GL_TRIANGLES, 0, mesh.meshes[VOXEL_DRAW_SOLID].vertices);
-            globals::vertices_drawn += mesh.meshes[VOXEL_DRAW_SOLID].vertices;
         }
     }
 }

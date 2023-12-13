@@ -1,0 +1,19 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#ifndef SHARED_CMAKE_HH_IN
+#define SHARED_CMAKE_HH_IN
+
+#define CMAKE_SYSTEM "${CMAKE_SYSTEM}"
+#define CMAKE_SYSTEM_NAME "${CMAKE_SYSTEM_NAME}"
+#define CMAKE_SYSTEM_VERSION "${CMAKE_SYSTEM_VERSION}"
+#define CMAKE_SYSTEM_PROCESSOR "${CMAKE_SYSTEM_PROCESSOR}"
+
+#define CMAKE_CXX_COMPILER_ID "${CMAKE_CXX_COMPILER_ID}"
+#define CMAKE_CXX_COMPILER_VERSION "${CMAKE_CXX_COMPILER_VERSION}"
+#define CMAKE_CXX_STANDARD ${CMAKE_CXX_STANDARD}
+
+#define VOXELIUS_SEMVER "${VOXELIUS_SEMVER}"
+
+#endif /* SHARED_CMAKE_HH_IN */

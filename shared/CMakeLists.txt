@@ -13,7 +13,7 @@ add_library(shared STATIC
 target_include_directories(shared PUBLIC "${CMAKE_SOURCE_DIR}")
 target_link_libraries(shared PUBLIC entt glm parson physfs spdlog thread_pool)
 
-configure_file("${CMAKE_CURRENT_LIST_DIR}/version.hh.in" "${CMAKE_CURRENT_LIST_DIR}/version.hh")
+configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake.hh.in" "${CMAKE_CURRENT_LIST_DIR}/cmake.hh")
 
 if(WIN32)
     # https://github.com/voxelius/voxelius/issues/2#issuecomment-1757782477
