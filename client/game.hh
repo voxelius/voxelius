@@ -9,6 +9,7 @@
 namespace client_game
 {
 extern config::Number<unsigned int> pixel_size;
+extern config::String username;
 } // namespace client_game
 
 namespace client_game

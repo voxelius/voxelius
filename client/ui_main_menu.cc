@@ -9,12 +9,10 @@
 #include <client/ui_screen.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
-#include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <shared/cmake.hh>
-#include <spdlog/spdlog.h>
 
-constexpr static const ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
+constexpr static const ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground;
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
@@ -40,18 +38,19 @@ void ui::main_menu::init()
 void ui::main_menu::layout()
 {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(viewport->Pos);
-    ImGui::SetNextWindowSize(viewport->Size);
+    const ImVec2 window_start = ImVec2{0.0f, viewport->Size.y * 0.10f};
+    const ImVec2 window_size = ImVec2{viewport->Size.x, viewport->Size.y * 0.80f};
+
+    ImGui::SetNextWindowPos(window_start);
+    ImGui::SetNextWindowSize(window_size);
 
     if(ImGui::Begin("###MainMenu", nullptr, MENU_FLAGS)) {
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{0.0f, 2.0f * globals::ui_scale});
 
-        ImGui::SetCursorPosY(24.0f * globals::ui_scale);
-
         ImGui::PushFont(globals::font_menu_title);
         constexpr static const char *title_str = "Voxelius";
         const float title_width = ImGui::CalcTextSize(title_str).x;
-        const float title_xpos = 0.5f * (viewport->Size.x - title_width);
+        const float title_xpos = 0.5f * (window_size.x - title_width);
         ImGui::SetCursorPosX(title_xpos);
         ImGui::TextUnformatted(title_str);
         ImGui::PopFont();
@@ -59,16 +58,16 @@ void ui::main_menu::layout()
         ImGui::PushFont(globals::font_default);
         constexpr static const char *subtitle_str = VOXELIUS_SEMVER;
         const float subtitle_width = ImGui::CalcTextSize(subtitle_str).x;
-        const float subtitle_xpos = 0.5f * (viewport->Size.x - subtitle_width);
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 8.0f * globals::ui_scale);
+        const float subtitle_xpos = 0.5f * (window_size.x - subtitle_width);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 10.0f * globals::ui_scale);
         ImGui::SetCursorPosX(subtitle_xpos);
         ImGui::TextUnformatted(subtitle_str);
         ImGui::PopFont();
 
-        ImGui::Dummy(ImVec2{0.0f, 16.0f * globals::ui_scale});
+        ImGui::Dummy(ImVec2{0.0f, 10.0f * globals::ui_scale});
 
         const float button_width = 192.0f * globals::ui_scale;
-        const float button_xpos = 0.5f * (viewport->Size.x - button_width);
+        const float button_xpos = 0.5f * (window_size.x - button_width);
 
         ImGui::PushFont(globals::font_menu_button);
         ImGui::SetCursorPosX(button_xpos);
@@ -89,6 +88,7 @@ void ui::main_menu::layout()
         ImGui::PopFont();
 
         ImGui::PopStyleVar();
+        ImGui::SameLine();
     }
 
     ImGui::End();
