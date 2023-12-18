@@ -242,6 +242,12 @@ void client::main()
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
+    ImGuiStyle &style = ImGui::GetStyle();
+    style.Colors[ImGuiCol_Button] = ImVec4{0.000, 0.000, 0.000, 0.750};
+    style.Colors[ImGuiCol_ButtonHovered] = ImVec4{0.125, 0.125, 0.125, 1.000};
+    style.Colors[ImGuiCol_ButtonActive] = ImVec4{0.250, 0.250, 0.250, 1.000};
+    style.Colors[ImGuiCol_NavHighlight] = ImVec4{0.500, 0.500, 0.500, 1.000};
+
     globals::frametime = 0.0;
     globals::frametime_avg = 0.0;
     globals::curtime = epoch::microseconds();

@@ -15,6 +15,8 @@
 #include <client/shaders.hh>
 #include <client/ui_main_menu.hh>
 #include <client/ui_screen.hh>
+#include <client/ui_server_list.hh>
+#include <client/ui_settings.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_atlas.hh>
 #include <client/voxel_mesher.hh>
@@ -86,6 +88,8 @@ void client_game::init()
     voxel_renderer::init();
 
     ui::main_menu::init();
+    ui::server_list::init();
+    ui::settings::init();
 
     // We want to start in the main menu
     globals::ui_screen = ui::SCREEN_MAIN_MENU;
@@ -179,6 +183,12 @@ void client_game::layout()
         switch(globals::ui_screen) {
             case ui::SCREEN_MAIN_MENU:
                 ui::main_menu::layout();
+                break;
+            case ui::SCREEN_SERVER_LIST:
+                ui::server_list::layout();
+                break;
+            case ui::SCREEN_SETTINGS:
+                ui::settings::layout();
                 break;
         }
     }

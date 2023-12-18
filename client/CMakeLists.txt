@@ -10,6 +10,8 @@ add_library(client STATIC
     "${CMAKE_CURRENT_LIST_DIR}/screenshot.cc"
     "${CMAKE_CURRENT_LIST_DIR}/shaders.cc"
     "${CMAKE_CURRENT_LIST_DIR}/ui_main_menu.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/ui_server_list.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/ui_settings.cc"
     "${CMAKE_CURRENT_LIST_DIR}/voxel_anims.cc"
     "${CMAKE_CURRENT_LIST_DIR}/voxel_atlas.cc"
     "${CMAKE_CURRENT_LIST_DIR}/voxel_mesher.cc"

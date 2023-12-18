@@ -44,9 +44,6 @@ void ui::main_menu::layout()
     ImGui::SetNextWindowSize(viewport->Size);
 
     if(ImGui::Begin("###MainMenu", nullptr, MENU_FLAGS)) {
-        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.000, 0.000, 0.000, 0.750});
-        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.125, 0.125, 0.125, 1.000});
-        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.250, 0.250, 0.250, 1.000});
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{0.0f, 2.0f * globals::ui_scale});
 
         ImGui::SetCursorPosY(24.0f * globals::ui_scale);
@@ -80,11 +77,11 @@ void ui::main_menu::layout()
         ImGui::Spacing();
         ImGui::SetCursorPosX(button_xpos);
         if(ImGui::Button("Join a Server###MainMenu_JoinGame", ImVec2{button_width, 0.0f}))
-            spdlog::error("Join a Server not implemented");
+            globals::ui_screen = ui::SCREEN_SERVER_LIST;
         ImGui::Spacing();
         ImGui::SetCursorPosX(button_xpos);
         if(ImGui::Button("Settings###MainMenu_Settings", ImVec2{button_width, 0.0f}))
-            spdlog::error("Settings not implemented");
+            globals::ui_screen = ui::SCREEN_SETTINGS;
         ImGui::Spacing();
         ImGui::SetCursorPosX(button_xpos);
         if(ImGui::Button("Quit Game###MainMenu_Quit", ImVec2{button_width, 0.0f}))
@@ -92,7 +89,6 @@ void ui::main_menu::layout()
         ImGui::PopFont();
 
         ImGui::PopStyleVar();
-        ImGui::PopStyleColor(3);
     }
 
     ImGui::End();
