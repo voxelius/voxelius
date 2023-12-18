@@ -24,7 +24,7 @@ config::Number<double> player_look::sensitivity = 0.25;
 
 static void on_cursor_pos(const CursorPosEvent &event)
 {
-    if(!globals::ui_screen && globals::registry.valid(globals::player)) {
+    if(globals::registry.valid(globals::player)) {
         const double dx = event.xpos - previous_cx;
         const double dy = event.ypos - previous_cy;
 

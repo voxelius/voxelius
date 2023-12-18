@@ -14,11 +14,6 @@ class Texture2D;
 class Renderbuffer;
 } // namespace glxx
 
-namespace canvas
-{
-class Font;    
-} // namespace canvas
-
 struct GLFWwindow;
 class World;
 
@@ -40,12 +35,6 @@ extern entt::entity player;
 extern glxx::Framebuffer world_fbo;
 extern glxx::Texture2D world_fbo_color;
 extern glxx::Renderbuffer world_fbo_depth;
-
-extern canvas::Font font_8px;
-extern canvas::Font font_16px;
-
-extern unsigned int ui_scale;
-extern unsigned int ui_screen;
 } // namespace globals
 
 #endif /* CLIENT_GLOBALS_HH */

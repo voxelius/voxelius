@@ -104,7 +104,7 @@ void player_move::update()
         auto &velocity = globals::registry.get<VelocityComponent>(globals::player);
 
         glm::dvec3 direction = {};
-        if(!globals::ui_screen) {
+        if(/*!globals::ui_screen*/ true) {
             if(in_keys & IN_FW)
                 direction += DIR_FORWARD;
             if(in_keys & IN_BK)
