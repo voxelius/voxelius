@@ -3,7 +3,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <array>
-#include <client/event/key.hh>
+#include <client/event/glfw_key.hh>
 #include <client/globals.hh>
 #include <client/player_move.hh>
 #include <entt/entity/registry.hpp>
@@ -33,7 +33,7 @@ static glm::dvec2 accelerate_2D(const glm::dvec2 &velocity, const glm::dvec2 &di
     return velocity + direction * cxmath::min(accel * wish_speed * globals::frametime, add_speed);
 }
 
-static void on_key(const KeyEvent &event)
+static void on_glfw_key(const GlfwKeyEvent &event)
 {
     if(event.action == GLFW_PRESS) {
         switch(event.key) {
@@ -93,7 +93,7 @@ static void on_key(const KeyEvent &event)
 
 void player_move::init()
 {
-    globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
+    globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
 }
 
 void player_move::update()
@@ -104,7 +104,7 @@ void player_move::update()
         auto &velocity = globals::registry.get<VelocityComponent>(globals::player);
 
         glm::dvec3 direction = {};
-        if(/*!globals::ui_screen*/ true) {
+        if(!globals::ui_screen) {
             if(in_keys & IN_FW)
                 direction += DIR_FORWARD;
             if(in_keys & IN_BK)

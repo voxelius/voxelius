@@ -4,6 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/globals.hh>
 #include <client/glxx/framebuffer.hh>
+#include <client/ui_screen.hh>
 
 GLFWwindow *globals::window = nullptr;
 
@@ -21,3 +22,10 @@ entt::entity globals::player = entt::null;
 glxx::Framebuffer globals::world_fbo = {};
 glxx::Texture2D globals::world_fbo_color = {};
 glxx::Renderbuffer globals::world_fbo_depth = {};
+
+ImFont *globals::font_default = nullptr;
+ImFont *globals::font_menu_title = nullptr;
+ImFont *globals::font_menu_button = nullptr;
+
+unsigned int globals::ui_scale = 0U;
+unsigned int globals::ui_screen = ui::SCREEN_NONE;

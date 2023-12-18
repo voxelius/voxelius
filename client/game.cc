@@ -3,8 +3,9 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/camera.hh>
-#include <client/event/mouse_button.hh>
-#include <client/event/framebuffer_size.hh>
+#include <client/event/glfw_mouse_button.hh>
+#include <client/event/glfw_framebuffer_size.hh>
+#include <client/event/imgui_fonts_reload.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
 #include <client/glxx/framebuffer.hh>
@@ -12,6 +13,8 @@
 #include <client/player_move.hh>
 #include <client/screenshot.hh>
 #include <client/shaders.hh>
+#include <client/ui_main_menu.hh>
+#include <client/ui_screen.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_atlas.hh>
 #include <client/voxel_mesher.hh>
@@ -30,12 +33,12 @@
 
 config::Number<unsigned int> client_game::pixel_size = 4U;
 
-static void on_mouse_button(const MouseButtonEvent &event)
+static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
 {
 
 }
 
-static void on_framebuffer_size(const FramebufferSizeEvent &event)
+static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
 {
     globals::world_fbo.create();
     globals::world_fbo_color.create();
@@ -45,6 +48,23 @@ static void on_framebuffer_size(const FramebufferSizeEvent &event)
     globals::world_fbo.attach(GL_COLOR_ATTACHMENT0, globals::world_fbo_color);
     globals::world_fbo.attach(GL_DEPTH_ATTACHMENT, globals::world_fbo_depth);
     globals::world_fbo.set_fragment_targets(GL_COLOR_ATTACHMENT0);
+}
+
+static void on_imgui_fonts_reload(const ImGuiFontsReloadEvent &event)
+{
+    std::vector<uint8_t> font = {};
+
+    if(!vfs::read_bytes("/fonts/SourceCodePro-Regular.ttf", font))
+        std::terminate();
+    globals::font_default = event.fonts->AddFontFromMemoryTTF(font.data(), font.size(), 16.0f * event.scale, &event.config);
+
+    if(!vfs::read_bytes("/fonts/din1451alt.ttf", font))
+        std::terminate();
+    globals::font_menu_title = event.fonts->AddFontFromMemoryTTF(font.data(), font.size(), 64.0f * event.scale, &event.config);
+
+    if(!vfs::read_bytes("/fonts/PTMono-Regular.ttf", font))
+        std::terminate();
+    globals::font_menu_button = event.fonts->AddFontFromMemoryTTF(font.data(), font.size(), 16.0f * event.scale, &event.config);
 }
 
 void client_game::init()
@@ -65,8 +85,14 @@ void client_game::init()
     voxel_mesher::init();
     voxel_renderer::init();
 
-    globals::dispatcher.sink<MouseButtonEvent>().connect<&on_mouse_button>();
-    globals::dispatcher.sink<FramebufferSizeEvent>().connect<&on_framebuffer_size>();
+    ui::main_menu::init();
+
+    // We want to start in the main menu
+    globals::ui_screen = ui::SCREEN_MAIN_MENU;
+
+    globals::dispatcher.sink<GlfwMouseButtonEvent>().connect<&on_glfw_mouse_button>();
+    globals::dispatcher.sink<GlfwFramebufferSizeEvent>().connect<&on_glfw_framebuffer_size>();
+    globals::dispatcher.sink<ImGuiFontsReloadEvent>().connect<&on_imgui_fonts_reload>();
 }
 
 void client_game::init_late()
@@ -110,7 +136,14 @@ void client_game::update()
 
 void client_game::update_late()
 {
-
+    if(globals::ui_screen) {
+        glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        glfwSetInputMode(globals::window, GLFW_RAW_MOUSE_MOTION, false);
+    }
+    else if(globals::registry.valid(globals::player)) {
+        glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        glfwSetInputMode(globals::window, GLFW_RAW_MOUSE_MOTION, player_look::raw_input.value);
+    }
 }
 
 void client_game::render()
@@ -130,13 +163,25 @@ void client_game::render()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glDisable(GL_DEPTH_TEST);
-
-    glEnable(GL_BLEND);
-    glBlendEquation(GL_FUNC_ADD);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
     glBlitNamedFramebuffer(globals::world_fbo.get(), 0, 0, 0, scaled_width, scaled_height, 0, 0, globals::width, globals::height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+}
+
+void client_game::layout()
+{
+    ImGui::PushFont(globals::font_default);
+
+    if(globals::ui_screen) {
+        const float width_f = static_cast<float>(globals::width);
+        const float height_f = static_cast<float>(globals::height);
+        const ImU32 splash = ImGui::GetColorU32(ImVec4{0.000, 0.000, 0.000, 0.800});
+        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2{}, ImVec2{width_f, height_f}, splash);
+
+        switch(globals::ui_screen) {
+            case ui::SCREEN_MAIN_MENU:
+                ui::main_menu::layout();
+                break;
+        }
+    }
+
+    ImGui::PopFont();
 }

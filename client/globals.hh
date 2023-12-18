@@ -15,6 +15,7 @@ class Renderbuffer;
 } // namespace glxx
 
 struct GLFWwindow;
+struct ImFont;
 class World;
 
 namespace globals
@@ -35,6 +36,13 @@ extern entt::entity player;
 extern glxx::Framebuffer world_fbo;
 extern glxx::Texture2D world_fbo_color;
 extern glxx::Renderbuffer world_fbo_depth;
+
+extern ImFont *font_default;
+extern ImFont *font_menu_title;
+extern ImFont *font_menu_button;
+
+extern unsigned int ui_scale;
+extern unsigned int ui_screen;
 } // namespace globals
 
 #endif /* CLIENT_GLOBALS_HH */

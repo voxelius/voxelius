@@ -19,6 +19,7 @@ void deinit();
 void update();
 void update_late();
 void render();
+void layout();
 } // namespace client_game
 
 #endif /* CLIENT_GAME_HH */

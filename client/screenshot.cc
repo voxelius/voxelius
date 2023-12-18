@@ -2,7 +2,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#include <client/event/key.hh>
+#include <client/event/glfw_key.hh>
 #include <client/globals.hh>
 #include <client/glxx/framebuffer.hh>
 #include <client/screenshot.hh>
@@ -18,7 +18,7 @@ static void png_write(void *context, void *data, int size)
     vfs::write(file, data, size);
 }
 
-static void on_key(const KeyEvent &event)
+static void on_glfw_key(const GlfwKeyEvent &event)
 {
     if(event.key == GLFW_KEY_F2 && event.action == GLFW_PRESS) {
         screenshot::take();
@@ -28,7 +28,7 @@ static void on_key(const KeyEvent &event)
 
 void screenshot::init()
 {
-    globals::dispatcher.sink<KeyEvent>().connect<&on_key>();
+    globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
 }
 
 void screenshot::take()

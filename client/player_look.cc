@@ -2,7 +2,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
-#include <client/event/cursor_pos.hh>
+#include <client/event/glfw_cursor_pos.hh>
 #include <client/globals.hh>
 #include <client/player_look.hh>
 #include <entt/entity/registry.hpp>
@@ -22,9 +22,9 @@ static double previous_cy = 0.0;
 config::Boolean player_look::raw_input = true;
 config::Number<double> player_look::sensitivity = 0.25;
 
-static void on_cursor_pos(const CursorPosEvent &event)
+static void on_glfw_cursor_pos(const GlfwCursorPosEvent &event)
 {
-    if(globals::registry.valid(globals::player)) {
+    if(!globals::ui_screen && globals::registry.valid(globals::player)) {
         const double dx = event.xpos - previous_cx;
         const double dy = event.ypos - previous_cy;
 
@@ -47,5 +47,5 @@ void player_look::init()
     previous_cx = globals::width / 2;
     previous_cy = globals::height / 2;
 
-    globals::dispatcher.sink<CursorPosEvent>().connect<&on_cursor_pos>();
+    globals::dispatcher.sink<GlfwCursorPosEvent>().connect<&on_glfw_cursor_pos>();
 }

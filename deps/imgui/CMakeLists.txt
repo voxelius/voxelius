@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.14)
-project(imgui LANGUAGES CXX VERSION 1.90)
+project(imgui LANGUAGES CXX VERSION 1.90.1)
 
 add_library(imgui STATIC
     "${CMAKE_CURRENT_LIST_DIR}/src/imgui_demo.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/src/imgui_draw.cpp"
+    "${CMAKE_CURRENT_LIST_DIR}/src/imgui_stdlib.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/src/imgui_tables.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/src/imgui_widgets.cpp"
     "${CMAKE_CURRENT_LIST_DIR}/src/imgui.cpp")

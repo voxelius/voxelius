@@ -4,6 +4,7 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include <client/debug_session.hh>
 #include <client/globals.hh>
+#include <client/ui_screen.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_atlas.hh>
 #include <entt/entity/registry.hpp>
@@ -102,5 +103,7 @@ void debug_session::run()
 
         auto &transform = globals::registry.emplace<TransformComponent>(globals::player);
         transform.position.y += 16.0;
+
+        globals::ui_screen = ui::SCREEN_NONE;
     }
 }
