@@ -1,4 +1,5 @@
 add_library(client STATIC
+    "${CMAKE_CURRENT_LIST_DIR}/background.cc"
     "${CMAKE_CURRENT_LIST_DIR}/camera.cc"
     "${CMAKE_CURRENT_LIST_DIR}/debug_session.cc"
     "${CMAKE_CURRENT_LIST_DIR}/game.cc"

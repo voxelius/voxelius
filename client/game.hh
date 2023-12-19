@@ -8,6 +8,7 @@
 
 namespace client_game
 {
+extern config::Boolean menu_background;
 extern config::Number<unsigned int> pixel_size;
 extern config::String username;
 } // namespace client_game

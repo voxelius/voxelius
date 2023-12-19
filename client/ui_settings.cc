@@ -32,25 +32,44 @@ static void on_glfw_key(const GlfwKeyEvent &event)
 
 static void layout_general()
 {
+    ImGui::SeparatorText("Multiplayer");
+
+    // FIXME: make this readonly when the player
+    // is connected to the server - changing usernames
+    // dynamically shouldn't be allowed by servers
     ImGui::InputText("Username", &client_game::username.value, ImGuiInputTextFlags_CharsNoBlank);
 }
 
 static void layout_controls()
 {
     ImGui::SeparatorText("Keyboard");
+    ImGui::TextUnformatted("Nothing to see here");
 
+    ImGui::Spacing();
     ImGui::SeparatorText("Mouse");
+
     float sensitivity_value = player_look::sensitivity.value;
     ImGui::SliderFloat("Acceleration", &sensitivity_value, 0.25, 0.50, "%.02f");
     player_look::sensitivity.value = sensitivity_value;
+
     ImGui::Checkbox("Raw input", &player_look::raw_input.value);
+
+    ImGui::Spacing();
+    ImGui::SeparatorText("Gamepad");
+    ImGui::TextUnformatted("Nothing to see here");
 }
 
 static void layout_graphics()
 {
+    ImGui::SeparatorText("Common");
+
     int fov_value = camera::fov.value;
     ImGui::SliderInt("FOV", &fov_value, 54, 110);
     camera::fov.value = fov_value;
+
+
+    ImGui::Spacing();
+    ImGui::SeparatorText("Render");
 
     int pixel_value = client_game::pixel_size.value;
     ImGui::SliderInt("Pixel size", &pixel_value, 1, 4);
@@ -59,6 +78,12 @@ static void layout_graphics()
     int view_value = camera::view_distance.value;
     ImGui::SliderInt("View distance", &view_value, 1, 32);
     camera::view_distance.value = view_value;
+
+
+    ImGui::Spacing();
+    ImGui::SeparatorText("UI");
+
+    ImGui::Checkbox("Menu background", &client_game::menu_background.value);
 }
 
 static void layout_sound()
@@ -84,23 +109,40 @@ void ui::settings::layout()
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{2.0f * globals::ui_scale, 2.0f * globals::ui_scale});
 
         if(ImGui::BeginTabBar("###Settings_Tabs", ImGuiTabBarFlags_FittingPolicyResizeDown)) {
+            if(ImGui::TabItemButton("<<")) {
+                // Go back to the main menu
+                globals::ui_screen = ui::SCREEN_MAIN_MENU;
+            }
+
+            // STOP COPYPASTING CODE
             if(ImGui::BeginTabItem("General")) {
-                layout_general();
+                if(ImGui::BeginChild("###Settings_General"))
+                    layout_general();
+                ImGui::EndChild();
                 ImGui::EndTabItem();
             }
 
+            // STOP COPYPASTING CODE
             if(ImGui::BeginTabItem("Controls")) {
-                layout_controls();
+                if(ImGui::BeginChild("###Settings_Controls"))
+                    layout_controls();
+                ImGui::EndChild();
                 ImGui::EndTabItem();
             }
 
+            // STOP COPYPASTING CODE
             if(ImGui::BeginTabItem("Graphics")) {
-                layout_graphics();
+                if(ImGui::BeginChild("###Settings_Graphics"))
+                    layout_graphics();
+                ImGui::EndChild();
                 ImGui::EndTabItem();
             }
 
+            // STOP COPYPASTING CODE
             if(ImGui::BeginTabItem("Sound")) {
-                layout_sound();
+                if(ImGui::BeginChild("###Settings_Sound"))
+                    layout_sound();
+                ImGui::EndChild();
                 ImGui::EndTabItem();
             }
 

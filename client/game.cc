@@ -2,6 +2,7 @@
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#include <client/background.hh>
 #include <client/camera.hh>
 #include <client/event/glfw_mouse_button.hh>
 #include <client/event/glfw_framebuffer_size.hh>
@@ -34,6 +35,7 @@
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
 
+config::Boolean client_game::menu_background = true;
 config::Number<unsigned int> client_game::pixel_size = 4U;
 config::String client_game::username = {"player"};
 
@@ -73,6 +75,7 @@ static void on_imgui_fonts_reload(const ImGuiFontsReloadEvent &event)
 
 void client_game::init()
 {
+    config::add("game.menu_background", client_game::menu_background);
     config::add("game.pixel_size", client_game::pixel_size);
     config::add("game.username", client_game::username);
 
@@ -154,6 +157,8 @@ void client_game::init()
     style.WindowRounding = 0.0f;
     style.ScrollbarRounding = 0.0f;
 
+    background::init();
+
     ui::main_menu::init();
     ui::server_list::init();
     ui::settings::init();
@@ -178,6 +183,8 @@ void client_game::deinit()
     globals::world_fbo_depth.destroy();
     globals::world_fbo_color.destroy();
     globals::world_fbo.destroy();
+
+    background::deinit();
 
     voxel_renderer::deinit();
     voxel_mesher::deinit();
@@ -240,6 +247,16 @@ void client_game::render()
 void client_game::layout()
 {
     ImGui::PushFont(globals::font_default);
+
+    if(!globals::registry.valid(globals::player)) {
+        if(client_game::menu_background.value) {
+            background::render();
+        }
+        else {
+            glClearColor(0.25f, 0.25f, 0.25f, 1.00f);
+            glClear(GL_COLOR_BUFFER_BIT);
+        }
+    }
 
     if(globals::ui_screen) {
         const float width_f = static_cast<float>(globals::width);

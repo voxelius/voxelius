@@ -288,6 +288,10 @@ void client::main()
 
         client_game::render();
 
+        glDisable(GL_DEPTH_TEST);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, globals::width, globals::height);
+
         // All the 2D rendering goes through ImGui, and it being
         // an immediate-mode solution makes it hard to separate
         // rendering and UI logic updates, so this here function
@@ -295,10 +299,6 @@ void client::main()
         client_game::layout();
 
         ImGui::Render();
-
-        glDisable(GL_DEPTH_TEST);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, globals::width, globals::height);
 
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
