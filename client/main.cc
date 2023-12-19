@@ -7,12 +7,10 @@
 #include <client/event/glfw_mouse_button.hh>
 #include <client/event/glfw_scroll.hh>
 #include <client/event/glfw_framebuffer_size.hh>
-#include <client/event/imgui_fonts_reload.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
 #include <client/image.hh>
 #include <client/main.hh>
-#include <client/ui_screen.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <glad/gl.h>
 #include <imgui.h>
@@ -71,38 +69,6 @@ static void on_glfw_framebuffer_size(GLFWwindow *window, int width, int height)
     fb_event.height = globals::height;
     fb_event.aspect = globals::aspect;
     globals::dispatcher.trigger(fb_event);
-
-    const float height_base = 240.0f;
-    const float height_float = height;
-    const unsigned int scale = cxmath::max(1U, cxmath::floor<unsigned int>(height_float / height_base));
-
-    if(globals::ui_scale != scale) {
-        ImGuiIO &io = ImGui::GetIO();
-        ImGuiStyle &style = ImGui::GetStyle();
-        
-        io.Fonts->Clear();
-        //io.Fonts->AddFontDefault();
-
-        ImGuiFontsReloadEvent font_event = {};
-        font_event.fonts = io.Fonts;
-        font_event.config.FontDataOwnedByAtlas = false;
-        font_event.scale = scale;
-        globals::dispatcher.trigger(font_event);
-
-        // This should be here!!! Just calling Build()
-        // on the font atlas does not invalidate internal
-        // device objects defined by the implementation!!!
-        ImGui_ImplOpenGL3_CreateDeviceObjects();
-
-        if(globals::ui_scale) {
-            // Well, ImGuiStyle::ScaleAllSizes indeed takes
-            // the scale values as a RELATIVE scaling, not as
-            // absolute. So I have to make a special crutch
-            style.ScaleAllSizes(static_cast<float>(scale) / static_cast<float>(globals::ui_scale));
-        }
-
-        globals::ui_scale = scale;
-    }
 }
 
 static void on_glfw_key(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -247,19 +213,16 @@ void client::main()
     globals::curtime = epoch::microseconds();
     globals::framecount = 0;
 
-    globals::ui_scale = 0U;
-    globals::ui_screen = ui::SCREEN_NONE;
-
     client_game::init();
 
     int wwidth, wheight;
     glfwGetFramebufferSize(globals::window, &wwidth, &wheight);
     on_glfw_framebuffer_size(globals::window, wwidth, wheight);
 
-    client_game::init_late();
-
     config::load_file("client.conf");
     config::load_cmdline();
+
+    client_game::init_late();
 
     uint64_t last_curtime = globals::curtime;
 

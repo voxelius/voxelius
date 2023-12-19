@@ -37,7 +37,6 @@ extern glxx::Framebuffer world_fbo;
 extern glxx::Texture2D world_fbo_color;
 extern glxx::Renderbuffer world_fbo_depth;
 
-extern ImFont *font_default;
 extern ImFont *font_menu_title;
 extern ImFont *font_menu_button;
 

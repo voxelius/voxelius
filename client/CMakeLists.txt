@@ -5,6 +5,7 @@ add_library(client STATIC
     "${CMAKE_CURRENT_LIST_DIR}/game.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
     "${CMAKE_CURRENT_LIST_DIR}/image.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/lang.cc"
     "${CMAKE_CURRENT_LIST_DIR}/main.cc"
     "${CMAKE_CURRENT_LIST_DIR}/player_look.cc"
     "${CMAKE_CURRENT_LIST_DIR}/player_move.cc"

@@ -23,7 +23,6 @@ glxx::Framebuffer globals::world_fbo = {};
 glxx::Texture2D globals::world_fbo_color = {};
 glxx::Renderbuffer globals::world_fbo_depth = {};
 
-ImFont *globals::font_default = nullptr;
 ImFont *globals::font_menu_title = nullptr;
 ImFont *globals::font_menu_button = nullptr;
 

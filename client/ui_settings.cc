@@ -32,58 +32,63 @@ static void on_glfw_key(const GlfwKeyEvent &event)
 
 static void layout_general()
 {
-    ImGui::SeparatorText("Multiplayer");
-
-    // FIXME: make this readonly when the player
-    // is connected to the server - changing usernames
-    // dynamically shouldn't be allowed by servers
-    ImGui::InputText("Username", &client_game::username.value, ImGuiInputTextFlags_CharsNoBlank);
-}
-
-static void layout_controls()
-{
-    ImGui::SeparatorText("Keyboard");
-    ImGui::TextUnformatted("Nothing to see here");
-
-    ImGui::Spacing();
-    ImGui::SeparatorText("Mouse");
-
-    float sensitivity_value = player_look::sensitivity.value;
-    ImGui::SliderFloat("Acceleration", &sensitivity_value, 0.25, 0.50, "%.02f");
-    player_look::sensitivity.value = sensitivity_value;
-
-    ImGui::Checkbox("Raw input", &player_look::raw_input.value);
-
-    ImGui::Spacing();
-    ImGui::SeparatorText("Gamepad");
-    ImGui::TextUnformatted("Nothing to see here");
-}
-
-static void layout_graphics()
-{
-    ImGui::SeparatorText("Common");
-
     int fov_value = camera::fov.value;
     ImGui::SliderInt("FOV", &fov_value, 54, 110);
     camera::fov.value = fov_value;
 
-
     ImGui::Spacing();
-    ImGui::SeparatorText("Render");
 
-    int pixel_value = client_game::pixel_size.value;
-    ImGui::SliderInt("Pixel size", &pixel_value, 1, 4);
-    client_game::pixel_size.value = pixel_value;
+    if(ImGui::CollapsingHeader("Multiplayer")) {
+        // FIXME: make this readonly when the player
+        // is connected to the server - changing usernames
+        // dynamically shouldn't be allowed by servers
+        ImGui::InputText("Username", &client_game::username.value, ImGuiInputTextFlags_CharsNoBlank);
+    }
+}
 
-    int view_value = camera::view_distance.value;
-    ImGui::SliderInt("View distance", &view_value, 1, 32);
-    camera::view_distance.value = view_value;
+static void layout_controls()
+{
+    if(ImGui::CollapsingHeader("Keyboard")) {
+        ImGui::TextUnformatted("Nothing to see here");
+        ImGui::TextUnformatted("Key bindings are not implemented yet");
+        ImGui::Spacing();
+    }
 
+    if(ImGui::CollapsingHeader("Mouse")) {
+        float sensitivity_value = player_look::sensitivity.value;
+        ImGui::SliderFloat("Acceleration", &sensitivity_value, 0.25, 0.50, "%.02f");
+        player_look::sensitivity.value = sensitivity_value;
 
-    ImGui::Spacing();
-    ImGui::SeparatorText("UI");
+        ImGui::Checkbox("Raw input", &player_look::raw_input.value);
 
-    ImGui::Checkbox("Menu background", &client_game::menu_background.value);
+        ImGui::Spacing();
+    }
+
+    if(ImGui::CollapsingHeader("Gamepad")) {
+        ImGui::TextUnformatted("Nothing to see here");
+        ImGui::TextUnformatted("Gamepad support is not implemented yet");
+        ImGui::Spacing();
+    }
+}
+
+static void layout_graphics()
+{
+    if(ImGui::CollapsingHeader("Performance")) {
+        int pixel_value = client_game::pixel_size.value;
+        ImGui::SliderInt("Pixel size", &pixel_value, 1, 4);
+        client_game::pixel_size.value = pixel_value;
+
+        int view_value = camera::view_distance.value;
+        ImGui::SliderInt("View distance", &view_value, 1, 32);
+        camera::view_distance.value = view_value;
+
+        ImGui::Spacing();
+    }
+
+    if(ImGui::CollapsingHeader("UI")) {
+        ImGui::Checkbox("Menu background", &client_game::menu_background.value);
+        ImGui::Spacing();
+    }
 }
 
 static void layout_sound()

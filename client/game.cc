@@ -6,10 +6,10 @@
 #include <client/camera.hh>
 #include <client/event/glfw_mouse_button.hh>
 #include <client/event/glfw_framebuffer_size.hh>
-#include <client/event/imgui_fonts_reload.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
 #include <client/glxx/framebuffer.hh>
+#include <client/lang.hh>
 #include <client/player_look.hh>
 #include <client/player_move.hh>
 #include <client/screenshot.hh>
@@ -26,6 +26,8 @@
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
+#include <imgui.h>
+#include <imgui_impl_opengl3.h>
 #include <shared/config/boolean.hh>
 #include <shared/config/config.hh>
 #include <shared/config/number.hh>
@@ -35,9 +37,9 @@
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
 
-config::Boolean client_game::menu_background = true;
-config::Number<unsigned int> client_game::pixel_size = 4U;
-config::String client_game::username = {"player"};
+config::Boolean client_game::menu_background = config::Boolean{true};
+config::Number<unsigned int> client_game::pixel_size = config::Number<unsigned int>{4U};
+config::String client_game::username = config::String{"player"};
 
 static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
 {
@@ -54,23 +56,59 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
     globals::world_fbo.attach(GL_COLOR_ATTACHMENT0, globals::world_fbo_color);
     globals::world_fbo.attach(GL_DEPTH_ATTACHMENT, globals::world_fbo_depth);
     globals::world_fbo.set_fragment_targets(GL_COLOR_ATTACHMENT0);
-}
 
-static void on_imgui_fonts_reload(const ImGuiFontsReloadEvent &event)
-{
-    std::vector<uint8_t> font = {};
+    const double height_base = 240.0;
+    const double height_float = event.height;
+    const unsigned int scale = cxmath::max(1U, cxmath::floor<unsigned int>(height_float / height_base));
 
-    if(!vfs::read_bytes("/fonts/SourceCodePro-Regular.ttf", font))
-        std::terminate();
-    globals::font_default = event.fonts->AddFontFromMemoryTTF(font.data(), font.size(), 16.0f * event.scale, &event.config);
+    if(globals::ui_scale != scale) {
+        ImGuiIO &io = ImGui::GetIO();
+        ImGuiStyle &style = ImGui::GetStyle();
 
-    if(!vfs::read_bytes("/fonts/din1451alt.ttf", font))
-        std::terminate();
-    globals::font_menu_title = event.fonts->AddFontFromMemoryTTF(font.data(), font.size(), 64.0f * event.scale, &event.config);
+        ImFontConfig font_config = {};
+        font_config.FontDataOwnedByAtlas = false;
 
-    if(!vfs::read_bytes("/fonts/PTMono-Regular.ttf", font))
-        std::terminate();
-    globals::font_menu_button = event.fonts->AddFontFromMemoryTTF(font.data(), font.size(), 16.0f * event.scale, &event.config);
+        io.Fonts->Clear();
+
+        ImFontGlyphRangesBuilder builder = {};
+        std::vector<uint8_t> fontbin = {};
+
+        // This should cover a hefty range of glyph ranges.
+        // UNDONE: just slap the whole UNICODE Plane-0 here?
+        builder.AddRanges(io.Fonts->GetGlyphRangesDefault());
+        builder.AddRanges(io.Fonts->GetGlyphRangesCyrillic());
+        builder.AddRanges(io.Fonts->GetGlyphRangesGreek());
+        builder.AddRanges(io.Fonts->GetGlyphRangesJapanese());
+
+        ImVector<ImWchar> ranges = {};
+        builder.BuildRanges(&ranges);
+
+        if(!vfs::read_bytes("/fonts/SourceCodePro-Regular.ttf", fontbin))
+            std::terminate();
+        io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 16.0f * scale, &font_config, ranges.Data);
+
+        if(!vfs::read_bytes("/fonts/din1451alt.ttf", fontbin))
+            std::terminate();
+        globals::font_menu_title = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 64.0f * scale, &font_config);
+
+        if(!vfs::read_bytes("/fonts/PTMono-Regular.ttf", fontbin))
+            std::terminate();
+        globals::font_menu_button = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 16.0f * scale, &font_config, ranges.Data);
+
+        // This should be here!!! Just calling Build()
+        // on the font atlas does not invalidate internal
+        // device objects defined by the implementation!!!
+        ImGui_ImplOpenGL3_CreateDeviceObjects();
+
+        if(globals::ui_scale) {
+            // Well, ImGuiStyle::ScaleAllSizes indeed takes
+            // the scale values as a RELATIVE scaling, not as
+            // absolute. So I have to make a special crutch
+            style.ScaleAllSizes(static_cast<float>(scale) / static_cast<float>(globals::ui_scale));
+        }
+
+        globals::ui_scale = scale;
+    }
 }
 
 void client_game::init()
@@ -78,6 +116,8 @@ void client_game::init()
     config::add("game.menu_background", client_game::menu_background);
     config::add("game.pixel_size", client_game::pixel_size);
     config::add("game.username", client_game::username);
+
+    lang::init();
 
     shaders::init();
     VoxelVertex::init();
@@ -94,6 +134,17 @@ void client_game::init()
     voxel_renderer::init();
 
     ImGuiStyle &style = ImGui::GetStyle();
+
+    // Rounding on elements looks cool but I am
+    // aiming for a more or less blocky and
+    // visually simple HiDPI-friendly UI style
+    style.TabRounding       = 0.0f;
+    style.GrabRounding      = 0.0f;
+    style.ChildRounding     = 0.0f;
+    style.FrameRounding     = 0.0f;
+    style.PopupRounding     = 0.0f;
+    style.WindowRounding    = 0.0f;
+    style.ScrollbarRounding = 0.0f;
 
     style.Colors[ImGuiCol_Text]                     = ImVec4{1.00f, 1.00f, 1.00f, 1.00f};
     style.Colors[ImGuiCol_TextDisabled]             = ImVec4{0.50f, 0.50f, 0.50f, 1.00f};
@@ -119,9 +170,9 @@ void client_game::init()
     style.Colors[ImGuiCol_Button]                   = ImVec4{0.00f, 0.00f, 0.00f, 0.75f};
     style.Colors[ImGuiCol_ButtonHovered]            = ImVec4{0.12f, 0.12f, 0.12f, 1.00f};
     style.Colors[ImGuiCol_ButtonActive]             = ImVec4{0.25f, 0.25f, 0.25f, 1.00f};
-    style.Colors[ImGuiCol_Header]                   = ImVec4{0.82f, 0.82f, 0.82f, 0.31f};
-    style.Colors[ImGuiCol_HeaderHovered]            = ImVec4{0.83f, 0.83f, 0.83f, 0.80f};
-    style.Colors[ImGuiCol_HeaderActive]             = ImVec4{0.82f, 0.82f, 0.82f, 1.00f};
+    style.Colors[ImGuiCol_Header]                   = ImVec4{0.00f, 0.00f, 0.00f, 0.75f};
+    style.Colors[ImGuiCol_HeaderHovered]            = ImVec4{0.12f, 0.12f, 0.12f, 1.00f};
+    style.Colors[ImGuiCol_HeaderActive]             = ImVec4{0.25f, 0.25f, 0.25f, 1.00f};
     style.Colors[ImGuiCol_Separator]                = ImVec4{0.49f, 0.49f, 0.49f, 0.50f};
     style.Colors[ImGuiCol_SeparatorHovered]         = ImVec4{0.56f, 0.56f, 0.56f, 0.78f};
     style.Colors[ImGuiCol_SeparatorActive]          = ImVec4{0.90f, 0.90f, 0.90f, 1.00f};
@@ -149,13 +200,11 @@ void client_game::init()
     style.Colors[ImGuiCol_NavWindowingDimBg]        = ImVec4{0.80f, 0.80f, 0.80f, 0.20f};
     style.Colors[ImGuiCol_ModalWindowDimBg]         = ImVec4{0.80f, 0.80f, 0.80f, 0.35f};
 
-    style.TabRounding = 0.0f;
-    style.GrabRounding = 0.0f;
-    style.ChildRounding = 0.0f;
-    style.FrameRounding = 0.0f;
-    style.PopupRounding = 0.0f;
-    style.WindowRounding = 0.0f;
-    style.ScrollbarRounding = 0.0f;
+    // Making my own Game UI for Source Engine
+    // taught me one important thing: dimensions
+    // of UI elements must be calculated at semi-runtime
+    // so there's simply no point for an INI file.
+    ImGui::GetIO().IniFilename = nullptr;
 
     background::init();
 
@@ -163,17 +212,16 @@ void client_game::init()
     ui::server_list::init();
     ui::settings::init();
 
-    // We want to start in the main menu
+    globals::ui_scale = 0U;
     globals::ui_screen = ui::SCREEN_MAIN_MENU;
 
     globals::dispatcher.sink<GlfwMouseButtonEvent>().connect<&on_glfw_mouse_button>();
     globals::dispatcher.sink<GlfwFramebufferSizeEvent>().connect<&on_glfw_framebuffer_size>();
-    globals::dispatcher.sink<ImGuiFontsReloadEvent>().connect<&on_imgui_fonts_reload>();
 }
 
 void client_game::init_late()
 {
-
+    lang::init_late();
 }
 
 void client_game::deinit()
@@ -246,8 +294,6 @@ void client_game::render()
 
 void client_game::layout()
 {
-    ImGui::PushFont(globals::font_default);
-
     if(!globals::registry.valid(globals::player)) {
         if(client_game::menu_background.value) {
             background::render();
@@ -276,6 +322,4 @@ void client_game::layout()
                 break;
         }
     }
-
-    ImGui::PopFont();
 }

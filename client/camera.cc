@@ -14,8 +14,8 @@
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
 
-config::Number<double> camera::fov = 75.0;
-config::Number<unsigned int> camera::view_distance = 16U;
+config::Number<double> camera::fov = config::Number<double>{75.0};
+config::Number<unsigned int> camera::view_distance = config::Number<unsigned int>{16U};
 
 static glm::dvec3 cam_position = {};
 static glm::dvec3 cam_euler_angles = {};

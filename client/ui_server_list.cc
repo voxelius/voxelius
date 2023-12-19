@@ -7,6 +7,7 @@
 #include <client/ui_screen.hh>
 #include <client/ui_server_list.hh>
 #include <entt/signal/dispatcher.hpp>
+#include <imgui.h>
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
@@ -26,5 +27,6 @@ void ui::server_list::init()
 
 void ui::server_list::layout()
 {
-
+    ImGui::TextUnformatted("Nothing here yet!");
+    ImGui::TextUnformatted("Press ESCAPE to go back");
 }

@@ -19,8 +19,8 @@ constexpr static const double PITCH_MAX = +1.0 * cxmath::radians(89.9);
 static double previous_cx = 0.0;
 static double previous_cy = 0.0;
 
-config::Boolean player_look::raw_input = true;
-config::Number<double> player_look::sensitivity = 0.25;
+config::Boolean player_look::raw_input = config::Boolean{true};
+config::Number<double> player_look::sensitivity = config::Number<double>{0.25};
 
 static void on_glfw_cursor_pos(const GlfwCursorPosEvent &event)
 {
