@@ -27,6 +27,5 @@ void ui::server_list::init()
 
 void ui::server_list::layout()
 {
-    ImGui::TextUnformatted("Nothing here yet!");
-    ImGui::TextUnformatted("Press ESCAPE to go back");
+    ImGui::ShowDemoWindow();
 }

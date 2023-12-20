@@ -10,6 +10,7 @@
 struct LangInfo final {
     std::string endonym {};
     std::string ietf {};
+    std::string display {};
 };
 
 using lang_vector_t = std::vector<LangInfo>;

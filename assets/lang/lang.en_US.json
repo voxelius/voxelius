@@ -1,6 +1,31 @@
 {
-  "ui.main_menu.debug_session": "Debug Session",
-  "ui.main_menu.server_list": "Connect to a Server",
-  "ui.main_menu.settings": "Settings",
-  "ui.main_menu.quit": "Quit Game"
+  "main_menu.button.debug_session":   "Debug Session",
+  "main_menu.button.server_list":     "Connect to a Server",
+  "main_menu.button.settings":        "Settings",
+  "main_menu.button.quit":            "Quit Game",
+
+  "settings.tab.general":             "General",
+  "settings.tab.controls":            "Controls",
+  "settings.tab.graphics":            "Graphics",
+  "settings.tab.sound":               "Sound",
+
+  "settings.separator.multiplayer":   "Multiplayer",
+  "settings.separator.keyboard":      "Keyboard",
+  "settings.separator.mouse":         "Mouse",
+  "settings.separator.gamepad":       "Gamepad",
+  "settings.separator.performance":   "Performance",
+  "settings.separator.ui":            "UI",
+
+  "settings.option.language":         "Language",
+  "settings.option.fov":              "FOV",
+  "settings.option.username":         "Username",
+  "settings.option.acceleration":     "Acceleration",
+  "settings.option.raw_input":        "Enable raw input",
+  "settings.option.pixel_size":       "Pixel size",
+  "settings.option.view_distance":    "View Distance",
+  "settings.option.menu_background":  "Enable menu background",
+
+  "settings.tooltip.fov":             "Field Of View",
+  "settings.tooltip.raw_input":       "Bypass Operating System's mouse handling and instead deal with cursor movement internally",
+  "settings.tooltip.menu_background": "Use a fancy shader-based menu background... Colorful!"
 }

@@ -65,6 +65,7 @@ void lang::init()
             LangInfo info = {};
             info.ietf = std::string{ietf};
             info.endonym = std::string{endonym};
+            info.display = fmt::format("{} ({})", endonym, ietf);
             manifest.push_back(info);
         }
     }

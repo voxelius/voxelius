@@ -83,9 +83,9 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
         ImVector<ImWchar> ranges = {};
         builder.BuildRanges(&ranges);
 
-        if(!vfs::read_bytes("/fonts/SourceCodePro-Regular.ttf", fontbin))
+        if(!vfs::read_bytes("/fonts/RobotoSlab-Medium.ttf", fontbin))
             std::terminate();
-        io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 16.0f * scale, &font_config, ranges.Data);
+        io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 13.0f * scale, &font_config, ranges.Data);
 
         if(!vfs::read_bytes("/fonts/din1451alt.ttf", fontbin))
             std::terminate();
@@ -170,9 +170,9 @@ void client_game::init()
     style.Colors[ImGuiCol_Button]                   = ImVec4{0.00f, 0.00f, 0.00f, 0.75f};
     style.Colors[ImGuiCol_ButtonHovered]            = ImVec4{0.12f, 0.12f, 0.12f, 1.00f};
     style.Colors[ImGuiCol_ButtonActive]             = ImVec4{0.25f, 0.25f, 0.25f, 1.00f};
-    style.Colors[ImGuiCol_Header]                   = ImVec4{0.00f, 0.00f, 0.00f, 0.75f};
-    style.Colors[ImGuiCol_HeaderHovered]            = ImVec4{0.12f, 0.12f, 0.12f, 1.00f};
-    style.Colors[ImGuiCol_HeaderActive]             = ImVec4{0.25f, 0.25f, 0.25f, 1.00f};
+    style.Colors[ImGuiCol_Header]                   = ImVec4{0.39f, 0.39f, 0.39f, 1.00f};
+    style.Colors[ImGuiCol_HeaderHovered]            = ImVec4{0.50f, 0.50f, 0.50f, 1.00f};
+    style.Colors[ImGuiCol_HeaderActive]             = ImVec4{0.78f, 0.78f, 0.78f, 1.00f};
     style.Colors[ImGuiCol_Separator]                = ImVec4{0.49f, 0.49f, 0.49f, 0.50f};
     style.Colors[ImGuiCol_SeparatorHovered]         = ImVec4{0.56f, 0.56f, 0.56f, 0.78f};
     style.Colors[ImGuiCol_SeparatorActive]          = ImVec4{0.90f, 0.90f, 0.90f, 1.00f};
@@ -299,16 +299,18 @@ void client_game::layout()
             background::render();
         }
         else {
-            glClearColor(0.25f, 0.25f, 0.25f, 1.00f);
+            glClearColor(0.0625f, 0.0625f, 0.0625f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
         }
     }
 
     if(globals::ui_screen) {
-        const float width_f = static_cast<float>(globals::width);
-        const float height_f = static_cast<float>(globals::height);
-        const ImU32 splash = ImGui::GetColorU32(ImVec4{0.000, 0.000, 0.000, 0.800});
-        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2{}, ImVec2{width_f, height_f}, splash);
+        if(globals::registry.valid(globals::player)) {
+            const float width_f = static_cast<float>(globals::width);
+            const float height_f = static_cast<float>(globals::height);
+            const ImU32 splash = ImGui::GetColorU32(ImVec4{0.000, 0.000, 0.000, 0.900});
+            ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2{}, ImVec2{width_f, height_f}, splash);
+        }
 
         switch(globals::ui_screen) {
             case ui::SCREEN_MAIN_MENU:

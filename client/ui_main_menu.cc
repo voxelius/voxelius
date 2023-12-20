@@ -15,10 +15,10 @@
 
 constexpr static const ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground;
 
-static std::string id_debug_session = {};
-static std::string id_server_list = {};
-static std::string id_settings = {};
-static std::string id_quit = {};
+static std::string button_debug_session = {};
+static std::string button_server_list = {};
+static std::string button_settings = {};
+static std::string button_quit = {};
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
@@ -38,10 +38,10 @@ static void on_glfw_key(const GlfwKeyEvent &event)
 
 static void on_lang_set(const LangSetEvent &event)
 {
-    id_debug_session = lang::find("ui.main_menu.debug_session") + std::string{"###Menu_DebugSession"};
-    id_server_list = lang::find("ui.main_menu.server_list") + std::string{"###Menu_ServerList"};
-    id_settings = lang::find("ui.main_menu.settings") + std::string{"###Menu_Settings"};
-    id_quit = lang::find("ui.main_menu.quit") + std::string{"###Menu_Quit"};
+    button_debug_session    = lang::find("main_menu.button.debug_session")  + "###MainMenu_Button_DebugSession";
+    button_server_list      = lang::find("main_menu.button.server_list")    + "###MainMenu_Button_ServerList";
+    button_settings         = lang::find("main_menu.button.settings")       + "###MainMenu_Button_Settings";
+    button_quit             = lang::find("main_menu.button.quit")           + "###MainMenu_Button_Quit";
 }
 
 void ui::main_menu::init()
@@ -70,33 +70,35 @@ void ui::main_menu::layout()
         ImGui::TextUnformatted(title_str);
         ImGui::PopFont();
 
+        ImGui::PushFont(globals::font_menu_button);
         constexpr static const char *subtitle_str = VOXELIUS_SEMVER;
         const float subtitle_width = ImGui::CalcTextSize(subtitle_str).x;
         const float subtitle_xpos = 0.5f * (window_size.x - subtitle_width);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 10.0f * globals::ui_scale);
         ImGui::SetCursorPosX(subtitle_xpos);
         ImGui::TextUnformatted(subtitle_str);
+        ImGui::PopFont();
 
         ImGui::Dummy(ImVec2{0.0f, 10.0f * globals::ui_scale});
 
-        const float button_width = 192.0f * globals::ui_scale;
+        const float button_width = 240.0f * globals::ui_scale;
         const float button_xpos = 0.5f * (window_size.x - button_width);
 
         ImGui::PushFont(globals::font_menu_button);
         ImGui::SetCursorPosX(button_xpos);
-        if(ImGui::Button(id_debug_session.c_str(), ImVec2{button_width, 0.0f}))
+        if(ImGui::Button(button_debug_session.c_str(), ImVec2{button_width, 0.0f}))
             debug_session::run();
         ImGui::Spacing();
         ImGui::SetCursorPosX(button_xpos);
-        if(ImGui::Button(id_server_list.c_str(), ImVec2{button_width, 0.0f}))
+        if(ImGui::Button(button_server_list.c_str(), ImVec2{button_width, 0.0f}))
             globals::ui_screen = ui::SCREEN_SERVER_LIST;
         ImGui::Spacing();
         ImGui::SetCursorPosX(button_xpos);
-        if(ImGui::Button(id_settings.c_str(), ImVec2{button_width, 0.0f}))
+        if(ImGui::Button(button_settings.c_str(), ImVec2{button_width, 0.0f}))
             globals::ui_screen = ui::SCREEN_SETTINGS;
         ImGui::Spacing();
         ImGui::SetCursorPosX(button_xpos);
-        if(ImGui::Button(id_quit.c_str(), ImVec2{button_width, 0.0f}))
+        if(ImGui::Button(button_quit.c_str(), ImVec2{button_width, 0.0f}))
             glfwSetWindowShouldClose(globals::window, true);
         ImGui::PopFont();
 

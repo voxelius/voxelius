@@ -13,7 +13,6 @@
 #include <shared/const.hh>
 
 struct Background_UBO final {
-    glm::fvec4 color {};
     glm::fvec4 time {};
 };
 
@@ -59,7 +58,6 @@ void background::deinit()
 void background::render()
 {
     Background_UBO uniforms = {};
-    uniforms.color = COLOR_BLACK;
     uniforms.time.x = glfwGetTime();
 
     ubo.bind_base(GL_UNIFORM_BUFFER, 0);
