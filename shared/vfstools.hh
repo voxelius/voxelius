@@ -10,17 +10,20 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-#ifndef SHARED_CMDLINE_HH
-#define SHARED_CMDLINE_HH
+#ifndef SHARED_VFSTOOLS_HH
+#define SHARED_VFSTOOLS_HH
+#include <physfs.h>
+#include <stdint.h>
 #include <string>
+#include <vector>
 
-namespace cmdline
+namespace vfstools
 {
-void add(int argc, char **argv);
-void add(const std::string &opt);
-void add(const std::string &opt, const std::string &arg);
-bool get(const std::string &opt, std::string &arg);
-bool has(const std::string &opt);
-} // namespace cmdline
+bool readline(PHYSFS_File *file, std::string &line);
+bool read(const std::string &path, std::string &data);
+bool read(const std::string &path, std::vector<uint8_t> &data);
+bool write(const std::string &path, const std::string &data);
+bool write(const std::string &path, const std::vector<uint8_t> &data);
+} // namespace vfstools
 
-#endif /* SHARED_CMDLINE_HH */
+#endif /* SHARED_VFSTOOLS_HH */

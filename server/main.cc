@@ -15,5 +15,7 @@
 
 void server::main()
 {
+    spdlog::critical("Voxelius-NG");
+    spdlog::critical("Serverside not implemented");
     std::terminate();
 }

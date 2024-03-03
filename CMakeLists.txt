@@ -27,7 +27,10 @@ set(PHYSFS_ARCHIVE_MVL OFF CACHE BOOL "" FORCE)
 set(PHYSFS_ARCHIVE_SLB OFF CACHE BOOL "" FORCE)
 set(PHYSFS_ARCHIVE_VDF OFF CACHE BOOL "" FORCE)
 
-if(WIN32)
+find_package(glfw3 QUIET)
+find_package(OpenGL REQUIRED)
+
+if(NOT glfw3_FOUND)
     include(FetchContent)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
     set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
@@ -40,15 +43,10 @@ if(WIN32)
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE)
     FetchContent_MakeAvailable(glfw3)
-else()
-    # On non-Windows systems it's assumed
-    # that the GLFW3 is bundled in with the
-    # system package manager
-    find_package(glfw3 3.3 REQUIRED)
 endif()
 
+add_subdirectory(deps/emhash)
 add_subdirectory(deps/entt)
-add_subdirectory(deps/glad)
 add_subdirectory(deps/glm)
 add_subdirectory(deps/imgui)
 add_subdirectory(deps/parson)

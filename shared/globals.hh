@@ -12,12 +12,15 @@
 // GNU General Public License for more details.
 #ifndef SHARED_GLOBALS_HH
 #define SHARED_GLOBALS_HH
-#include <entt/fwd.hpp>
+#include <entt/signal/fwd.hpp>
 
 namespace globals
 {
-extern entt::registry registry;
 extern entt::dispatcher dispatcher;
+
+extern uint64_t curtime;
+extern uint64_t framecount;
+extern double frametime;
 } // namespace globals
 
 #endif /* SHARED_GLOBALS_HH */

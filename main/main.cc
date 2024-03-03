@@ -11,10 +11,10 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 #include <client/main.hh>
-#include <shared/cmdline.hh>
-#include <shared/vfs.hh>
-#include <iostream>
+#include <filesystem>
+#include <physfs.h>
 #include <server/main.hh>
+#include <shared/cmdline.hh>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 #include <stdlib.h>
@@ -23,11 +23,11 @@
 // someone who forked the game can change it to whatever
 constexpr static const char *VGAME_DIRNAME = ".voxelius";
 
-static std::filesystem::path get_gamepath()
+static std::filesystem::path get_gamepath(void)
 {
     std::string value;
 
-    if(cmdline::contains("dev")) {
+    if(cmdline::has("dev")) {
         // We are running in a development environment.
         // Base game content is located in the repo.
         // UNDONE: allow this to be on by default in case
@@ -35,7 +35,7 @@ static std::filesystem::path get_gamepath()
         return std::filesystem::current_path() / "assets";
     }
 
-    if(cmdline::get_value("gamepath", value)) {
+    if(cmdline::get("gamepath", value)) {
         if(!value.empty()) {
             // If there is a launcher that has profile
             // support, we can override the default game path
@@ -55,11 +55,11 @@ static std::filesystem::path get_gamepath()
     return std::filesystem::current_path();
 }
 
-static std::filesystem::path get_userpath()
+static std::filesystem::path get_userpath(void)
 {
     std::string value;
 
-    if(cmdline::get_value("userpath", value)) {
+    if(cmdline::get("userpath", value)) {
         if(!value.empty()) {
             // Things like systemd scripts might account
             // for multiple server instances running on
@@ -93,51 +93,45 @@ static std::filesystem::path get_userpath()
 
 int main(int argc, char **argv)
 {
-    cmdline::append(argc, argv);
+    cmdline::add(argc, argv);
 
-    try {
-        auto *lp = spdlog::default_logger_raw();
-        lp->sinks().clear();
-        lp->sinks().push_back(std::make_shared<spdlog::sinks::stderr_color_sink_mt>());
-        lp->set_level(spdlog::level::trace);
-        lp->set_pattern("[%H:%M:%S] %^[%L]%$ %v");
-    }
-    catch(const spdlog::spdlog_ex &ex) {
-        std::cerr << ex.what() << std::endl;
+    auto *logger = spdlog::default_logger_raw();
+    logger->sinks().clear();
+    logger->sinks().push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+    logger->set_level(spdlog::level::trace);
+    logger->set_pattern("[%H:%M:%S] %^[%L]%$ %v");
+
+    if(!PHYSFS_init(argv[0])) {
+        const auto error = PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
+        spdlog::critical("physfs: init failed: {}", error);
         std::terminate();
     }
 
-    // UNDONE: a global variable that enables
-    // various development mode features that can
-    // be set if cmdline::contains("dev")
+    const auto gamepath = get_gamepath();
+    const auto userpath = get_userpath();
 
-    if(!vfs::init(argv[0])) {
-        spdlog::critical("physfs: init failed: {}", vfs::get_error());
-        std::terminate();
-    }
-
-    const std::filesystem::path gamepath = get_gamepath();
-    const std::filesystem::path userpath = get_userpath();
-
-    spdlog::info("main: gamepath set to {}", gamepath.string());
-    spdlog::info("main: userpath set to {}", userpath.string());
+    spdlog::info("main: set gamepath to {}", gamepath.string());
+    spdlog::info("main: set userpath to {}", userpath.string());
 
     std::error_code dingus = {};
     std::filesystem::create_directories(gamepath, dingus);
     std::filesystem::create_directories(userpath, dingus);
 
-    if(!vfs::mount(gamepath, vfs::get_root_path(), false)) {
-        spdlog::critical("physfs: mount {} failed: {}", gamepath.string(), vfs::get_error());
+    if(!PHYSFS_mount(gamepath.string().c_str(), nullptr, false)) {
+        const auto error = PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
+        spdlog::critical("physfs: mount {} failed: {}", gamepath.string(), error);
         std::terminate();
     }
 
-    if(!vfs::mount(userpath, vfs::get_root_path(), false)) {
-        spdlog::critical("physfs: mount {} failed: {}", userpath.string(), vfs::get_error());
+    if(!PHYSFS_mount(userpath.string().c_str(), nullptr, false)) {
+        const auto error = PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
+        spdlog::critical("physfs: mount {} failed: {}", userpath.string(), error);
         std::terminate();
     }
 
-    if(!vfs::set_write_path(userpath)) {
-        spdlog::critical("physfs: setwritedir {} failed: {}", userpath.string(), vfs::get_error());
+    if(!PHYSFS_setWriteDir(userpath.string().c_str())) {
+        const auto error = PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
+        spdlog::critical("physfs: setwritedir {} failed: {}", userpath.string(), error);
         std::terminate();
     }
 
@@ -154,8 +148,9 @@ int main(int argc, char **argv)
     #error Its 5 dollars on Steam and consoles but it is free on App Store and Google Play.
 #endif
 
-    if(!vfs::deinit()) {
-        spdlog::critical("physfs: deinit failed: {}", vfs::get_error());
+    if(!PHYSFS_deinit()) {
+        const auto error = PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
+        spdlog::critical("physfs: deinit failed: {}", error);
         std::terminate();
     }
 

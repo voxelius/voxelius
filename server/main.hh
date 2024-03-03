@@ -15,7 +15,7 @@
 
 namespace server
 {
-void main();
+void main(void);
 } // namespace server
 
 #endif /* SERVER_MAIN_HH */

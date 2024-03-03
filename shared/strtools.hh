@@ -10,17 +10,18 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-#ifndef SHARED_CMDLINE_HH
-#define SHARED_CMDLINE_HH
+#ifndef SHARED_STRTOOLS_HH
+#define SHARED_STRTOOLS_HH
 #include <string>
+#include <vector>
 
-namespace cmdline
+namespace strtools
 {
-void add(int argc, char **argv);
-void add(const std::string &opt);
-void add(const std::string &opt, const std::string &arg);
-bool get(const std::string &opt, std::string &arg);
-bool has(const std::string &opt);
-} // namespace cmdline
+bool contains(const std::string &str, char character);
+bool contains(const std::string &str, const std::string &substr);
+bool is_empty_or_whitespace(const std::string &str);
+bool is_whitespace(const std::string &str);
+size_t split(const std::string &str, const std::string &separator, std::vector<std::string> &out);
+} // namespace strtools
 
-#endif /* SHARED_CMDLINE_HH */
+#endif /* SHARED_STRTOOLS_HH */

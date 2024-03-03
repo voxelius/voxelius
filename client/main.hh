@@ -15,7 +15,7 @@
 
 namespace client
 {
-void main();
+void main(void);
 } // namespace client
 
 #endif /* CLIENT_MAIN_HH */
