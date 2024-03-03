@@ -10,20 +10,20 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-#ifndef SHARED_MIXIN_HH
-#define SHARED_MIXIN_HH
+#ifndef SHARED_AABB_HH
+#define SHARED_AABB_HH
+#include <glm/vec3.hpp>
 
-class NonCopyable {
+class AABB final {
 public:
-    NonCopyable(void) = default;
-    NonCopyable(const NonCopyable &rhs) = delete;
-    NonCopyable &operator=(const NonCopyable &rhs) = delete;
+    AABB(void) = default;
+    AABB(const glm::dvec3 &min, const glm::dvec3 &max);
+    bool contains(const glm::dvec3 &point) const;
+    bool intersect(const AABB &other) const;
+
+public:
+    glm::dvec3 min {};
+    glm::dvec3 max {};
 };
 
-class NonMovable {
-    NonMovable(void) = default;
-    NonMovable(NonMovable &&rhs) = delete;
-    NonMovable &operator=(NonMovable &&rhs) = delete;
-};
-
-#endif /* SHARED_MIXIN_HH */
+#endif /* SHARED_AABB_HH */

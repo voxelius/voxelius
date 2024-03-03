@@ -13,19 +13,19 @@
 #include <chrono>
 #include <shared/epoch.hh>
 
-uint64_t epoch::microseconds()
+uint64_t epoch::microseconds(void)
 {
     const auto curtime = std::chrono::high_resolution_clock::now().time_since_epoch();
     return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::microseconds>(curtime).count());
 }
 
-uint64_t epoch::milliseconds()
+uint64_t epoch::milliseconds(void)
 {
     const auto curtime = std::chrono::high_resolution_clock::now().time_since_epoch();
     return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(curtime).count());
 }
 
-uint64_t epoch::seconds()
+uint64_t epoch::seconds(void)
 {
     const auto curtime = std::chrono::high_resolution_clock::now().time_since_epoch();
     return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::seconds>(curtime).count());

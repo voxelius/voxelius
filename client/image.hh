@@ -22,16 +22,16 @@ public:
     constexpr static const PixelFormat RGBA = PixelFormat::R8G8B8A8_UNORM;
 
 public:
-    virtual ~Image();
+    virtual ~Image(void);
     bool load_grayscale(const std::string &path, bool flip);
     bool load_rgba(const std::string &path, bool flip);
-    void unload();
+    void unload(void);
 
-    bool valid() const;
-    int get_width() const;
-    int get_height() const;
-    const void *data() const;
-    void *data();
+    bool valid(void) const;
+    int get_width(void) const;
+    int get_height(void) const;
+    const void *data(void) const;
+    void *data(void);
 
 private:
     int width {};

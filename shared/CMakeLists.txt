@@ -8,6 +8,8 @@ add_library(shared STATIC
 target_include_directories(shared PUBLIC "${CMAKE_SOURCE_DIR}")
 target_link_libraries(shared PUBLIC emhash entt glm physfs spdlog thread_pool)
 
+configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake.hh.in" "${CMAKE_CURRENT_LIST_DIR}/cmake.hh")
+
 if(WIN32)
     # Microsoft-vendored C++ libraries for Windows seem to generally
     # mald over people using quote-unquote unsafe functions from libc

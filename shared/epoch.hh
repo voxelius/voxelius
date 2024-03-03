@@ -16,9 +16,9 @@
 
 namespace epoch
 {
-uint64_t microseconds();
-uint64_t milliseconds();
-uint64_t seconds();
+uint64_t microseconds(void);
+uint64_t milliseconds(void);
+uint64_t seconds(void);
 } // namespace epoch
 
 #endif /* SHARED_EPOCH_HH */

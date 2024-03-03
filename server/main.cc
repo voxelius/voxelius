@@ -13,7 +13,7 @@
 #include <server/main.hh>
 #include <spdlog/spdlog.h>
 
-void server::main()
+void server::main(void)
 {
     spdlog::critical("Voxelius-NG");
     spdlog::critical("Serverside not implemented");

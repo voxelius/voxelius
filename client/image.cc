@@ -14,7 +14,7 @@
 #include <shared/vfstools.hh>
 #include <stb_image.h>
 
-Image::~Image()
+Image::~Image(void)
 {
     unload();
 }
@@ -51,7 +51,7 @@ bool Image::load_rgba(const std::string &path, bool flip)
     return false;
 }
 
-void Image::unload()
+void Image::unload(void)
 {
     if(pixels)
         stbi_image_free(pixels);
@@ -60,27 +60,27 @@ void Image::unload()
     pixels = nullptr;
 }
 
-bool Image::valid() const
+bool Image::valid(void) const
 {
     return width && height && pixels;
 }
 
-int Image::get_width() const
+int Image::get_width(void) const
 {
     return width;
 }
 
-int Image::get_height() const
+int Image::get_height(void) const
 {
     return height;
 }
 
-const void *Image::data() const
+const void *Image::data(void) const
 {
     return pixels;
 }
 
-void *Image::data()
+void *Image::data(void)
 {
     return pixels;
 }
