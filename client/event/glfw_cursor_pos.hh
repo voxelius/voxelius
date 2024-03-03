@@ -10,13 +10,12 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-#ifndef SHARED_GLOBALS_HH
-#define SHARED_GLOBALS_HH
-#include <entt/signal/fwd.hpp>
+#ifndef CLIENT_EVENT_GLFW_CURSOR_MOVE_HH
+#define CLIENT_EVENT_GLFW_CURSOR_MOVE_HH
 
-namespace globals
-{
-extern entt::dispatcher dispatcher;
-} // namespace globals
+struct GlfwCursorPosEvent final {
+    double xpos {};
+    double ypos {};
+};
 
-#endif /* SHARED_GLOBALS_HH */
+#endif /* CLIENT_EVENT_GLFW_CURSOR_MOVE_HH */

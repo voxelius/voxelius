@@ -10,13 +10,15 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-#ifndef SHARED_GLOBALS_HH
-#define SHARED_GLOBALS_HH
-#include <entt/signal/fwd.hpp>
+#ifndef SHARED_EPOCH_HH
+#define SHARED_EPOCH_HH
+#include <stdint.h>
 
-namespace globals
+namespace epoch
 {
-extern entt::dispatcher dispatcher;
-} // namespace globals
+uint64_t microseconds();
+uint64_t milliseconds();
+uint64_t seconds();
+} // namespace epoch
 
-#endif /* SHARED_GLOBALS_HH */
+#endif /* SHARED_EPOCH_HH */

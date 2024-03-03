@@ -11,6 +11,7 @@
             "includePath": [
                 "${workspaceFolder}/deps/emhash/include",
                 "${workspaceFolder}/deps/entt/include",
+                "${workspaceFolder}/deps/glad/include",
                 "${workspaceFolder}/deps/glm/include",
                 "${workspaceFolder}/deps/imgui/include",
                 "${workspaceFolder}/deps/parson/include",

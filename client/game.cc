@@ -10,13 +10,39 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-#ifndef SHARED_GLOBALS_HH
-#define SHARED_GLOBALS_HH
-#include <entt/signal/fwd.hpp>
+#include <client/game.hh>
 
-namespace globals
+void client_game::init(void)
 {
-extern entt::dispatcher dispatcher;
-} // namespace globals
 
-#endif /* SHARED_GLOBALS_HH */
+}
+
+void client_game::init_late(void)
+{
+
+}
+
+void client_game::deinit(void)
+{
+
+}
+
+void client_game::update(void)
+{
+
+}
+
+void client_game::update_late(void)
+{
+
+}
+
+void client_game::render(void)
+{
+
+}
+
+void client_game::layout(void)
+{
+    
+}

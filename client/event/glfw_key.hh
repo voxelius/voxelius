@@ -10,13 +10,15 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-#ifndef SHARED_GLOBALS_HH
-#define SHARED_GLOBALS_HH
-#include <entt/signal/fwd.hpp>
+#ifndef CLIENT_EVENT_GLFW_KEYBOARD_KEY_HH
+#define CLIENT_EVENT_GLFW_KEYBOARD_KEY_HH
+#include <GLFW/glfw3.h>
 
-namespace globals
-{
-extern entt::dispatcher dispatcher;
-} // namespace globals
+struct GlfwKeyEvent final {
+    int key {GLFW_KEY_UNKNOWN};
+    int scancode {};
+    int action {};
+    int mods {};
+};
 
-#endif /* SHARED_GLOBALS_HH */
+#endif /* CLIENT_EVENT_GLFW_KEYBOARD_KEY_HH */

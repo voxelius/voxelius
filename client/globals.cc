@@ -10,13 +10,15 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-#ifndef SHARED_GLOBALS_HH
-#define SHARED_GLOBALS_HH
-#include <entt/signal/fwd.hpp>
+#include <client/globals.hh>
+#include <GLFW/glfw3.h>
 
-namespace globals
-{
-extern entt::dispatcher dispatcher;
-} // namespace globals
+GLFWwindow *globals::window = nullptr;
 
-#endif /* SHARED_GLOBALS_HH */
+int globals::width = 0;
+int globals::height = 0;
+double globals::aspect = 0.0;
+
+uint64_t globals::curtime = 0;
+uint64_t globals::framecount = 0;
+double globals::frametime = 0.0;

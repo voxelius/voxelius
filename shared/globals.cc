@@ -14,7 +14,3 @@
 #include <shared/globals.hh>
 
 entt::dispatcher globals::dispatcher = {};
-
-uint64_t globals::curtime = 0;
-uint64_t globals::framecount = 0;
-double globals::frametime = 0.0;

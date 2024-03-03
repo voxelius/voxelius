@@ -28,7 +28,6 @@ set(PHYSFS_ARCHIVE_SLB OFF CACHE BOOL "" FORCE)
 set(PHYSFS_ARCHIVE_VDF OFF CACHE BOOL "" FORCE)
 
 find_package(glfw3 QUIET)
-find_package(OpenGL REQUIRED)
 
 if(NOT glfw3_FOUND)
     include(FetchContent)
@@ -47,6 +46,7 @@ endif()
 
 add_subdirectory(deps/emhash)
 add_subdirectory(deps/entt)
+add_subdirectory(deps/glad)
 add_subdirectory(deps/glm)
 add_subdirectory(deps/imgui)
 add_subdirectory(deps/parson)

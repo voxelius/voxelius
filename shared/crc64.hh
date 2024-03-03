@@ -10,13 +10,17 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-#ifndef SHARED_GLOBALS_HH
-#define SHARED_GLOBALS_HH
-#include <entt/signal/fwd.hpp>
+#ifndef SHARED_CRC64_HH
+#define SHARED_CRC64_HH
+#include <stdint.h>
+#include <string>
+#include <vector>
 
-namespace globals
+namespace crc64
 {
-extern entt::dispatcher dispatcher;
-} // namespace globals
+uint64_t get(const void *data, size_t size);
+uint64_t get(const std::vector<uint8_t> &data);
+uint64_t get(const std::string &data);
+} // namespace crc64
 
-#endif /* SHARED_GLOBALS_HH */
+#endif /* SHARED_CRC64_HH */

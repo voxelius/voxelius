@@ -10,13 +10,20 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-#ifndef SHARED_GLOBALS_HH
-#define SHARED_GLOBALS_HH
-#include <entt/signal/fwd.hpp>
+#ifndef SHARED_MIXIN_HH
+#define SHARED_MIXIN_HH
 
-namespace globals
-{
-extern entt::dispatcher dispatcher;
-} // namespace globals
+class NonCopyable {
+public:
+    NonCopyable() = default;
+    NonCopyable(const NonCopyable &rhs) = delete;
+    NonCopyable &operator=(const NonCopyable &rhs) = delete;
+};
 
-#endif /* SHARED_GLOBALS_HH */
+class NonMovable {
+    NonMovable() = default;
+    NonMovable(NonMovable &&rhs) = delete;
+    NonMovable &operator=(NonMovable &&rhs) = delete;
+};
+
+#endif /* SHARED_MIXIN_HH */
