@@ -12,7 +12,7 @@
 // GNU General Public License for more details.
 #ifndef SHARED_GLOBALS_HH
 #define SHARED_GLOBALS_HH
-#include <entt/signal/fwd.hpp>
+#include <entt/signal/dispatcher.hpp>
 
 namespace globals
 {
