@@ -22,7 +22,7 @@ void client_game::init_late(void)
 
 }
 
-void client_game::deinit(void)
+void client_game::shutdown(void)
 {
 
 }
@@ -44,5 +44,5 @@ void client_game::render(void)
 
 void client_game::layout(void)
 {
-    
+
 }

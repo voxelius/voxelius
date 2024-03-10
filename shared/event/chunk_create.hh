@@ -10,20 +10,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-#ifndef SHARED_AABB_HH
-#define SHARED_AABB_HH
-#include <glm/vec3.hpp>
+#ifndef SHARED_EVENT_CHUNK_CREATE_HH
+#define SHARED_EVENT_CHUNK_CREATE_HH
+#include <shared/world.hh>
 
-class AABB final {
-public:
-    AABB(void) = default;
-    AABB(const glm::dvec3 &min, const glm::dvec3 &max);
-    bool contains(const glm::dvec3 &point) const;
-    bool intersect(const AABB &other) const;
-
-public:
-    glm::dvec3 min {};
-    glm::dvec3 max {};
+struct ChunkCreateEvent final {
+    coord::chunk position {};
+    Chunk *chunk {nullptr};
+    World *world {nullptr};
 };
 
-#endif /* SHARED_AABB_HH */
+#endif /* SHARED_EVENT_CHUNK_CREATE_HH */

@@ -19,10 +19,6 @@
 #include <spdlog/spdlog.h>
 #include <stdlib.h>
 
-// UNDONE: allow build system to change this so that
-// someone who forked the game can change it to whatever
-constexpr static const char *VGAME_DIRNAME = ".voxelius";
-
 static std::filesystem::path get_gamepath(void)
 {
     std::string value;
@@ -69,23 +65,23 @@ static std::filesystem::path get_userpath(void)
         }
     }
 
+    if(const char *win_appdata = getenv("APPDATA")) {
+        // On pre-seven Windows systems it's just AppData
+        // On post-seven Windows systems it's AppData/Roaming
+        return std::filesystem::path{win_appdata} / "voxelius";
+    }
+
     if(const char *xdg_home = getenv("XDG_DATA_HOME")) {
         // Systems with an active X11/Wayland session
         // theoretically should have this defined, and
         // it can be different from ${HOME} (I think).
-        return std::filesystem::path{xdg_home} / VGAME_DIRNAME;
+        return std::filesystem::path{xdg_home} / ".voxelius";
     }
 
     if(const char *unix_home = getenv("HOME")) {
         // Any spherical UNIX/UNIX-like system in vacuum
         // has this defined for every single user process.
-        return std::filesystem::path{unix_home} / VGAME_DIRNAME;
-    }
-
-    if(const char *win_appdata = getenv("APPDATA")) {
-        // On pre-seven Windows systems it's just AppData
-        // On post-seven Windows systems it's AppData/Roaming
-        return std::filesystem::path{win_appdata} / VGAME_DIRNAME;
+        return std::filesystem::path{unix_home} / ".voxelius";
     }
 
     return std::filesystem::current_path();

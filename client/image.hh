@@ -12,31 +12,17 @@
 // GNU General Public License for more details.
 #ifndef CLIENT_IMAGE_HH
 #define CLIENT_IMAGE_HH
-#include <client/pixel_format.hh>
-#include <shared/mixin.hh>
 #include <string>
 
-class Image final : public NonCopyable {
-public:
-    constexpr static const PixelFormat GRAYSCALE = PixelFormat::R8_UNORM;
-    constexpr static const PixelFormat RGBA = PixelFormat::R8G8B8A8_UNORM;
-
-public:
-    virtual ~Image(void);
-    bool load_grayscale(const std::string &path, bool flip);
-    bool load_rgba(const std::string &path, bool flip);
-    void unload(void);
-
-    bool valid(void) const;
-    int get_width(void) const;
-    int get_height(void) const;
-    const void *data(void) const;
-    void *data(void);
-
-private:
+struct Image final {
     int width {};
     int height {};
-    void *pixels {nullptr};
+    void *data {};
+
+public:
+    static bool load_gray(Image &image, const std::string &path, bool flip);
+    static bool load_rgba(Image &image, const std::string &path, bool flip);
+    static void unload(Image &image);
 };
 
 #endif /* CLIENT_IMAGE_HH */

@@ -17,9 +17,11 @@ namespace client_game
 {
 void init(void);
 void init_late(void);
-void deinit(void);
+void shutdown(void);
+
 void update(void);
 void update_late(void);
+
 void render(void);
 void layout(void);
 } // namespace client_game

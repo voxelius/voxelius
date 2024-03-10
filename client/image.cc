@@ -11,76 +11,47 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 #include <client/image.hh>
-#include <shared/vfstools.hh>
+#include <physfs.h>
 #include <stb_image.h>
+#include <vector>
 
-Image::~Image(void)
+bool Image::load_gray(Image &image, const std::string &path, bool flip)
 {
-    unload();
-}
+    if(PHYSFS_File *file = PHYSFS_openRead(path.c_str())) {
+        std::vector<unsigned char> buffer = {};
 
-bool Image::load_grayscale(const std::string &path, bool flip)
-{
-    stbi_set_flip_vertically_on_load(flip);
+        buffer.resize(PHYSFS_fileLength(file));
+        PHYSFS_readBytes(file, buffer.data(), buffer.size());
+        PHYSFS_close(file);
 
-    unload();
-
-    std::vector<uint8_t> buffer = {};
-    if(vfstools::read(path, buffer)) {
-        const auto *buffer_p = reinterpret_cast<const stbi_uc *>(buffer.data());
-        pixels = stbi_load_from_memory(buffer_p, static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_grey);
-        return width && height && pixels;
+        stbi_set_flip_vertically_on_load(flip);
+        image.data = stbi_load_from_memory(buffer.data(), buffer.size(), &image.width, &image.height, nullptr, STBI_grey);
+        return image.width && image.height && image.data;
     }
 
     return false;
 }
 
-bool Image::load_rgba(const std::string &path, bool flip)
+bool Image::load_rgba(Image &image, const std::string &path, bool flip)
 {
-    stbi_set_flip_vertically_on_load(flip);
+    if(PHYSFS_File *file = PHYSFS_openRead(path.c_str())) {
+        std::vector<unsigned char> buffer = {};
 
-    unload();
+        buffer.resize(PHYSFS_fileLength(file));
+        PHYSFS_readBytes(file, buffer.data(), buffer.size());
+        PHYSFS_close(file);
 
-    std::vector<uint8_t> buffer = {};
-    if(vfstools::read(path, buffer)) {
-        const auto *buffer_p = reinterpret_cast<const stbi_uc *>(buffer.data());
-        pixels = stbi_load_from_memory(buffer_p, static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
-        return width && height && pixels;
+        stbi_set_flip_vertically_on_load(flip);
+        image.data = stbi_load_from_memory(buffer.data(), buffer.size(), &image.width, &image.height, nullptr, STBI_rgb_alpha);
+        return image.width && image.height && image.data;
     }
 
     return false;
 }
 
-void Image::unload(void)
+void Image::unload(Image &image)
 {
-    if(pixels)
-        stbi_image_free(pixels);
-    width = 0;
-    height = 0;
-    pixels = nullptr;
-}
-
-bool Image::valid(void) const
-{
-    return width && height && pixels;
-}
-
-int Image::get_width(void) const
-{
-    return width;
-}
-
-int Image::get_height(void) const
-{
-    return height;
-}
-
-const void *Image::data(void) const
-{
-    return pixels;
-}
-
-void *Image::data(void)
-{
-    return pixels;
+    image.width = 0;
+    image.height = 0;
+    stbi_image_free(image.data);
 }

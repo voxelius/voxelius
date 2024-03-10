@@ -14,7 +14,9 @@
 #include <shared/strtools.hh>
 #include <unordered_map>
 
-constexpr static const char OPT_CHAR = '-';
+// Valid options always start with
+// at least one OPT_CHAR and never end with one
+constexpr static char OPT_CHAR = '-';
 
 static bool is_argv_opt(const std::string &str)
 {

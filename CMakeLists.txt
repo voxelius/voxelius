@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(VOXELIUS LANGUAGES CXX)
-set(VOXELIUS_SEMVER 0.0.1-indev)
+set(VOXELIUS_SEMVER 0.0.1-alpha)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -38,7 +38,7 @@ if(NOT glfw3_FOUND)
     set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
     FetchContent_Declare(glfw3
         GIT_REPOSITORY https://github.com/glfw/glfw.git
-        GIT_TAG 3.3-stable
+        GIT_TAG 3.4-stable
         GIT_SHALLOW TRUE
         GIT_PROGRESS TRUE)
     FetchContent_MakeAvailable(glfw3)
@@ -58,5 +58,4 @@ add_subdirectory(deps/thread_pool)
 add_subdirectory(client)
 add_subdirectory(server)
 add_subdirectory(shared)
-
 add_subdirectory(main)

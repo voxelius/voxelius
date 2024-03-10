@@ -4,11 +4,10 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/epoch.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
     "${CMAKE_CURRENT_LIST_DIR}/strtools.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/vfstools.cc")
+    "${CMAKE_CURRENT_LIST_DIR}/world.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/worldgen.cc")
 target_include_directories(shared PUBLIC "${CMAKE_SOURCE_DIR}")
 target_link_libraries(shared PUBLIC emhash entt glm physfs spdlog thread_pool)
-
-configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake.hh.in" "${CMAKE_CURRENT_LIST_DIR}/cmake.hh")
 
 if(WIN32)
     # Microsoft-vendored C++ libraries for Windows seem to generally

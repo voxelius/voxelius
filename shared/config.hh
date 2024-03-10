@@ -10,20 +10,10 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-#ifndef SHARED_MIXIN_HH
-#define SHARED_MIXIN_HH
+#ifndef SHARED_CONFIG_HH
+#define SHARED_CONFIG_HH
+#include <string>
 
-class NonCopyable {
-public:
-    NonCopyable(void) = default;
-    NonCopyable(const NonCopyable &rhs) = delete;
-    NonCopyable &operator=(const NonCopyable &rhs) = delete;
-};
 
-class NonMovable {
-    NonMovable(void) = default;
-    NonMovable(NonMovable &&rhs) = delete;
-    NonMovable &operator=(NonMovable &&rhs) = delete;
-};
 
-#endif /* SHARED_MIXIN_HH */
+#endif /* SHARED_CONFIG_HH */

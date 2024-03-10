@@ -25,9 +25,9 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <shared/cmdline.hh>
-#include <shared/cxmath.hh>
 #include <shared/epoch.hh>
 #include <spdlog/spdlog.h>
+#include <stb_image.h>
 
 #if defined(_WIN32)
 extern "C" __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
@@ -122,16 +122,13 @@ void client::main(void)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_SAMPLES, 0);
 
-    globals::window = glfwCreateWindow(720, 480, "Client", nullptr, nullptr);
+    globals::window = glfwCreateWindow(854, 480, "Client", nullptr, nullptr);
 
     if(!globals::window) {
         spdlog::critical("glfw: failed to open a window");
         std::terminate();
     }
 
-    // The UI is scaled against a spherical monitor in vacuum
-    // with the height of 240 pixels. The closest legal (VGA)
-    // resolution we can get with that height is the crispy 320x240
     glfwSetWindowSizeLimits(globals::window, 320, 240, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
     glfwSetCharCallback(globals::window, &on_glfw_char);
@@ -146,13 +143,15 @@ void client::main(void)
     glfwSetMonitorCallback(&on_glfw_monitor_event);
 
     Image image = {};
+    GLFWimage icon = {};
 
-    if(image.load_rgba("32x32.png", false)) {
-        GLFWimage icon = {};
-        icon.width = image.get_width();
-        icon.height = image.get_height();
-        icon.pixels = reinterpret_cast<unsigned char *>(image.data());
+    if(Image::load_rgba(image, "32x32.png", false)) {
+        icon.width = image.width;
+        icon.height = image.height;
+        icon.pixels = reinterpret_cast<unsigned char *>(image.data);
         glfwSetWindowIcon(globals::window, 1, &icon);
+
+        Image::unload(image);
     }
 
     glfwMakeContextCurrent(globals::window);
@@ -211,10 +210,6 @@ void client::main(void)
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(0, 0, globals::width, globals::height);
 
-        // All the 2D rendering goes through ImGui, and it being
-        // an immediate-mode solution makes it hard to separate
-        // rendering and UI logic updates, so this here function
-        // acts as the definitive UI rendering/logic callback
         client_game::layout();
 
         ImGui::Render();
@@ -227,11 +222,6 @@ void client::main(void)
 
         glfwPollEvents();
 
-        // EnTT provides two ways of dispatching events:
-        // queued and immediate. When glfwPollEvents() is
-        // called, immediate events are triggered across
-        // the application, whilst queued ones are triggered
-        // later by calling entt::dispatcher::update()
         globals::dispatcher.update();
 
         globals::framecount += 1;
@@ -239,7 +229,7 @@ void client::main(void)
 
     spdlog::info("client: shutdown after {} frames", globals::framecount);
 
-    client_game::deinit();
+    client_game::shutdown();
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

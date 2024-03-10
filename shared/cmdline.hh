@@ -17,10 +17,10 @@
 namespace cmdline
 {
 void add(int argc, char **argv);
-void add(const std::string &opt);
-void add(const std::string &opt, const std::string &arg);
-bool get(const std::string &opt, std::string &arg);
-bool has(const std::string &opt);
+void add(const std::string &option);
+void add(const std::string &option, const std::string &argument);
+bool get(const std::string &option, std::string &argument);
+bool has(const std::string &option);
 } // namespace cmdline
 
 #endif /* SHARED_CMDLINE_HH */

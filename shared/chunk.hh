@@ -10,20 +10,24 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-#ifndef SHARED_VFSTOOLS_HH
-#define SHARED_VFSTOOLS_HH
-#include <physfs.h>
-#include <stdint.h>
-#include <string>
-#include <vector>
+#ifndef SHARED_CHUNK_HH
+#define SHARED_CHUNK_HH
+#include <array>
+#include <entt/entity/entity.hpp>
+#include <shared/coord.hh>
 
-namespace vfstools
-{
-bool readline(PHYSFS_File *file, std::string &line);
-bool read(const std::string &path, std::string &data);
-bool read(const std::string &path, std::vector<uint8_t> &data);
-bool write(const std::string &path, const std::string &data);
-bool write(const std::string &path, const std::vector<uint8_t> &data);
-} // namespace vfstools
+constexpr static uint16_t NULL_VOXEL = 0x0000;
+constexpr static uint8_t NULL_LIGHT = 0x00;
 
-#endif /* SHARED_VFSTOOLS_HH */
+struct Chunk final {
+    entt::entity entity {};
+    std::array<uint16_t, CHUNK_VOLUME> voxels {};
+    std::array<uint8_t, CHUNK_VOLUME> lightmap {};
+};
+
+struct ChunkComponent final {
+    coord::chunk position {};
+    Chunk *chunk {nullptr};
+};
+
+#endif /* SHARED_CHUNK_HH */
