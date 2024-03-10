@@ -16,26 +16,35 @@
 #include <shared/chunk.hh>
 #include <random>
 
-using ChunkNoiseMap = std::array<double, CHUNK_AREA>;
+// UNDONE: I am going to bed now
+// TURN THIS INTO A NAMESPACE (PICKLE) TOMORROW
 
-struct World;
+struct NoiseCache final {
+    int16_t biome_temperature {25};
+    uint16_t biome_humidity {15};
+    double heightmap[CHUNK_VOLUME] {};
+};
+
 struct WorldGen final {
-    coord::chunk::value_type max_ccy;
-    coord::chunk::value_type min_ccy;
-    coord::voxel::value_type sea_level;
+    uint64_t seed {5489U};
+    double horizontal_scale {1.0};
+    double vertical_scale {1.0};
 
-    uint64_t world_seed {};
+    coord::chunk::value_type bottom {0};
+    coord::chunk::value_type height {16};
+    coord::voxel::value_type sea_level {64};
+
+    coord::chunk::value_type g_top {};
+    coord::voxel::value_type g_height {};
+
     std::mt19937_64 twister {};
     std::random_device noise {};
 
-    // When generating, multiple chunks have the same
-    // horizontal position and only differ vertically.
-    // Sampling noise is a somewhat performance heavy
-    // operation, so noise map caching is needed.
-    emhash8::HashMap<coord::chunk, ChunkNoiseMap> heightmap {};
+    emhash8::HashMap<coord::chunk, NoiseCache> cache {};
 
 public:
-    static bool generate(World &world, const coord::chunk &cc);
+    static void init(WorldGen &worldgen);
+    static bool generate(WorldGen &WorldGen, Chunk *chunk, const coord::chunk &cvec);
 };
 
 #endif /* SHARED_WORLDGEN_HH */

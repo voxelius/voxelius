@@ -12,15 +12,14 @@
 // GNU General Public License for more details.
 #ifndef SHARED_EVENT_CHUNK_UPDATE_HH
 #define SHARED_EVENT_CHUNK_UPDATE_HH
-#include <shared/world.hh>
+#include <shared/chunk.hh>
 
 struct ChunkUpdateEvent final {
     Chunk *chunk {nullptr};
-    World *world {nullptr};
     uint16_t voxel {NULL_VOXEL};
-    coord::chunk position_chunk {};
-    coord::local position_local {};
-    coord::voxel position_voxel {};
+    coord::chunk cvec {};
+    coord::local lvec {};
+    coord::voxel vvec {};
     size_t index {};
 };
 

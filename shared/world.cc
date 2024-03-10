@@ -10,147 +10,149 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
+#include <emhash/hash_table8.hpp>
+#include <entt/entity/registry.hpp>
+#include <entt/signal/dispatcher.hpp>
 #include <shared/event/chunk_create.hh>
 #include <shared/event/chunk_remove.hh>
 #include <shared/event/chunk_update.hh>
 #include <shared/globals.hh>
 #include <shared/world.hh>
 
-Chunk *World::create(World &world, const coord::chunk &cc)
-{
-    Chunk *chunk = World::find(world, cc);
+static emhash8::HashMap<coord::chunk, Chunk *> chunks = {};
 
-    if(chunk == nullptr) {
-        chunk = new Chunk{};
-        chunk->entity = world.registry.create();
+Chunk *world::create_chunk(const coord::chunk &cvec)
+{
+    const auto it = chunks.find(cvec);
+
+    if(it == chunks.cend()) {
+        auto *chunk = new Chunk{};
+        chunk->entity = globals::registry.create();
         chunk->voxels.fill(NULL_VOXEL);
         chunk->lightmap.fill(NULL_LIGHT);
 
-        auto &component = world.registry.emplace<ChunkComponent>(chunk->entity);
+        auto &component = globals::registry.emplace<ChunkComponent>(chunk->entity);
         component.chunk = chunk;
-        component.position = cc;
+        component.cvec = cvec;
 
-        world.chunks.emplace(cc, chunk);
+        ChunkCreateEvent create_event = {};
+        create_event.chunk = chunk;
+        create_event.cvec = cvec;
 
-        ChunkCreateEvent event = {};
-        event.chunk = chunk;
-        event.world = &world;
-        event.position = cc;
+        globals::dispatcher.trigger(create_event);
 
-        globals::dispatcher.trigger(event);
+        return chunks.emplace(cvec, chunk).first->second;
     }
 
-    return chunk;
+    return it->second;
 }
 
-Chunk *World::find(World &world, const coord::chunk &cc)
+Chunk *world::find_chunk(const coord::chunk &cvec)
 {
-    if(const auto it = world.chunks.find(cc); it != world.chunks.cend())
+    const auto it = chunks.find(cvec);
+    if(it != chunks.cend())
         return it->second;
     return nullptr;
 }
 
-void World::remove(World &world, const coord::chunk &cc)
+void world::remove_chunk(const coord::chunk &cvec)
 {
-    if(const auto it = world.chunks.find(cc); it != world.chunks.cend()) {
-        ChunkRemoveEvent event = {};
-        event.chunk = it->second;
-        event.world = &world;
-        event.position = cc;
+    const auto it = chunks.find(cvec);
 
-        globals::dispatcher.trigger(event);
+    if(it != chunks.cend()) {
+        ChunkRemoveEvent remove_event = {};
+        remove_event.chunk = it->second;
+        remove_event.cvec = cvec;
 
-        world.registry.destroy(it->second->entity);
+        globals::dispatcher.trigger(remove_event);
+
+        globals::registry.destroy(it->second->entity);
 
         delete it->second;
 
-        world.chunks.erase(it);
+        chunks.erase(it);
     }
 }
 
-void World::purge(World &world)
+void world::purge_chunks(void)
 {
-    auto it = world.chunks.begin();
+    for(const auto it : chunks) {
+        ChunkRemoveEvent remove_event = {};
+        remove_event.chunk = it.second;
+        remove_event.cvec = it.first;
 
-    while(it != world.chunks.end()) {
-        ChunkRemoveEvent event = {};
-        event.chunk = it->second;
-        event.world = &world;
-        event.position = it->first;
+        globals::dispatcher.trigger(remove_event);
 
-        globals::dispatcher.trigger(event);
+        globals::registry.destroy(it.second->entity);
 
-        world.registry.destroy(it->second->entity);
-
-        delete it->second;
-
-        it = world.chunks.erase(it);
+        delete it.second;
     }
 
-    world.chunks.clear();
-    world.registry.clear();
+    chunks.clear();
 }
 
-uint16_t World::get(World &world, const coord::voxel &vv)
+uint16_t world::get_voxel(const coord::voxel &vvec)
 {
-    const auto cc = coord::to_chunk(vv);
-    const auto ll = coord::to_local(vv);
-    const auto index = coord::to_index(ll);
-    if(const auto it = world.chunks.find(cc); it != world.chunks.cend())
+    const auto cvec = coord::to_chunk(vvec);
+    const auto lvec = coord::to_local(vvec);
+    const auto index = coord::to_index(lvec);
+    const auto it = chunks.find(cvec);
+
+    if(it != chunks.cend())
         return it->second->voxels[index];
     return NULL_VOXEL;
 }
 
-uint16_t World::get(World &world, const coord::chunk &cc, const coord::local &ll)
+uint16_t world::get_voxel(const coord::chunk &cvec, const coord::local &lvec)
 {
-    const auto pvv = coord::to_voxel(cc, ll);
-    const auto pcc = coord::to_chunk(pvv);
-    const auto pll = coord::to_local(pvv);
-    const auto index = coord::to_index(pll);
-    if(const auto it = world.chunks.find(pcc); it != world.chunks.cend())
-        return it->second->voxels[index];
+    const auto p_vvec = coord::to_voxel(cvec, lvec);
+    const auto p_cvec = coord::to_chunk(p_vvec);
+    const auto p_lvec = coord::to_local(p_vvec);
+    const auto p_index = coord::to_index(p_lvec);
+    const auto it = chunks.find(p_cvec);
+
+    if(it != chunks.cend())
+        return it->second->voxels[p_index];
     return NULL_VOXEL;
 }
 
-void World::set(World &world, uint16_t voxel, const coord::voxel &vv)
+void world::set_voxel(uint16_t voxel, const coord::voxel &vvec)
 {
-    const auto cc = coord::to_chunk(vv);
-    const auto ll = coord::to_local(vv);
-    const auto index = coord::to_index(ll);
+    const auto cvec = coord::to_chunk(vvec);
+    const auto lvec = coord::to_local(vvec);
+    const auto index = coord::to_index(lvec);
 
-    Chunk *chunk = World::create(world, cc);
+    auto *chunk = world::create_chunk(cvec);
     chunk->voxels[index] = voxel;
 
-    ChunkUpdateEvent event = {};
-    event.chunk = chunk;
-    event.world = &world;
-    event.voxel = voxel;
-    event.position_chunk = cc;
-    event.position_local = ll;
-    event.position_voxel = vv;
-    event.index = index;
+    ChunkUpdateEvent update_event = {};
+    update_event.chunk = chunk;
+    update_event.voxel = voxel;
+    update_event.cvec = cvec;
+    update_event.lvec = lvec;
+    update_event.vvec = vvec;
+    update_event.index = index;
 
-    globals::dispatcher.trigger(event);
+    globals::dispatcher.trigger(update_event);
 }
 
-void World::set(World &world, uint16_t voxel, const coord::chunk &cc, const coord::local &ll)
+void world::set_voxel(uint16_t voxel, const coord::chunk &cvec, const coord::local &lvec)
 {
-    const auto pvv = coord::to_voxel(cc, ll);
-    const auto pcc = coord::to_chunk(pvv);
-    const auto pll = coord::to_local(pvv);
-    const auto index = coord::to_index(pll);
+    const auto p_vvec = coord::to_voxel(cvec, lvec);
+    const auto p_cvec = coord::to_chunk(p_vvec);
+    const auto p_lvec = coord::to_local(p_vvec);
+    const auto p_index = coord::to_index(p_lvec);
 
-    Chunk *chunk = World::create(world, pcc);
-    chunk->voxels[index] = voxel;
+    auto *chunk = world::create_chunk(p_cvec);
+    chunk->voxels[p_index] = voxel;
 
-    ChunkUpdateEvent event = {};
-    event.chunk = chunk;
-    event.world = &world;
-    event.voxel = voxel;
-    event.position_chunk = pcc;
-    event.position_local = pll;
-    event.position_voxel = pvv;
-    event.index = index;
+    ChunkUpdateEvent update_event = {};
+    update_event.chunk = chunk;
+    update_event.voxel = voxel;
+    update_event.cvec = p_cvec;
+    update_event.lvec = p_lvec;
+    update_event.vvec = p_vvec;
+    update_event.index = p_index;
 
-    globals::dispatcher.trigger(event);
+    globals::dispatcher.trigger(update_event);
 }

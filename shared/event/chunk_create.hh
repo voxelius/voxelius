@@ -12,12 +12,11 @@
 // GNU General Public License for more details.
 #ifndef SHARED_EVENT_CHUNK_CREATE_HH
 #define SHARED_EVENT_CHUNK_CREATE_HH
-#include <shared/world.hh>
+#include <shared/chunk.hh>
 
 struct ChunkCreateEvent final {
-    coord::chunk position {};
     Chunk *chunk {nullptr};
-    World *world {nullptr};
+    coord::chunk cvec {};
 };
 
 #endif /* SHARED_EVENT_CHUNK_CREATE_HH */

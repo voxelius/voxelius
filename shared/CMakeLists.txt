@@ -4,8 +4,7 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/epoch.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
     "${CMAKE_CURRENT_LIST_DIR}/strtools.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/world.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/worldgen.cc")
+    "${CMAKE_CURRENT_LIST_DIR}/world.cc")
 target_include_directories(shared PUBLIC "${CMAKE_SOURCE_DIR}")
 target_link_libraries(shared PUBLIC emhash entt glm physfs spdlog thread_pool)
 

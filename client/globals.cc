@@ -12,7 +12,6 @@
 // GNU General Public License for more details.
 #include <client/globals.hh>
 #include <GLFW/glfw3.h>
-#include <shared/world.hh>
 
 GLFWwindow *globals::window = nullptr;
 
@@ -23,5 +22,3 @@ double globals::aspect = 0.0;
 uint64_t globals::curtime = 0;
 uint64_t globals::framecount = 0;
 double globals::frametime = 0.0;
-
-World globals::world = {};

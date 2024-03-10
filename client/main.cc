@@ -19,6 +19,7 @@
 #include <client/globals.hh>
 #include <client/image.hh>
 #include <client/main.hh>
+#include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
 #include <glad/gl.h>
 #include <imgui.h>

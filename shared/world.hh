@@ -12,29 +12,22 @@
 // GNU General Public License for more details.
 #ifndef SHARED_WORLD_HH
 #define SHARED_WORLD_HH
-#include <emhash/hash_table8.hpp>
-#include <entt/entity/registry.hpp>
 #include <shared/chunk.hh>
-#include <shared/worldgen.hh>
 
-using ChunkHashMap = emhash8::HashMap<coord::chunk, Chunk *>;
+namespace world
+{
+Chunk *create_chunk(const coord::chunk &cvec);
+Chunk *find_chunk(const coord::chunk &cvec);
+void remove_chunk(const coord::chunk &cvec);
+void purge_chunks(void);
+} // namespace world
 
-struct World final {
-    ChunkHashMap chunks {};
-    entt::registry registry {};
-    WorldGen worldgen {};
-
-public:
-    static Chunk *create(World &world, const coord::chunk &cc);
-    static Chunk *find(World &world, const coord::chunk &cc);
-    static void remove(World &world, const coord::chunk &cc);
-    static void purge(World &world);
-
-public:
-    static uint16_t get(World &world, const coord::voxel &vv);
-    static uint16_t get(World &world, const coord::chunk &cc, const coord::local &ll);
-    static void set(World &world, uint16_t voxel, const coord::voxel &vv);
-    static void set(World &world, uint16_t voxel, const coord::chunk &cc, const coord::local &ll);
-};
+namespace world
+{
+uint16_t get_voxel(const coord::voxel &vvec);
+uint16_t get_voxel(const coord::chunk &cvec, const coord::local &lvec);
+void set_voxel(uint16_t voxel, const coord::voxel &vvec);
+void set_voxel(uint16_t voxel, const coord::chunk &cvec, const coord::local &lvec);
+} // namespace world
 
 #endif /* SHARED_WORLD_HH */

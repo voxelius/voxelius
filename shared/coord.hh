@@ -25,43 +25,43 @@ using voxel = glm::vec<3, int64_t>;
 
 template<>
 struct std::hash<coord::chunk> final {
-    constexpr inline size_t operator()(const coord::chunk &cc) const
+    constexpr inline size_t operator()(const coord::chunk &cvec) const
     {
         size_t value = 0;
-        value ^= cc.x * 73856093;
-        value ^= cc.y * 19349663;
-        value ^= cc.z * 83492791;
+        value ^= cvec.x * 73856093;
+        value ^= cvec.y * 19349663;
+        value ^= cvec.z * 83492791;
         return value;
     }
 };
 
 namespace coord
 {
-constexpr static coord::chunk to_chunk(const coord::voxel &vv);
-constexpr static coord::local to_local(const coord::voxel &vv);
+constexpr static coord::chunk to_chunk(const coord::voxel &vvec);
+constexpr static coord::local to_local(const coord::voxel &vvec);
 constexpr static coord::local to_local(const size_t index);
-constexpr static coord::voxel to_voxel(const coord::chunk &cc, const coord::local &ll);
-constexpr static coord::voxel to_voxel(const glm::dvec3 &dd);
-constexpr static glm::dvec3 to_dvec(const coord::chunk &cc);
-constexpr static glm::dvec3 to_dvec(const coord::voxel &vv);
-constexpr static size_t to_index(const coord::local &ll);
+constexpr static coord::voxel to_voxel(const coord::chunk &cvec, const coord::local &lvec);
+constexpr static coord::voxel to_voxel(const glm::dvec3 &dvec);
+constexpr static glm::dvec3 to_dvec(const coord::chunk &cvec);
+constexpr static glm::dvec3 to_dvec(const coord::voxel &vvec);
+constexpr static size_t to_index(const coord::local &lvec);
 } // namespace coord
 
-constexpr static inline coord::chunk coord::to_chunk(const coord::voxel &vv)
+constexpr static inline coord::chunk coord::to_chunk(const coord::voxel &vvec)
 {
     return coord::chunk {
-        static_cast<coord::chunk::value_type>(vv.x >> CHUNK_BIT_SHIFT),
-        static_cast<coord::chunk::value_type>(vv.y >> CHUNK_BIT_SHIFT),
-        static_cast<coord::chunk::value_type>(vv.z >> CHUNK_BIT_SHIFT),
+        static_cast<coord::chunk::value_type>(vvec.x >> CHUNK_BIT_SHIFT),
+        static_cast<coord::chunk::value_type>(vvec.y >> CHUNK_BIT_SHIFT),
+        static_cast<coord::chunk::value_type>(vvec.z >> CHUNK_BIT_SHIFT),
     };
 }
 
-constexpr static inline coord::local coord::to_local(const coord::voxel &vv)
+constexpr static inline coord::local coord::to_local(const coord::voxel &vvec)
 {
     return coord::local {
-        glm::abs(static_cast<coord::local::value_type>(vv.x % CHUNK_SIZE)),
-        glm::abs(static_cast<coord::local::value_type>(vv.y % CHUNK_SIZE)),
-        glm::abs(static_cast<coord::local::value_type>(vv.z % CHUNK_SIZE)),
+        glm::abs(static_cast<coord::local::value_type>(vvec.x % CHUNK_SIZE)),
+        glm::abs(static_cast<coord::local::value_type>(vvec.y % CHUNK_SIZE)),
+        glm::abs(static_cast<coord::local::value_type>(vvec.z % CHUNK_SIZE)),
     };
 }
 
@@ -74,45 +74,45 @@ constexpr static inline coord::local coord::to_local(const size_t index)
     };
 }
 
-constexpr static inline coord::voxel coord::to_voxel(const coord::chunk &cc, const coord::local &ll)
+constexpr static inline coord::voxel coord::to_voxel(const coord::chunk &cvec, const coord::local &lvec)
 {
     return coord::voxel {
-        static_cast<coord::voxel::value_type>(ll.x + (cc.x << CHUNK_BIT_SHIFT)),
-        static_cast<coord::voxel::value_type>(ll.y + (cc.y << CHUNK_BIT_SHIFT)),
-        static_cast<coord::voxel::value_type>(ll.z + (cc.z << CHUNK_BIT_SHIFT)),
+        static_cast<coord::voxel::value_type>(lvec.x + (cvec.x << CHUNK_BIT_SHIFT)),
+        static_cast<coord::voxel::value_type>(lvec.y + (cvec.y << CHUNK_BIT_SHIFT)),
+        static_cast<coord::voxel::value_type>(lvec.z + (cvec.z << CHUNK_BIT_SHIFT)),
     };
 }
 
-constexpr static inline coord::voxel coord::to_voxel(const glm::dvec3 &dd)
+constexpr static inline coord::voxel coord::to_voxel(const glm::dvec3 &dvec)
 {
     return coord::voxel {
-        static_cast<coord::voxel::value_type>(dd.x),
-        static_cast<coord::voxel::value_type>(dd.y),
-        static_cast<coord::voxel::value_type>(dd.z),
+        static_cast<coord::voxel::value_type>(dvec.x),
+        static_cast<coord::voxel::value_type>(dvec.y),
+        static_cast<coord::voxel::value_type>(dvec.z),
     };
 }
 
-constexpr static inline glm::dvec3 coord::to_dvec(const coord::chunk &cc)
+constexpr static inline glm::dvec3 coord::to_dvec(const coord::chunk &cvec)
 {
     return glm::dvec3 {
-        static_cast<glm::dvec3::value_type>(cc.x << CHUNK_BIT_SHIFT),
-        static_cast<glm::dvec3::value_type>(cc.y << CHUNK_BIT_SHIFT),
-        static_cast<glm::dvec3::value_type>(cc.z << CHUNK_BIT_SHIFT),
+        static_cast<glm::dvec3::value_type>(cvec.x << CHUNK_BIT_SHIFT),
+        static_cast<glm::dvec3::value_type>(cvec.y << CHUNK_BIT_SHIFT),
+        static_cast<glm::dvec3::value_type>(cvec.z << CHUNK_BIT_SHIFT),
     };
 }
 
-constexpr static inline glm::dvec3 coord::to_dvec(const coord::voxel &vv)
+constexpr static inline glm::dvec3 coord::to_dvec(const coord::voxel &vvec)
 {
     return glm::dvec3 {
-        static_cast<glm::dvec3::value_type>(vv.x),
-        static_cast<glm::dvec3::value_type>(vv.y),
-        static_cast<glm::dvec3::value_type>(vv.z),
+        static_cast<glm::dvec3::value_type>(vvec.x),
+        static_cast<glm::dvec3::value_type>(vvec.y),
+        static_cast<glm::dvec3::value_type>(vvec.z),
     };
 }
 
-constexpr static inline size_t coord::to_index(const coord::local &ll)
+constexpr static inline size_t coord::to_index(const coord::local &lvec)
 {
-    return static_cast<size_t>((ll.x * CHUNK_SIZE + ll.z) * CHUNK_SIZE + ll.y);
+    return static_cast<size_t>((lvec.x * CHUNK_SIZE + lvec.z) * CHUNK_SIZE + lvec.y);
 }
 
 #endif /* SHARED_COORD_HH */

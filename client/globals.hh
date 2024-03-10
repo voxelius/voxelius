@@ -15,7 +15,6 @@
 #include <shared/globals.hh>
 
 struct GLFWwindow;
-struct World;
 
 namespace globals
 {
@@ -28,8 +27,6 @@ extern double aspect;
 extern uint64_t curtime;
 extern uint64_t framecount;
 extern double frametime;
-
-extern World world;
 } // namespace globals
 
 #endif /* CLIENT_GLOBALS_HH */
