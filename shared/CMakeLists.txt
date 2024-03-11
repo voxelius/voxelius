@@ -1,5 +1,6 @@
 add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/cmdline.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/config.cc"
     "${CMAKE_CURRENT_LIST_DIR}/crc64.cc"
     "${CMAKE_CURRENT_LIST_DIR}/epoch.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"

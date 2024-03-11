@@ -17,9 +17,9 @@
 struct ChunkUpdateEvent final {
     Chunk *chunk {nullptr};
     uint16_t voxel {NULL_VOXEL};
-    coord::chunk cvec {};
-    coord::local lvec {};
-    coord::voxel vvec {};
+    coord::Chunk cvec {};
+    coord::Local lvec {};
+    coord::Voxel vvec {};
     size_t index {};
 };
 

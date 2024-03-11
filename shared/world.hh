@@ -16,18 +16,18 @@
 
 namespace world
 {
-Chunk *create_chunk(const coord::chunk &cvec);
-Chunk *find_chunk(const coord::chunk &cvec);
-void remove_chunk(const coord::chunk &cvec);
+Chunk *create_chunk(const coord::Chunk &cvec);
+Chunk *find_chunk(const coord::Chunk &cvec);
+void remove_chunk(const coord::Chunk &cvec);
 void purge_chunks(void);
 } // namespace world
 
 namespace world
 {
-uint16_t get_voxel(const coord::voxel &vvec);
-uint16_t get_voxel(const coord::chunk &cvec, const coord::local &lvec);
-void set_voxel(uint16_t voxel, const coord::voxel &vvec);
-void set_voxel(uint16_t voxel, const coord::chunk &cvec, const coord::local &lvec);
+uint16_t get_voxel(const coord::Voxel &vvec);
+uint16_t get_voxel(const coord::Chunk &cvec, const coord::Local &lvec);
+void set_voxel(uint16_t voxel, const coord::Voxel &vvec);
+void set_voxel(uint16_t voxel, const coord::Chunk &cvec, const coord::Local &lvec);
 } // namespace world
 
 #endif /* SHARED_WORLD_HH */

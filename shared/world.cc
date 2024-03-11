@@ -19,9 +19,9 @@
 #include <shared/globals.hh>
 #include <shared/world.hh>
 
-static emhash8::HashMap<coord::chunk, Chunk *> chunks = {};
+static emhash8::HashMap<coord::Chunk, Chunk *> chunks = {};
 
-Chunk *world::create_chunk(const coord::chunk &cvec)
+Chunk *world::create_chunk(const coord::Chunk &cvec)
 {
     const auto it = chunks.find(cvec);
 
@@ -47,7 +47,7 @@ Chunk *world::create_chunk(const coord::chunk &cvec)
     return it->second;
 }
 
-Chunk *world::find_chunk(const coord::chunk &cvec)
+Chunk *world::find_chunk(const coord::Chunk &cvec)
 {
     const auto it = chunks.find(cvec);
     if(it != chunks.cend())
@@ -55,7 +55,7 @@ Chunk *world::find_chunk(const coord::chunk &cvec)
     return nullptr;
 }
 
-void world::remove_chunk(const coord::chunk &cvec)
+void world::remove_chunk(const coord::Chunk &cvec)
 {
     const auto it = chunks.find(cvec);
 
@@ -91,7 +91,7 @@ void world::purge_chunks(void)
     chunks.clear();
 }
 
-uint16_t world::get_voxel(const coord::voxel &vvec)
+uint16_t world::get_voxel(const coord::Voxel &vvec)
 {
     const auto cvec = coord::to_chunk(vvec);
     const auto lvec = coord::to_local(vvec);
@@ -103,7 +103,7 @@ uint16_t world::get_voxel(const coord::voxel &vvec)
     return NULL_VOXEL;
 }
 
-uint16_t world::get_voxel(const coord::chunk &cvec, const coord::local &lvec)
+uint16_t world::get_voxel(const coord::Chunk &cvec, const coord::Local &lvec)
 {
     const auto p_vvec = coord::to_voxel(cvec, lvec);
     const auto p_cvec = coord::to_chunk(p_vvec);
@@ -116,7 +116,7 @@ uint16_t world::get_voxel(const coord::chunk &cvec, const coord::local &lvec)
     return NULL_VOXEL;
 }
 
-void world::set_voxel(uint16_t voxel, const coord::voxel &vvec)
+void world::set_voxel(uint16_t voxel, const coord::Voxel &vvec)
 {
     const auto cvec = coord::to_chunk(vvec);
     const auto lvec = coord::to_local(vvec);
@@ -136,7 +136,7 @@ void world::set_voxel(uint16_t voxel, const coord::voxel &vvec)
     globals::dispatcher.trigger(update_event);
 }
 
-void world::set_voxel(uint16_t voxel, const coord::chunk &cvec, const coord::local &lvec)
+void world::set_voxel(uint16_t voxel, const coord::Chunk &cvec, const coord::Local &lvec)
 {
     const auto p_vvec = coord::to_voxel(cvec, lvec);
     const auto p_cvec = coord::to_chunk(p_vvec);

@@ -30,21 +30,21 @@ struct WorldGen final {
     double horizontal_scale {1.0};
     double vertical_scale {1.0};
 
-    coord::chunk::value_type bottom {0};
-    coord::chunk::value_type height {16};
-    coord::voxel::value_type sea_level {64};
+    coord::Chunk::value_type bottom {0};
+    coord::Chunk::value_type height {16};
+    coord::Voxel::value_type sea_level {64};
 
-    coord::chunk::value_type g_top {};
-    coord::voxel::value_type g_height {};
+    coord::Chunk::value_type g_top {};
+    coord::Voxel::value_type g_height {};
 
     std::mt19937_64 twister {};
     std::random_device noise {};
 
-    emhash8::HashMap<coord::chunk, NoiseCache> cache {};
+    emhash8::HashMap<coord::Chunk, NoiseCache> cache {};
 
 public:
     static void init(WorldGen &worldgen);
-    static bool generate(WorldGen &WorldGen, Chunk *chunk, const coord::chunk &cvec);
+    static bool generate(WorldGen &WorldGen, Chunk *chunk, const coord::Chunk &cvec);
 };
 
 #endif /* SHARED_WORLDGEN_HH */

@@ -34,39 +34,40 @@ static std::string get_argv_opt(const std::string &str)
 
 static std::unordered_map<std::string, std::string> options = {};
 
-void cmdline::add(int argc, char **argv)
+void cmdline::append(int argc, char **argv)
 {
     for(int i = 1; i < argc; ++i) {
-        if(is_argv_opt(argv[i])) {
-            const auto opt = get_argv_opt(argv[i]);
-            const auto next_i = i + 1;
+        if(!is_argv_opt(argv[i]))
+            continue;
 
-            if(!strtools::is_empty_or_whitespace(opt)) {
-                if(next_i < argc && !is_argv_opt(argv[next_i])) {
-                    options.insert_or_assign(opt, argv[next_i]);
-                    i = next_i;
-                    continue;
-                }
+        const auto opt = get_argv_opt(argv[i]);
+        const auto next_i = i + 1;
 
-                options.insert_or_assign(opt, std::string{});
-                continue;
-            }
+        if(strtools::is_empty_or_whitespace(opt))
+            continue;
+
+        if(next_i < argc && !is_argv_opt(argv[next_i])) {
+            options.insert_or_assign(opt, argv[next_i]);
+            i = next_i;
+            continue;
         }
 
+        options.insert_or_assign(opt, std::string{});
+        continue;
     }
 }
 
-void cmdline::add(const std::string &opt)
+void cmdline::append(const std::string &opt)
 {
     options.insert_or_assign(opt, std::string{});
 }
 
-void cmdline::add(const std::string &opt, const std::string &arg)
+void cmdline::append(const std::string &opt, const std::string &arg)
 {
     options.insert_or_assign(opt, arg);
 }
 
-bool cmdline::get(const std::string &opt, std::string &arg)
+bool cmdline::get_value(const std::string &opt, std::string &arg)
 {
     if(const auto it = options.find(opt); it != options.cend()) {
         arg.assign(it->second);
@@ -77,7 +78,7 @@ bool cmdline::get(const std::string &opt, std::string &arg)
     return false;
 }
 
-bool cmdline::has(const std::string &opt)
+bool cmdline::contains(const std::string &opt)
 {
     if(options.find(opt) != options.cend())
         return true;

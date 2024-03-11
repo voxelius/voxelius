@@ -26,9 +26,12 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <shared/cmdline.hh>
+#include <shared/config.hh>
 #include <shared/epoch.hh>
 #include <spdlog/spdlog.h>
 #include <stb_image.h>
+
+constexpr static const char *CONFIG_FILEPATH = "client.conf";
 
 #if defined(_WIN32)
 extern "C" __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
@@ -40,7 +43,7 @@ static void on_glfw_error(int code, const char *message)
     spdlog::error("glfw: {}", message);
 }
 
-static void on_glfw_char(GLFWwindow *window, unsigned int codepoint)
+static void on_glfw_char(GLFWwindow *window, unsigned codepoint)
 {
     // TODO: imgui passthrough
 }
@@ -187,6 +190,8 @@ void client::main(void)
     glfwGetFramebufferSize(globals::window, &wwidth, &wheight);
     on_glfw_framebuffer_size(globals::window, wwidth, wheight);
 
+    config::load(CONFIG_FILEPATH);
+
     client_game::init_late();
 
     uint64_t last_curtime = globals::curtime;
@@ -238,4 +243,6 @@ void client::main(void)
 
     glfwDestroyWindow(globals::window);
     glfwTerminate();
+
+    config::save(CONFIG_FILEPATH);
 }

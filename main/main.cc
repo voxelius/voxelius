@@ -23,7 +23,7 @@ static std::filesystem::path get_gamepath(void)
 {
     std::string value;
 
-    if(cmdline::has("dev")) {
+    if(cmdline::contains("dev")) {
         // We are running in a development environment.
         // Base game content is located in the repo.
         // UNDONE: allow this to be on by default in case
@@ -31,7 +31,7 @@ static std::filesystem::path get_gamepath(void)
         return std::filesystem::current_path() / "assets";
     }
 
-    if(cmdline::get("gamepath", value)) {
+    if(cmdline::get_value("gamepath", value)) {
         if(!value.empty()) {
             // If there is a launcher that has profile
             // support, we can override the default game path
@@ -55,7 +55,7 @@ static std::filesystem::path get_userpath(void)
 {
     std::string value;
 
-    if(cmdline::get("userpath", value)) {
+    if(cmdline::get_value("userpath", value)) {
         if(!value.empty()) {
             // Things like systemd scripts might account
             // for multiple server instances running on
@@ -89,7 +89,7 @@ static std::filesystem::path get_userpath(void)
 
 int main(int argc, char **argv)
 {
-    cmdline::add(argc, argv);
+    cmdline::append(argc, argv);
 
     auto *logger = spdlog::default_logger_raw();
     logger->sinks().clear();
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 
     if(!PHYSFS_init(argv[0])) {
         const auto error = PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
-        spdlog::critical("physfs: init failed: {}", error);
+        spdlog::critical("physfs: init failed - {}", error);
         std::terminate();
     }
 
@@ -115,19 +115,19 @@ int main(int argc, char **argv)
 
     if(!PHYSFS_mount(gamepath.string().c_str(), nullptr, false)) {
         const auto error = PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
-        spdlog::critical("physfs: mount {} failed: {}", gamepath.string(), error);
+        spdlog::critical("physfs: mount {} failed - {}", gamepath.string(), error);
         std::terminate();
     }
 
     if(!PHYSFS_mount(userpath.string().c_str(), nullptr, false)) {
         const auto error = PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
-        spdlog::critical("physfs: mount {} failed: {}", userpath.string(), error);
+        spdlog::critical("physfs: mount {} failed - {}", userpath.string(), error);
         std::terminate();
     }
 
     if(!PHYSFS_setWriteDir(userpath.string().c_str())) {
         const auto error = PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
-        spdlog::critical("physfs: setwritedir {} failed: {}", userpath.string(), error);
+        spdlog::critical("physfs: setwritedir {} failed - {}", userpath.string(), error);
         std::terminate();
     }
 
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
 
     if(!PHYSFS_deinit()) {
         const auto error = PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
-        spdlog::critical("physfs: deinit failed: {}", error);
+        spdlog::critical("physfs: deinit failed - {}", error);
         std::terminate();
     }
 

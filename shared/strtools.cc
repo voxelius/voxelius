@@ -56,3 +56,12 @@ size_t strtools::split(const std::string &str, const std::string &separator, std
         out.push_back(str.substr(prev, str.length() - prev));
     return out.size();
 }
+
+std::string strtools::trim_whitespace(const std::string &str)
+{
+    const auto su = str.find_first_not_of(" \t\r\n");
+    const auto sv = str.find_last_not_of(" \t\r\n");
+    if(su != std::string::npos)
+        return str.substr(su, sv - su + 1);
+    return std::string{};
+}

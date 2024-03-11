@@ -27,7 +27,7 @@ struct Chunk final {
 
 struct ChunkComponent final {
     Chunk *chunk {nullptr};
-    coord::chunk cvec {};
+    coord::Chunk cvec {};
 };
 
 #endif /* SHARED_CHUNK_HH */

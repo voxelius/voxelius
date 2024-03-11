@@ -16,7 +16,7 @@
 
 struct ChunkCreateEvent final {
     Chunk *chunk {nullptr};
-    coord::chunk cvec {};
+    coord::Chunk cvec {};
 };
 
 #endif /* SHARED_EVENT_CHUNK_CREATE_HH */
