@@ -1,22 +1,13 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: Zlib
+#include <emhash/hash_table8.hpp>
 #include <shared/cmdline.hh>
 #include <shared/strtools.hh>
-#include <unordered_map>
 
 // Valid options always start with
 // at least one OPT_CHAR and never end with one
 constexpr static char OPT_CHAR = '-';
+
+static emhash8::HashMap<std::string, std::string> options = {};
 
 static bool is_argv_opt(const std::string &str)
 {
@@ -29,10 +20,8 @@ static std::string get_argv_opt(const std::string &str)
 {
     size_t i;
     for(i = 0; str[i] == OPT_CHAR; ++i);
-    return std::string{str.cbegin() + i, str.cend()};
+    return std::string(str.cbegin() + i, str.cend());
 }
-
-static std::unordered_map<std::string, std::string> options = {};
 
 void cmdline::append(int argc, char **argv)
 {
@@ -52,19 +41,19 @@ void cmdline::append(int argc, char **argv)
             continue;
         }
 
-        options.insert_or_assign(opt, std::string{});
+        options.insert_or_assign(opt, std::string());
         continue;
     }
 }
 
 void cmdline::append(const std::string &opt)
 {
-    options.insert_or_assign(opt, std::string{});
+    options.insert_or_assign(opt, std::string());
 }
 
 void cmdline::append(const std::string &opt, const std::string &arg)
 {
-    options.insert_or_assign(opt, arg);
+    options.insert_or_assign(opt, std::string(arg));
 }
 
 bool cmdline::get_value(const std::string &opt, std::string &arg)

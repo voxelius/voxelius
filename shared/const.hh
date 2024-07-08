@@ -1,15 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: Zlib
 #ifndef SHARED_CONST_HH
 #define SHARED_CONST_HH
 #include <glm/fwd.hpp>
@@ -17,10 +6,10 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-constexpr static size_t CHUNK_SIZE      = 16;
+constexpr static size_t CHUNK_SIZE      = 32;
 constexpr static size_t CHUNK_AREA      = CHUNK_SIZE * CHUNK_SIZE;
 constexpr static size_t CHUNK_VOLUME    = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
-constexpr static size_t CHUNK_BIT_SHIFT = 4;
+constexpr static size_t CHUNK_BIT_SHIFT = 5;
 
 constexpr static glm::dvec3 DIR_FORWARD = { 0.00,  0.00, -1.00};
 constexpr static glm::dvec3 DIR_BACK    = { 0.00,  0.00,  1.00};

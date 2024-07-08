@@ -1,15 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: Zlib
 #include <shared/crc64.hh>
 
 static const uint64_t crc_table[256] = {
@@ -79,21 +68,21 @@ static const uint64_t crc_table[256] = {
     0x5DEDC41A34BBEEB2, 0x1F1D25F19D51D821, 0xD80C07CD676F8394, 0x9AFCE626CE85B507,
 };
 
-uint64_t crc64::get(const void *data, size_t size)
+uint64_t crc64::get(const void *data, size_t size, uint64_t combine)
 {
-    uint64_t result {};
+    uint64_t result = combine;
     const uint8_t *dp = reinterpret_cast<const uint8_t *>(data);
     for(size_t i = 0; i < size; ++i)
         result = crc_table[((result >> 56) ^ dp[i]) & 0xFF] ^ (result << 8);
     return result;
 }
 
-uint64_t crc64::get(const std::vector<uint8_t> &data)
+uint64_t crc64::get(const std::vector<uint8_t> &data, uint64_t combine)
 {
-    return crc64::get(data.data(), data.size());
+    return crc64::get(data.data(), data.size(), combine);
 }
 
-uint64_t crc64::get(const std::string &data)
+uint64_t crc64::get(const std::string &data, uint64_t combine)
 {
-    return crc64::get(data.data(), data.size());
+    return crc64::get(data.data(), data.size(), combine);
 }

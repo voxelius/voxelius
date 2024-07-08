@@ -1,79 +1,70 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: Zlib
+#include <emhash/hash_table8.hpp>
 #include <physfs.h>
 #include <shared/config.hh>
 #include <shared/strtools.hh>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
 #include <sstream>
-#include <unordered_map>
 
-constexpr static unsigned TYPE_STRING   = 0U;
-constexpr static unsigned TYPE_INT      = 1U;
-constexpr static unsigned TYPE_BOOL     = 2U;
-constexpr static unsigned TYPE_DOUBLE   = 3U;
-constexpr static unsigned TYPE_UNSIGNED = 4U;
+enum class VariableType {
+    STRING      = 0x0000U,
+    INTEGER     = 0x0001U,
+    BOOL        = 0x0002U,
+    DOUBLE      = 0x0003U,
+    UINT        = 0x0004U,
+};
 
 struct Variable final {
-    unsigned type {};
+    VariableType type {};
     void *ptr {nullptr};
 };
 
-static std::unordered_map<std::string, Variable> variables = {};
+static emhash8::HashMap<std::string, Variable> variables = {};
 
 void config::add(const std::string &name, int &vref)
 {
     Variable variable = {};
-    variable.type = TYPE_INT;
+    variable.type = VariableType::INTEGER;
     variable.ptr = &vref;
 
-    variables.insert_or_assign(name, variable);
+    variables.insert_or_assign(name, std::move(variable));
 }
 
 void config::add(const std::string &name, bool &vref)
 {
     Variable variable = {};
-    variable.type = TYPE_BOOL;
+    variable.type = VariableType::BOOL;
     variable.ptr = &vref;
 
-    variables.insert_or_assign(name, variable);
+    variables.insert_or_assign(name, std::move(variable));
 }
 
 void config::add(const std::string &name, double &vref)
 {
     Variable variable = {};
-    variable.type = TYPE_DOUBLE;
+    variable.type = VariableType::DOUBLE;
     variable.ptr = &vref;
 
-    variables.insert_or_assign(name, variable);
+    variables.insert_or_assign(name, std::move(variable));
 }
 
-void config::add(const std::string &name, unsigned &vref)
+void config::add(const std::string &name, unsigned int &vref)
 {
     Variable variable = {};
-    variable.type = TYPE_UNSIGNED;
+    variable.type = VariableType::UINT;
     variable.ptr = &vref;
 
-    variables.insert_or_assign(name, variable);
+    variables.insert_or_assign(name, std::move(variable));
 }
 
 void config::add(const std::string &name, std::string &vref)
 {
     Variable variable = {};
-    variable.type = TYPE_STRING;
+    variable.type = VariableType::STRING;
     variable.ptr = &vref;
 
-    variables.insert_or_assign(name, variable);
+    variables.insert_or_assign(name, std::move(variable));
 }
 
 void config::load(const std::string &path)
@@ -108,20 +99,20 @@ void config::load(const std::string &path)
             continue;
 
         switch(it->second.type) {
-            case TYPE_STRING:
+            case VariableType::STRING:
                 reinterpret_cast<std::string *>(it->second.ptr)[0].assign(value);
                 break;
-            case TYPE_INT:
+            case VariableType::INTEGER:
                 reinterpret_cast<int *>(it->second.ptr)[0] = static_cast<int>(strtol(value.c_str(), nullptr, 10));
                 break;
-            case TYPE_BOOL:
+            case VariableType::BOOL:
                 reinterpret_cast<bool *>(it->second.ptr)[0] = value.compare("false") && !value.compare("true");
                 break;
-            case TYPE_DOUBLE:
+            case VariableType::DOUBLE:
                 reinterpret_cast<double *>(it->second.ptr)[0] = strtod(value.c_str(), nullptr);
                 break;
-            case TYPE_UNSIGNED:
-                reinterpret_cast<unsigned *>(it->second.ptr)[0] = static_cast<unsigned>(strtoul(value.c_str(), nullptr, 10));
+            case VariableType::UINT:
+                reinterpret_cast<unsigned int *>(it->second.ptr)[0] = static_cast<unsigned int>(strtoul(value.c_str(), nullptr, 10));
                 break;
         }
     }
@@ -136,24 +127,24 @@ void config::save(const std::string &path)
             continue;
 
         switch(it.second.type) {
-            case TYPE_STRING:
+            case VariableType::STRING:
                 oss << fmt::format("{} = {}", it.first, reinterpret_cast<std::string *>(it.second.ptr)[0]);
                 oss << std::endl;
                 break;
-            case TYPE_INT:
+            case VariableType::INTEGER:
                 oss << fmt::format("{} = {}", it.first, reinterpret_cast<int *>(it.second.ptr)[0]);
                 oss << std::endl;
                 break;
-            case TYPE_BOOL:
+            case VariableType::BOOL:
                 oss << fmt::format("{} = {}", it.first, reinterpret_cast<bool *>(it.second.ptr)[0]);
                 oss << std::endl;
                 break;
-            case TYPE_DOUBLE:
+            case VariableType::DOUBLE:
                 oss << fmt::format("{} = {}", it.first, reinterpret_cast<double *>(it.second.ptr)[0]);
                 oss << std::endl;
                 break;
-            case TYPE_UNSIGNED:
-                oss << fmt::format("{} = {}", it.first, reinterpret_cast<unsigned *>(it.second.ptr)[0]);
+            case VariableType::UINT:
+                oss << fmt::format("{} = {}", it.first, reinterpret_cast<unsigned int *>(it.second.ptr)[0]);
                 oss << std::endl;
                 break;
         }
