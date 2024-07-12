@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Zlib
+#include <cstdint>
 #include <emhash/hash_table8.hpp>
 #include <physfs.h>
 #include <shared/image.hh>
 #include <spdlog/spdlog.h>
 #include <stb_image.h>
-#include <stdint.h>
 #include <vector>
 
 static emhash8::HashMap<std::string, Image> images = {};
@@ -21,7 +21,7 @@ const Image *detail::image::load(const std::string &path)
     skel.path = path;
 
     if(PHYSFS_File *file = PHYSFS_openRead(path.c_str())) {
-        std::vector<uint8_t> buffer = {};
+        std::vector<std::uint8_t> buffer = {};
 
         buffer.resize(PHYSFS_fileLength(file));
         PHYSFS_readBytes(file, buffer.data(), buffer.size());
@@ -32,7 +32,8 @@ const Image *detail::image::load(const std::string &path)
         skel.path = path;
 
         stbi_set_flip_vertically_on_load(true);
-        skel.pixels = stbi_load_from_memory(buffer.data(), buffer.size(), &skel.size.x, &skel.size.y, nullptr, STBI_rgb_alpha);
+        skel.pixels = stbi_load_from_memory(buffer.data(), buffer.size(),
+            &skel.size.x, &skel.size.y, nullptr, STBI_rgb_alpha);
 
         if(!skel.pixels) {
             spdlog::warn("image: {}: load failed", path);

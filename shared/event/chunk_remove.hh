@@ -4,8 +4,8 @@
 #include <shared/chunk.hh>
 
 struct ChunkRemoveEvent final {
-    Chunk *chunk {nullptr};
-    ChunkPos cpos {};
+    ChunkCoord coord {};
+    Chunk *chunk {};
 };
 
 #endif /* SHARED_EVENT_CHUNK_REMOVE_HH */

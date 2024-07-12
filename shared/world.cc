@@ -4,53 +4,44 @@
 #include <entt/signal/dispatcher.hpp>
 #include <shared/event/chunk_create.hh>
 #include <shared/event/chunk_remove.hh>
-#include <shared/event/chunk_update.hh>
+#include <shared/event/voxel_set.hh>
 #include <shared/globals.hh>
 #include <shared/world.hh>
 
-static emhash8::HashMap<ChunkPos, Chunk *> chunks = {};
+struct PaletteStorageU8 final {
+    std::array<std::uint8_t, CHUNK_VOLUME> swatch {};
+    std::vector<Voxel> palette {};
+};
 
-static void vconvert_fill_single(VoxelStorage **voxels)
+struct PaletteStorageU16 final {
+    std::array<std::uint16_t, CHUNK_VOLUME> swatch {};
+    std::vector<Voxel> palette {};
+};
+
+static emhash8::HashMap<ChunkCoord, Chunk *> chunks = {};
+
+Chunk *world::create_chunk(const ChunkCoord &cv)
 {
-    VoxelStorage_FillSingle skel = {};
-    skel.type = VoxelStorageType::FILL_SINGLE;
-    skel.voxel = NULL_VOXEL;
+    Chunk *chunk = world::find_chunk(cv);
 
-    if(voxels[0]->type == VoxelStorageType::FILL_SINGLE) {
-        // Not modifying anything
-        return;
+    if(chunk == nullptr) {
+        chunk = new Chunk();
+        chunk->entity = globals::registry.create();
+        chunk->type = ChunkType::SINGLE_VOXEL;
+        chunk->voxels = reinterpret_cast<void *>(NULL_VOXEL);
+
+        // TODO
+
     }
 
-    switch(voxels[0]->type) {
-        case VoxelStorageType::PALETTE_UINT8:
-            skel.voxel = static_cast<VoxelStorage_PaletteUint8 *>(voxels[0])->palette[0];
-            break;
-        case VoxelStorageType::PALETTE_UINT16:
-            skel.voxel = static_cast<VoxelStorage_PaletteUint16 *>(voxels[0])->palette[0];
-            break;
-        case VoxelStorageType::PALETTE_UINT32:
-            skel.voxel = static_cast<VoxelStorage_PaletteUint32 *>(voxels[0])->palette[0];
-            break;
-    }
-
-    delete voxels[0];
-    voxels[0] = new VoxelStorage_FillSingle(skel);
 }
 
-Chunk *world::create_chunk(const ChunkPos &cpos)
+Chunk *world::find_chunk(const ChunkCoord &cv)
 {
 
 }
 
-Chunk *world::find_chunk(const ChunkPos &cpos)
-{
-    const auto it = chunks.find(cpos);
-    if(it != chunks.cend())
-        return it->second;
-    return nullptr;
-}
-
-void world::remove_chunk(const ChunkPos &cpos)
+void world::remove_chunk(const ChunkCoord &cv)
 {
 
 }
@@ -60,22 +51,32 @@ void world::purge_chunks(void)
 
 }
 
-Voxel world::get_voxel(const VoxelPos &vpos)
+Voxel world::get_voxel(const VoxelCoord &vv)
 {
 
 }
 
-Voxel world::get_voxel(const ChunkPos &cpos, const LocalPos &lpos)
+Voxel world::get_voxel(const ChunkCoord &cv, const LocalCoord &lv)
 {
 
 }
 
-void world::set_voxel(Voxel voxel, const VoxelPos &vpos)
+void world::set_voxel(Voxel voxel, const VoxelCoord &vv)
 {
 
 }
 
-void world::set_voxel(Voxel voxel, const ChunkPos &cpos, const LocalPos &lpos)
+void world::set_voxel(Voxel voxel, const ChunkCoord &cv, const LocalCoord &lv)
+{
+
+}
+
+void world::fill_chunks(Voxel voxel, const ChunkCoord &cvx, const ChunkCoord &cvy)
+{
+
+}
+
+void world::fill_voxels(Voxel voxel, const VoxelCoord &vvx, const VoxelCoord &vvy)
 {
 
 }

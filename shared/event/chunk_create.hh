@@ -4,8 +4,8 @@
 #include <shared/chunk.hh>
 
 struct ChunkCreateEvent final {
-    Chunk *chunk {nullptr};
-    ChunkPos cpos {};
+    ChunkCoord coord {};
+    Chunk *chunk {};
 };
 
 #endif /* SHARED_EVENT_CHUNK_CREATE_HH */

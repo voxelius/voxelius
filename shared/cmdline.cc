@@ -18,7 +18,7 @@ static bool is_argv_opt(const std::string &str)
 
 static std::string get_argv_opt(const std::string &str)
 {
-    size_t i;
+    std::size_t i;
     for(i = 0; str[i] == OPT_CHAR; ++i);
     return std::string(str.cbegin() + i, str.cend());
 }

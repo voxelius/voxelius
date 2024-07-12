@@ -6,10 +6,10 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
-constexpr static size_t CHUNK_SIZE      = 32;
-constexpr static size_t CHUNK_AREA      = CHUNK_SIZE * CHUNK_SIZE;
-constexpr static size_t CHUNK_VOLUME    = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
-constexpr static size_t CHUNK_BIT_SHIFT = 5;
+constexpr static std::size_t CHUNK_SIZE      = 32;
+constexpr static std::size_t CHUNK_AREA      = CHUNK_SIZE * CHUNK_SIZE;
+constexpr static std::size_t CHUNK_VOLUME    = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+constexpr static std::size_t CHUNK_BIT_SHIFT = 5;
 
 constexpr static glm::dvec3 DIR_FORWARD = { 0.00,  0.00, -1.00};
 constexpr static glm::dvec3 DIR_BACK    = { 0.00,  0.00,  1.00};

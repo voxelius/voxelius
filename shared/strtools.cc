@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Zlib
 #include <algorithm>
-#include <ctype.h>
+#include <cctype>
 #include <shared/strtools.hh>
 
 bool strtools::contains(const std::string &str, char character)
@@ -21,18 +21,18 @@ bool strtools::is_empty_or_whitespace(const std::string &str)
 {
     if(str.empty())
         return true;
-    return std::all_of(str.cbegin(), str.cend(), &isspace);
+    return std::all_of(str.cbegin(), str.cend(), &std::isspace<char>);
 }
 
 bool strtools::is_whitespace(const std::string &str)
 {
-    return std::all_of(str.cbegin(), str.cend(), &isspace);
+    return std::all_of(str.cbegin(), str.cend(), &std::isspace<char>);
 }
 
-size_t strtools::split(const std::string &str, const std::string &separator, std::vector<std::string> &out)
+std::size_t strtools::split(const std::string &str, const std::string &separator, std::vector<std::string> &out)
 {
-    size_t pos = 0;
-    size_t prev = 0;
+    std::size_t pos = 0;
+    std::size_t prev = 0;
 
     out.clear();
 
