@@ -1,26 +1,16 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: Zlib
 // Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
 #ifndef SHARED_CRC64_HH
 #define SHARED_CRC64_HH
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 #include <vector>
 
 namespace crc64
 {
-uint64_t get(const void *data, size_t size);
-uint64_t get(const std::vector<uint8_t> &data);
-uint64_t get(const std::string &data);
+std::uint64_t get(const void *data, std::size_t size, std::uint64_t combine = 0);
+std::uint64_t get(const std::vector<std::uint8_t> &data, std::uint64_t combine = 0);
+std::uint64_t get(const std::string &data, std::uint64_t combine = 0);
 } // namespace crc64
 
 #endif /* SHARED_CRC64_HH */

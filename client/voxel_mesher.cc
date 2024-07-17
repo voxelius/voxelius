@@ -1,15 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: Zlib
 // Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
 #include <client/entity/voxel_mesh.hh>
 #include <client/globals.hh>
 #include <client/voxel_atlas.hh>
@@ -19,8 +9,9 @@
 #include <entt/signal/dispatcher.hpp>
 #include <shared/entity/chunk.hh>
 #include <shared/event/chunk_create.hh>
+#include <shared/event/chunk_fill.hh>
 #include <shared/event/chunk_remove.hh>
-#include <shared/event/chunk_update.hh>
+#include <shared/event/voxel_set.hh>
 #include <shared/vdef.hh>
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
@@ -42,14 +33,14 @@ constexpr static const size_t NUM_CHUNK_CACHE = 7;
 // Instead of hashing chunk positions every time,
 // we just have a simple vector->index function and
 // keep cached chunks in a linear array.
-static const chunk_cache_id_t get_chunk_cache_id(const chunk_pos_t &pivot, const chunk_pos_t &cpos)
+static const chunk_cache_id_t get_chunk_cache_id(const ChunkCoord &pivot, const ChunkCoord &cv)
 {
     static const chunk_cache_id_t nx[3] = {CHUNK_CACHE_WEST, 0, CHUNK_CACHE_EAST};
     static const chunk_cache_id_t ny[3] = {CHUNK_CACHE_BOTTOM, 0, CHUNK_CACHE_TOP};
     static const chunk_cache_id_t nz[3] = {CHUNK_CACHE_NORTH, 0, CHUNK_CACHE_SOUTH};
 
-    if(pivot != cpos) {
-        chunk_pos_t delta = (pivot - cpos);
+    if(pivot != cv) {
+        ChunkCoord delta = (pivot - cv);
         delta.x = cxmath::clamp(delta.x, -1, 1);
         delta.y = cxmath::clamp(delta.y, -1, 1);
         delta.z = cxmath::clamp(delta.z, -1, 1);
@@ -64,23 +55,23 @@ static const chunk_cache_id_t get_chunk_cache_id(const chunk_pos_t &pivot, const
     return CHUNK_CACHE_ITSELF;
 }
 
-static const local_pos_t get_face_direction(voxel_face_t face)
+static const LocalCoord get_face_direction(VoxelFace face)
 {
     switch(face) {
         case VOXEL_FACE_NORTH:
-            return local_pos_t{0, 0, -1};
+            return LocalCoord{0, 0, -1};
         case VOXEL_FACE_SOUTH:
-            return local_pos_t{0, 0, 1};
+            return LocalCoord{0, 0, 1};
         case VOXEL_FACE_EAST:
-            return local_pos_t{1, 0, 0};
+            return LocalCoord{1, 0, 0};
         case VOXEL_FACE_WEST:
-            return local_pos_t{-1, 0, 0};
+            return LocalCoord{-1, 0, 0};
         case VOXEL_FACE_TOP:
-            return local_pos_t{0, 1, 0};
+            return LocalCoord{0, 1, 0};
         case VOXEL_FACE_BOTTOM:
-            return local_pos_t{0, -1, 0};
+            return LocalCoord{0, -1, 0};
         default:
-            return local_pos_t{0, 0, 0};
+            return LocalCoord{0, 0, 0};
     }
 }
 
@@ -88,71 +79,61 @@ class VoxelMeshWorker final : public NonCopyable {
 public:
     // OPTIMIZATION:
     // Instead of using any thread locking mechanisms to
-    // avoid race conditions we just have a cached voxels
+    // avoid race conditions we just have cached voxel storage
     // so threaded workers are nicely isolated frome each other.
-    void preserve_chunk(const chunk_pos_t &cpos);
+    void preserve_chunk(const ChunkCoord &cv);
 
     // Obstructive voxel is one of the following:
-    //  1. Voxel of the same kin (voxel_t equation)
+    //  1. Voxel of the same kin (Voxel equation)
     //  2. Voxel of the different draw mode.
-    // Returns FALSE when there is an obstructive voxel at nlpos
-    bool test(voxel_t voxel, const VoxelInfo *info, const local_pos_t &nlpos) const;
+    // Returns FALSE when there is an obstructive voxel at lv
+    bool test(Voxel voxel, const VoxelInfo *info, const LocalCoord &lv) const;
 
     void prepare();
     void process();
     void finalize(entt::entity entity);
 
 public:
-    chunk_pos_t cpos {};
+    ChunkCoord coord {};
     bool cancelled {false};
-    std::array<Chunk, NUM_CHUNK_CACHE> chunks {};
+    std::array<VoxelStorage, NUM_CHUNK_CACHE> cache {};
     std::array<VoxelMeshBuilder, NUM_VOXEL_DRAW> builders {};
     std::shared_future<bool> future {};
 };
 
-void VoxelMeshWorker::preserve_chunk(const chunk_pos_t &cpos)
+void VoxelMeshWorker::preserve_chunk(const ChunkCoord &cv)
 {
-    if(const Chunk *chunk = world::find_chunk(cpos)) {
-        const auto idx = get_chunk_cache_id(this->cpos, cpos);
-        chunks[idx] = Chunk{*chunk};
+    if(const Chunk *chunk = world::find_chunk(cv)) {
+        const auto idx = get_chunk_cache_id(this->coord, cv);
+        voxel_storage::clone(cache[idx], chunk->storage);
     }
 }
 
-bool VoxelMeshWorker::test(voxel_t voxel, const VoxelInfo *info, const local_pos_t &nlpos) const
+bool VoxelMeshWorker::test(Voxel voxel, const VoxelInfo *info, const LocalCoord &lv) const
 {
-    const auto patch_vpos = coord::to_voxel(cpos, nlpos);
-    const auto patch_cpos = coord::to_chunk(patch_vpos);
-    const auto patch_lpos = coord::to_local(patch_vpos);
-    const auto patch_index = coord::to_index(patch_lpos);
+    const auto pvv = coord::to_voxel(coord, lv);
+    const auto pcv = coord::to_chunk(pvv);
+    const auto plv = coord::to_local(pvv);
+    const auto idx = coord::to_index(plv);
 
-    const auto idx = get_chunk_cache_id(cpos, patch_cpos);
-    const auto &chunk = chunks.at(idx);
-    const auto nvoxel = chunk.voxels.at(patch_index);
+    const auto cache_id = get_chunk_cache_id(coord, pcv);
+    const auto &storage = cache.at(cache_id);
+    const auto neighbour = voxel_storage::get(storage, idx);
 
-    if(nvoxel == NULL_VOXEL) {
-        // Air is transparent, the face
-        // is in fact visible.
+    if(neighbour == NULL_VOXEL) {
+        // Air is transparent so the
+        // face we're checking for is visible
         return true;
     }
 
-    if(nvoxel == voxel) {
-        // Voxel's clone is opaque, the
-        // face is not visible.
+    if(neighbour == voxel) {
+        // It's of our kin, the face
+        // is not henceforth visible
         return false;
     }
 
-    const auto nid = get_voxel_id(nvoxel);
-    const auto nstate = get_voxel_state(nvoxel);
-
-    if(nid == NULL_VOXEL_ID) {
-        // What the fuck? Air with a
-        // different state? Does it smell
-        // different or something?
-        return true;
-    }
-
-    if(const VoxelInfo *ninfo = vdef::find(nid, nstate)) {
-        if(ninfo->draw != info->draw) {
+    if(const VoxelInfo *neighbour_info = vdef::find(neighbour)) {
+        if(neighbour_info->draw != info->draw) {
             // The neighbouring voxel is drawn (or
             // not if it's NODRAW) using a different
             // shader and a different mesh, the face is visible
@@ -165,27 +146,29 @@ bool VoxelMeshWorker::test(voxel_t voxel, const VoxelInfo *info, const local_pos
 
 void VoxelMeshWorker::prepare()
 {
-    preserve_chunk(cpos);
-    preserve_chunk(cpos + chunk_pos_t{0, 0, 1});
-    preserve_chunk(cpos - chunk_pos_t{0, 0, 1});
-    preserve_chunk(cpos + chunk_pos_t{0, 1, 0});
-    preserve_chunk(cpos - chunk_pos_t{0, 1, 0});
-    preserve_chunk(cpos + chunk_pos_t{1, 0, 0});
-    preserve_chunk(cpos - chunk_pos_t{1, 0, 0});
+    preserve_chunk(coord);
+    preserve_chunk(coord + ChunkCoord{0, 0, 1});
+    preserve_chunk(coord - ChunkCoord{0, 0, 1});
+    preserve_chunk(coord + ChunkCoord{0, 1, 0});
+    preserve_chunk(coord - ChunkCoord{0, 1, 0});
+    preserve_chunk(coord + ChunkCoord{1, 0, 0});
+    preserve_chunk(coord - ChunkCoord{1, 0, 0});
 }
 
 void VoxelMeshWorker::process()
 {
-    const Chunk &chunk = chunks[CHUNK_CACHE_ITSELF];
+    const VoxelStorage &storage = cache.at(CHUNK_CACHE_ITSELF);
 
     // OPTIMIZATION:
     // Instead of iterating through every single
     // voxel type possible, it's a good idea to
     // just keep track of voxels present within the chunk
-    std::unordered_set<voxel_t> presence = {};
+    std::unordered_set<Voxel> presence = {};
 
-    for(size_t i = 0; i < CHUNK_VOLUME; ++i) {
-        const auto voxel = chunk.voxels.at(i);
+    for(std::size_t i = 0; i < CHUNK_VOLUME; ++i) {
+        const auto voxel = voxel_storage::get(storage, i);
+        if(voxel == NULL_VOXEL)
+            continue;
         presence.emplace(voxel);
     }
 
@@ -197,7 +180,7 @@ void VoxelMeshWorker::process()
                 continue;
             }
 
-            for(voxel_face_t face = 0; face < NUM_VOXEL_FACE; ++face) {
+            for(VoxelFace face = 0; face < NUM_VOXEL_FACE; ++face) {
                 std::array<bool, CHUNK_AREA> mask = {};
 
                 const VoxelTexture &vtex = info->textures[face];
@@ -230,9 +213,9 @@ void VoxelMeshWorker::process()
 
                 const unsigned int u = (d + 1U) % 3U;
                 const unsigned int v = (d + 2U) % 3U;
-                const local_pos_t q = get_face_direction(face);
+                const LocalCoord q = get_face_direction(face);
 
-                local_pos_t x = {0, 0, 0};
+                LocalCoord x = {0, 0, 0};
 
                 for(x[d] = 0; x[d] < CHUNK_SIZE;) {
                     size_t mpos;
@@ -242,7 +225,7 @@ void VoxelMeshWorker::process()
                     mpos = 0;
                     for(x[v] = 0; x[v] < CHUNK_SIZE; ++x[v]) {
                         for(x[u] = 0; x[u] < CHUNK_SIZE; ++x[u]) {
-                            if(chunk.voxels.at(coord::to_index(x)) == voxel)
+                            if(voxel_storage::get(storage, x) == voxel)
                                 mask[mpos] = test(voxel, info, x + q);
                             ++mpos;
                         }
@@ -345,7 +328,7 @@ void VoxelMeshWorker::process()
                                 dv[v] = static_cast<double>(qh);
 
                                 VoxelVertex verts[4] = {};
-                                const uint16_t toffset = vtex.offset;
+                                const uint16_t toffset = vtex.cached_offset;
                                 const uint16_t tframes = vtex.paths.size();
 
                                 if(q[d] < 0) {
@@ -389,7 +372,7 @@ void VoxelMeshWorker::finalize(entt::entity entity)
 {
     auto &mc = globals::registry.get_or_emplace<VoxelMeshComponent>(entity);
 
-    for(voxel_draw_t draw = 0; draw < NUM_VOXEL_DRAW; ++draw) {
+    for(VoxelDraw draw = 0; draw < NUM_VOXEL_DRAW; ++draw) {
         Mesh &mref = mc.meshes.at(draw);
 
         const auto &builder = builders.at(draw);
@@ -418,31 +401,31 @@ void VoxelMeshWorker::finalize(entt::entity entity)
 constexpr static const size_t MESHER_THREADS_COUNT = 1;
 constexpr static const size_t MESHER_TASKS_PER_FRAME = 16;
 #else
-constexpr static const size_t MESHER_THREADS_COUNT = 2;
+constexpr static const size_t MESHER_THREADS_COUNT = 4;
 constexpr static const size_t MESHER_TASKS_PER_FRAME = 32;
 #endif
 
 static thread_pool workers_pool = thread_pool{MESHER_THREADS_COUNT};
-static std::unordered_map<chunk_pos_t, std::unique_ptr<VoxelMeshWorker>> workers = {};
+static std::unordered_map<ChunkCoord, std::unique_ptr<VoxelMeshWorker>> workers = {};
 
 // Bogus internal flag component
 struct NeedsMeshingComponent final {};
 
 static void on_chunk_create(const ChunkCreateEvent &event)
 {
-    const std::array<chunk_pos_t, 6> neighbours = {
-        event.cpos + chunk_pos_t{0, 0, 1},
-        event.cpos - chunk_pos_t{0, 0, 1},
-        event.cpos + chunk_pos_t{0, 1, 0},
-        event.cpos - chunk_pos_t{0, 1, 0},
-        event.cpos + chunk_pos_t{1, 0, 0},
-        event.cpos - chunk_pos_t{1, 0, 0},
+    const std::array<ChunkCoord, 6> neighbours = {
+        event.coord + ChunkCoord{0, 0, 1},
+        event.coord - ChunkCoord{0, 0, 1},
+        event.coord + ChunkCoord{0, 1, 0},
+        event.coord - ChunkCoord{0, 1, 0},
+        event.coord + ChunkCoord{1, 0, 0},
+        event.coord - ChunkCoord{1, 0, 0},
     };
 
     globals::registry.emplace_or_replace<NeedsMeshingComponent>(event.chunk->entity);
 
-    for(const auto ncpos : neighbours) {
-        if(const Chunk *nchunk = world::find_chunk(ncpos)) {
+    for(const auto ncv : neighbours) {
+        if(const Chunk *nchunk = world::find_chunk(ncv)) {
             globals::registry.emplace_or_replace<NeedsMeshingComponent>(nchunk->entity);
         }
     }
@@ -450,13 +433,13 @@ static void on_chunk_create(const ChunkCreateEvent &event)
 
 static void on_chunk_remove(const ChunkRemoveEvent &event)
 {
-    const auto it = workers.find(event.cpos);
+    const auto it = workers.find(event.coord);
     if(it == workers.cend())
         return;
     it->second->cancelled = true;
 }
 
-static void on_chunk_update(const ChunkUpdateEvent &event)
+static void on_voxel_set(const VoxelSetEvent &event)
 {
     globals::registry.emplace_or_replace<NeedsMeshingComponent>(event.chunk->entity);
 
@@ -466,25 +449,25 @@ static void on_chunk_update(const ChunkUpdateEvent &event)
     // issues. Now we only queue neighbours if it's strictly
     // necessary. In other words, putting a voxel right
     // smack in the middle of a chunk is as fast as it can get.
-    std::unordered_set<chunk_pos_t> neighbours = {};
+    std::unordered_set<ChunkCoord> neighbours = {};
 
     for(int dim = 0; dim < 3; ++dim) {
-        chunk_pos_t offset = chunk_pos_t{0, 0, 0};
+        ChunkCoord offset = ChunkCoord{0, 0, 0};
         offset[dim] = 1;
 
-        if(event.lpos[dim] == 0) {
-            neighbours.emplace(event.cpos - offset);
+        if(event.lv[dim] == 0) {
+            neighbours.emplace(event.cv - offset);
             continue;
         }
 
-        if(event.lpos[dim] == CHUNK_SIZE - 1) {
-            neighbours.emplace(event.cpos + offset);
+        if(event.lv[dim] == CHUNK_SIZE - 1) {
+            neighbours.emplace(event.cv + offset);
             continue;
         }
     }
 
-    for(const chunk_pos_t &ncpos : neighbours) {
-        if(const Chunk *nchunk = world::find_chunk(ncpos)) {
+    for(const ChunkCoord &ncv : neighbours) {
+        if(const Chunk *nchunk = world::find_chunk(ncv)) {
             globals::registry.emplace_or_replace<NeedsMeshingComponent>(nchunk->entity);
         }
     }
@@ -494,7 +477,7 @@ void voxel_mesher::init()
 {
     globals::dispatcher.sink<ChunkCreateEvent>().connect<&on_chunk_create>();
     globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
-    globals::dispatcher.sink<ChunkUpdateEvent>().connect<&on_chunk_update>();
+    globals::dispatcher.sink<VoxelSetEvent>().connect<&on_voxel_set>();
 }
 
 void voxel_mesher::deinit()
@@ -513,7 +496,7 @@ void voxel_mesher::update()
     for(auto worker = workers.begin(); worker != workers.end();) {
         if(worker->second->future.valid()) {
             if(worker->second->future.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-                if(const Chunk *chunk = world::find_chunk(worker->second->cpos)) {
+                if(const Chunk *chunk = world::find_chunk(worker->second->coord)) {
                     worker->second->finalize(chunk->entity);
                     ++num_finalized;
                 }
@@ -532,11 +515,11 @@ void voxel_mesher::update()
     const auto group = globals::registry.group<NeedsMeshingComponent>(entt::get<ChunkComponent>);
 
     for(const auto [entity, chunk] : group.each()) {
-        if(workers.find(chunk.cpos) == workers.cend()) {
+        if(workers.find(chunk.coord) == workers.cend()) {
             globals::registry.remove<NeedsMeshingComponent>(entity);
 
-            auto &worker = workers.emplace(chunk.cpos, std::make_unique<VoxelMeshWorker>()).first->second;
-            worker->cpos = chunk.cpos;
+            auto &worker = workers.emplace(chunk.coord, std::make_unique<VoxelMeshWorker>()).first->second;
+            worker->coord = chunk.coord;
             worker->prepare();
 
             // FIXME: have a Sodium-like setting to force nearby chunks

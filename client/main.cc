@@ -1,15 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: Zlib
 // Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
 #include <client/event/glfw_cursor_pos.hh>
 #include <client/event/glfw_key.hh>
 #include <client/event/glfw_mouse_button.hh>
@@ -25,8 +15,7 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <shared/cmdline.hh>
-#include <shared/config/config.hh>
-#include <shared/cxmath.hh>
+#include <shared/config.hh>
 #include <shared/epoch.hh>
 #include <spdlog/spdlog.h>
 
@@ -142,6 +131,11 @@ void client::main()
         std::terminate();
     }
 
+#if !defined(_WIN32)
+    // Wayland makes RenderDoc go nuts
+    glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
+#endif
+
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
@@ -227,8 +221,8 @@ void client::main()
     glfwGetFramebufferSize(globals::window, &wwidth, &wheight);
     on_glfw_framebuffer_size(globals::window, wwidth, wheight);
 
-    config::load_file("client.conf");
-    config::load_cmdline();
+    config::load("client.conf");
+    // [TODO] config::load_cmdline();
 
     client_game::init_late();
 
@@ -302,5 +296,5 @@ void client::main()
     glfwDestroyWindow(globals::window);
     glfwTerminate();
 
-    config::save_file("client.conf");
+    config::save("client.conf");
 }

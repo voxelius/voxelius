@@ -1,15 +1,6 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: Zlib
 // Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+#include <shared/cxmath.hh>
 #include <shared/ray_dda.hh>
 #include <shared/world.hh>
 
@@ -32,23 +23,23 @@ bool RayDDA::propagate(double max_distance)
     lstep.z = glm::abs(1.0 / direction.z);
 
     // FIXME: why can't we use coord::to_world here?
-    vpos.x = cxmath::floor<voxel_pos_t::value_type>(start.x);
-    vpos.y = cxmath::floor<voxel_pos_t::value_type>(start.y);
-    vpos.z = cxmath::floor<voxel_pos_t::value_type>(start.z);
+    vv.x = cxmath::floor<VoxelCoord::value_type>(start.x);
+    vv.y = cxmath::floor<VoxelCoord::value_type>(start.y);
+    vv.z = cxmath::floor<VoxelCoord::value_type>(start.z);
 
     for(unsigned int d = 0U; d < 3U; ++d) {
         if(direction[d] < 0.0) {
-            lengths[d] = lstep[d] * (start[d] - vpos[d]);
+            lengths[d] = lstep[d] * (start[d] - vv[d]);
             vstep[d] = -1;
         }
         else {
-            lengths[d] = lstep[d] * (vpos[d] + 1.0 - start[d]);
+            lengths[d] = lstep[d] * (vv[d] + 1.0 - start[d]);
             vstep[d] = +1;
         }
     }
 
-    cpos = coord::to_chunk(vpos);
-    chunk = world::find_chunk(cpos);
+    cv = coord::to_chunk(vv);
+    chunk = world::find_chunk(cv);
     voxel = NULL_VOXEL;
 
     while(distance < max_distance) {
@@ -58,7 +49,7 @@ bool RayDDA::propagate(double max_distance)
             const double u = lengths[(d + 1U) % 3U];
             const double v = lengths[(d + 2U) % 3U];
             if(lengths[d] < u && lengths[d] < v) {
-                vpos[d] += vstep[d];
+                vv[d] += vstep[d];
                 distance = lengths[d];
                 lengths[d] += lstep[d];
                 is_done = false;
@@ -66,13 +57,14 @@ bool RayDDA::propagate(double max_distance)
         }
 
         if(!is_done) {
-            if(const auto ncpos = coord::to_chunk(vpos); ncpos != cpos) {
-                chunk = world::find_chunk(ncpos);
-                cpos = ncpos;
+            if(const auto ncv = coord::to_chunk(vv); ncv != cv) {
+                chunk = world::find_chunk(ncv);
+                cv = ncv;
             }
 
             if(chunk != nullptr) {
-                voxel = chunk->voxels.at(coord::to_index(coord::to_local(vpos)));
+                voxel = voxel_storage::get(chunk->storage, coord::to_local(vv));
+
                 if(voxel != NULL_VOXEL) {
                     wpos = start + direction * distance;
                     return true;

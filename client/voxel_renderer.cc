@@ -1,15 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: Zlib
 // Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
 #include <client/camera.hh>
 #include <client/entity/voxel_mesh.hh>
 #include <client/globals.hh>
@@ -37,7 +27,7 @@ struct VoxelRender_UBO final {
 static glxx::Buffer ubo = {};
 static glxx::Sampler sampler = {};
 static glxx::VertexArray vao = {};
-static glxx::Program program_solid = {};
+static glxx::Program program_opaque = {};
 
 static void init_program(glxx::Program &prog, const std::string &name)
 {
@@ -78,14 +68,14 @@ void voxel_renderer::init()
 
     VoxelVertex::setup(vao);
 
-    init_program(program_solid, "voxel_solid");
+    init_program(program_opaque, "voxel_opaque");
     // init_program(program_cutout, "voxel_cutout");
     // init_program(program_blend, "voxel_blend");
 }
 
 void voxel_renderer::deinit()
 {
-    program_solid.destroy();
+    program_opaque.destroy();
 
     vao.destroy();
     ubo.destroy();
@@ -120,17 +110,17 @@ void voxel_renderer::render()
 
     voxel_anims::bind_ssbo();
 
-    const auto cam_cpos = camera::get_chunk_pos();
+    const auto cam_cv = camera::get_chunk_pos();
     const auto group = globals::registry.group(entt::get<VoxelMeshComponent, ChunkComponent>);
 
-    program_solid.bind();
+    program_opaque.bind();
     for(const auto [entity, mesh, chunk] : group.each()) {
-        if(mesh.meshes[VOXEL_DRAW_SOLID].vertices) {
-            const auto wcpos = coord::to_world(chunk.cpos - cam_cpos);
-            uniforms.chunk = glm::fvec4{wcpos.x, wcpos.y, wcpos.z, 0.0};
+        if(mesh.meshes[VOXEL_DRAW_OPAQUE].vertices) {
+            const auto wcv = coord::to_dvec(chunk.coord - cam_cv);
+            uniforms.chunk = glm::fvec4{wcv.x, wcv.y, wcv.z, 0.0};
             ubo.write(0, sizeof(uniforms), &uniforms);
-            vao.set_vertex_buffer(VOXEL_VBO_BINDING, mesh.meshes[VOXEL_DRAW_SOLID].vbo, sizeof(VoxelVertex));
-            glDrawArrays(GL_TRIANGLES, 0, mesh.meshes[VOXEL_DRAW_SOLID].vertices);
+            vao.set_vertex_buffer(VOXEL_VBO_BINDING, mesh.meshes[VOXEL_DRAW_OPAQUE].vbo, sizeof(VoxelVertex));
+            glDrawArrays(GL_TRIANGLES, 0, mesh.meshes[VOXEL_DRAW_OPAQUE].vertices);
         }
     }
 }

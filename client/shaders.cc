@@ -1,15 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: Zlib
 // Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
 #include <client/shaders.hh>
 #include <shared/cmdline.hh>
 #include <spdlog/spdlog.h>
@@ -84,18 +74,18 @@ static inline module_map_t *get_map(uint32_t stage)
 
 const std::vector<std::string> split_str(const std::string &str, const std::string &sep)
 {
-    size_t cpos = 0;
-    size_t lpos = 0;
+    size_t cv = 0;
+    size_t lv = 0;
     std::vector<std::string> vec;
 
-    while((cpos = str.find(sep, lpos)) != std::string::npos) {
-        vec.push_back(str.substr(lpos, cpos - lpos));
-        lpos = cpos + sep.length();
+    while((cv = str.find(sep, lv)) != std::string::npos) {
+        vec.push_back(str.substr(lv, cv - lv));
+        lv = cv + sep.length();
     }
 
-    if(lpos <= str.length()) {
+    if(lv <= str.length()) {
         // We lack the last element
-        vec.push_back(str.substr(lpos, str.length() - lpos));
+        vec.push_back(str.substr(lv, str.length() - lv));
     }
 
     return vec;

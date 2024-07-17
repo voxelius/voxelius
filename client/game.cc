@@ -1,15 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: Zlib
 // Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
 #include <client/background.hh>
 #include <client/camera.hh>
 #include <client/event/glfw_mouse_button.hh>
@@ -36,18 +26,16 @@
 #include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_impl_opengl3.h>
-#include <shared/config/boolean.hh>
-#include <shared/config/config.hh>
-#include <shared/config/number.hh>
-#include <shared/config/string.hh>
+#include <shared/config.hh>
+#include <shared/cxmath.hh>
 #include <shared/inertial.hh>
 #include <shared/ray_dda.hh>
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
 
-config::Boolean client_game::menu_background = config::Boolean{true};
-config::Number<unsigned int> client_game::pixel_size = config::Number<unsigned int>{4U};
-config::String client_game::username = config::String{"player"};
+bool client_game::menu_background = true;
+unsigned int client_game::pixel_size = 4U;
+std::string client_game::username = "player";
 
 static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
 {
@@ -246,7 +234,7 @@ void client_game::deinit()
     voxel_mesher::deinit();
     voxel_anims::deinit();
 
-    world::remove_all_chunks();
+    world::purge_chunks();
 
     // Certain components' fields
     // have destructors to call OpenGL
@@ -276,14 +264,14 @@ void client_game::update_late()
     }
     else if(globals::registry.valid(globals::player)) {
         glfwSetInputMode(globals::window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        glfwSetInputMode(globals::window, GLFW_RAW_MOUSE_MOTION, player_look::raw_input.value);
+        glfwSetInputMode(globals::window, GLFW_RAW_MOUSE_MOTION, player_look::raw_input);
     }
 }
 
 void client_game::render()
 {
-    const int scaled_width = globals::width / client_game::pixel_size.value;
-    const int scaled_height = globals::height / client_game::pixel_size.value;
+    const int scaled_width = globals::width / client_game::pixel_size;
+    const int scaled_height = globals::height / client_game::pixel_size;
 
     glViewport(0, 0, scaled_width, scaled_height);
     glClearColor(0.529, 0.808, 0.922, 1.000);
@@ -303,7 +291,7 @@ void client_game::render()
 void client_game::layout()
 {
     if(!globals::registry.valid(globals::player)) {
-        if(client_game::menu_background.value) {
+        if(client_game::menu_background) {
             background::render();
         }
         else {

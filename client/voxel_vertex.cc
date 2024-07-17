@@ -1,15 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: Zlib
 // Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
 #include <client/shaders.hh>
 #include <client/voxel_vertex.hh>
 #include <shared/cxmath.hh>
@@ -21,9 +11,9 @@ constexpr static const char *voxel_vertex_vert = R"glsl(
     vec3 voxel_vertex_position()
     {
         vec3 position;
-        position.x = float((_vvdat_i.x >> 22U) & 0x3FFU) / 768.0 * 16.0;
-        position.y = float((_vvdat_i.x >> 12U) & 0x3FFU) / 768.0 * 16.0;
-        position.z = float((_vvdat_i.x >>  2U) & 0x3FFU) / 768.0 * 16.0;
+        position.x = float((_vvdat_i.x >> 22U) & 0x3FFU) / 768.0 * 32.0;
+        position.y = float((_vvdat_i.x >> 12U) & 0x3FFU) / 768.0 * 32.0;
+        position.z = float((_vvdat_i.x >>  2U) & 0x3FFU) / 768.0 * 32.0;
         return position;
     }
 
@@ -39,8 +29,8 @@ constexpr static const char *voxel_vertex_vert = R"glsl(
     vec2 voxel_vertex_texcoord()
     {
         vec2 texcoord;
-        texcoord.x = float((_vvdat_i.z >> 16U) & 0xFFFFU) / 65535.0 * 16.0;
-        texcoord.y = float((_vvdat_i.z >>  0U) & 0xFFFFU) / 65535.0 * 16.0;
+        texcoord.x = float((_vvdat_i.z >> 16U) & 0xFFFFU) / 65535.0 * 32.0;
+        texcoord.y = float((_vvdat_i.z >>  0U) & 0xFFFFU) / 65535.0 * 32.0;
         return texcoord;
     }
 )glsl";
@@ -48,9 +38,9 @@ constexpr static const char *voxel_vertex_vert = R"glsl(
 VoxelVertex::VoxelVertex(const glm::dvec3 &position, unsigned int shade, uint16_t toffset, uint16_t tframes, const glm::dvec2 &uv)
 {
     // vvdat_i[0]: 3x10-bit vertex position
-    vvdat_i[0] |= (static_cast<uint32_t>(position.x / 16.0 * 768.0) & 0x3FF) << 22;
-    vvdat_i[0] |= (static_cast<uint32_t>(position.y / 16.0 * 768.0) & 0x3FF) << 12;
-    vvdat_i[0] |= (static_cast<uint32_t>(position.z / 16.0 * 768.0) & 0x3FF) <<  2;
+    vvdat_i[0] |= (static_cast<uint32_t>(position.x / 32.0 * 768.0) & 0x3FF) << 22;
+    vvdat_i[0] |= (static_cast<uint32_t>(position.y / 32.0 * 768.0) & 0x3FF) << 12;
+    vvdat_i[0] |= (static_cast<uint32_t>(position.z / 32.0 * 768.0) & 0x3FF) <<  2;
 
     // vvdat_i[0]: 1x2-bit vertex shade
     vvdat_i[0] |= (static_cast<uint32_t>(shade) & 0x03);
@@ -61,8 +51,8 @@ VoxelVertex::VoxelVertex(const glm::dvec3 &position, unsigned int shade, uint16_
     vvdat_i[1] |= 0x0000FFFF & (tframes);
  
     // vvdat_i[2]: 2x16-bit texture coordinates
-    vvdat_i[2] |= (static_cast<uint32_t>(uv.x / 16.0 * 65535.0) & 0xFFFF) << 16;
-    vvdat_i[2] |= (static_cast<uint32_t>(uv.y / 16.0 * 65535.0) & 0xFFFF);
+    vvdat_i[2] |= (static_cast<uint32_t>(uv.x / 32.0 * 65535.0) & 0xFFFF) << 16;
+    vvdat_i[2] |= (static_cast<uint32_t>(uv.y / 32.0 * 65535.0) & 0xFFFF);
 }
 
 void VoxelVertex::setup(glxx::VertexArray &vao)

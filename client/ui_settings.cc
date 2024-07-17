@@ -1,15 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: Zlib
 // Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
 #include <client/camera.hh>
 #include <client/event/glfw_key.hh>
 #include <client/event/lang_set.hh>
@@ -22,9 +12,7 @@
 #include <entt/signal/dispatcher.hpp>
 #include <imgui.h>
 #include <imgui_stdlib.h>
-#include <shared/config/boolean.hh>
-#include <shared/config/number.hh>
-#include <shared/config/string.hh>
+#include <shared/config.hh>
 
 constexpr static const ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground;
 
@@ -122,17 +110,17 @@ static void layout_general()
         ImGui::EndCombo();
     }
 
-    int fov_value = camera::fov.value;
+    int fov_value = static_cast<int>(camera::fov);
     ImGui::SliderInt(option_fov.c_str(), &fov_value, 54, 110);
     settings_tooltip(tooltip_fov);
-    camera::fov.value = fov_value;
+    camera::fov = fov_value;
 
     ImGui::SeparatorText(separator_multiplayer.c_str());
 
     // FIXME: make this readonly when the player
     // is connected to the server - changing usernames
     // dynamically shouldn't be allowed by servers
-    ImGui::InputText(option_username.c_str(), &client_game::username.value, ImGuiInputTextFlags_CharsNoBlank);
+    ImGui::InputText(option_username.c_str(), &client_game::username, ImGuiInputTextFlags_CharsNoBlank);
 }
 
 static void layout_controls()
@@ -143,11 +131,11 @@ static void layout_controls()
     ImGui::Spacing();
     ImGui::SeparatorText(separator_mouse.c_str());
 
-    float sensitivity_value = player_look::sensitivity.value;
+    float sensitivity_value = static_cast<float>(player_look::sensitivity);
     ImGui::SliderFloat(option_acceleration.c_str(), &sensitivity_value, 0.25, 0.50, "%.02f");
-    player_look::sensitivity.value = sensitivity_value;
+    player_look::sensitivity = sensitivity_value;
 
-    ImGui::Checkbox(option_raw_input.c_str(), &player_look::raw_input.value);
+    ImGui::Checkbox(option_raw_input.c_str(), &player_look::raw_input);
     settings_tooltip(tooltip_raw_input);
 
     ImGui::Spacing();
@@ -159,18 +147,18 @@ static void layout_graphics()
 {
     ImGui::SeparatorText(separator_performance.c_str());
 
-    int pixel_value = client_game::pixel_size.value;
+    int pixel_value = static_cast<int>(client_game::pixel_size);
     ImGui::SliderInt(option_pixel_size.c_str(), &pixel_value, 1, 4);
-    client_game::pixel_size.value = pixel_value;
+    client_game::pixel_size = pixel_value;
 
-    int view_value = camera::view_distance.value;
+    int view_value = static_cast<int>(camera::view_distance);
     ImGui::SliderInt(option_view_distance.c_str(), &view_value, 1, 32);
-    camera::view_distance.value = view_value;
+    camera::view_distance = view_value;
 
     ImGui::Spacing();
     ImGui::SeparatorText(separator_ui.c_str());
 
-    ImGui::Checkbox(option_menu_background.c_str(), &client_game::menu_background.value);
+    ImGui::Checkbox(option_menu_background.c_str(), &client_game::menu_background);
     settings_tooltip(tooltip_menu_background);
 }
 

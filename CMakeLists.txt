@@ -47,6 +47,7 @@ else()
     find_package(glfw3 3.3 REQUIRED)
 endif()
 
+add_subdirectory(deps/emhash)
 add_subdirectory(deps/entt)
 add_subdirectory(deps/glad)
 add_subdirectory(deps/glm)

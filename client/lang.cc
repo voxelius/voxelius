@@ -1,22 +1,11 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: Zlib
 // Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
 #include <client/event/lang_set.hh>
 #include <client/globals.hh>
 #include <client/lang.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <parson.h>
-#include <shared/config/config.hh>
-#include <shared/config/string.hh>
+#include <shared/config.hh>
 #include <shared/vfs.hh>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
@@ -26,7 +15,7 @@ static lang_vector_t manifest = {};
 static lang_iterator_t current_lang = {};
 static std::unordered_map<std::string, std::string> lang_kv = {};
 static std::unordered_map<std::string, lang_iterator_t> ietf_lookup = {};
-static config::String config_language = config::String{"en_US"};
+static std::string config_language = "en_US";
 
 static inline void send_lang_set_event(lang_iterator_t language)
 {
@@ -92,7 +81,7 @@ void lang::init()
 
 void lang::init_late()
 {
-    if(const auto it = ietf_lookup.find(config_language.value); it != ietf_lookup.cend()) {
+    if(const auto it = ietf_lookup.find(config_language); it != ietf_lookup.cend()) {
         lang::set(it->second);
         return;
     }
