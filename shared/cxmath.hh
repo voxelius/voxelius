@@ -1,15 +1,5 @@
-// SPDX-License-Identifier: GPL-2.0-only
-// Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
+// SPDX-License-Identifier: Zlib
+// Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_CXMATH_HH
 #define SHARED_CXMATH_HH
 #include <type_traits>
@@ -21,18 +11,6 @@
 
 namespace cxmath
 {
-template<typename T>
-constexpr static inline const T degrees(const T x)
-{
-    return x * static_cast<T>(180.0 / M_PI);
-}
-
-template<typename T>
-constexpr static inline const T radians(const T x)
-{
-    return x * static_cast<T>(M_PI / 180.0);
-}
-
 template<typename T>
 constexpr static inline const T log2(const T x)
 {

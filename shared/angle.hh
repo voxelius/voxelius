@@ -1,22 +1,12 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: Zlib
 // Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
 #ifndef SHARED_ANGLE_HH
 #define SHARED_ANGLE_HH
 #include <glm/common.hpp>
-#include <shared/cxmath.hh>
+#include <glm/trigonometric.hpp>
 
-constexpr static const double ANGLE_180D = cxmath::radians(180.0);
-constexpr static const double ANGLE_360D = cxmath::radians(360.0);
+constexpr static const double ANGLE_180D = glm::radians(180.0);
+constexpr static const double ANGLE_360D = glm::radians(360.0);
 
 namespace angle
 {
@@ -41,7 +31,7 @@ static inline const glm::vec<L, double, Q> wrap_180_n(const glm::vec<L, double, 
 {
     glm::vec<L, double, Q> wrap;
     for(glm::length_t i = 0; i < L; i++)
-        wrap[i] = wrap_180_n(angles[i]);
+        wrap[i] = angle::wrap_180_n(angles[i]);
     return wrap;
 }
 
@@ -50,7 +40,7 @@ static inline const glm::vec<L, double, Q> wrap_360_p(const glm::vec<L, double, 
 {
     glm::vec<L, double, Q> wrap;
     for(glm::length_t i = 0; i < L; i++)
-        wrap[i] = wrap_360_p(angles[i]);
+        wrap[i] = angle::wrap_360_p(angles[i]);
     return wrap;
 }
 } // namespace angle

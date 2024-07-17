@@ -9,6 +9,7 @@
             "compilerPath": "/usr/bin/g++",
             "defines": ["GLFW_INCLUDE_NONE", "VGAME_CLIENT"],
             "includePath": [
+                "${workspaceFolder}/deps/emhash/include",
                 "${workspaceFolder}/deps/entt/include",
                 "${workspaceFolder}/deps/glad/include",
                 "${workspaceFolder}/deps/glm/include",

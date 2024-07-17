@@ -1,18 +1,8 @@
-// SPDX-License-Identifier: GPL-2.0-only
+// SPDX-License-Identifier: Zlib
 // Copyright (c) 2024, Voxelius Contributors
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
 #include <shared/crc64.hh>
 
-static const uint64_t crc_table[256] = {
+static const std::uint64_t crc_table[256] = {
     0x0000000000000000, 0x42F0E1EBA9EA3693, 0x85E1C3D753D46D26, 0xC711223CFA3E5BB5,
     0x493366450E42ECDF, 0x0BC387AEA7A8DA4C, 0xCCD2A5925D9681F9, 0x8E224479F47CB76A,
     0x9266CC8A1C85D9BE, 0xD0962D61B56FEF2D, 0x17870F5D4F51B498, 0x5577EEB6E6BB820B,
@@ -79,21 +69,21 @@ static const uint64_t crc_table[256] = {
     0x5DEDC41A34BBEEB2, 0x1F1D25F19D51D821, 0xD80C07CD676F8394, 0x9AFCE626CE85B507,
 };
 
-uint64_t crc64::get(const void *data, size_t size)
+std::uint64_t crc64::get(const void *data, std::size_t size, std::uint64_t combine)
 {
-    uint64_t result {};
-    const uint8_t *dp = reinterpret_cast<const uint8_t *>(data);
-    for(size_t i = 0; i < size; ++i)
+    std::uint64_t result = combine;
+    const std::uint8_t *dp = reinterpret_cast<const std::uint8_t *>(data);
+    for(std::size_t i = 0; i < size; ++i)
         result = crc_table[((result >> 56) ^ dp[i]) & 0xFF] ^ (result << 8);
     return result;
 }
 
-uint64_t crc64::get(const std::vector<uint8_t> &data)
+std::uint64_t crc64::get(const std::vector<std::uint8_t> &data, std::uint64_t combine)
 {
-    return crc64::get(data.data(), data.size());
+    return crc64::get(data.data(), data.size(), combine);
 }
 
-uint64_t crc64::get(const std::string &data)
+std::uint64_t crc64::get(const std::string &data, std::uint64_t combine)
 {
-    return crc64::get(data.data(), data.size());
+    return crc64::get(data.data(), data.size(), combine);
 }
