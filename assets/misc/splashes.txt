@@ -1,0 +1,62 @@
+((void *)(0))
+[deleted]
+#define FALSE 1
+#define NULL ((void *)(0))
+#define NULL ((void *)(1))
+#define TRUE 0
+100% international
+100% lag free
+100% organic
+AAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+Abolish systemd, embrace crontab
+BEHOLD
+Billy Bones died from cringe
+Buck up, lads! We'll get 'em next time.
+Bush hid the facts
+Coca Cola is better than Pepsi
+COMMUNICATION ERROR
+DELETE THIS
+DO YOU THINK THAT'S FUNNY, BUTTHEAD?
+DOES A SET OF ALL SETS CONTAIN ITSELF?
+Don't you lecture me with your $30 game!
+FREEEEEEDOOOOOOOM
+From Urals with love!
+Hippity-Hoppity, this splash is my property
+How's that feel, ya blockhead?
+I am confiscating that splash
+Just 5 More Minutes
+Kernel panic - not syncing
+Made in Russia
+My stepdads play this
+Never gonna give you up
+Never gonna let you down
+Never gonna make you cry
+Never gonna run around and desert you
+Never gonna say goodbye
+Never gonna tell a lie and hurt you
+No voxels?
+Null
+NULL
+nullptr
+Open-source!
+Real life sucks anyways
+REEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+Segmentation fault (core dumped)
+Sometimes I dream about cheese
+sudo dd if=/dev/null of=/dev/sda
+sudo killall -KILL vgame
+sudo rm -rf / --no-preserve-root
+sudo touch /some/grass
+THE DIFFERENCE IS... PRESENTATION!
+THEY WANT YOU AS A NEW RECRUIT
+THEY WANT YOU, THEY WANT YOU
+TRUE BADASS ANIME MAN
+Trust me, I'm a doctor.
+Yes I can. I mean, yes, I can.
+YES NO YES NO YES NO YES NO YES NO YES NO
+Yes please
+YOU DARE CHALLENGE MEGAMIND?!
+You have new mail.
+You have no mail.
+Your inbox has (13) new messages
