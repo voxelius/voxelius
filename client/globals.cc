@@ -1,25 +1,27 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #include <client/globals.hh>
-#include <client/glxx/framebuffer.hh>
 #include <client/ui_screen.hh>
+#include <shared/config.hh>
+
+Config globals::client_config = {};
 
 GLFWwindow *globals::window = nullptr;
 
 int globals::width = 0;
 int globals::height = 0;
-double globals::aspect = 0.0;
+float globals::aspect = 0.0f;
 
-double globals::frametime = 0.0;
-double globals::frametime_avg = 0.0;
-uint64_t globals::curtime = 0;
-uint64_t globals::framecount = 0;
+float globals::frametime = 0.0f;
+float globals::frametime_avg = 0.0f;
+std::uint64_t globals::curtime = 0;
+std::uint64_t globals::framecount = 0;
 
 entt::entity globals::player = entt::null;
 
-glxx::Framebuffer globals::world_fbo = {};
-glxx::Texture2D globals::world_fbo_color = {};
-glxx::Renderbuffer globals::world_fbo_depth = {};
+GLuint globals::world_fbo = 0;
+GLuint globals::world_fbo_color = 0;
+GLuint globals::world_fbo_depth = 0;
 
 ImFont *globals::font_menu_title = nullptr;
 ImFont *globals::font_menu_button = nullptr;

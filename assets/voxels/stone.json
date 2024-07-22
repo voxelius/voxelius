@@ -1,8 +1,14 @@
 {
   "default": {
-    "draw": "opaque",
+    "animated": false,
+    "blending": false,
     "textures": {
-      "default": ["/textures/voxels/stone.png"]
+      "default": [
+        "textures/voxels/stone_01.png",
+        "textures/voxels/stone_02.png",
+        "textures/voxels/stone_03.png",
+        "textures/voxels/stone_04.png"
+      ]
     }
   }
 }

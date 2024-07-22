@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_ENTITY_PLAYER_HH
 #define SHARED_ENTITY_PLAYER_HH
 

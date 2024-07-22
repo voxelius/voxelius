@@ -1,8 +1,0 @@
-{
-  "default": {
-    "draw": "opaque",
-    "textures": {
-      "default": ["/textures/voxels/slate.png"]
-    }
-  }
-}

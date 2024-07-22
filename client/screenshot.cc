@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #include <client/event/glfw_key.hh>
 #include <client/globals.hh>
-#include <client/glxx/framebuffer.hh>
 #include <client/screenshot.hh>
 #include <entt/signal/dispatcher.hpp>
-#include <shared/epoch.hh>
-#include <shared/vfs.hh>
+#include <shared/util/epoch.hh>
+#include <shared/util/physfs.hh>
 #include <spdlog/fmt/fmt.h>
 #include <stb_image_write.h>
 
 static void png_write(void *context, void *data, int size)
 {
-    vfs::file_t *file = reinterpret_cast<vfs::file_t *>(context);
-    vfs::write(file, data, size);
+    PHYSFS_File *file = reinterpret_cast<PHYSFS_File *>(context);
+    PHYSFS_writeBytes(file, data, size);
 }
 
 static void on_glfw_key(const GlfwKeyEvent &event)
@@ -31,17 +30,19 @@ void screenshot::init()
 
 void screenshot::take()
 {
-    uint8_t *pixels = new uint8_t[globals::width * globals::height * 3];
-    glxx::Framebuffer::unbind();
+    std::uint8_t *pixels = new std::uint8_t[globals::width * globals::height * 3];
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glReadPixels(0, 0, globals::width, globals::height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 
-    const vfs::path_t path = fmt::format("/screenshots/{}.png", epoch::microseconds());
+    const std::string dirname = std::string("/screenshots");
+    const std::string path = fmt::format("{}/{}.png", dirname, util::epoch_microseconds());
 
-    vfs::create_directories(path.parent_path());
+    PHYSFS_mkdir(dirname.c_str());
 
-    if(vfs::file_t *file = vfs::open(path, vfs::OPEN_WR)) {
+    if(PHYSFS_File *file = PHYSFS_openWrite(path.c_str())) {
         stbi_flip_vertically_on_write(true);
         stbi_write_png_to_func(&png_write, file, globals::width, globals::height, 3, pixels, 3 * globals::width);
-        vfs::close(file);
+        PHYSFS_close(file);
     }
 }

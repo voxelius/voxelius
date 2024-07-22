@@ -1,82 +1,164 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_VDEF_HH
 #define SHARED_VDEF_HH
-#include <array>
-#include <shared/vfs.hh>
-#include <shared/voxel.hh>
+#include <shared/types.hh>
+#include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
-using VoxelDraw = unsigned short;
-constexpr static VoxelDraw VOXEL_DRAW_NODRAW    = 0xFFFF;
-constexpr static VoxelDraw VOXEL_DRAW_OPAQUE    = 0x0000;
-constexpr static VoxelDraw VOXEL_DRAW_THRES     = 0x0001;
-constexpr static VoxelDraw VOXEL_DRAW_BLEND     = 0x0002;
-constexpr static std::size_t NUM_VOXEL_DRAW = 3;
+enum class VoxelFace : unsigned int {
+    Invalid     = 0xFFFF,
 
-using VoxelFace = unsigned short;
-constexpr static VoxelFace VOXEL_FACE_NORTH     = 0x0000;
-constexpr static VoxelFace VOXEL_FACE_SOUTH     = 0x0001;
-constexpr static VoxelFace VOXEL_FACE_EAST      = 0x0002;
-constexpr static VoxelFace VOXEL_FACE_WEST      = 0x0003;
-constexpr static VoxelFace VOXEL_FACE_TOP       = 0x0004;
-constexpr static VoxelFace VOXEL_FACE_BOTTOM    = 0x0005;
-constexpr static VoxelFace VOXEL_FACE_CUSTOM_X  = 0x0006;
-constexpr static VoxelFace VOXEL_FACE_CUSTOM_Y  = 0x0007;
-constexpr static std::size_t NUM_VOXEL_FACE = 8;
+    CubeNorth   = 0x0000,
+    CubeSouth   = 0x0001,
+    CubeEast    = 0x0002,
+    CubeWest    = 0x0003,
+    CubeTop     = 0x0004,
+    CubeBottom  = 0x0005,
+    CubeCount   = 0x0006,
 
-using VoxelType = unsigned short;
-constexpr static VoxelType VOXEL_TYPE_CUBE      = 0x0000;
-constexpr static VoxelType VOXEL_TYPE_SLAB      = 0x0001;
-constexpr static VoxelType VOXEL_TYPE_STAIRS    = 0x0002;
-constexpr static VoxelType VOXEL_TYPE_CROSS     = 0x0003;
-constexpr static VoxelType VOXEL_TYPE_VMODEL    = 0x0004;
-constexpr static VoxelType VOXEL_TYPE_DMODEL    = 0x0005;
+    SlabNorth   = CubeNorth,
+    SlabSouth   = CubeSouth,
+    SlabEast    = CubeEast,
+    SlabWest    = CubeWest,
+    SlabTop     = CubeTop,
+    SlabBottom  = CubeBottom,
+    SlabCount   = CubeCount,
 
-struct VoxelTexture final {
-    std::vector<vfs::path_t> paths {};
-    std::uint16_t cached_offset {};
+    StairNorth  = CubeNorth,
+    StairSouth  = CubeSouth,
+    StairEast   = CubeEast,
+    StairWest   = CubeWest,
+    StairTop    = CubeTop,
+    StairBottom = CubeBottom,
+    StairCount  = CubeCount,
+
+    CrossNESW   = 0x0000,
+    CrossNWSE   = 0x0001,
+    CrossCount  = 0x0002,
 };
 
-struct VoxelInfo final {
+enum class VoxelType : unsigned int {
+    Cube        = 0x0000,
+    Slab        = 0x0001, // TODO
+    Stairs      = 0x0002, // TODO
+    Cross       = 0x0003, // TODO
+    VModel      = 0x0004, // TODO
+    DModel      = 0x0005, // TODO
+};
+
+using VoxelFacing = unsigned short;
+constexpr static VoxelFacing FACING_NORTH   = 0x0000;
+constexpr static VoxelFacing FACING_SOUTH   = 0x0001;
+constexpr static VoxelFacing FACING_EAST    = 0x0002;
+constexpr static VoxelFacing FACING_WEST    = 0x0003;
+constexpr static VoxelFacing FACING_UP      = 0x0004;
+constexpr static VoxelFacing FACING_DOWN    = 0x0005;
+constexpr static VoxelFacing FACING_NESW    = 0x0006;
+constexpr static VoxelFacing FACING_NWSE    = 0x0007;
+
+using VoxelVis = unsigned short;
+constexpr static VoxelVis VIS_NORTH = 1 << FACING_NORTH;
+constexpr static VoxelVis VIS_SOUTH = 1 << FACING_SOUTH;
+constexpr static VoxelVis VIS_EAST  = 1 << FACING_EAST;
+constexpr static VoxelVis VIS_WEST  = 1 << FACING_WEST;
+constexpr static VoxelVis VIS_UP    = 1 << FACING_UP;
+constexpr static VoxelVis VIS_DOWN  = 1 << FACING_DOWN;
+
+// This is dictated by hardware limitations. A single
+// voxel atlas plane upper limit is assumed to be 256
+// so we at least want to have 16 animated voxel types
+constexpr static std::size_t MAX_ANIM_FRAMES = 16;
+
+struct VoxelTextureAnimated final {
+    std::vector<std::string> paths {};
+    std::size_t cached_offset {};
+};
+
+struct VoxelTextureVaried final {
+    std::vector<std::string> paths {};
+    std::vector<std::size_t> planes {};
+    std::vector<std::size_t> indices {};
+};
+
+struct VoxelInfo {
+    virtual ~VoxelInfo(void) = default;
     std::string name {};
-    VoxelType type {VOXEL_TYPE_CUBE};
-    VoxelDraw draw {VOXEL_DRAW_NODRAW};
-    std::array<VoxelTexture, NUM_VOXEL_FACE> textures {};
-    Voxel base_voxel {NULL_VOXEL};
+    VoxelType type {};
+    bool animated {};
+    bool blending {};
+    Voxel base {};
 };
 
-class VoxelBuilder final {
+struct VoxelInfoAnimated final : public VoxelInfo {
+    virtual ~VoxelInfoAnimated(void) = default;
+    std::vector<VoxelTextureAnimated> textures {};
+};
+
+struct VoxelInfoVaried final : public VoxelInfo {
+    virtual ~VoxelInfoVaried(void) = default;
+    std::vector<VoxelTextureVaried> textures {};
+};
+
+class VDefBuilder final {
 public:
-    VoxelBuilder(void) = delete;
-    VoxelBuilder(VoxelType type, const std::string &name);
-    virtual ~VoxelBuilder(void) = default;
+    VDefBuilder(void) = delete;
+    VDefBuilder(const std::string &name, VoxelType type);
+    virtual ~VDefBuilder(void) = default;
 
-    VoxelBuilder &state_default(void);
-    VoxelBuilder &state(const std::string &name);
+public:
+    constexpr const VoxelType get_type(void) const;
+    constexpr const std::string &get_name(void) const;
+    constexpr const std::vector<std::string> &get_states(void) const;
 
+public:
+    VDefBuilder &add_state(const std::string &name);
+    VDefBuilder &add_default_state(void);
+    VDefBuilder &add_slab_states(void);
+    VDefBuilder &add_stairs_states(void);
+
+public:
     Voxel build(void) const;
 
 private:
-    VoxelType type {};
+    std::vector<std::string> states {};
     std::string name {};
-    std::unordered_set<std::string> states {};
+    VoxelType type {};
 };
 
 namespace vdef
 {
-extern std::unordered_map<std::string, VoxelBuilder> builders;
-extern std::unordered_set<vfs::path_t, vfs::path_hasher_t> textures;
-extern std::vector<VoxelInfo> voxels;
+extern std::unordered_map<std::string, VDefBuilder> builders;
+extern std::unordered_map<std::string, Voxel> names;
+extern std::vector<VoxelInfo *> voxels;
 } // namespace vdef
 
 namespace vdef
 {
-VoxelBuilder &create(VoxelType type, const std::string &name);
+VDefBuilder &create(const std::string &name, VoxelType type);
 VoxelInfo *find(const std::string &name);
 VoxelInfo *find(const Voxel voxel);
 } // namespace vdef
+
+namespace vdef
+{
+void purge(void);
+} // namespace vdef
+
+constexpr inline const VoxelType VDefBuilder::get_type(void) const
+{
+    return type;
+}
+
+constexpr inline const std::string &VDefBuilder::get_name(void) const
+{
+    return name;
+}
+
+constexpr inline const std::vector<std::string> &VDefBuilder::get_states(void) const
+{
+    return states;
+}
 
 #endif /* SHARED_VDEF_HH */

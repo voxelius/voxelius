@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_LANG_HH
 #define CLIENT_LANG_HH
 #include <string>
@@ -7,23 +7,31 @@
 
 struct LangInfo final {
     std::string endonym {};
-    std::string ietf {};
     std::string display {};
+    std::string ietf {};
 };
 
-using lang_vector_t = std::vector<LangInfo>;
-using lang_iterator_t = lang_vector_t::const_iterator;
+using LangManifest = std::vector<LangInfo>;
+using LangIterator = LangManifest::const_iterator;
 
 namespace lang
 {
-void init();
-void init_late();
-void set(lang_iterator_t language);
-const std::string &find(const std::string &key);
-lang_iterator_t lookup(const std::string &ietf);
-lang_iterator_t current();
-lang_iterator_t cbegin();
-lang_iterator_t cend();
+void init(void);
+void init_late(void);
+} // namespace lang
+
+namespace lang
+{
+void set(LangIterator language);
+LangIterator find(const std::string &ietf);
+LangIterator current(void);
+LangIterator cbegin(void);
+LangIterator cend(void);
+} // namespace lang
+
+namespace lang
+{
+const std::string &resolve(const std::string &tag);
 } // namespace lang
 
 #endif /* CLIENT_LANG_HH */

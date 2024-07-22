@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_GLOBALS_HH
 #define SHARED_GLOBALS_HH
 #include <entt/entity/fwd.hpp>

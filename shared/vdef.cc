@@ -1,100 +1,103 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #include <parson.h>
-#include <physfs.h>
+#include <shared/util/physfs.hh>
 #include <shared/vdef.hh>
 #include <spdlog/spdlog.h>
 
-std::unordered_map<std::string, VoxelBuilder> vdef::builders = {};
-std::unordered_set<vfs::path_t, vfs::path_hasher_t> vdef::textures = {};
-std::vector<VoxelInfo> vdef::voxels = {};
+std::unordered_map<std::string, VDefBuilder> vdef::builders = {};
+std::unordered_map<std::string, Voxel> vdef::names = {};
+std::vector<VoxelInfo *> vdef::voxels = {};
 
-static bool parse_draw(const JSON_Object *state, VoxelDraw &out)
+static VoxelFace parse_face_name(const std::string &face_str)
 {
-    static const std::unordered_map<std::string, VoxelDraw> draws = {
-        { "nodraw", VOXEL_DRAW_NODRAW   },
-        { "opaque", VOXEL_DRAW_OPAQUE   },
-        { "thres",  VOXEL_DRAW_THRES    },
-        { "blend",  VOXEL_DRAW_BLEND    },
-    };
-
-    if(const char *draw = json_object_get_string(state, "draw")) {
-        const auto it = draws.find(draw);
-
-        if(it != draws.cend()) {
-            out = it->second;
-            return true;
-        }
-    }
-
-    return false;
+    if(!face_str.compare("north"))
+        return VoxelFace::CubeNorth;
+    if(!face_str.compare("south"))
+        return VoxelFace::CubeSouth;
+    if(!face_str.compare("east"))
+        return VoxelFace::CubeEast;
+    if(!face_str.compare("west"))
+        return VoxelFace::CubeWest;
+    if(!face_str.compare("top"))
+        return VoxelFace::CubeTop;
+    if(!face_str.compare("bottom"))
+        return VoxelFace::CubeBottom;
+    if(!face_str.compare("nesw"))
+        return VoxelFace::CrossNESW;
+    if(!face_str.compare("nwse"))
+        return VoxelFace::CrossNWSE;
+    return VoxelFace::Invalid;
 }
 
-static bool parse_texture(const JSON_Array *texture, std::vector<vfs::path_t> &out)
+static bool parse_string_array(const JSON_Array *array, std::vector<std::string> &vector)
 {
-    if(std::size_t count = json_array_get_count(texture)) {
-        out.clear();
+    vector.resize(json_array_get_count(array));
 
-        for(std::size_t i = 0; i < count; ++i) {
-            if(const char *str = json_array_get_string(texture, i)) {
-                vdef::textures.insert(str);
-                out.push_back(str);
-                continue;
-            }
-
-            return false;
+    for(std::size_t i = 0; i < vector.size(); ++i) {
+        if(const char *str = json_array_get_string(array, i)) {
+            vector[i] = std::string(str);
+            continue;
         }
 
-        return true;
+        return false;
     }
 
-    return false;
+    return true;
 }
 
-VoxelBuilder::VoxelBuilder(VoxelType type, const std::string &name)
+VDefBuilder::VDefBuilder(const std::string &name, VoxelType type)
 {
-    this->type = type;
     this->name = name;
+    this->type = type;
 }
 
-VoxelBuilder &VoxelBuilder::state_default(void)
+VDefBuilder &VDefBuilder::add_state(const std::string &state)
 {
-    states.insert("default");
-    return (*this);
+    for(std::size_t i = 0; i < states.size(); ++i) {
+        if(!states[i].compare(state)) {
+            spdlog::warn("vdef: {}: state {} is already mapped to offset {}", name, state, i);
+            return *this;
+        }
+    }
+
+    states.push_back(state);
+    return *this;
 }
 
-VoxelBuilder &VoxelBuilder::state(const std::string &name)
+VDefBuilder &VDefBuilder::add_default_state(void)
 {
-    states.insert(name);
-    return (*this);
+    return add_state("default");
 }
 
-Voxel VoxelBuilder::build(void) const
+Voxel VDefBuilder::build(void) const
 {
-    const std::string path = fmt::format("/voxels/{}.json", name);
+    const auto it = vdef::names.find(name);
 
-    PHYSFS_File *file = PHYSFS_openRead(path.c_str());
+    if(it != vdef::names.cend()) {
+        spdlog::warn("vdef: cannot build {}: name already registered", name);
+        return it->second;
+    }
 
-    if(!file) {
-        spdlog::warn("vdef: {}: {}", path, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode()));
+    const std::string json_path = fmt::format("/voxels/{}.json", name);
+
+    std::string json_source = {};
+
+    if(!util::read_string(json_path, json_source)) {
+        spdlog::warn("vdef: {}: {}", json_path, util::physfs_error());
         return NULL_VOXEL;
     }
 
-    std::string source = {};
-    source.resize(PHYSFS_fileLength(file));
-    PHYSFS_readBytes(file, source.data(), source.size());
-    PHYSFS_close(file);
-
-    JSON_Value *jsonv = json_parse_string(source.c_str());
-    JSON_Object *json = json_value_get_object(jsonv);
+    JSON_Value *jsonv = json_parse_string(json_source.c_str());
+    const JSON_Object *json = json_value_get_object(jsonv);
 
     if(!jsonv) {
-        spdlog::warn("vdef: {}: parse error", path);
+        spdlog::warn("vdef: {}: parse error", json_path);
         return NULL_VOXEL;
     }
 
     if(!json) {
-        spdlog::warn("vdef: {}: root is not an object", path);
+        spdlog::warn("vdef: {}: root is not an object", json_path);
         json_value_free(jsonv);
         return NULL_VOXEL;
     }
@@ -105,67 +108,111 @@ Voxel VoxelBuilder::build(void) const
         std::terminate();
     }
 
-    std::vector<VoxelInfo> infos = {};
-    Voxel base_voxel = vdef::voxels.size() + 1;
+    std::size_t face_count = {};
+    std::vector<VoxelInfo *> infos = {};
+    Voxel base = vdef::voxels.size() + 1;
+
+    switch(type) {
+        case VoxelType::Cube:
+            face_count = static_cast<std::size_t>(VoxelFace::CubeCount);
+            break;
+        case VoxelType::Slab:
+            face_count = static_cast<std::size_t>(VoxelFace::SlabCount);
+            break;
+        case VoxelType::Stairs:
+            face_count = static_cast<std::size_t>(VoxelFace::StairCount);
+            break;
+        case VoxelType::Cross:
+            face_count = static_cast<std::size_t>(VoxelFace::CrossCount);
+            break;
+        case VoxelType::VModel:
+        case VoxelType::DModel:
+            // Custom models should use a different texture
+            // resource management that is not a voxel atlas
+            // TODO: actually implement custom models lol
+            face_count = 0;
+            break;
+        default:
+            // Something really bad should happen if we end up here.
+            // The outside code would static_cast an int to VoxelType
+            // and possibly fuck a lot of things up to cause this
+            spdlog::critical("vdef: {}: unknown voxel type {}", name, static_cast<int>(type));
+            json_value_free(jsonv);
+            std::terminate();
+    }
 
     for(const std::string &state_name : states) {
-        VoxelInfo info = {};
-        info.name = name;
-        info.type = type;
-        info.base_voxel = base_voxel;
+        VoxelInfoAnimated *info_a = nullptr;
+        VoxelInfoVaried *info_v = nullptr;
+        VoxelInfo *info = nullptr;
 
         const JSON_Object *state = json_object_get_object(json, state_name.c_str());
 
         if(!state) {
-            spdlog::error("vdef: {}: {} is not an object", path, state_name);
+            spdlog::warn("vdef: {}: {} is not an object", json_path, state_name);
             json_value_free(jsonv);
             return NULL_VOXEL;
         }
 
-        if(!parse_draw(state, info.draw)) {
-            spdlog::warn("vdef: {}[{}]: invalid or undefined draw mode", path, state_name);
-            info.draw = VOXEL_DRAW_NODRAW;
+        if(json_object_get_boolean(state, "animated")) {
+            info_a = new VoxelInfoAnimated();
+            info_a->animated = true;
+            info_a->textures.resize(face_count);
+            info = info_a;
         }
+        else {
+            info_v = new VoxelInfoVaried();
+            info_v->animated = false;
+            info_v->textures.resize(face_count);
+            info = info_v;
+        }
+
+        info->name = name;
+        info->type = type;
+        info->base = base;
+
+        info->blending = json_object_get_boolean(state, "blending");
 
         const JSON_Object *textures = json_object_get_object(state, "textures");
         const std::size_t num_textures = json_object_get_count(textures);
 
-        if(const JSON_Array *texture = json_object_get_array(textures, "default")) {
-            std::vector<vfs::path_t> vec = {};
+        std::vector<std::string> default_texture = {};
 
-            if(parse_texture(texture, vec)) {
-                for(VoxelTexture &vtex : info.textures) {
-                    vtex.paths.assign(vec.cbegin(), vec.cend());
-                    vtex.cached_offset = 0;
-                }
+        if(!parse_string_array(json_object_get_array(textures, "default"), default_texture)) {
+            spdlog::error("vdef: {}: {}: default: non-string array entry", json_path, state_name);
+            json_value_free(jsonv);
+            return NULL_VOXEL;
+        }
+
+        if(info->animated) {
+            for(std::size_t i = 0; i < face_count; ++i) {
+                info_a->textures[i].paths = default_texture;
+                info_a->textures[i].cached_offset = SIZE_MAX;
+            }
+        }
+        else {
+            for(std::size_t i = 0; i < face_count; ++i) {
+                info_v->textures[i].paths = default_texture;
+                info_v->textures[i].planes.assign(default_texture.size(), SIZE_MAX);
+                info_v->textures[i].indices.assign(default_texture.size(), SIZE_MAX);
             }
         }
 
         for(std::size_t i = 0; i < num_textures; ++i) {
-            const char *cstr = json_object_get_name(textures, i);
-            const std::string str = cstr ? cstr : std::string("[NULL]");
+            const char *tex_name_cstr = json_object_get_name(textures, i);
+            const std::string tex_name = tex_name_cstr ? tex_name_cstr : "NULL";
 
-            if(!str.compare("default")) {
-                // If we came to this point, the default
-                // texture is already parsed
+            if(!tex_name.compare("default")) {
+                // We already parsed the default texture
+                // so doing anything else with it makes no sense
                 continue;
             }
 
-            static const std::unordered_map<std::string, VoxelFace> faces = {
-                { "north",      VOXEL_FACE_NORTH    },
-                { "south",      VOXEL_FACE_SOUTH    },
-                { "east",       VOXEL_FACE_EAST     },
-                { "west",       VOXEL_FACE_WEST     },
-                { "top",        VOXEL_FACE_TOP      },
-                { "bottom",     VOXEL_FACE_BOTTOM   },
-                { "custom_x",   VOXEL_FACE_CUSTOM_X },
-                { "custom_y",   VOXEL_FACE_CUSTOM_Y },
-            };
+            const VoxelFace face = parse_face_name(tex_name);
+            const std::size_t face_index = static_cast<std::size_t>(face);
 
-            const auto it = faces.find(str);
-
-            if(it == faces.cend()) {
-                spdlog::warn("vdef: {}[{}]: invalid texture name {}", path, state_name, str);
+            if((face == VoxelFace::Invalid) || (face_index >= face_count)) {
+                spdlog::warn("vdef: {}: invalid texture name {}", json_path, state_name, tex_name);
                 json_value_free(jsonv);
                 return NULL_VOXEL;
             }
@@ -173,19 +220,29 @@ Voxel VoxelBuilder::build(void) const
             const JSON_Value *texturev = json_object_get_value_at(textures, i);
             const JSON_Array *texture = json_value_get_array(texturev);
 
-            if(!texturev || !texture) {
-                spdlog::warn("vdef: {}[{}]: invalid texture {}", path, state_name, str);
+            if(!texture) {
+                spdlog::warn("vdef: {}: {}: {} is not an array", json_path, state_name, tex_name);
                 json_value_free(jsonv);
                 return NULL_VOXEL;
             }
 
-            if(!parse_texture(texture, info.textures[it->second].paths)) {
-                spdlog::warn("vdef: {}[{}]: texture {}: parse error", path, state_name, str);
+            std::vector<std::string> paths = {};
+
+            if(!parse_string_array(texture, paths)) {
+                spdlog::warn("vdef: {}: {}: {}: non-string array entry", json_path, state_name, tex_name);
                 json_value_free(jsonv);
                 return NULL_VOXEL;
             }
 
-            info.textures[it->second].cached_offset = 0;
+            if(info->animated) {
+                info_a->textures[face_index].paths = paths;
+                info_a->textures[face_index].cached_offset = SIZE_MAX;
+            }
+            else {
+                info_v->textures[face_index].paths = paths;
+                info_v->textures[face_index].planes.assign(paths.size(), SIZE_MAX);
+                info_v->textures[face_index].indices.assign(paths.size(), SIZE_MAX);
+            }
         }
 
         infos.push_back(info);
@@ -195,35 +252,37 @@ Voxel VoxelBuilder::build(void) const
 
     vdef::voxels.insert(vdef::voxels.end(), infos.cbegin(), infos.cend());
 
-    return base_voxel;
+    return base;
 }
 
-VoxelBuilder &vdef::create(VoxelType type, const std::string &name)
+VDefBuilder &vdef::create(const std::string &name, VoxelType type)
 {
     const auto it = vdef::builders.find(name);
-
-    if(it != vdef::builders.cend()) {
-        spdlog::warn("vdef: {} is created twice", name);
+    if(it != vdef::builders.cend())
         return it->second;
-    }
-
-    return vdef::builders.emplace(name, VoxelBuilder(type, name)).first->second;
+    return vdef::builders.emplace(name, VDefBuilder(name, type)).first->second;
 }
 
 VoxelInfo *vdef::find(const std::string &name)
 {
-    for(VoxelInfo &it : vdef::voxels) {
-        if(it.name.compare(name))
-            continue;
-        return &it;
-    }
-
+    const auto it = vdef::names.find(name);
+    if(it != vdef::names.cend())
+        return vdef::find(it->second);
     return nullptr;
 }
 
 VoxelInfo *vdef::find(const Voxel voxel)
 {
     if((voxel != NULL_VOXEL) && (voxel <= vdef::voxels.size()))
-        return &vdef::voxels.at(voxel - 1);
+        return vdef::voxels[voxel - 1];
     return nullptr;
+}
+
+void vdef::purge(void)
+{
+    for(VoxelInfo *info : vdef::voxels)
+        delete info;
+    vdef::builders.clear();
+    vdef::names.clear();
+    vdef::voxels.clear();
 }

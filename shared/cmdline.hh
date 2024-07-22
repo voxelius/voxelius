@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_CMDLINE_HH
 #define SHARED_CMDLINE_HH
 #include <string>

@@ -1,53 +1,47 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_CONST_HH
 #define SHARED_CONST_HH
 #include <glm/fwd.hpp>
-#include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
-#include <shared/cxmath.hh>
+#include <shared/util/cxmath.hh>
 
-constexpr static std::size_t CHUNK_SIZE         = 32;
+constexpr static std::size_t CHUNK_SIZE         = 16;
 constexpr static std::size_t CHUNK_AREA         = CHUNK_SIZE * CHUNK_SIZE;
 constexpr static std::size_t CHUNK_VOLUME       = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
-constexpr static std::size_t CHUNK_BIT_SHIFT    = cxmath::log2(CHUNK_SIZE);
+constexpr static std::size_t CHUNK_SIZE_LOG2    = util::log2(CHUNK_SIZE);
 
-constexpr static glm::dvec3 DIR_FORWARD         = { 0.00,  0.00, -1.00};
-constexpr static glm::dvec3 DIR_BACK            = { 0.00,  0.00,  1.00};
-constexpr static glm::dvec3 DIR_LEFT            = {-1.00,  0.00,  0.00};
-constexpr static glm::dvec3 DIR_RIGHT           = { 1.00,  0.00,  0.00};
-constexpr static glm::dvec3 DIR_DOWN            = { 0.00, -1.00,  0.00};
-constexpr static glm::dvec3 DIR_UP              = { 0.00,  1.00,  0.00};
+constexpr static glm::fvec3 DIR_FORWARD         = glm::fvec3( 0.00f,  0.00f, -1.00f);
+constexpr static glm::fvec3 DIR_BACK            = glm::fvec3( 0.00f,  0.00f,  1.00f);
+constexpr static glm::fvec3 DIR_LEFT            = glm::fvec3(-1.00f,  0.00f,  0.00f);
+constexpr static glm::fvec3 DIR_RIGHT           = glm::fvec3( 1.00f,  0.00f,  0.00f);
+constexpr static glm::fvec3 DIR_DOWN            = glm::fvec3( 0.00f, -1.00f,  0.00f);
+constexpr static glm::fvec3 DIR_UP              = glm::fvec3( 0.00f,  1.00f,  0.00f);
 
-constexpr static glm::fvec3 FDIR_FORWARD        = DIR_FORWARD;
-constexpr static glm::fvec3 FDIR_BACK           = DIR_BACK;
-constexpr static glm::fvec3 FDIR_LEFT           = DIR_LEFT;
-constexpr static glm::fvec3 FDIR_RIGHT          = DIR_RIGHT;
-constexpr static glm::fvec3 FDIR_DOWN           = DIR_DOWN;
-constexpr static glm::fvec3 FDIR_UP             = DIR_UP;
+constexpr static glm::fvec3 WDIR_NORTH          = DIR_FORWARD;
+constexpr static glm::fvec3 WDIR_SOUTH          = DIR_BACK;
+constexpr static glm::fvec3 WDIR_EAST           = DIR_RIGHT;
+constexpr static glm::fvec3 WDIR_WEST           = DIR_LEFT;
+constexpr static glm::fvec3 WDIR_DOWN           = DIR_DOWN;
+constexpr static glm::fvec3 WDIR_UP             = DIR_UP;
 
-constexpr static glm::dvec3 WDIR_NORTH          = DIR_FORWARD;
-constexpr static glm::dvec3 WDIR_SOUTH          = DIR_BACK;
-constexpr static glm::dvec3 WDIR_EAST           = DIR_RIGHT;
-constexpr static glm::dvec3 WDIR_WEST           = DIR_LEFT;
-
-constexpr static glm::dvec4 COLOR_TRANSPARENT   = {0.00, 0.00, 0.00, 0.00};
-constexpr static glm::dvec4 COLOR_BLACK         = {0.00, 0.00, 0.00, 1.00};
-constexpr static glm::dvec4 COLOR_BLUE          = {0.00, 0.00, 1.00, 1.00};
-constexpr static glm::dvec4 COLOR_GREEN         = {0.00, 1.00, 0.00, 1.00};
-constexpr static glm::dvec4 COLOR_CYAN          = {0.00, 1.00, 1.00, 1.00};
-constexpr static glm::dvec4 COLOR_RED           = {1.00, 0.00, 0.00, 1.00};
-constexpr static glm::dvec4 COLOR_MAGENTA       = {1.00, 0.00, 1.00, 1.00};
-constexpr static glm::dvec4 COLOR_YELLOW        = {1.00, 1.00, 0.00, 1.00};
-constexpr static glm::dvec4 COLOR_WHITE         = {1.00, 1.00, 1.00, 1.00};
-constexpr static glm::dvec4 COLOR_GRAY          = {0.50, 0.50, 0.50, 1.00};
-constexpr static glm::dvec4 COLOR_LIGHT_GRAY    = {0.80, 0.80, 0.80, 1.00};
-constexpr static glm::dvec4 COLOR_DARK_BLUE     = {0.00, 0.00, 0.50, 1.00};
-constexpr static glm::dvec4 COLOR_DARK_GREEN    = {0.00, 0.50, 0.00, 1.00};
-constexpr static glm::dvec4 COLOR_DARK_CYAN     = {0.00, 0.50, 0.50, 1.00};
-constexpr static glm::dvec4 COLOR_DARK_RED      = {0.50, 0.00, 0.00, 1.00};
-constexpr static glm::dvec4 COLOR_DARK_MAGENTA  = {0.50, 0.00, 0.50, 1.00};
-constexpr static glm::dvec4 COLOR_BROWN         = {0.50, 0.50, 0.00, 1.00};
+constexpr static glm::fvec4 COLOR_TRANSPARENT   = glm::fvec4(0.00f, 0.00f, 0.00f, 0.00f);
+constexpr static glm::fvec4 COLOR_BLACK         = glm::fvec4(0.00f, 0.00f, 0.00f, 1.00f);
+constexpr static glm::fvec4 COLOR_BLUE          = glm::fvec4(0.00f, 0.00f, 1.00f, 1.00f);
+constexpr static glm::fvec4 COLOR_GREEN         = glm::fvec4(0.00f, 1.00f, 0.00f, 1.00f);
+constexpr static glm::fvec4 COLOR_CYAN          = glm::fvec4(0.00f, 1.00f, 1.00f, 1.00f);
+constexpr static glm::fvec4 COLOR_RED           = glm::fvec4(1.00f, 0.00f, 0.00f, 1.00f);
+constexpr static glm::fvec4 COLOR_MAGENTA       = glm::fvec4(1.00f, 0.00f, 1.00f, 1.00f);
+constexpr static glm::fvec4 COLOR_YELLOW        = glm::fvec4(1.00f, 1.00f, 0.00f, 1.00f);
+constexpr static glm::fvec4 COLOR_WHITE         = glm::fvec4(1.00f, 1.00f, 1.00f, 1.00f);
+constexpr static glm::fvec4 COLOR_GRAY          = glm::fvec4(0.50f, 0.50f, 0.50f, 1.00f);
+constexpr static glm::fvec4 COLOR_LIGHT_GRAY    = glm::fvec4(0.80f, 0.80f, 0.80f, 1.00f);
+constexpr static glm::fvec4 COLOR_DARK_BLUE     = glm::fvec4(0.00f, 0.00f, 0.50f, 1.00f);
+constexpr static glm::fvec4 COLOR_DARK_GREEN    = glm::fvec4(0.00f, 0.50f, 0.00f, 1.00f);
+constexpr static glm::fvec4 COLOR_DARK_CYAN     = glm::fvec4(0.00f, 0.50f, 0.50f, 1.00f);
+constexpr static glm::fvec4 COLOR_DARK_RED      = glm::fvec4(0.50f, 0.00f, 0.00f, 1.00f);
+constexpr static glm::fvec4 COLOR_DARK_MAGENTA  = glm::fvec4(0.50f, 0.00f, 0.50f, 1.00f);
+constexpr static glm::fvec4 COLOR_BROWN         = glm::fvec4(0.50f, 0.50f, 0.00f, 1.00f);
 
 #endif /* SHARED_CONST_HH */

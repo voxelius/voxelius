@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <shared/globals.hh>

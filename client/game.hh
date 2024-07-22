@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_GAME_HH
 #define CLIENT_GAME_HH
 #include <string>
@@ -13,13 +13,13 @@ extern std::string username;
 
 namespace client_game
 {
-void init();
-void init_late();
-void deinit();
-void update();
-void update_late();
-void render();
-void layout();
+void init(void);
+void init_late(void);
+void deinit(void);
+void update(void);
+void update_late(void);
+void render(void);
+void layout(void);
 } // namespace client_game
 
 #endif /* CLIENT_GAME_HH */

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #include <client/debug_session.hh>
 #include <client/event/glfw_key.hh>
-#include <client/event/lang_set.hh>
+#include <client/event/language_set.hh>
 #include <client/globals.hh>
 #include <client/ui_main_menu.hh>
 #include <client/ui_screen.hh>
@@ -11,7 +11,14 @@
 #include <imgui.h>
 #include <shared/cmake.hh>
 
-constexpr static const ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground;
+constexpr static ImGuiWindowFlags MENU_FLAGS =
+    ImGuiWindowFlags_NoTitleBar         |
+    ImGuiWindowFlags_NoResize           |
+    ImGuiWindowFlags_NoCollapse         |
+    ImGuiWindowFlags_NoMove             |
+    ImGuiWindowFlags_NoMove             |
+    ImGuiWindowFlags_NoSavedSettings    |
+    ImGuiWindowFlags_NoBackground;
 
 static std::string button_debug_session = {};
 static std::string button_server_list = {};
@@ -34,31 +41,31 @@ static void on_glfw_key(const GlfwKeyEvent &event)
     }
 }
 
-static void on_lang_set(const LangSetEvent &event)
+static void on_language_set(const LanguageSetEvent &event)
 {
-    button_debug_session    = lang::find("main_menu.button.debug_session")  + "###MainMenu_Button_DebugSession";
-    button_server_list      = lang::find("main_menu.button.server_list")    + "###MainMenu_Button_ServerList";
-    button_settings         = lang::find("main_menu.button.settings")       + "###MainMenu_Button_Settings";
-    button_quit             = lang::find("main_menu.button.quit")           + "###MainMenu_Button_Quit";
+    button_debug_session = lang::resolve("main_menu.button.debug_session") + "###MainMenu_Button_DebugSession";
+    button_server_list = lang::resolve("main_menu.button.server_list") + "###MainMenu_Button_ServerList";
+    button_settings = lang::resolve("main_menu.button.settings") + "###MainMenu_Button_Settings";
+    button_quit = lang::resolve("main_menu.button.quit") + "###MainMenu_Button_Quit";
 }
 
-void ui::main_menu::init()
+void ui::main_menu::init(void)
 {
     globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
-    globals::dispatcher.sink<LangSetEvent>().connect<&on_lang_set>();
+    globals::dispatcher.sink<LanguageSetEvent>().connect<&on_language_set>();
 }
 
-void ui::main_menu::layout()
+void ui::main_menu::layout(void)
 {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    const ImVec2 window_start = ImVec2{0.0f, viewport->Size.y * 0.10f};
-    const ImVec2 window_size = ImVec2{viewport->Size.x, viewport->Size.y * 0.80f};
+    const ImVec2 window_start = ImVec2(0.0f, viewport->Size.y * 0.10f);
+    const ImVec2 window_size = ImVec2(viewport->Size.x, viewport->Size.y * 0.80f);
 
     ImGui::SetNextWindowPos(window_start);
     ImGui::SetNextWindowSize(window_size);
 
     if(ImGui::Begin("###MainMenu", nullptr, MENU_FLAGS)) {
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{0.0f, 2.0f * globals::ui_scale});
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 2.0f * globals::ui_scale));
 
         ImGui::PushFont(globals::font_menu_title);
         constexpr static const char *title_str = "Voxelius";
@@ -77,29 +84,34 @@ void ui::main_menu::layout()
         ImGui::TextUnformatted(subtitle_str);
         ImGui::PopFont();
 
-        ImGui::Dummy(ImVec2{0.0f, 10.0f * globals::ui_scale});
+        ImGui::Dummy(ImVec2(0.0f, 10.0f * globals::ui_scale));
 
         const float button_width = 240.0f * globals::ui_scale;
         const float button_xpos = 0.5f * (window_size.x - button_width);
 
         ImGui::PushFont(globals::font_menu_button);
+
         ImGui::SetCursorPosX(button_xpos);
-        if(ImGui::Button(button_debug_session.c_str(), ImVec2{button_width, 0.0f}))
+        if(ImGui::Button(button_debug_session.c_str(), ImVec2(button_width, 0.0f)))
             debug_session::run();
         ImGui::Spacing();
+
         ImGui::SetCursorPosX(button_xpos);
-        if(ImGui::Button(button_server_list.c_str(), ImVec2{button_width, 0.0f}))
+        if(ImGui::Button(button_server_list.c_str(), ImVec2(button_width, 0.0f)))
             globals::ui_screen = ui::SCREEN_SERVER_LIST;
         ImGui::Spacing();
+
         ImGui::SetCursorPosX(button_xpos);
-        if(ImGui::Button(button_settings.c_str(), ImVec2{button_width, 0.0f}))
+        if(ImGui::Button(button_settings.c_str(), ImVec2(button_width, 0.0f)))
             globals::ui_screen = ui::SCREEN_SETTINGS;
         ImGui::Spacing();
-        ImGui::SetCursorPosX(button_xpos);
-        if(ImGui::Button(button_quit.c_str(), ImVec2{button_width, 0.0f}))
-            glfwSetWindowShouldClose(globals::window, true);
-        ImGui::PopFont();
 
+        ImGui::SetCursorPosX(button_xpos);
+        if(ImGui::Button(button_quit.c_str(), ImVec2(button_width, 0.0f)))
+            glfwSetWindowShouldClose(globals::window, true);
+        ImGui::Spacing();
+
+        ImGui::PopFont();
         ImGui::PopStyleVar();
         ImGui::SameLine();
     }
