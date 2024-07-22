@@ -1,10 +1,22 @@
 {
   "default": {
-    "draw": "opaque",
+    "animated": false,
+    "blending": false,
     "textures": {
-      "default":  ["/textures/voxels/grass_side.png"],
-      "top":      ["/textures/voxels/grass_top.png"],
-      "bottom":   ["/textures/voxels/dirt.png"]
+      "default": [
+        "textures/voxels/grass_side_01.png",
+        "textures/voxels/grass_side_02.png"
+      ],
+      "top": [
+        "textures/voxels/grass_01.png",
+        "textures/voxels/grass_02.png"
+      ],
+      "bottom": [
+        "textures/voxels/dirt_01.png",
+        "textures/voxels/dirt_02.png",
+        "textures/voxels/dirt_03.png",
+        "textures/voxels/dirt_04.png"
+      ]
     }
   }
 }

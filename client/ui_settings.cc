@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #include <client/camera.hh>
 #include <client/event/glfw_key.hh>
-#include <client/event/lang_set.hh>
+#include <client/event/language_set.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
-#include <client/player_look.hh>
+#include <client/mouse.hh>
 #include <client/ui_screen.hh>
 #include <client/ui_settings.hh>
 #include <entt/entity/registry.hpp>
@@ -14,7 +14,14 @@
 #include <imgui_stdlib.h>
 #include <shared/config.hh>
 
-constexpr static const ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground;
+constexpr static ImGuiWindowFlags MENU_FLAGS =
+    ImGuiWindowFlags_NoTitleBar         |
+    ImGuiWindowFlags_NoResize           |
+    ImGuiWindowFlags_NoCollapse         |
+    ImGuiWindowFlags_NoMove             |
+    ImGuiWindowFlags_NoMove             |
+    ImGuiWindowFlags_NoSavedSettings    |
+    ImGuiWindowFlags_NoBackground;
 
 static std::string tab_general = {};
 static std::string tab_controls = {};
@@ -52,32 +59,33 @@ static void on_glfw_key(const GlfwKeyEvent &event)
     }
 }
 
-static void on_lang_set(const LangSetEvent &event)
+
+static void on_language_set(const LanguageSetEvent &event)
 {
-    tab_general             = lang::find("settings.tab.general")            + "###Settings_Tab_General";
-    tab_controls            = lang::find("settings.tab.controls")           + "###Settings_Tab_Controls";
-    tab_graphics            = lang::find("settings.tab.graphics")           + "###Settings_Tab_Graphics";
-    tab_sound               = lang::find("settings.tab.sound")              + "###Settings_Tab_Sound";
+    tab_general = lang::resolve("settings.tab.general") + "###Settings_Tab_General";
+    tab_controls = lang::resolve("settings.tab.controls") + "###Settings_Tab_Controls";
+    tab_graphics = lang::resolve("settings.tab.graphics") + "###Settings_Tab_Graphics";
+    tab_sound = lang::resolve("settings.tab.sound") + "###Settings_Tab_Sound";
 
-    separator_multiplayer   = lang::find("settings.separator.multiplayer")  + "###Settings_Separator_Multiplayer";
-    separator_keyboard      = lang::find("settings.separator.keyboard")     + "###Settings_Separator_Keyboard";
-    separator_mouse         = lang::find("settings.separator.mouse")        + "###Settings_Separator_Mouse";
-    separator_gamepad       = lang::find("settings.separator.gamepad")      + "###Settings_Separator_Gamepad";
-    separator_performance   = lang::find("settings.separator.performance")  + "###Settings_Separator_Performance";
-    separator_ui            = lang::find("settings.separator.ui")           + "###Settings_Separator_UI";
+    separator_multiplayer = lang::resolve("settings.separator.multiplayer") + "###Settings_Separator_Multiplayer";
+    separator_keyboard = lang::resolve("settings.separator.keyboard") + "###Settings_Separator_Keyboard";
+    separator_mouse = lang::resolve("settings.separator.mouse") + "###Settings_Separator_Mouse";
+    separator_gamepad = lang::resolve("settings.separator.gamepad") + "###Settings_Separator_Gamepad";
+    separator_performance = lang::resolve("settings.separator.performance") + "###Settings_Separator_Performance";
+    separator_ui = lang::resolve("settings.separator.ui") + "###Settings_Separator_UI";
 
-    option_language         = lang::find("settings.option.language")        + "###Settings_Option_Language";
-    option_fov              = lang::find("settings.option.fov")             + "###Settings_Option_FOV";
-    option_username         = lang::find("settings.option.username")        + "###Settings_Option_Username";
-    option_acceleration     = lang::find("settings.option.acceleration")    + "###Settings_Option_Acceleration";
-    option_raw_input        = lang::find("settings.option.raw_input")       + "###Settings_Option_RawInput";
-    option_pixel_size       = lang::find("settings.option.pixel_size")      + "###Settings_Option_PixelSize";
-    option_view_distance    = lang::find("settings.option.view_distance")   + "###Settings_Option_ViewDistance";
-    option_menu_background  = lang::find("settings.option.menu_background") + "###Settings_Option_MenuBackground";
+    option_language = lang::resolve("settings.option.language") + "###Settings_Option_Language";
+    option_fov = lang::resolve("settings.option.fov") + "###Settings_Option_FOV";
+    option_username = lang::resolve("settings.option.username") + "###Settings_Option_Username";
+    option_acceleration = lang::resolve("settings.option.acceleration") + "###Settings_Option_Acceleration";
+    option_raw_input = lang::resolve("settings.option.raw_input") + "###Settings_Option_RawInput";
+    option_pixel_size = lang::resolve("settings.option.pixel_size") + "###Settings_Option_PixelSize";
+    option_view_distance = lang::resolve("settings.option.view_distance") + "###Settings_Option_ViewDistance";
+    option_menu_background = lang::resolve("settings.option.menu_background") + "###Settings_Option_MenuBackground";
 
-    tooltip_fov             = lang::find("settings.tooltip.fov");
-    tooltip_raw_input       = lang::find("settings.tooltip.raw_input");
-    tooltip_menu_background = lang::find("settings.tooltip.menu_background");
+    tooltip_fov = lang::resolve("settings.tooltip.fov");
+    tooltip_raw_input = lang::resolve("settings.tooltip.raw_input");
+    tooltip_menu_background = lang::resolve("settings.tooltip.menu_background");
 }
 
 static void settings_tooltip(const std::string &tooltip)
@@ -92,8 +100,7 @@ static void settings_tooltip(const std::string &tooltip)
         ImGui::EndTooltip();
     }
 }
-
-static void layout_general()
+static void layout_general(void)
 {
     // FIXME: there may be the case when the manifest
     // is completely messed up and this iterator is invalid
@@ -110,10 +117,10 @@ static void layout_general()
         ImGui::EndCombo();
     }
 
-    int fov_value = static_cast<int>(camera::fov);
+    int fov_value = static_cast<int>(camera::horizontal_fov);
     ImGui::SliderInt(option_fov.c_str(), &fov_value, 54, 110);
     settings_tooltip(tooltip_fov);
-    camera::fov = fov_value;
+    camera::horizontal_fov = fov_value;
 
     ImGui::SeparatorText(separator_multiplayer.c_str());
 
@@ -131,11 +138,11 @@ static void layout_controls()
     ImGui::Spacing();
     ImGui::SeparatorText(separator_mouse.c_str());
 
-    float sensitivity_value = static_cast<float>(player_look::sensitivity);
-    ImGui::SliderFloat(option_acceleration.c_str(), &sensitivity_value, 0.25, 0.50, "%.02f");
-    player_look::sensitivity = sensitivity_value;
+    float sensitivity_value = 100.0f * static_cast<float>(mouse::sensitivity);
+    ImGui::SliderFloat(option_acceleration.c_str(), &sensitivity_value, 15.0f, 100.0f, "%.0f");
+    mouse::sensitivity = sensitivity_value * 0.01f;
 
-    ImGui::Checkbox(option_raw_input.c_str(), &player_look::raw_input);
+    ImGui::Checkbox(option_raw_input.c_str(), &mouse::raw_input);
     settings_tooltip(tooltip_raw_input);
 
     ImGui::Spacing();
@@ -143,7 +150,7 @@ static void layout_controls()
     ImGui::NewLine();
 }
 
-static void layout_graphics()
+static void layout_graphics(void)
 {
     ImGui::SeparatorText(separator_performance.c_str());
 
@@ -162,28 +169,28 @@ static void layout_graphics()
     settings_tooltip(tooltip_menu_background);
 }
 
-static void layout_sound()
+static void layout_sound(void)
 {
     ImGui::TextUnformatted("There's no sound yet");
 }
 
-void ui::settings::init()
+void ui::settings::init(void)
 {
     globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
-    globals::dispatcher.sink<LangSetEvent>().connect<&on_lang_set>();
+    globals::dispatcher.sink<LanguageSetEvent>().connect<&on_language_set>();
 }
 
-void ui::settings::layout()
+void ui::settings::layout(void)
 {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    const ImVec2 window_start = ImVec2{viewport->Size.x * 0.10f, viewport->Size.y * 0.10f};
-    const ImVec2 window_size = ImVec2{viewport->Size.x * 0.80f, viewport->Size.y * 0.80f};
+    const ImVec2 window_start = ImVec2(viewport->Size.x * 0.10f, viewport->Size.y * 0.10f);
+    const ImVec2 window_size = ImVec2(viewport->Size.x * 0.80f, viewport->Size.y * 0.80f);
 
     ImGui::SetNextWindowPos(window_start);
     ImGui::SetNextWindowSize(window_size);
 
     if(ImGui::Begin("##Settings", nullptr, MENU_FLAGS)) {
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{3.0f * globals::ui_scale, 3.0f * globals::ui_scale});
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(3.0f * globals::ui_scale, 3.0f * globals::ui_scale));
 
         if(ImGui::BeginTabBar("##Settings_Tabs", ImGuiTabBarFlags_FittingPolicyResizeDown)) {
             if(ImGui::TabItemButton("<<")) {

@@ -1,12 +1,13 @@
 {
   "default": {
-    "draw": "opaque",
+    "animated": true,
+    "blending": false,
     "textures": {
       "default": [
-        "/textures/voxels/vtest1.png",
-        "/textures/voxels/vtest2.png",
-        "/textures/voxels/vtest3.png",
-        "/textures/voxels/vtest4.png"
+        "textures/voxels/vtest_F1.png",
+        "textures/voxels/vtest_F2.png",
+        "textures/voxels/vtest_F3.png",
+        "textures/voxels/vtest_F4.png"
       ]
     }
   }

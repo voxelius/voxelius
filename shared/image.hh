@@ -1,30 +1,19 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_IMAGE_HH
 #define SHARED_IMAGE_HH
+#include <glm/vec2.hpp>
 #include <string>
 
 class Image final {
 public:
-    Image(void) = default;
-    Image(const std::string &path, bool flip);
-    virtual ~Image(void);
-
-    bool load_gray(const std::string &path, bool flip);
-    bool load_rgba(const std::string &path, bool flip);
-    void unload(void);
-
-    bool is_valid(void) const;
-    int get_width(void) const;
-    int get_height(void) const;
-
-    const void *data(void) const;
-    void *data(void);
-
-private:
-    int width {};
-    int height {};
+    glm::ivec2 size {};
     void *pixels {};
+
+public:
+    static bool load_gray(Image &image, const std::string &path, bool flip);
+    static bool load_rgba(Image &image, const std::string &path, bool flip);
+    static void unload(Image &image);
 };
 
 #endif /* SHARED_IMAGE_HH */

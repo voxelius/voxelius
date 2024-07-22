@@ -1,23 +1,32 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_VOXEL_ANIMS_HH
 #define CLIENT_VOXEL_ANIMS_HH
-#include <stdint.h>
+#include <cstdint>
+#include <glad/gl.h>
 
 namespace voxel_anims
 {
-extern uint64_t frametime;
-extern uint64_t nextframe;
-extern uint32_t frame;
+extern unsigned int fps;
 } // namespace voxel_anims
 
 namespace voxel_anims
 {
-void init();
-void deinit();
-void update();
-void construct();
-void bind_ssbo();
+extern std::uint64_t nextframe;
+extern std::uint32_t frame;
+} // namespace voxel_anims
+
+namespace voxel_anims
+{
+void init(void);
+void deinit(void);
+void update(void);
+} // namespace voxel_anims
+
+namespace voxel_anims
+{
+void construct(void);
+GLuint buffer(void);
 } // namespace voxel_anims
 
 #endif /* CLIENT_VOXEL_ANIMS_HH */

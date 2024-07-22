@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_EVENT_GLFW_KEYBOARD_KEY_HH
 #define CLIENT_EVENT_GLFW_KEYBOARD_KEY_HH
 #include <GLFW/glfw3.h>

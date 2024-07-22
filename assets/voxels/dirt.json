@@ -1,8 +1,14 @@
 {
   "default": {
-    "draw": "opaque",
+    "animated": false,
+    "blending": false,
     "textures": {
-      "default": ["/textures/voxels/dirt.png"]
+      "default": [
+        "textures/voxels/dirt_01.png",
+        "textures/voxels/dirt_02.png",
+        "textures/voxels/dirt_03.png",
+        "textures/voxels/dirt_04.png"
+      ]
     }
   }
 }

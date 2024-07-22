@@ -1,28 +1,30 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #include <client/event/glfw_cursor_pos.hh>
+#include <client/event/glfw_framebuffer_size.hh>
 #include <client/event/glfw_key.hh>
 #include <client/event/glfw_mouse_button.hh>
 #include <client/event/glfw_scroll.hh>
-#include <client/event/glfw_framebuffer_size.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
-#include <client/image.hh>
 #include <client/main.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <glad/gl.h>
-#include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#include <imgui.h>
+#include <shared/util/epoch.hh>
+#include <shared/cmake.hh>
 #include <shared/cmdline.hh>
 #include <shared/config.hh>
-#include <shared/epoch.hh>
+#include <shared/image.hh>
 #include <spdlog/spdlog.h>
 
 #if defined(_WIN32)
 extern "C" __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;
 extern "C" __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 #endif
+
 
 static void on_glfw_error(int code, const char *message)
 {
@@ -46,8 +48,8 @@ static void on_glfw_cursor_enter(GLFWwindow *window, int entered)
 static void on_glfw_cursor_pos(GLFWwindow *window, double xpos, double ypos)
 {
     GlfwCursorPosEvent event = {};
-    event.xpos = xpos;
-    event.ypos = ypos;
+    event.xpos = static_cast<float>(xpos);
+    event.ypos = static_cast<float>(ypos);
     globals::dispatcher.trigger(event);
 
     if(globals::ui_screen) {
@@ -59,7 +61,7 @@ static void on_glfw_framebuffer_size(GLFWwindow *window, int width, int height)
 {
     globals::width = width;
     globals::height = height;
-    globals::aspect = static_cast<double>(width) / static_cast<double>(height);
+    globals::aspect = static_cast<float>(width) / static_cast<float>(height);
 
     GlfwFramebufferSizeEvent fb_event = {};
     fb_event.width = globals::width;
@@ -103,8 +105,8 @@ static void on_glfw_mouse_button(GLFWwindow *window, int button, int action, int
 static void on_glfw_scroll(GLFWwindow *window, double dx, double dy)
 {
     GlfwScrollEvent event = {};
-    event.dx = dx;
-    event.dx = dy;
+    event.dx = static_cast<float>(dx);
+    event.dx = static_cast<float>(dy);
     globals::dispatcher.trigger(event);
 
     if(globals::ui_screen) {
@@ -117,13 +119,15 @@ static void on_glfw_window_focus(GLFWwindow *window, int focused)
     ImGui_ImplGlfw_WindowFocusCallback(window, focused);
 }
 
-static void on_opengl_message(uint32_t source, uint32_t type, uint32_t id, uint32_t severity, int32_t length, const char *message, const void *param)
+static void on_opengl_message(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *param)
 {
-    spdlog::info("opengl: {}", message);
+    spdlog::info("opengl: {}", reinterpret_cast<const char *>(message));
 }
 
-void client::main()
+void client::main(void)
 {
+    spdlog::info("client: game version: {}", VOXELIUS_SEMVER);
+
     glfwSetErrorCallback(&on_glfw_error);
 
     if(!glfwInit()) {
@@ -131,15 +135,10 @@ void client::main()
         std::terminate();
     }
 
-#if !defined(_WIN32)
-    // Wayland makes RenderDoc go nuts
-    glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
-#endif
-
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_SAMPLES, 0);
 
     globals::window = glfwCreateWindow(720, 480, "Client", nullptr, nullptr);
@@ -166,13 +165,16 @@ void client::main()
     glfwSetMonitorCallback(&on_glfw_monitor_event);
 
     Image image = {};
+    GLFWimage icon = {};
 
-    if(image.load_rgba("32x32.png", false)) {
-        GLFWimage icon = {};
-        icon.width = image.get_width();
-        icon.height = image.get_height();
-        icon.pixels = reinterpret_cast<unsigned char *>(image.data());
+    if(Image::load_rgba(image, "32x32.png", false)) {
+        icon.width = image.size.x;
+        icon.height = image.size.y;
+        icon.pixels = reinterpret_cast<unsigned char *>(image.pixels);
+
         glfwSetWindowIcon(globals::window, 1, &icon);
+
+        Image::unload(image);
     }
 
     glfwMakeContextCurrent(globals::window);
@@ -183,21 +185,24 @@ void client::main()
         std::terminate();
     }
 
-    glEnable(GL_DEBUG_OUTPUT);
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    glDebugMessageCallback(&on_opengl_message, nullptr);
+    if(GLAD_GL_KHR_debug) {
+        glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        glDebugMessageCallback(&on_opengl_message, nullptr);
 
-    // NVIDIA drivers print additional buffer information
-    // to the debug output that programmers might find useful.
-    // The problem with that is that THIS FLOODS THE CONSOLE.
-    static const uint32_t ignore_nvidia_131185 = 131185;
-    glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, 1, &ignore_nvidia_131185, GL_FALSE);
+        // NVIDIA drivers print additional buffer information
+        // to the debug output that programmers might find useful.
+        static const uint32_t ignore_nvidia_131185 = 131185;
+        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, 1, &ignore_nvidia_131185, GL_FALSE);
+    }
+    else {
+        spdlog::warn("glad: KHR_debug extension not supported");
+        spdlog::warn("glad: OpenGL errors will not be logged");
+    }
 
     spdlog::info("opengl: version: {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
     spdlog::info("opengl: renderer: {}", reinterpret_cast<const char *>(glGetString(GL_RENDERER)));
 
-    // Make sure we don't have this
-    // war crime of a feature enabled.
     glDisable(GL_MULTISAMPLE);
 
     IMGUI_CHECKVERSION();
@@ -210,9 +215,9 @@ void client::main()
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-    globals::frametime = 0.0;
-    globals::frametime_avg = 0.0;
-    globals::curtime = epoch::microseconds();
+    globals::frametime = 0.0f;
+    globals::frametime_avg = 0.0f;
+    globals::curtime = util::epoch_microseconds();
     globals::framecount = 0;
 
     client_game::init();
@@ -221,18 +226,17 @@ void client::main()
     glfwGetFramebufferSize(globals::window, &wwidth, &wheight);
     on_glfw_framebuffer_size(globals::window, wwidth, wheight);
 
-    config::load("client.conf");
-    // [TODO] config::load_cmdline();
+    Config::load(globals::client_config, "client.conf");
 
     client_game::init_late();
 
-    uint64_t last_curtime = globals::curtime;
+    std::uint64_t last_curtime = globals::curtime;
 
     while(!glfwWindowShouldClose(globals::window)) {
-        globals::curtime = epoch::microseconds();
-        globals::frametime = static_cast<double>(globals::curtime - last_curtime) / 1000000.0;
+        globals::curtime = util::epoch_microseconds();
+        globals::frametime = static_cast<float>(globals::curtime - last_curtime) / 1000000.0f;
         globals::frametime_avg += globals::frametime;
-        globals::frametime_avg *= 0.5;
+        globals::frametime_avg *= 0.5f;
 
         last_curtime = globals::curtime;
 
@@ -244,11 +248,18 @@ void client::main()
 
         glDisable(GL_BLEND);
 
+        glDisable(GL_DEPTH_TEST);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, globals::width, globals::height);
+
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
         // Make sure there is no stray program object
         // being bound to the context. Usually third-party
         // overlay software (such as RivaTuner) injects itself
         // into the rendering loop and binds internal objects,
-        // which creates a visual mess with program pipelines.
+        // which creates an incomprehensible visual mess
         glUseProgram(0);
 
         client_game::render();
@@ -284,8 +295,8 @@ void client::main()
     }
 
     spdlog::info("client: shutdown after {} frames", globals::framecount);
-    spdlog::info("client: average framerate: {:.03f} FPS", 1.0 / globals::frametime_avg);
-    spdlog::info("client: average frametime: {:.03f} ms", 1000.0 * globals::frametime_avg);
+    spdlog::info("client: average framerate: {:.03f} FPS", 1.0f / globals::frametime_avg);
+    spdlog::info("client: average frametime: {:.03f} ms", 1000.0f * globals::frametime_avg);
 
     client_game::deinit();
 
@@ -296,5 +307,5 @@ void client::main()
     glfwDestroyWindow(globals::window);
     glfwTerminate();
 
-    config::save("client.conf");
+    Config::save(globals::client_config, "client.conf");
 }

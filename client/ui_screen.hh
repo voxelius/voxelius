@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_UI_SCREEN_HH
 #define CLIENT_UI_SCREEN_HH
 

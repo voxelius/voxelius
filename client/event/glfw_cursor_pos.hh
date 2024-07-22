@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
-#ifndef CLIENT_EVENT_GLFW_CURSOR_MOVE_HH
-#define CLIENT_EVENT_GLFW_CURSOR_MOVE_HH
+// Copyright (C) 2024, Voxelius Contributors
+#ifndef CLIENT_EVENT_GLFW_CURSOR_POS_HH
+#define CLIENT_EVENT_GLFW_CURSOR_POS_HH
 
 struct GlfwCursorPosEvent final {
-    double xpos {};
-    double ypos {};
+    float xpos {};
+    float ypos {};
 };
 
-#endif /* CLIENT_EVENT_GLFW_CURSOR_MOVE_HH */
+#endif /* CLIENT_EVENT_GLFW_CURSOR_POS_HH */

@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_ENTITY_VELOCITY_HH
 #define SHARED_ENTITY_VELOCITY_HH
+#include <glm/fwd.hpp>
 #include <glm/vec3.hpp>
 
 struct VelocityComponent final {
-    glm::dvec3 angular {};
-    glm::dvec3 linear {};
+    glm::fvec3 angular {};
+    glm::fvec3 linear {};
 };
 
 #endif /* SHARED_ENTITY_VELOCITY_HH */

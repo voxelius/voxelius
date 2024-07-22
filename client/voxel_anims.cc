@@ -1,75 +1,91 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #include <client/globals.hh>
-#include <client/glxx/buffer.hh>
-#include <client/shaders.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_atlas.hh>
+#include <shared/util/cxmath.hh>
+#include <shared/config.hh>
 #include <shared/vdef.hh>
-#include <vector>
+#include <spdlog/spdlog.h>
 
-constexpr static const char *voxel_anims_vert = R"glsl(
-    layout(std430, binding = 32) buffer _voxel_anims {
-        uint voxel_anims[];
-    };
-)glsl";
+unsigned int voxel_anims::fps = 16U;
 
-static glxx::Buffer ssbo = {};
+std::uint64_t voxel_anims::nextframe = 0;
+std::uint32_t voxel_anims::frame = 0;
 
-uint64_t voxel_anims::frametime = 0;
-uint64_t voxel_anims::nextframe = 0;
-uint32_t voxel_anims::frame = 0;
+static GLuint uniform_buffer = 0;
 
-void voxel_anims::init()
+void voxel_anims::init(void)
 {
-    // This module is for vertex shaders only because fetching
-    // animation texture IDs in a fragment shader is a war crime
-    shaders::add("voxel_anims", GL_VERTEX_SHADER, voxel_anims_vert);
+    Config::add(globals::client_config, "voxel_anims.fps", voxel_anims::fps);
 
-    voxel_anims::frametime = static_cast<uint64_t>(1000000.0 / 10.0);
     voxel_anims::nextframe = 0;
     voxel_anims::frame = 0;
+
+    uniform_buffer = 0;
 }
 
-void voxel_anims::deinit()
+void voxel_anims::deinit(void)
 {
-    ssbo.destroy();
+    if(uniform_buffer)
+        glDeleteBuffers(1, &uniform_buffer);
+    voxel_anims::nextframe = 0;
+    voxel_anims::frame = 0;
+    uniform_buffer = 0;
 }
 
-void voxel_anims::update()
+void voxel_anims::update(void)
 {
     if(globals::curtime >= voxel_anims::nextframe) {
-        voxel_anims::nextframe = globals::curtime + voxel_anims::frametime;
-        voxel_anims::frame += 1;
+        voxel_anims::fps = util::clamp(voxel_anims::fps, 2U, 16U);
+        voxel_anims::nextframe = globals::curtime + static_cast<std::uint64_t>(1000000.0 / static_cast<float>(voxel_anims::fps));
+        voxel_anims::frame += 1U;
     }
 }
 
-void voxel_anims::construct()
+void voxel_anims::construct(void)
 {
-    std::vector<uint32_t> contents = {};
+    std::vector<GLuint> contents = {};
 
-    for(VoxelInfo &info : vdef::voxels) {
-        for(VoxelTexture &vtex : info.textures) {
+    for(VoxelInfo *info : vdef::voxels) {
+        if(!info->animated) {
+            // Skip varied voxel types
+            continue;
+        }
+
+        VoxelInfoAnimated *info_a = static_cast<VoxelInfoAnimated *>(info);
+
+        for(VoxelTextureAnimated &vtex : info_a->textures) {
             vtex.cached_offset = contents.size();
 
-            for(const vfs::path_t &path : vtex.paths) {
-                const AtlasTexture *atex = voxel_atlas::find(path);
-
-                if(atex == nullptr) {
-                    spdlog::critical("voxel_anims: atlas texture not found: {}", path.string());
-                    std::terminate();
+            for(const std::string &path : vtex.paths) {
+                if(const AtlasTexture *atex = voxel_atlas::find(path, true)) {
+                    contents.push_back(atex->index);
+                    continue;
                 }
 
-                contents.push_back(atex->texture);
+                spdlog::critical("voxel_anims: {}: {} is not loaded!", info_a->name, path);
+                std::terminate();
             }
         }
     }
 
-    ssbo.create();
-    ssbo.storage(sizeof(uint32_t) * contents.size(), contents.data(), 0);
+    GLint64 max_ubo_size = {};
+    glGetInteger64v(GL_MAX_UNIFORM_BLOCK_SIZE, &max_ubo_size);
+    const std::size_t ubo_size = sizeof(GLuint) * contents.size();
+
+    if(ubo_size > max_ubo_size) {
+        spdlog::critical("voxel_anims: uniform buffer overrun");
+        std::terminate();
+    }
+
+    if(!uniform_buffer)
+        glGenBuffers(1, &uniform_buffer);
+    glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer);
+    glBufferData(GL_UNIFORM_BUFFER, static_cast<GLsizeiptr>(ubo_size), contents.data(), GL_STATIC_DRAW);
 }
 
-void voxel_anims::bind_ssbo()
+GLuint voxel_anims::buffer(void)
 {
-    ssbo.bind_base(GL_SHADER_STORAGE_BUFFER, 32);
+    return uniform_buffer;
 }

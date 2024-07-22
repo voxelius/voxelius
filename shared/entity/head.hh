@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_ENTITY_HEAD_HH
 #define SHARED_ENTITY_HEAD_HH
+#include <glm/fwd.hpp>
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
 struct HeadComponent final {
-    glm::dvec2 angles {};
-    glm::dvec3 offset {};
+    glm::fvec2 angles {};
+    glm::fvec3 offset {};
 };
 
 #endif /* SHARED_ENTITY_HEAD_HH */

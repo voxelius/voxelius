@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Zlib
-// Copyright (c) 2024, Voxelius Contributors
+// Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_MAIN_HH
 #define CLIENT_MAIN_HH
 
 namespace client
 {
-void main();
+void main(void);
 } // namespace client
 
 #endif /* CLIENT_MAIN_HH */
