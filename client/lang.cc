@@ -3,7 +3,6 @@
 #include <client/event/language_set.hh>
 #include <client/globals.hh>
 #include <client/lang.hh>
-#include <client/ui_settings.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <parson.h>
 #include <shared/util/physfs.hh>
@@ -30,8 +29,6 @@ static void send_event(LangIterator language)
 void lang::init(void)
 {
     Config::add(globals::client_config, "language", config_language);
-
-    ui::settings::add("language", config_language);
 
     // Available languages are kept in a
     // special manifest file which consists
@@ -177,4 +174,12 @@ const std::string &lang::resolve(const std::string &tag)
     if(it != lang_map.cend())
         return it->second;
     return tag;
+}
+
+const std::string lang::resolve_ui(const std::string &tag)
+{
+    const auto it = lang_map.find(tag);
+    if(it != lang_map.cend())
+        return fmt::format("{}###{}", it->second, tag);
+    return fmt::format("{}###{}", tag, tag);
 }

@@ -1,308 +1,335 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <client/camera.hh>
 #include <client/event/glfw_key.hh>
 #include <client/event/language_set.hh>
-#include <client/game.hh>
 #include <client/globals.hh>
-#include <client/mouse.hh>
+#include <client/lang.hh>
 #include <client/ui_screen.hh>
 #include <client/ui_settings.hh>
-#include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
+#include <glm/fwd.hpp>
 #include <glm/vec2.hpp>
 #include <imgui.h>
 #include <imgui_stdlib.h>
 #include <parson.h>
+#include <shared/util/cxmath.hh>
 #include <shared/util/physfs.hh>
-#include <shared/config.hh>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
+#include <unordered_map>
+#include <vector>
 
-constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground;
+constexpr static ImGuiWindowFlags MENU_FLAGS = (
+    ImGuiWindowFlags_NoBackground       |
+    ImGuiWindowFlags_NoCollapse         |
+    ImGuiWindowFlags_NoMove             |
+    ImGuiWindowFlags_NoResize           |
+    ImGuiWindowFlags_NoSavedSettings    |
+    ImGuiWindowFlags_NoTitleBar
+);
 
-enum class SettingType {
-    Input       = 0x0000,
-    Slider      = 0x0001,
-    Checkbox    = 0x0002,
-    LangSelect  = 0x0003,
-    Invalid     = 0xFFFF,
+enum class ValueType {
+    Checkbox    = 0x0000,
+    FloatSlider = 0x0001,
+    IntInput    = 0x0002,
+    IntSlider   = 0x0003,
+    Language    = 0x0004,
+    TextInput   = 0x0005,
+    UintInput   = 0x0006,
+    UintSlider  = 0x0007,
 };
 
-struct SettingsVariable final {
-    SettingType setting_type {};
-    ConfigVarType void_type {};
-    ImGuiInputTextFlags text_flags {};
-    std::string lang_title {};
-    std::string lang_tooltip {};
-    glm::fvec2 slider_limit {};
-    std::string slider_fmt {};
-    bool has_tooltip {};
+using ValueFlags = unsigned short;
+constexpr static ValueFlags VALUE_FLAG_NULL     = 0x0000;
+constexpr static ValueFlags VALUE_FLAG_TOOLTIP  = 0x0001;
+constexpr static ValueFlags VALUE_FLAG_NO_SPACE = 0x0002;
+
+class SettingsValue final {
+public:
+    ValueType type {};
+    ValueFlags flags {};
     void *data_ptr {};
+
+public:
+    std::string title {};
+    std::string tooltip {};
+
+public:
+    std::string slider_format {};
+    glm::fvec2 slider_limit {};
+
+public:
+    static void layout_checkbox(const SettingsValue *value);
+    static void layout_float_slider(const SettingsValue *value);
+    static void layout_int_input(const SettingsValue *value);
+    static void layout_int_slider(const SettingsValue *value);
+    static void layout_language(const SettingsValue *value);
+    static void layout_text_input(const SettingsValue *value);
+    static void layout_uint_input(const SettingsValue *value);
+    static void layout_uint_slider(const SettingsValue *value);
+
+public:
+    // Every SettingsValue can have a tooltip if
+    // the JSON manifest specifies a boolean flag
+    static void layout_tooltip(const SettingsValue *value);
+
+public:
+    static bool parse(const JSON_Object *object, const std::string &name, SettingsValue &value);
+    static void update_strings(const std::string &name, SettingsValue &value);
 };
 
-static std::unordered_map<std::string, SettingsVariable> variables = {};
-static std::vector<SettingsVariable *> general_main = {};
-static std::vector<SettingsVariable *> general_multiplayer = {};
-static std::vector<SettingsVariable *> controls_keyboard = {};
-static std::vector<SettingsVariable *> controls_mouse = {};
-static std::vector<SettingsVariable *> controls_gamepad = {};
-static std::vector<SettingsVariable *> graphics_performance = {};
-static std::vector<SettingsVariable *> graphics_ui = {};
-static std::vector<SettingsVariable *> sound_main = {};
+static std::unordered_map<std::string, SettingsValue> values = {};
+static std::vector<SettingsValue *> values_general = {};
+static std::vector<SettingsValue *> values_general_multiplayer = {};
+static std::vector<SettingsValue *> values_controls_keyboard = {};
+static std::vector<SettingsValue *> values_controls_mouse = {};
+static std::vector<SettingsValue *> values_controls_gamepad = {};
+static std::vector<SettingsValue *> values_graphics_performance = {};
+static std::vector<SettingsValue *> values_graphics_ui = {};
+static std::vector<SettingsValue *> values_sound = {};
 
-static std::string tab_general = {};
-static std::string tab_controls = {};
-static std::string tab_graphics = {};
-static std::string tab_sound = {};
+static std::string str_general = {};
+static std::string str_general_multiplayer = {};
+static std::string str_controls = {};
+static std::string str_controls_keyboard = {};
+static std::string str_controls_mouse = {};
+static std::string str_controls_gamepad = {};
+static std::string str_graphics = {};
+static std::string str_graphics_performance = {};
+static std::string str_graphics_ui = {};
+static std::string str_sound = {};
 
-static std::string separator_multiplayer = {};
-static std::string separator_keyboard = {};
-static std::string separator_mouse = {};
-static std::string separator_gamepad = {};
-static std::string separator_performance = {};
-static std::string separator_ui = {};
-
-static void on_glfw_key(const GlfwKeyEvent &event)
+void SettingsValue::layout_checkbox(const SettingsValue *value)
 {
-    if(event.key == GLFW_KEY_ESCAPE && event.action == GLFW_PRESS) {
-        switch(globals::ui_screen) {
-            case ui::SCREEN_SETTINGS:
-                globals::ui_screen = ui::SCREEN_MAIN_MENU;
-                break;
+    ImGui::Checkbox(value->title.c_str(), reinterpret_cast<bool *>(value->data_ptr));
+}
+
+void SettingsValue::layout_float_slider(const SettingsValue *value)
+{
+    const char *v_format = value->slider_format.c_str();
+    const float v_min = value->slider_limit.x;
+    const float v_max = value->slider_limit.y;
+    ImGui::SliderFloat(value->title.c_str(), reinterpret_cast<float *>(value->data_ptr), v_min, v_max, v_format);
+}
+
+void SettingsValue::layout_int_input(const SettingsValue *value)
+{
+    ImGui::InputInt(value->title.c_str(), reinterpret_cast<int *>(value->data_ptr));
+}
+
+void SettingsValue::layout_int_slider(const SettingsValue *value)
+{
+    const int v_min = value->slider_limit.x;
+    const int v_max = value->slider_limit.y;
+    ImGui::SliderInt(value->title.c_str(), reinterpret_cast<int *>(value->data_ptr), v_min, v_max);
+}
+
+void SettingsValue::layout_language(const SettingsValue *value)
+{
+    const LangIterator current = lang::current();
+
+    if(ImGui::BeginCombo(value->title.c_str(), current->display.c_str())) {
+        for(LangIterator it = lang::cbegin(); it != lang::cend(); ++it) {
+            if(ImGui::Selectable(it->display.c_str(), it == current)) {
+                lang::set(it);
+                continue;
+            }
         }
+
+        ImGui::EndCombo();
     }
 }
 
-static void on_language_set(const LanguageSetEvent &event)
+void SettingsValue::layout_text_input(const SettingsValue *value)
 {
-    for(auto &it : variables) {
-        if(it.second.has_tooltip)
-            it.second.lang_tooltip = lang::resolve(fmt::format("settings.tooltip.{}", it.first));
-        const auto lang_title_tag = fmt::format("settings.option.{}", it.first);
-        it.second.lang_title = lang::resolve(lang_title_tag) + fmt::format("###{}", lang_title_tag);
-    }
-
-    tab_general = lang::resolve("settings.tab.general") + "###settings.tab.general";
-    tab_controls = lang::resolve("settings.tab.controls") + "###settings.tab.controls";
-    tab_graphics = lang::resolve("settings.tab.graphics") + "###settings.tab.graphics";
-    tab_sound = lang::resolve("settings.tab.sound") + "###settings.tab.sound";
-
-    separator_multiplayer = lang::resolve("settings.separator.multiplayer") + "###settings.separator.multiplayer";
-    separator_keyboard = lang::resolve("settings.separator.keyboard") + "###settings.separator.keyboard";
-    separator_mouse = lang::resolve("settings.separator.mouse") + "###settings.separator.mouse";
-    separator_gamepad = lang::resolve("settings.separator.gamepad") + "###settings.separator.gamepad";
-    separator_performance = lang::resolve("settings.separator.performance") + "###settings.separator.performance";
-    separator_ui = lang::resolve("settings.separator.ui") + "###settings.separator.ui";
+    ImGuiInputTextFlags flags = 0;
+    if(value->flags & VALUE_FLAG_NO_SPACE)
+        flags |= ImGuiInputTextFlags_CharsNoBlank;
+    ImGui::InputText(value->title.c_str(), reinterpret_cast<std::string *>(value->data_ptr), flags);
 }
 
-static void settings_tooltip(const std::string &tooltip)
+void SettingsValue::layout_uint_input(const SettingsValue *value)
 {
-    if(!tooltip.empty()) {
+    ImGui::InputScalar(value->title.c_str(), ImGuiDataType_U32, reinterpret_cast<unsigned int *>(value->data_ptr));
+}
+
+void SettingsValue::layout_uint_slider(const SettingsValue *value)
+{
+    const unsigned int v_min = value->slider_limit.x;
+    const unsigned int v_max = value->slider_limit.y;
+    ImGui::SliderScalar(value->title.c_str(), ImGuiDataType_U32, reinterpret_cast<unsigned int *>(value->data_ptr), &v_min, &v_max);
+}
+
+void SettingsValue::layout_tooltip(const SettingsValue *value)
+{
+    if(value->flags & VALUE_FLAG_TOOLTIP) {
         ImGui::SameLine();
         ImGui::TextDisabled("[ ? ]");
 
         if(ImGui::BeginItemTooltip()) {
             ImGui::PushTextWrapPos(ImGui::GetFontSize() * 16.0f);
-            ImGui::TextUnformatted(tooltip.c_str());
+            ImGui::TextUnformatted(value->tooltip.c_str());
             ImGui::PopTextWrapPos();
             ImGui::EndTooltip();
         }
     }
 }
 
-static void layout_int(const SettingsVariable *variable)
+bool SettingsValue::parse(const JSON_Object *object, const std::string &name, SettingsValue &value)
 {
-    int value;
+    const char *type_cstr = json_object_get_string(object, "type");
+    const std::string type = type_cstr ? type_cstr : std::string("<null>");
 
-    switch(variable->void_type) {
-        case CONFIG_INT:
-            value = reinterpret_cast<int *>(variable->data_ptr)[0];
-            break;
-        case CONFIG_FLOAT:
-            value = reinterpret_cast<float *>(variable->data_ptr)[0];
-            break;
-        case CONFIG_UNSIGNED_INT:
-            value = reinterpret_cast<unsigned int *>(variable->data_ptr)[0];
-            break;
+    if(json_object_get_boolean(object, "tooltip"))
+        value.flags |= VALUE_FLAG_TOOLTIP;
+    if(json_object_get_boolean(object, "no_space"))
+        value.flags |= VALUE_FLAG_NO_SPACE;
+
+    if(const JSON_Array *limit = json_object_get_array(object, "limit")) {
+        value.slider_limit.x = json_array_get_number(limit, 0);
+        value.slider_limit.y = json_array_get_number(limit, 1);
+    }
+    else {
+        value.slider_limit.x = std::numeric_limits<float>::min();
+        value.slider_limit.y = std::numeric_limits<float>::max();
     }
 
-    switch(variable->setting_type) {
-        case SettingType::Input:
-            ImGui::InputInt(variable->lang_title.c_str(), &value);
-            settings_tooltip(variable->lang_tooltip);
-            break;
-        case SettingType::Slider:
-            ImGui::SliderInt(variable->lang_title.c_str(), &value, variable->slider_limit.x, variable->slider_limit.y, variable->slider_fmt.c_str());
-            settings_tooltip(variable->lang_tooltip);
-            break;
+    if(!type.compare("checkbox")) {
+        value.type = ValueType::Checkbox;
+    }
+    else if(!type.compare("float_slider")) {
+        value.type = ValueType::FloatSlider;
+        value.slider_format = "%f";
+    }
+    else if(!type.compare("int_input")) {
+        value.type = ValueType::IntInput;
+    }
+    else if(!type.compare("int_slider")) {
+        value.type = ValueType::IntSlider;
+        value.slider_format = "%d";
+    }
+    else if(!type.compare("language")) {
+        value.type = ValueType::Language;
+    }
+    else if(!type.compare("text_input")) {
+        value.type = ValueType::TextInput;
+    }
+    else if(!type.compare("uint_input")) {
+        value.type = ValueType::UintInput;
+    }
+    else if(!type.compare("uint_slider")) {
+        value.type = ValueType::UintSlider;
+        value.slider_format = "%u";
+    }
+    else {
+        // Implied invalid type because
+        // everything else has a faily defined
+        // default state which doesn't affect
+        // how data_ptr is treated
+        return false;
     }
 
-    switch(variable->void_type) {
-        case CONFIG_INT:
-            reinterpret_cast<int *>(variable->data_ptr)[0] = value;
-            break;
-        case CONFIG_FLOAT:
-            reinterpret_cast<float *>(variable->data_ptr)[0] = value;
-            break;
-        case CONFIG_UNSIGNED_INT:
-            reinterpret_cast<unsigned int *>(variable->data_ptr)[0] = value;
-            break;
+    if(const char *format_cstr = json_object_get_string(object, "format")) {
+        value.slider_format = std::string(format_cstr);
     }
+
+    return true;
 }
 
-static void layout_bool(const SettingsVariable *variable)
+void SettingsValue::update_strings(const std::string &name, SettingsValue &value)
 {
-    bool value;
-
-    switch(variable->void_type) {
-        case CONFIG_INT:
-            value = !!reinterpret_cast<int *>(variable->data_ptr)[0];
-            break;
-        case CONFIG_BOOLEAN:
-            value = reinterpret_cast<bool *>(variable->data_ptr)[0];
-            break;
-        case CONFIG_UNSIGNED_INT:
-            value = !!reinterpret_cast<unsigned int *>(variable->data_ptr)[0];
-            break;
-    }
-
-    switch(variable->setting_type) {
-        case SettingType::Checkbox:
-            ImGui::Checkbox(variable->lang_title.c_str(), &value);
-            settings_tooltip(variable->lang_tooltip);
-            break;
-    }
-
-    switch(variable->void_type) {
-        case CONFIG_INT:
-            reinterpret_cast<int *>(variable->data_ptr)[0] = value;
-            break;
-        case CONFIG_BOOLEAN:
-            reinterpret_cast<bool *>(variable->data_ptr)[0] = value;
-            break;
-        case CONFIG_UNSIGNED_INT:
-            reinterpret_cast<unsigned int *>(variable->data_ptr)[0] = value;
-            break;
-    }
+    value.title = lang::resolve_ui(fmt::format("settings.value.{}", name));
+    value.tooltip = lang::resolve(fmt::format("settings.tooltip.{}", name));
 }
 
-static void layout_float(const SettingsVariable *variable)
+static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    float value;
-
-    switch(variable->void_type) {
-        case CONFIG_INT:
-            value = reinterpret_cast<int *>(variable->data_ptr)[0];
-            break;
-        case CONFIG_FLOAT:
-            value = reinterpret_cast<float *>(variable->data_ptr)[0];
-            break;
-        case CONFIG_UNSIGNED_INT:
-            value = reinterpret_cast<unsigned int *>(variable->data_ptr)[0];
-            break;
-    }
-
-    switch(variable->setting_type) {
-        case SettingType::Slider:
-            ImGui::SliderFloat(variable->lang_title.c_str(), &value, variable->slider_limit.x, variable->slider_limit.y, variable->slider_fmt.c_str());
-            settings_tooltip(variable->lang_tooltip);
-            break;
-    }
-
-    switch(variable->void_type) {
-        case CONFIG_INT:
-            reinterpret_cast<int *>(variable->data_ptr)[0] = value;
-            break;
-        case CONFIG_FLOAT:
-            reinterpret_cast<float *>(variable->data_ptr)[0] = value;
-            break;
-        case CONFIG_UNSIGNED_INT:
-            reinterpret_cast<unsigned int *>(variable->data_ptr)[0] = value;
-            break;
-    }
-}
-
-static void layout_string(const SettingsVariable *variable)
-{
-    if(variable->void_type != CONFIG_STD_STRING) {
-        // If other types can be loosely converted,
-        // things like strings cannot easily be
+    if(event.key != GLFW_KEY_ESCAPE)
         return;
-    }
-
-    std::string &vref = reinterpret_cast<std::string *>(variable->data_ptr)[0];
-
-    if(variable->setting_type == SettingType::Input) {
-        ImGui::InputText(variable->lang_title.c_str(), &vref, variable->text_flags);
-        settings_tooltip(variable->lang_tooltip);
+    if(event.action != GLFW_PRESS)
         return;
-    }
-
-    if(variable->setting_type == SettingType::LangSelect) {
-        const auto current_lang = lang::current();
-
-        if(ImGui::BeginCombo(variable->lang_title.c_str(), current_lang->display.c_str())) {
-            for(auto it = lang::cbegin(); it != lang::cend(); ++it) {
-                if(ImGui::Selectable(it->display.c_str(), (it == current_lang))) {
-                    lang::set(it);
-                    continue;
-                }
-            }
-
-            ImGui::EndCombo();
-        }
-
-        settings_tooltip(variable->lang_tooltip);
-
+    if(globals::ui_screen != ui::SCREEN_SETTINGS)
         return;
-    }
+    globals::ui_screen = ui::SCREEN_MAIN_MENU;
 }
 
-static void layout_subcategory(const std::vector<SettingsVariable *> &variables)
+static void on_language_set(const LanguageSetEvent &event)
 {
-    for(const SettingsVariable *variable : variables) {
-        switch(variable->void_type) {
-            case CONFIG_INT:
-            case CONFIG_UNSIGNED_INT:
-                layout_int(variable);
+    for(auto &it : values) {
+        SettingsValue::update_strings(it.first, it.second);
+    }
+
+    str_general = lang::resolve_ui("settings.general");
+    str_general_multiplayer = lang::resolve_ui("settings.general.multiplayer");
+
+    str_controls = lang::resolve_ui("settings.controls");
+    str_controls_keyboard = lang::resolve_ui("settings.controls.keyboard");
+    str_controls_mouse = lang::resolve_ui("settings.controls.mouse");
+    str_controls_gamepad = lang::resolve_ui("settings.controls.gamepad");
+
+    str_graphics = lang::resolve_ui("settings.graphics");
+    str_graphics_performance = lang::resolve_ui("settings.graphics.performance");
+    str_graphics_ui = lang::resolve_ui("settings.graphics.ui");
+
+    str_sound = lang::resolve_ui("settings.sound");
+}
+
+static void layout_list(const std::vector<SettingsValue *> &values_vector)
+{
+    for(const SettingsValue *value : values_vector) {
+        switch(value->type) {
+            case ValueType::Checkbox:
+                SettingsValue::layout_checkbox(value);
+                SettingsValue::layout_tooltip(value);
                 break;
-            case CONFIG_BOOLEAN:
-                layout_bool(variable);
+            case ValueType::FloatSlider:
+                SettingsValue::layout_float_slider(value);
+                SettingsValue::layout_tooltip(value);
                 break;
-            case CONFIG_FLOAT:
-                layout_float(variable);
+            case ValueType::IntInput:
+                SettingsValue::layout_int_input(value);
+                SettingsValue::layout_tooltip(value);
                 break;
-            case CONFIG_STD_STRING:
-                layout_string(variable);
+            case ValueType::IntSlider:
+                SettingsValue::layout_int_slider(value);
+                SettingsValue::layout_tooltip(value);
+                break;
+            case ValueType::Language:
+                SettingsValue::layout_language(value);
+                SettingsValue::layout_tooltip(value);
+                break;
+            case ValueType::TextInput:
+                SettingsValue::layout_text_input(value);
+                SettingsValue::layout_tooltip(value);
+                break;
+            case ValueType::UintInput:
+                SettingsValue::layout_uint_input(value);
+                SettingsValue::layout_tooltip(value);
+                break;
+            case ValueType::UintSlider:
+                SettingsValue::layout_uint_slider(value);
+                SettingsValue::layout_tooltip(value);
                 break;
         }
     }
+}
+
+static SettingsValue *find_value(const std::string &name)
+{
+    const auto it = values.find(name);
+    if(it != values.cend())
+        return &it->second;
+    return nullptr;
 }
 
 void ui::settings::init(void)
 {
-    globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
-    globals::dispatcher.sink<LanguageSetEvent>().connect<&on_language_set>();
-}
-
-void ui::settings::init_late(void)
-{
-    general_main.clear();
-    general_multiplayer.clear();
-    controls_keyboard.clear();
-    controls_mouse.clear();
-    controls_gamepad.clear();
-    graphics_performance.clear();
-    graphics_ui.clear();
-    sound_main.clear();
-
     const std::string path = std::string("misc/settings.json");
 
     std::string source = {};
 
     if(!util::read_string(path, source)) {
-        spdlog::critical("settings: {}: {}", path, util::physfs_error());
+        spdlog::critical("ui::settings: {}: {}", path, util::physfs_error());
         std::terminate();
     }
 
@@ -310,130 +337,104 @@ void ui::settings::init_late(void)
     const JSON_Object *json = json_value_get_object(jsonv);
     const std::size_t count = json_object_get_count(json);
 
-    if(!jsonv || !json) {
-        spdlog::critical("settings: {}: parse error", path);
+    if(!jsonv) {
+        spdlog::critical("ui::settings: {}: parse error", path);
+        json_value_free(jsonv);
+        std::terminate();
+    }
+
+    if(!json) {
+        spdlog::critical("ui::settings: {}: root is not an object", path);
         json_value_free(jsonv);
         std::terminate();
     }
 
     for(std::size_t i = 0; i < count; ++i) {
         const char *name = json_object_get_name(json, i);
-        const JSON_Value *variablev = json_object_get_value_at(json, i);
-        const JSON_Object *variable = json_value_get_object(variablev);
+        const JSON_Value *entryv = json_object_get_value_at(json, i);
+        const JSON_Object *entry = json_value_get_object(entryv);
 
         if(!name) {
-            spdlog::critical("settings: {}: invalid variable", path);
+            spdlog::critical("ui::settings: {}: invalid key", path);
             json_value_free(jsonv);
             std::terminate();
         }
 
-        if(!variable) {
-            spdlog::warn("settings: {}: {} is not an object", path, name);
+        if(!entryv) {
+            spdlog::critical("ui::settings: {}: {}: invalid value", path, name);
+            json_value_free(jsonv);
+            std::terminate();
+        }
+
+        if(!entry) {
+            spdlog::critical("ui::settings: {}: {} is not an object", path, name);
+            json_value_free(jsonv);
+            std::terminate();
+        }
+
+        SettingsValue value = {};
+
+        if(!SettingsValue::parse(entry, name, value)) {
+            spdlog::critical("ui::settings: {}: {}: invalid type", path, name);
+            json_value_free(jsonv);
+            std::terminate();
+        }
+
+        const char *location_cstr = json_object_get_string(entry, "location");
+        const std::string location = location_cstr ? location_cstr : std::string("<null>");
+
+        // Pointer to the inserted moved value instance
+        SettingsValue *value_ptr = &values.insert_or_assign(name, std::move(value)).first->second;
+
+        if(!location.compare("general")) {
+            values_general.push_back(value_ptr);
             continue;
         }
 
-        const auto it = variables.find(name);
-
-        if(it == variables.cend()) {
-            spdlog::warn("settings: {}: {}: unknown variable", path, name);
+        if(!location.compare("general.multiplayer")) {
+            values_general_multiplayer.push_back(value_ptr);
             continue;
         }
 
-        const char *category_cstr = json_object_get_string(variable, "category");
-        const char *subcategory_cstr = json_object_get_string(variable, "subcategory");
-        const char *type_cstr = json_object_get_string(variable, "type");
-
-        const std::string category = category_cstr ? category_cstr : std::string("<null>");
-        const std::string subcategory = subcategory_cstr ? subcategory_cstr : std::string("<null>");
-        const std::string type = type_cstr ? type_cstr : std::string("<null>");
-
-        it->second.text_flags = 0;
-
-        if(!type.compare("input")) {
-            it->second.setting_type = SettingType::Input;
-        }
-        else if(!type.compare("slider")) {
-            it->second.setting_type = SettingType::Slider;
-        }
-        else if(!type.compare("checkbox")) {
-            it->second.setting_type = SettingType::Checkbox;
-        }
-        else if(!type.compare("lang_select")) {
-            it->second.setting_type = SettingType::LangSelect;
-        }
-        else {
-            spdlog::warn("settings: {}: {} invalid type {}", path, name, type);
-            it->second.setting_type = SettingType::Invalid;
+        if(!location.compare("controls.keyboard")) {
+            values_controls_keyboard.push_back(value_ptr);
             continue;
         }
 
-        if(const char *fmt = json_object_get_string(variable, "format")) {
-            it->second.slider_fmt = std::string(fmt);
+        if(!location.compare("controls.mouse")) {
+            values_controls_mouse.push_back(value_ptr);
+            continue;
         }
 
-        it->second.has_tooltip = json_object_get_boolean(variable, "tooltip");
-
-        if(!json_object_get_boolean(variable, "whitespace")) {
-            it->second.text_flags |= ImGuiInputTextFlags_CharsNoBlank;
+        if(!location.compare("controls.gamepad")) {
+            values_controls_gamepad.push_back(value_ptr);
+            continue;
         }
 
-        if(const JSON_Array *limit = json_object_get_array(variable, "limit")) {
-            it->second.slider_limit.x = json_array_get_number(limit, 0);
-            it->second.slider_limit.y = json_array_get_number(limit, 1);
+        if(!location.compare("graphics.performance")) {
+            values_graphics_performance.push_back(value_ptr);
+            continue;
         }
 
-        if(!category.compare("general")) {
-            if(!subcategory.compare("main")) {
-                general_main.push_back(&it->second);
-                continue;
-            }
-
-            if(!subcategory.compare("multiplayer")) {
-                general_multiplayer.push_back(&it->second);
-                continue;
-            }
+        if(!location.compare("graphics.ui")) {
+            values_graphics_ui.push_back(value_ptr);
+            continue;
         }
 
-        if(!category.compare("controls")) {
-            if(!subcategory.compare("keyboard")) {
-                controls_keyboard.push_back(&it->second);
-                continue;
-            }
-
-            if(!subcategory.compare("mouse")) {
-                controls_mouse.push_back(&it->second);
-                continue;
-            }
-
-            if(!subcategory.compare("gamepad")) {
-                controls_gamepad.push_back(&it->second);
-                continue;
-            }
+        if(!location.compare("sound")) {
+            values_sound.push_back(value_ptr);
+            continue;
         }
 
-        if(!category.compare("graphics")) {
-            if(!subcategory.compare("performance")) {
-                graphics_performance.push_back(&it->second);
-                continue;
-            }
-
-            if(!subcategory.compare("ui")) {
-                graphics_ui.push_back(&it->second);
-                continue;
-            }
-        }
-
-        if(!category.compare("sound")) {
-            if(!subcategory.compare("main")) {
-                sound_main.push_back(&it->second);
-                continue;
-            }
-        }
-
-        spdlog::warn("settings: {}: {}: invalid location: {}/{}", path, name, category, subcategory);
+        spdlog::critical("ui::settings: {}: {}: invalid location {}", path, name, location);
+        json_value_free(jsonv);
+        std::terminate();
     }
 
     json_value_free(jsonv);
+
+    globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
+    globals::dispatcher.sink<LanguageSetEvent>().connect<&on_language_set>();
 }
 
 void ui::settings::layout(void)
@@ -454,46 +455,46 @@ void ui::settings::layout(void)
                 globals::ui_screen = ui::SCREEN_MAIN_MENU;
             }
 
-            if(ImGui::BeginTabItem(tab_general.c_str())) {
+            if(ImGui::BeginTabItem(str_general.c_str())) {
                 if(ImGui::BeginChild("###settings.general.child")) {
-                    layout_subcategory(general_main);
-                    ImGui::SeparatorText(separator_multiplayer.c_str());
-                    layout_subcategory(general_multiplayer);
+                    layout_list(values_general);
+                    ImGui::SeparatorText(str_general_multiplayer.c_str());
+                    layout_list(values_general_multiplayer);
                 }
 
                 ImGui::EndChild();
                 ImGui::EndTabItem();
             }
 
-            if(ImGui::BeginTabItem(tab_controls.c_str())) {
+            if(ImGui::BeginTabItem(str_controls.c_str())) {
                 if(ImGui::BeginChild("###settings.controls.child")) {
-                    ImGui::SeparatorText(separator_keyboard.c_str());
-                    layout_subcategory(controls_keyboard);
-                    ImGui::SeparatorText(separator_mouse.c_str());
-                    layout_subcategory(controls_mouse);
-                    ImGui::SeparatorText(separator_gamepad.c_str());
-                    layout_subcategory(controls_gamepad);
+                    ImGui::SeparatorText(str_controls_keyboard.c_str());
+                    layout_list(values_controls_keyboard);
+                    ImGui::SeparatorText(str_controls_mouse.c_str());
+                    layout_list(values_controls_mouse);
+                    ImGui::SeparatorText(str_controls_gamepad.c_str());
+                    layout_list(values_controls_gamepad);
                 }
 
                 ImGui::EndChild();
                 ImGui::EndTabItem();
             }
 
-            if(ImGui::BeginTabItem(tab_graphics.c_str())) {
+            if(ImGui::BeginTabItem(str_graphics.c_str())) {
                 if(ImGui::BeginChild("###settings.graphics.child")) {
-                    ImGui::SeparatorText(separator_performance.c_str());
-                    layout_subcategory(graphics_performance);
-                    ImGui::SeparatorText(separator_ui.c_str());
-                    layout_subcategory(graphics_ui);
+                    ImGui::SeparatorText(str_graphics_performance.c_str());
+                    layout_list(values_graphics_performance);
+                    ImGui::SeparatorText(str_graphics_ui.c_str());
+                    layout_list(values_graphics_ui);
                 }
 
                 ImGui::EndChild();
                 ImGui::EndTabItem();
             }
 
-            if(ImGui::BeginTabItem(tab_sound.c_str())) {
+            if(ImGui::BeginTabItem(str_sound.c_str())) {
                 if(ImGui::BeginChild("###settings.sound.child")) {
-                    layout_subcategory(sound_main);
+                    layout_list(values_sound);
                 }
 
                 ImGui::EndChild();
@@ -509,42 +510,77 @@ void ui::settings::layout(void)
     ImGui::End();
 }
 
-void ui::settings::add(const std::string &name, int &vref)
+void ui::settings::link(const std::string &name, int &vref)
 {
-    SettingsVariable variable = {};
-    variable.void_type = CONFIG_INT;
-    variable.data_ptr = &vref;
-    variables.insert_or_assign(name, std::move(variable));
+    if(SettingsValue *value = find_value(name)) {
+        if((value->type != ValueType::IntInput) && (value->type != ValueType::IntSlider)) {
+            spdlog::warn("ui::settings: {}: invalid link type", name);
+            return;
+        }
+
+        value->data_ptr = &vref;
+        return;
+    }
+
+    spdlog::warn("ui::settings: unknown value {}", name);
 }
 
-void ui::settings::add(const std::string &name, bool &vref)
+void ui::settings::link(const std::string &name, bool &vref)
 {
-    SettingsVariable variable = {};
-    variable.void_type = CONFIG_BOOLEAN;
-    variable.data_ptr = &vref;
-    variables.insert_or_assign(name, std::move(variable));
+    if(SettingsValue *value = find_value(name)) {
+        if(value->type != ValueType::Checkbox) {
+            spdlog::warn("ui::settings: {}: invalid link type", name);
+            return;
+        }
+
+        value->data_ptr = &vref;
+        return;
+    }
+
+    spdlog::warn("ui::settings: unknown value {}", name);
 }
 
-void ui::settings::add(const std::string &name, float &vref)
+void ui::settings::link(const std::string &name, float &vref)
 {
-    SettingsVariable variable = {};
-    variable.void_type = CONFIG_FLOAT;
-    variable.data_ptr = &vref;
-    variables.insert_or_assign(name, std::move(variable));
+    if(SettingsValue *value = find_value(name)) {
+        if(value->type != ValueType::FloatSlider) {
+            spdlog::warn("ui::settings: {}: invalid link type", name);
+            return;
+        }
+
+        value->data_ptr = &vref;
+        return;
+    }
+
+    spdlog::warn("ui::settings: unknown value {}", name);
 }
 
-void ui::settings::add(const std::string &name, std::string &vref)
+void ui::settings::link(const std::string &name, std::string &vref)
 {
-    SettingsVariable variable = {};
-    variable.void_type = CONFIG_STD_STRING;
-    variable.data_ptr = &vref;
-    variables.insert_or_assign(name, std::move(variable));
+    if(SettingsValue *value = find_value(name)) {
+        if(value->type != ValueType::TextInput) {
+            spdlog::warn("ui::settings: {}: invalid link type", name);
+            return;
+        }
+
+        value->data_ptr = &vref;
+        return;
+    }
+
+    spdlog::warn("ui::settings: unknown value {}", name);
 }
 
-void ui::settings::add(const std::string &name, unsigned int &vref)
+void ui::settings::link(const std::string &name, unsigned int &vref)
 {
-    SettingsVariable variable = {};
-    variable.void_type = CONFIG_UNSIGNED_INT;
-    variable.data_ptr = &vref;
-    variables.insert_or_assign(name, std::move(variable));
+    if(SettingsValue *value = find_value(name)) {
+        if((value->type != ValueType::UintInput) && (value->type != ValueType::UintSlider)) {
+            spdlog::warn("ui::settings: {}: invalid link type", name);
+            return;
+        }
+
+        value->data_ptr = &vref;
+        return;
+    }
+
+    spdlog::warn("ui::settings: unknown value {}", name);
 }

@@ -48,13 +48,16 @@ void mouse::init(void)
     Config::add(globals::client_config, "mouse.raw_input", mouse::raw_input);
     Config::add(globals::client_config, "mouse.sensitivity", mouse::sensitivity);
 
-    ui::settings::add("mouse.raw_input", mouse::raw_input);
-    ui::settings::add("mouse.sensitivity", mouse::sensitivity);
-
     previous_xpos = 0.5f * static_cast<float>(globals::width);
     previous_ypos = 0.5f * static_cast<float>(globals::height);
 
     globals::dispatcher.sink<GlfwCursorPosEvent>().connect<&on_glfw_cursor_pos>();
+}
+
+void mouse::init_late(void)
+{
+    ui::settings::link("mouse.raw_input", mouse::raw_input);
+    ui::settings::link("mouse.sensitivity", mouse::sensitivity);
 }
 
 void mouse::update_late(void)

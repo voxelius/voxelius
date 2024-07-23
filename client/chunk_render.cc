@@ -87,7 +87,7 @@ static void draw_quads(std::size_t plane_id, const ChunkProgram &program, const 
         glVertexAttribDivisor(1, 1);
         glVertexAttribIPointer(1, 2, GL_UNSIGNED_INT, sizeof(QuadVertex), nullptr);
         
-        glDrawArraysInstanced(GL_TRIANGLES, 0, 6, mesh.quad[plane_id].size);
+        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, mesh.quad[plane_id].size);
     }
 }
 
@@ -96,6 +96,7 @@ void chunk_render::init(void)
     setup_program(quad_animated, "chunk_quad_animated");
     setup_program(quad_varied, "chunk_quad_varied");
 
+#if 0
     const glm::fvec3 vertices[6] = {
         glm::fvec3(0.0f, 0.0f,  0.0f),
         glm::fvec3(0.0f, 0.0f, -1.0f),
@@ -105,6 +106,14 @@ void chunk_render::init(void)
         glm::fvec3(1.0f, 0.0f,  0.0f),
         glm::fvec3(0.0f, 0.0f,  0.0f),
     };
+#else
+    const glm::fvec3 vertices[4] = {
+        glm::fvec3(0.0f, 0.0f, -1.0f),
+        glm::fvec3(0.0f, 0.0f,  0.0f),
+        glm::fvec3(1.0f, 0.0f, -1.0f),
+        glm::fvec3(1.0f, 0.0f,  0.0f)
+    };
+#endif
 
     glGenVertexArrays(1, &quad_vaobj);
     glBindVertexArray(quad_vaobj);
@@ -130,7 +139,7 @@ void chunk_render::render(void)
 {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
-    glFrontFace(GL_CW);
+    glFrontFace(GL_CCW);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);

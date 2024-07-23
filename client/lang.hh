@@ -32,6 +32,7 @@ LangIterator cend(void);
 namespace lang
 {
 const std::string &resolve(const std::string &tag);
+const std::string resolve_ui(const std::string &tag);
 } // namespace lang
 
 #endif /* CLIENT_LANG_HH */

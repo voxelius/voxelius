@@ -102,8 +102,8 @@ void debug_session::run(void)
     voxel_anims::construct();
 
     unsigned int w = 0U;
-    for(int x = -4; x < 4; x += 1)
-    for(int z = -4; z < 4; z += 1)
+    for(int x = -8; x < 8; x += 2)
+    for(int z = -8; z < 8; z += 2)
     for(int y = -2; y < 1; y += 1) {
         generate({x, y, z});
         //Chunk *chunk = world::find_or_create_chunk({x, y, z});
