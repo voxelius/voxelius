@@ -11,7 +11,14 @@
 #include <imgui.h>
 #include <shared/cmake.hh>
 
-constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground;
+constexpr static ImGuiWindowFlags MENU_FLAGS = (
+    ImGuiWindowFlags_NoBackground       |
+    ImGuiWindowFlags_NoCollapse         |
+    ImGuiWindowFlags_NoMove             |
+    ImGuiWindowFlags_NoResize           |
+    ImGuiWindowFlags_NoSavedSettings    |
+    ImGuiWindowFlags_NoTitleBar
+);
 
 static std::string str_debug_session = {};
 static std::string str_server_list = {};
@@ -20,8 +27,8 @@ static std::string str_quit = {};
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if(globals::registry.valid(globals::player)) {
-        if(event.key == GLFW_KEY_ESCAPE && event.action == GLFW_PRESS) {
+    if((event.key != GLFW_KEY_ESCAPE) && (event.action != GLFW_PRESS)) {
+        if(globals::registry.valid(globals::player)) {
             switch(globals::ui_screen) {
                 case ui::SCREEN_NONE:
                     globals::ui_screen = ui::SCREEN_MAIN_MENU;

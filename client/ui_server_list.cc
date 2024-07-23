@@ -9,7 +9,7 @@
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if(event.key == GLFW_KEY_ESCAPE && event.action == GLFW_PRESS) {
+    if((event.key == GLFW_KEY_ESCAPE) && (event.action == GLFW_PRESS)) {
         switch(globals::ui_screen) {
             case ui::SCREEN_SERVER_LIST:
                 globals::ui_screen = ui::SCREEN_MAIN_MENU;
