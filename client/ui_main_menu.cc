@@ -27,7 +27,7 @@ static std::string str_quit = {};
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if((event.key != GLFW_KEY_ESCAPE) && (event.action != GLFW_PRESS)) {
+    if((event.key == GLFW_KEY_ESCAPE) && (event.action == GLFW_PRESS)) {
         if(globals::registry.valid(globals::player)) {
             switch(globals::ui_screen) {
                 case ui::SCREEN_NONE:

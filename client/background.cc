@@ -70,8 +70,6 @@ void background::deinit(void)
 
 void background::render(void)
 {
-    const float curtime = glfwGetTime();
-
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -79,7 +77,7 @@ void background::render(void)
     glDisable(GL_DEPTH_TEST);
 
     glUseProgram(bg_program);
-    glUniform1fv(u_time, 1, &curtime);
+    glUniform1f(u_time, glfwGetTime());
 
     glBindVertexArray(bg_vaobj);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
