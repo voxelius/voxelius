@@ -2,7 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <random>
 #include <shared/util/physfs.hh>
-#include <shared/titlemsg.hh>
+#include <shared/splash.hh>
 #include <spdlog/spdlog.h>
 #include <sstream>
 #include <vector>
@@ -10,15 +10,15 @@
 static std::mt19937_64 twister = {};
 static std::vector<std::string> titles = {};
 
-void titlemsg::init(void)
+void splash::init(void)
 {
-    const std::string path = std::string("misc/titles.txt");
+    const std::string path = std::string("misc/splashes.txt");
 
     std::string source = {};
 
     if(!util::read_string(path, source)) {
         spdlog::warn("splash: {}: {}", path, util::physfs_error());
-        titles.push_back("titlemsg::get returned this");
+        titles.push_back("splash::get returned this");
     }
     else {
         std::string line = {};
@@ -31,7 +31,8 @@ void titlemsg::init(void)
     twister.seed(std::random_device()());
 }
 
-const std::string &titlemsg::get(void)
+const std::string &splash::get(void)
 {
-    return titles.at(twister() % titles.size());
+    auto distrib = std::uniform_int_distribution<std::size_t>(0, titles.size() - 1);
+    return titles.at(distrib(twister));
 }

@@ -123,10 +123,6 @@ void client_game::init(void)
     Config::add(globals::client_config, "game.pixel_size", client_game::pixel_size);
     Config::add(globals::client_config, "game.username", client_game::username);
 
-    ui::settings::add("game.menu_background", client_game::menu_background);
-    ui::settings::add("game.pixel_size", client_game::pixel_size);
-    ui::settings::add("game.username", client_game::username);
-
     lang::init();
 
     keyboard::init();
@@ -230,7 +226,13 @@ void client_game::init_late(void)
 {
     lang::init_late();
 
-    ui::settings::init_late();
+    mouse::init_late();
+
+    camera::init_late();
+
+    ui::settings::link("game.menu_background", client_game::menu_background);
+    ui::settings::link("game.pixel_size", client_game::pixel_size);
+    ui::settings::link("game.username", client_game::username);
 }
 
 void client_game::deinit(void)

@@ -42,14 +42,11 @@ void background::init(void)
 
     u_time = glGetUniformLocation(bg_program, "u_Time");
 
-    const glm::fvec2 vertices[6] = {
-        glm::fvec2(-1.0f, -1.0f),
+    const glm::fvec2 vertices[4] = {
         glm::fvec2(-1.0f,  1.0f),
-        glm::fvec2( 1.0f,  1.0f),
-
+        glm::fvec2(-1.0f, -1.0f),
         glm::fvec2( 1.0f,  1.0f),
         glm::fvec2( 1.0f, -1.0f),
-        glm::fvec2(-1.0f, -1.0f),
     };
 
     glGenVertexArrays(1, &bg_vaobj);
@@ -74,9 +71,16 @@ void background::deinit(void)
 void background::render(void)
 {
     const float curtime = glfwGetTime();
+
+    glCullFace(GL_BACK);
+    glFrontFace(GL_CCW);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    glDisable(GL_DEPTH_TEST);
+
     glUseProgram(bg_program);
     glUniform1fv(u_time, 1, &curtime);
+
     glBindVertexArray(bg_vaobj);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }

@@ -13,10 +13,10 @@
 
 constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground;
 
-static std::string button_debug_session = {};
-static std::string button_server_list = {};
-static std::string button_settings = {};
-static std::string button_quit = {};
+static std::string str_debug_session = {};
+static std::string str_server_list = {};
+static std::string str_settings = {};
+static std::string str_quit = {};
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
@@ -36,10 +36,10 @@ static void on_glfw_key(const GlfwKeyEvent &event)
 
 static void on_language_set(const LanguageSetEvent &event)
 {
-    button_debug_session = lang::resolve("main_menu.button.debug_session") + "###main_menu.button.debug_session";
-    button_server_list = lang::resolve("main_menu.button.server_list") + "###main_menu.button.server_list";
-    button_settings = lang::resolve("main_menu.button.settings") + "###main_menu.button.settings";
-    button_quit = lang::resolve("main_menu.button.quit") + "###main_menu.button.quit";
+    str_debug_session = lang::resolve_ui("main_menu.debug_session");
+    str_server_list = lang::resolve("main_menu.server_list");
+    str_settings = lang::resolve("main_menu.settings");
+    str_quit = lang::resolve("main_menu.quit");
 }
 
 void ui::main_menu::init(void)
@@ -85,22 +85,22 @@ void ui::main_menu::layout(void)
         ImGui::PushFont(globals::font_menu_button);
 
         ImGui::SetCursorPosX(button_xpos);
-        if(ImGui::Button(button_debug_session.c_str(), ImVec2(button_width, 0.0f)))
+        if(ImGui::Button(str_debug_session.c_str(), ImVec2(button_width, 0.0f)))
             debug_session::run();
         ImGui::Spacing();
 
         ImGui::SetCursorPosX(button_xpos);
-        if(ImGui::Button(button_server_list.c_str(), ImVec2(button_width, 0.0f)))
+        if(ImGui::Button(str_server_list.c_str(), ImVec2(button_width, 0.0f)))
             globals::ui_screen = ui::SCREEN_SERVER_LIST;
         ImGui::Spacing();
 
         ImGui::SetCursorPosX(button_xpos);
-        if(ImGui::Button(button_settings.c_str(), ImVec2(button_width, 0.0f)))
+        if(ImGui::Button(str_settings.c_str(), ImVec2(button_width, 0.0f)))
             globals::ui_screen = ui::SCREEN_SETTINGS;
         ImGui::Spacing();
 
         ImGui::SetCursorPosX(button_xpos);
-        if(ImGui::Button(button_quit.c_str(), ImVec2(button_width, 0.0f)))
+        if(ImGui::Button(str_quit.c_str(), ImVec2(button_width, 0.0f)))
             glfwSetWindowShouldClose(globals::window, true);
         ImGui::Spacing();
 

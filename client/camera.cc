@@ -26,9 +26,12 @@ void camera::init(void)
 {
     Config::add(globals::client_config, "camera.horizontal_fov", camera::horizontal_fov);
     Config::add(globals::client_config, "camera.view_distance", camera::view_distance);
+}
 
-    ui::settings::add("camera.horizontal_fov", camera::horizontal_fov);
-    ui::settings::add("camera.view_distance", camera::view_distance);
+void camera::init_late(void)
+{
+    ui::settings::link("camera.horizontal_fov", camera::horizontal_fov);
+    ui::settings::link("camera.view_distance", camera::view_distance);
 }
 
 void camera::update(void)
