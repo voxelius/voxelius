@@ -101,27 +101,39 @@ static std::string str_sound = {};
 
 void SettingsValue::layout_checkbox(const SettingsValue *value)
 {
-    ImGui::Checkbox(value->title.c_str(), reinterpret_cast<bool *>(value->data_ptr));
+    if(value->data_ptr) {
+        ImGui::Checkbox(value->title.c_str(), reinterpret_cast<bool *>(value->data_ptr));
+        SettingsValue::layout_tooltip(value);
+    }
 }
 
 void SettingsValue::layout_float_slider(const SettingsValue *value)
 {
-    const char *v_format = value->slider_format.c_str();
-    const float v_min = value->slider_limit.x;
-    const float v_max = value->slider_limit.y;
-    ImGui::SliderFloat(value->title.c_str(), reinterpret_cast<float *>(value->data_ptr), v_min, v_max, v_format);
+    if(value->data_ptr) {
+        const char *v_format = value->slider_format.c_str();
+        const float v_min = value->slider_limit.x;
+        const float v_max = value->slider_limit.y;
+        ImGui::SliderFloat(value->title.c_str(), reinterpret_cast<float *>(value->data_ptr), v_min, v_max, v_format);
+        SettingsValue::layout_tooltip(value);
+    }
 }
 
 void SettingsValue::layout_int_input(const SettingsValue *value)
 {
-    ImGui::InputInt(value->title.c_str(), reinterpret_cast<int *>(value->data_ptr));
+    if(value->data_ptr) {
+        ImGui::InputInt(value->title.c_str(), reinterpret_cast<int *>(value->data_ptr));
+        SettingsValue::layout_tooltip(value);
+    }
 }
 
 void SettingsValue::layout_int_slider(const SettingsValue *value)
 {
-    const int v_min = value->slider_limit.x;
-    const int v_max = value->slider_limit.y;
-    ImGui::SliderInt(value->title.c_str(), reinterpret_cast<int *>(value->data_ptr), v_min, v_max);
+    if(value->data_ptr) {
+        const int v_min = value->slider_limit.x;
+        const int v_max = value->slider_limit.y;
+        ImGui::SliderInt(value->title.c_str(), reinterpret_cast<int *>(value->data_ptr), v_min, v_max);
+        SettingsValue::layout_tooltip(value);
+    }
 }
 
 void SettingsValue::layout_language(const SettingsValue *value)
@@ -138,26 +150,37 @@ void SettingsValue::layout_language(const SettingsValue *value)
 
         ImGui::EndCombo();
     }
+
+    SettingsValue::layout_tooltip(value);
 }
 
 void SettingsValue::layout_text_input(const SettingsValue *value)
 {
-    ImGuiInputTextFlags flags = 0;
-    if(value->flags & VALUE_FLAG_NO_SPACE)
-        flags |= ImGuiInputTextFlags_CharsNoBlank;
-    ImGui::InputText(value->title.c_str(), reinterpret_cast<std::string *>(value->data_ptr), flags);
+    if(value->data_ptr) {
+        ImGuiInputTextFlags flags = 0;
+        if(value->flags & VALUE_FLAG_NO_SPACE)
+            flags |= ImGuiInputTextFlags_CharsNoBlank;
+        ImGui::InputText(value->title.c_str(), reinterpret_cast<std::string *>(value->data_ptr), flags);
+        SettingsValue::layout_tooltip(value);
+    }
 }
 
 void SettingsValue::layout_uint_input(const SettingsValue *value)
 {
-    ImGui::InputScalar(value->title.c_str(), ImGuiDataType_U32, reinterpret_cast<unsigned int *>(value->data_ptr));
+    if(value->data_ptr) {
+        ImGui::InputScalar(value->title.c_str(), ImGuiDataType_U32, reinterpret_cast<unsigned int *>(value->data_ptr));
+        SettingsValue::layout_tooltip(value);
+    }
 }
 
 void SettingsValue::layout_uint_slider(const SettingsValue *value)
 {
-    const unsigned int v_min = value->slider_limit.x;
-    const unsigned int v_max = value->slider_limit.y;
-    ImGui::SliderScalar(value->title.c_str(), ImGuiDataType_U32, reinterpret_cast<unsigned int *>(value->data_ptr), &v_min, &v_max);
+    if(value->data_ptr) {
+        const unsigned int v_min = value->slider_limit.x;
+        const unsigned int v_max = value->slider_limit.y;
+        ImGui::SliderScalar(value->title.c_str(), ImGuiDataType_U32, reinterpret_cast<unsigned int *>(value->data_ptr), &v_min, &v_max);
+        SettingsValue::layout_tooltip(value);
+    }
 }
 
 void SettingsValue::layout_tooltip(const SettingsValue *value)
@@ -244,13 +267,13 @@ void SettingsValue::update_strings(const std::string &name, SettingsValue &value
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if(event.key != GLFW_KEY_ESCAPE)
-        return;
-    if(event.action != GLFW_PRESS)
-        return;
-    if(globals::ui_screen != ui::SCREEN_SETTINGS)
-        return;
-    globals::ui_screen = ui::SCREEN_MAIN_MENU;
+    if((event.key == GLFW_KEY_ESCAPE) && (event.action == GLFW_PRESS)) {
+        switch(globals::ui_screen) {
+            case ui::SCREEN_SETTINGS:
+                globals::ui_screen = ui::SCREEN_MAIN_MENU;
+                break;
+        }
+    }
 }
 
 static void on_language_set(const LanguageSetEvent &event)
@@ -280,35 +303,27 @@ static void layout_list(const std::vector<SettingsValue *> &values_vector)
         switch(value->type) {
             case ValueType::Checkbox:
                 SettingsValue::layout_checkbox(value);
-                SettingsValue::layout_tooltip(value);
                 break;
             case ValueType::FloatSlider:
                 SettingsValue::layout_float_slider(value);
-                SettingsValue::layout_tooltip(value);
                 break;
             case ValueType::IntInput:
                 SettingsValue::layout_int_input(value);
-                SettingsValue::layout_tooltip(value);
                 break;
             case ValueType::IntSlider:
                 SettingsValue::layout_int_slider(value);
-                SettingsValue::layout_tooltip(value);
                 break;
             case ValueType::Language:
                 SettingsValue::layout_language(value);
-                SettingsValue::layout_tooltip(value);
                 break;
             case ValueType::TextInput:
                 SettingsValue::layout_text_input(value);
-                SettingsValue::layout_tooltip(value);
                 break;
             case ValueType::UintInput:
                 SettingsValue::layout_uint_input(value);
-                SettingsValue::layout_tooltip(value);
                 break;
             case ValueType::UintSlider:
                 SettingsValue::layout_uint_slider(value);
-                SettingsValue::layout_tooltip(value);
                 break;
         }
     }
@@ -373,6 +388,7 @@ void ui::settings::init(void)
         }
 
         SettingsValue value = {};
+        value.data_ptr = nullptr;
 
         if(!SettingsValue::parse(entry, name, value)) {
             spdlog::critical("ui::settings: {}: {}: invalid type", path, name);
