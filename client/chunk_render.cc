@@ -34,8 +34,8 @@ static GLuint quad_vbo = {};
 
 static void setup_program(ChunkProgram &program, const std::string &name)
 {
-    const std::string vert_path = fmt::format("/shaders/{}.vert", name);
-    const std::string frag_path = fmt::format("/shaders/{}.frag", name);
+    const std::string vert_path = fmt::format("shaders/{}.vert", name);
+    const std::string frag_path = fmt::format("shaders/{}.frag", name);
 
     GLuint vert = util::compile_shader(vert_path, GL_VERTEX_SHADER);
     GLuint frag = util::compile_shader(frag_path, GL_FRAGMENT_SHADER);

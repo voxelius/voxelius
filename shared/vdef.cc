@@ -79,7 +79,7 @@ Voxel VDefBuilder::build(void) const
         return it->second;
     }
 
-    const std::string json_path = fmt::format("/voxels/{}.json", name);
+    const std::string json_path = fmt::format("voxels/{}.json", name);
 
     std::string json_source = {};
 
