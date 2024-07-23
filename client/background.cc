@@ -22,8 +22,8 @@ void background::init(void)
     bg_vaobj = 0;
     bg_vbo = 0;
 
-    GLuint vert = util::compile_shader("/shaders/background.vert", GL_VERTEX_SHADER);
-    GLuint frag = util::compile_shader("/shaders/background.frag", GL_FRAGMENT_SHADER);
+    GLuint vert = util::compile_shader("shaders/background.vert", GL_VERTEX_SHADER);
+    GLuint frag = util::compile_shader("shaders/background.frag", GL_FRAGMENT_SHADER);
 
     if(!vert || !frag) {
         spdlog::critical("background: shader compile failed");

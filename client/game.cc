@@ -89,15 +89,15 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
         ImVector<ImWchar> ranges = {};
         builder.BuildRanges(&ranges);
 
-        if(!util::read_bytes("/fonts/RobotoSlab-Medium.ttf", fontbin))
+        if(!util::read_bytes("fonts/RobotoSlab-Medium.ttf", fontbin))
             std::terminate();
         io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 13.0f * scale, &font_config, ranges.Data);
 
-        if(!util::read_bytes("/fonts/din1451alt.ttf", fontbin))
+        if(!util::read_bytes("fonts/din1451alt.ttf", fontbin))
             std::terminate();
         globals::font_menu_title = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 64.0f * scale, &font_config);
 
-        if(!util::read_bytes("/fonts/PTMono-Regular.ttf", fontbin))
+        if(!util::read_bytes("fonts/PTMono-Regular.ttf", fontbin))
             std::terminate();
         globals::font_menu_button = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 16.0f * scale, &font_config, ranges.Data);
 
@@ -122,6 +122,10 @@ void client_game::init(void)
     Config::add(globals::client_config, "game.menu_background", client_game::menu_background);
     Config::add(globals::client_config, "game.pixel_size", client_game::pixel_size);
     Config::add(globals::client_config, "game.username", client_game::username);
+
+    ui::settings::add("game.menu_background", client_game::menu_background);
+    ui::settings::add("game.pixel_size", client_game::pixel_size);
+    ui::settings::add("game.username", client_game::username);
 
     lang::init();
 
@@ -225,6 +229,8 @@ void client_game::init(void)
 void client_game::init_late(void)
 {
     lang::init_late();
+
+    ui::settings::init_late();
 }
 
 void client_game::deinit(void)

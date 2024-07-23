@@ -11,14 +11,7 @@
 #include <imgui.h>
 #include <shared/cmake.hh>
 
-constexpr static ImGuiWindowFlags MENU_FLAGS =
-    ImGuiWindowFlags_NoTitleBar         |
-    ImGuiWindowFlags_NoResize           |
-    ImGuiWindowFlags_NoCollapse         |
-    ImGuiWindowFlags_NoMove             |
-    ImGuiWindowFlags_NoMove             |
-    ImGuiWindowFlags_NoSavedSettings    |
-    ImGuiWindowFlags_NoBackground;
+constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground;
 
 static std::string button_debug_session = {};
 static std::string button_server_list = {};
@@ -43,10 +36,10 @@ static void on_glfw_key(const GlfwKeyEvent &event)
 
 static void on_language_set(const LanguageSetEvent &event)
 {
-    button_debug_session = lang::resolve("main_menu.button.debug_session") + "###MainMenu_Button_DebugSession";
-    button_server_list = lang::resolve("main_menu.button.server_list") + "###MainMenu_Button_ServerList";
-    button_settings = lang::resolve("main_menu.button.settings") + "###MainMenu_Button_Settings";
-    button_quit = lang::resolve("main_menu.button.quit") + "###MainMenu_Button_Quit";
+    button_debug_session = lang::resolve("main_menu.button.debug_session") + "###main_menu.button.debug_session";
+    button_server_list = lang::resolve("main_menu.button.server_list") + "###main_menu.button.server_list";
+    button_settings = lang::resolve("main_menu.button.settings") + "###main_menu.button.settings";
+    button_quit = lang::resolve("main_menu.button.quit") + "###main_menu.button.quit";
 }
 
 void ui::main_menu::init(void)

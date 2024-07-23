@@ -35,7 +35,7 @@ void screenshot::take()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glReadPixels(0, 0, globals::width, globals::height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 
-    const std::string dirname = std::string("/screenshots");
+    const std::string dirname = std::string("screenshots");
     const std::string path = fmt::format("{}/{}.png", dirname, util::epoch_microseconds());
 
     PHYSFS_mkdir(dirname.c_str());

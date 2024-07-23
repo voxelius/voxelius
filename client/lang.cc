@@ -3,6 +3,7 @@
 #include <client/event/language_set.hh>
 #include <client/globals.hh>
 #include <client/lang.hh>
+#include <client/ui_settings.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <parson.h>
 #include <shared/util/physfs.hh>
@@ -11,7 +12,7 @@
 #include <spdlog/spdlog.h>
 #include <unordered_map>
 
-constexpr static char *DEFAULT_LANGUAGE = "en_US";
+constexpr static const char *DEFAULT_LANGUAGE = "en_US";
 
 static LangManifest manifest = {};
 static LangIterator current_lang = {};  
@@ -30,11 +31,13 @@ void lang::init(void)
 {
     Config::add(globals::client_config, "language", config_language);
 
+    ui::settings::add("language", config_language);
+
     // Available languages are kept in a
     // special manifest file which consists
     // of keys in an IETF-ish format and values
     // as the according language's endonym
-    const std::string manifest_path = "/lang/manifest.json";
+    const std::string manifest_path = "lang/manifest.json";
 
     std::string source = {};
 
@@ -103,7 +106,7 @@ void lang::init_late(void)
 void lang::set(LangIterator language)
 {
     if(language != manifest.cend()) {
-        const std::string path = fmt::format("/lang/lang.{}.json", language->ietf);
+        const std::string path = fmt::format("lang/lang.{}.json", language->ietf);
 
         std::string source = {};
 

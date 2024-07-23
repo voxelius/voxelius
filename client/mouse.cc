@@ -3,6 +3,7 @@
 #include <client/event/glfw_cursor_pos.hh>
 #include <client/globals.hh>
 #include <client/mouse.hh>
+#include <client/ui_settings.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
@@ -46,6 +47,9 @@ void mouse::init(void)
 {
     Config::add(globals::client_config, "mouse.raw_input", mouse::raw_input);
     Config::add(globals::client_config, "mouse.sensitivity", mouse::sensitivity);
+
+    ui::settings::add("mouse.raw_input", mouse::raw_input);
+    ui::settings::add("mouse.sensitivity", mouse::sensitivity);
 
     previous_xpos = 0.5f * static_cast<float>(globals::width);
     previous_ypos = 0.5f * static_cast<float>(globals::height);

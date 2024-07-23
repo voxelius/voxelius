@@ -2,6 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/camera.hh>
 #include <client/globals.hh>
+#include <client/ui_settings.hh>
 #include <entt/entity/registry.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -25,6 +26,9 @@ void camera::init(void)
 {
     Config::add(globals::client_config, "camera.horizontal_fov", camera::horizontal_fov);
     Config::add(globals::client_config, "camera.view_distance", camera::view_distance);
+
+    ui::settings::add("camera.horizontal_fov", camera::horizontal_fov);
+    ui::settings::add("camera.view_distance", camera::view_distance);
 }
 
 void camera::update(void)

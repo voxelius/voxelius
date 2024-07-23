@@ -18,7 +18,7 @@
 #include <shared/cmdline.hh>
 #include <shared/config.hh>
 #include <shared/image.hh>
-#include <shared/splash.hh>
+#include <shared/titlemsg.hh>
 #include <spdlog/spdlog.h>
 
 #if defined(_WIN32)
@@ -204,9 +204,9 @@ void client::main(void)
     spdlog::info("opengl: version: {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
     spdlog::info("opengl: renderer: {}", reinterpret_cast<const char *>(glGetString(GL_RENDERER)));
 
-    splash::init();
+    titlemsg::init();
 
-    const std::string title = fmt::format("Voxelius: {}", splash::get());
+    const std::string title = fmt::format("Voxelius: {}", titlemsg::get());
     glfwSetWindowTitle(globals::window, title.c_str());
 
     glDisable(GL_MULTISAMPLE);

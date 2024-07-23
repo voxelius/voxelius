@@ -1,0 +1,34 @@
+{
+  "camera.horizontal_fov": {
+    "category": "general", "subcategory": "main", "type": "slider",
+    "format": "%.0f", "limit": [54, 110],
+    "tooltip": true
+  },
+  "camera.view_distance": {
+    "category": "graphics", "subcategory": "performance", "type": "slider",
+    "format": "%d", "limit": [4, 32]
+  },
+  "game.menu_background": {
+    "category": "graphics", "subcategory": "ui", "type": "checkbox",
+    "tooltip": true
+  },
+  "game.pixel_size": {
+    "category": "graphics", "subcategory": "performance", "type": "slider",
+    "format": "%d", "limit": [1, 4]
+  },
+  "game.username": {
+    "category": "general", "subcategory": "multiplayer", "type": "input",
+    "whitespace": false
+  },
+  "language": {
+    "category": "general", "subcategory": "main", "type": "lang_select"
+  },
+  "mouse.raw_input": {
+    "category": "controls", "subcategory": "mouse", "type": "checkbox",
+    "tooltip": true
+  },
+  "mouse.sensitivity": {
+    "category": "controls", "subcategory": "mouse", "type": "slider",
+    "format": "%.02f", "limit": [0.15, 0.75]
+  }
+}
