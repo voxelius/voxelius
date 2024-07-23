@@ -19,86 +19,189 @@
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
 
-constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBackground;
+constexpr static ImGuiWindowFlags MENU_FLAGS = (
+    ImGuiWindowFlags_NoTitleBar         |
+    ImGuiWindowFlags_NoResize           |
+    ImGuiWindowFlags_NoCollapse         |
+    ImGuiWindowFlags_NoMove             |
+    ImGuiWindowFlags_NoSavedSettings    |
+    ImGuiWindowFlags_NoBackground
+);
 
 enum class SettingType {
-    Input       = 0x0000,
-    Slider      = 0x0001,
-    Checkbox    = 0x0002,
-    LangSelect  = 0x0003,
-    Invalid     = 0xFFFF,
+    Checkbox        = 0x0000,
+    FloatSlider     = 0x0001,
+    IntInput        = 0x0002,
+    IntSlider       = 0x0003,
+    LanguageSelect  = 0x0004,
+    TextInput       = 0x0005,
+    UintInput       = 0x0006,
+    UintSlider      = 0x0007,
 };
 
-struct SettingsVariable final {
-    SettingType setting_type {};
-    ConfigVarType void_type {};
-    ImGuiInputTextFlags text_flags {};
-    std::string lang_title {};
-    std::string lang_tooltip {};
-    glm::fvec2 slider_limit {};
-    std::string slider_fmt {};
-    bool has_tooltip {};
+using SettingFlags = unsigned short;
+constexpr static SettingFlags SETTING_NULL      = 0x0000;
+constexpr static SettingFlags SETTING_TOOLTIP   = 0x0001;
+constexpr static SettingFlags SETTING_NO_SPACE  = 0x0002;
+
+class SettingValue final {
+public:
+    std::string title {};
+    std::string tooltip {};
+    SettingFlags flags {};
+    SettingType type {};
     void *data_ptr {};
+
+public:
+    std::string slider_format {};
+    glm::fvec2 slider_limit_f {};
+    glm::ivec2 slider_limit_i {};
+    glm::uvec2 slider_limit_u {};
+
+public:
+    static void layout_checkbox(SettingValue *value);
+    static void layout_float_slider(SettingValue *value);
+    static void layout_int_input(SettingValue *value);
+    static void layout_int_slider(SettingValue *value);
+    static void layout_language_select(SettingValue *value);
+    static void layout_text_input(SettingValue *value);
+    static void layout_uint_input(SettingValue *value);
+    static void layout_uint_slider(SettingValue *value);
+
+public:
+    // Each setting can have a tooltip
+    static void layout_tooltip(SettingsValue *value);
+
+public:
+    static bool parse(SettingsValue &value, const JSON_Object *object);
+    static void update_strings(const std::string &name, SettingsValue &value);
 };
 
-static std::unordered_map<std::string, SettingsVariable> variables = {};
-static std::vector<SettingsVariable *> general_main = {};
-static std::vector<SettingsVariable *> general_multiplayer = {};
-static std::vector<SettingsVariable *> controls_keyboard = {};
-static std::vector<SettingsVariable *> controls_mouse = {};
-static std::vector<SettingsVariable *> controls_gamepad = {};
-static std::vector<SettingsVariable *> graphics_performance = {};
-static std::vector<SettingsVariable *> graphics_ui = {};
-static std::vector<SettingsVariable *> sound_main = {};
+static std::unordered_map<std::string, SettingValue> values = {};
+static std::vector<SettingsValue *> values_general = {};
+static std::vector<SettingsValue *> values_general_multiplayer = {};
+static std::vector<SettingsValue *> values_controls_keyboard = {};
+static std::vector<SettingsValue *> values_controls_mouse = {};
+static std::vector<SettingsValue *> values_controls_gamepad = {};
+static std::vector<SettingsValue *> values_graphics_performance = {};
+static std::vector<SettingsValue *> values_graphics_ui = {};
+static std::vector<SettingsValue *> values_sound = {};
 
-static std::string tab_general = {};
-static std::string tab_controls = {};
-static std::string tab_graphics = {};
-static std::string tab_sound = {};
+static std::string str_general = {};
+static std::string str_general_multiplayer = {};
+static std::string str_controls = {};
+static std::string str_controls_keyboard = {};
+static std::string str_controls_mouse = {};
+static std::string str_controls_gamepad = {};
+static std::string str_graphics = {};
+static std::string str_graphics_performance = {};
+static std::string str_graphics_ui = {};
+static std::string str_sound = {};
 
-static std::string separator_multiplayer = {};
-static std::string separator_keyboard = {};
-static std::string separator_mouse = {};
-static std::string separator_gamepad = {};
-static std::string separator_performance = {};
-static std::string separator_ui = {};
+void SettingsValue::layout_checkbox(SettingValue *value)
+{
+    ImGui::Checkbox(value->title.c_str(), reinterpret_cast<bool *>(value->data_ptr));
+}
+
+void SettingsValue::layout_float_slider(SettingValue *value)
+{
+    const char *s_fmt = value->slider_format.c_str();
+    const float s_max = value->slider_limit_f.x;
+    const float s_min = value->slider_limit_f.y;
+    ImGui::SliderFloat(value->title.c_str(), reinterpret_cast<float *>(value->data_ptr), s_min, s_max, s_fmt);
+}
+
+void SettingValue::layout_int_input(SettingValue *value)
+{
+    ImGui::InputInt(value->title.c_str(), reinterpret_cast<int *>(value->data_ptr));
+}
+
+
+static void layout_int_input(const SettingsValue *value)
+{
+    ImGui::InputInt(value->title.c_str(), reinterpret_cast<int *>(value->data_ptr));
+    layout_tooltip(value);
+}
+
+static void layout_int_slider(const SettingsValue *value)
+{
+    const int s_min = value->slider.limit_i.x;
+    const int s_max = value->slider.limit_i.y;
+    ImGui::SliderInt(value->title.c_str(), reinterpret_cast<int *>(value->data_ptr), s_min, s_max);
+    layout_tooltip(value);
+}
+
+static void layout_language_select(const SettingsValue *value)
+{
+    const LangIterator current = lang::current();
+
+    if(ImGui::BeginCombo(value->title.c_str(), current->display.c_str())) {
+        for(LangIterator it = lang::cbegin(); it != lang::cend(); ++it) {
+            if(ImGui::Selectable(it->display.c_str(), it == current)) {
+                lang::set(it);
+                continue;
+            }
+        }
+        
+        ImGui::EndCombo();
+    }
+
+    layout_tooltip(value);
+}
+
+static void layout_text_input(const SettingsValue *value)
+{
+    
+    
+}
+
+/*
+    static void layout_int_input(SettingValue *value);
+    static void layout_int_slider(SettingValue *value);
+    static void layout_language_select(SettingValue *value);
+    static void layout_text_input(SettingValue *value);
+    static void layout_uint_input(SettingValue *value);
+    static void layout_uint_slider(SettingValue *value);
+
+public:
+    // Each setting can have a tooltip
+    static void layout_tooltip(SettingsValue *value);
+
+public:
+    static bool parse(SettingsValue &value, const JSON_Object *object);
+    static void update_strings(const std::string &name, SettingsValue &value);
+*/
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if(event.key == GLFW_KEY_ESCAPE && event.action == GLFW_PRESS) {
-        switch(globals::ui_screen) {
-            case ui::SCREEN_SETTINGS:
-                globals::ui_screen = ui::SCREEN_MAIN_MENU;
-                break;
-        }
-    }
+    if(event.key != GLFW_KEY_ESCAPE)
+        return;
+    if(event.action != GLFW_PRESS)
+        return;
+    if(globals::ui_screen != ui::SCREEN_SETTINGS)
+        return;
+    globals::ui_screen = ui::SCREEN_MAIN_MENU;
 }
 
 static void on_language_set(const LanguageSetEvent &event)
 {
-    for(auto &it : variables) {
-        if(it.second.has_tooltip)
-            it.second.lang_tooltip = lang::resolve(fmt::format("settings.tooltip.{}", it.first));
-        const auto lang_title_tag = fmt::format("settings.option.{}", it.first);
-        it.second.lang_title = lang::resolve(lang_title_tag) + fmt::format("###{}", lang_title_tag);
-    }
-
-    tab_general = lang::resolve("settings.tab.general") + "###settings.tab.general";
-    tab_controls = lang::resolve("settings.tab.controls") + "###settings.tab.controls";
-    tab_graphics = lang::resolve("settings.tab.graphics") + "###settings.tab.graphics";
-    tab_sound = lang::resolve("settings.tab.sound") + "###settings.tab.sound";
-
-    separator_multiplayer = lang::resolve("settings.separator.multiplayer") + "###settings.separator.multiplayer";
-    separator_keyboard = lang::resolve("settings.separator.keyboard") + "###settings.separator.keyboard";
-    separator_mouse = lang::resolve("settings.separator.mouse") + "###settings.separator.mouse";
-    separator_gamepad = lang::resolve("settings.separator.gamepad") + "###settings.separator.gamepad";
-    separator_performance = lang::resolve("settings.separator.performance") + "###settings.separator.performance";
-    separator_ui = lang::resolve("settings.separator.ui") + "###settings.separator.ui";
+    for(auto &it : values)
+        SettingValue::update_strings(it.first, it.second);
+    str_general                 = lang::resolve_ui("settings.general");
+    str_general_multiplayer     = lang::resolve_ui("settings.general.multiplayer");
+    str_controls                = lang::resolve_ui("settings.controls");
+    str_controls_keyboard       = lang::resolve_ui("settings.controls.keyboard");
+    str_controls_mouse          = lang::resolve_ui("settings.controls.mouse");
+    str_controls_gamepad        = lang::resolve_ui("settings.controls.gamepad");
+    str_graphics                = lang::resolve_ui("settings.graphics");
+    str_graphics_performance    = lang::resolve_ui("settings.graphics.performance");
+    str_graphics_ui             = lang::resolve_ui("settings.graphics.ui");
+    str_sound                   = lang::resolve_ui("settings.sound");
 }
 
-static void settings_tooltip(const std::string &tooltip)
+static void layout_tooltip(const SettingsValue *value)
 {
-    if(!tooltip.empty()) {
+    if(value->tooltip && !value->str_tooltip.empty()) {
         ImGui::SameLine();
         ImGui::TextDisabled("[ ? ]");
 
@@ -108,118 +211,6 @@ static void settings_tooltip(const std::string &tooltip)
             ImGui::PopTextWrapPos();
             ImGui::EndTooltip();
         }
-    }
-}
-
-static void layout_int(const SettingsVariable *variable)
-{
-    int value;
-
-    switch(variable->void_type) {
-        case CONFIG_INT:
-            value = reinterpret_cast<int *>(variable->data_ptr)[0];
-            break;
-        case CONFIG_FLOAT:
-            value = reinterpret_cast<float *>(variable->data_ptr)[0];
-            break;
-        case CONFIG_UNSIGNED_INT:
-            value = reinterpret_cast<unsigned int *>(variable->data_ptr)[0];
-            break;
-    }
-
-    switch(variable->setting_type) {
-        case SettingType::Input:
-            ImGui::InputInt(variable->lang_title.c_str(), &value);
-            settings_tooltip(variable->lang_tooltip);
-            break;
-        case SettingType::Slider:
-            ImGui::SliderInt(variable->lang_title.c_str(), &value, variable->slider_limit.x, variable->slider_limit.y, variable->slider_fmt.c_str());
-            settings_tooltip(variable->lang_tooltip);
-            break;
-    }
-
-    switch(variable->void_type) {
-        case CONFIG_INT:
-            reinterpret_cast<int *>(variable->data_ptr)[0] = value;
-            break;
-        case CONFIG_FLOAT:
-            reinterpret_cast<float *>(variable->data_ptr)[0] = value;
-            break;
-        case CONFIG_UNSIGNED_INT:
-            reinterpret_cast<unsigned int *>(variable->data_ptr)[0] = value;
-            break;
-    }
-}
-
-static void layout_bool(const SettingsVariable *variable)
-{
-    bool value;
-
-    switch(variable->void_type) {
-        case CONFIG_INT:
-            value = !!reinterpret_cast<int *>(variable->data_ptr)[0];
-            break;
-        case CONFIG_BOOLEAN:
-            value = reinterpret_cast<bool *>(variable->data_ptr)[0];
-            break;
-        case CONFIG_UNSIGNED_INT:
-            value = !!reinterpret_cast<unsigned int *>(variable->data_ptr)[0];
-            break;
-    }
-
-    switch(variable->setting_type) {
-        case SettingType::Checkbox:
-            ImGui::Checkbox(variable->lang_title.c_str(), &value);
-            settings_tooltip(variable->lang_tooltip);
-            break;
-    }
-
-    switch(variable->void_type) {
-        case CONFIG_INT:
-            reinterpret_cast<int *>(variable->data_ptr)[0] = value;
-            break;
-        case CONFIG_BOOLEAN:
-            reinterpret_cast<bool *>(variable->data_ptr)[0] = value;
-            break;
-        case CONFIG_UNSIGNED_INT:
-            reinterpret_cast<unsigned int *>(variable->data_ptr)[0] = value;
-            break;
-    }
-}
-
-static void layout_float(const SettingsVariable *variable)
-{
-    float value;
-
-    switch(variable->void_type) {
-        case CONFIG_INT:
-            value = reinterpret_cast<int *>(variable->data_ptr)[0];
-            break;
-        case CONFIG_FLOAT:
-            value = reinterpret_cast<float *>(variable->data_ptr)[0];
-            break;
-        case CONFIG_UNSIGNED_INT:
-            value = reinterpret_cast<unsigned int *>(variable->data_ptr)[0];
-            break;
-    }
-
-    switch(variable->setting_type) {
-        case SettingType::Slider:
-            ImGui::SliderFloat(variable->lang_title.c_str(), &value, variable->slider_limit.x, variable->slider_limit.y, variable->slider_fmt.c_str());
-            settings_tooltip(variable->lang_tooltip);
-            break;
-    }
-
-    switch(variable->void_type) {
-        case CONFIG_INT:
-            reinterpret_cast<int *>(variable->data_ptr)[0] = value;
-            break;
-        case CONFIG_FLOAT:
-            reinterpret_cast<float *>(variable->data_ptr)[0] = value;
-            break;
-        case CONFIG_UNSIGNED_INT:
-            reinterpret_cast<unsigned int *>(variable->data_ptr)[0] = value;
-            break;
     }
 }
 
@@ -239,24 +230,6 @@ static void layout_string(const SettingsVariable *variable)
         return;
     }
 
-    if(variable->setting_type == SettingType::LangSelect) {
-        const auto current_lang = lang::current();
-
-        if(ImGui::BeginCombo(variable->lang_title.c_str(), current_lang->display.c_str())) {
-            for(auto it = lang::cbegin(); it != lang::cend(); ++it) {
-                if(ImGui::Selectable(it->display.c_str(), (it == current_lang))) {
-                    lang::set(it);
-                    continue;
-                }
-            }
-
-            ImGui::EndCombo();
-        }
-
-        settings_tooltip(variable->lang_tooltip);
-
-        return;
-    }
 }
 
 static void layout_subcategory(const std::vector<SettingsVariable *> &variables)

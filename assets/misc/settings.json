@@ -1,34 +1,52 @@
 {
   "camera.horizontal_fov": {
-    "category": "general", "subcategory": "main", "type": "slider",
-    "format": "%.0f", "limit": [54, 110],
-    "tooltip": true
+    "tooltip": true,
+    "location": "general",
+    "type": "float_slider",
+    "slider_format": "%.0f",
+    "slider_max": 110,
+    "slider_min": 54
   },
   "camera.view_distance": {
-    "category": "graphics", "subcategory": "performance", "type": "slider",
-    "format": "%d", "limit": [4, 32]
+    "tooltip": false,
+    "location": "graphics.performance",
+    "type": "uint_slider",
+    "slider_max": 32,
+    "slider_min": 4
   },
   "game.menu_background": {
-    "category": "graphics", "subcategory": "ui", "type": "checkbox",
-    "tooltip": true
+    "tooltip": true,
+    "location": "graphics.ui",
+    "type": "checkbox"
   },
   "game.pixel_size": {
-    "category": "graphics", "subcategory": "performance", "type": "slider",
-    "format": "%d", "limit": [1, 4]
+    "tooltip": false,
+    "location": "graphics.performance",
+    "type": "uint_slider",
+    "slider_max": 4,
+    "slider_min": 1
   },
   "game.username": {
-    "category": "general", "subcategory": "multiplayer", "type": "input",
-    "whitespace": false
+    "tooltip": false,
+    "location": "general.multiplayer",
+    "type": "text_input"
   },
   "language": {
-    "category": "general", "subcategory": "main", "type": "lang_select"
+    "tooltip": false,
+    "location": "general",
+    "type": "language_select"
   },
   "mouse.raw_input": {
-    "category": "controls", "subcategory": "mouse", "type": "checkbox",
-    "tooltip": true
+    "tooltip": true,
+    "location": "controls.mouse",
+    "type": "checkbox"
   },
   "mouse.sensitivity": {
-    "category": "controls", "subcategory": "mouse", "type": "slider",
-    "format": "%.02f", "limit": [0.15, 0.75]
+    "tooltip": false,
+    "location": "controls.mouse",
+    "type": "float_slider",
+    "slider_format": "%.02f",
+    "slider_max": 0.80,
+    "slider_min": 0.15
   }
 }

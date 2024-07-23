@@ -178,3 +178,11 @@ const std::string &lang::resolve(const std::string &tag)
         return it->second;
     return tag;
 }
+
+const std::string lang::resolve_ui(const std::string &tag)
+{
+    const auto it = lang_map.find(tag);
+    if(it != lang_map.cend())
+        return fmt::format("{}###{}", it->second, tag);
+    return fmt::format("{}###{}", tag, tag);
+}
