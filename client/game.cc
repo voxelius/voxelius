@@ -25,6 +25,7 @@
 #include <imgui_impl_opengl3.h>
 #include <shared/util/physfs.hh>
 #include <shared/config.hh>
+#include <shared/floatfix.hh>
 #include <shared/inertial.hh>
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
@@ -263,6 +264,8 @@ void client_game::update(void)
     keyboard::update();
 
     inertial::update(globals::frametime);
+
+    floatfix::update();
 
     camera::update();
 

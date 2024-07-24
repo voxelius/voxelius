@@ -5,6 +5,7 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/util/string.cc"
     "${CMAKE_CURRENT_LIST_DIR}/cmdline.cc"
     "${CMAKE_CURRENT_LIST_DIR}/config.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/floatfix.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
     "${CMAKE_CURRENT_LIST_DIR}/image.cc"
     "${CMAKE_CURRENT_LIST_DIR}/inertial.cc"

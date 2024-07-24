@@ -2,7 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_VDEF_HH
 #define SHARED_VDEF_HH
-#include <shared/types.hh>
+#include <shared/voxel.hh>
 #include <string>
 #include <unordered_map>
 #include <vector>

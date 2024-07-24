@@ -2,9 +2,10 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_QUAD_VERTEX_HH
 #define CLIENT_QUAD_VERTEX_HH
+#include <glm/fwd.hpp>
 #include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 #include <shared/util/cxmath.hh>
-#include <shared/types.hh>
 #include <shared/vdef.hh>
 
 // [0] XXXXXXXXYYYYYYYYZZZZZZZZWWWWHHHH

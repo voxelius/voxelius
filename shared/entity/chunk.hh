@@ -3,6 +3,7 @@
 #ifndef SHARED_ENTITY_CHUNK_HH
 #define SHARED_ENTITY_CHUNK_HH
 #include <shared/chunk.hh>
+#include <shared/coord.hh>
 
 struct ChunkComponent final {
     ChunkPos coord {};

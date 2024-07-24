@@ -5,7 +5,8 @@
 #include <array>
 #include <entt/entity/entity.hpp>
 #include <shared/const.hh>
-#include <shared/types.hh>
+#include <shared/light.hh>
+#include <shared/voxel.hh>
 
 using LightArray = std::array<Light, CHUNK_VOLUME>;
 using VoxelArray = std::array<Voxel, CHUNK_VOLUME>;

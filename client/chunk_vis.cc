@@ -15,10 +15,10 @@ void chunk_vis::update(void)
     // Comparing squared distances is always faster than figuring square roots out
     const ChunkPos::value_type view_distance = camera::view_distance * CHUNK_SIZE;
     const ChunkPos::value_type view_distance_square = view_distance * view_distance;
-    const ChunkPos &camera_chunk = camera::chunk_position();
+    const EntityPos &camera_pos = camera::position();
 
     for(const auto [entity, chunk] : view.each()) {
-        const ChunkPos diff = chunk.coord - camera_chunk;
+        const ChunkPos diff = chunk.coord - camera_pos.chunk;
         const ChunkPos::value_type dist = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
 
         if(dist <= view_distance_square)

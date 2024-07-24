@@ -40,7 +40,7 @@ static void plane_setup(AtlasPlane &plane)
     glGenTextures(1, &plane.gl_texture);
     glBindTexture(GL_TEXTURE_2D_ARRAY, plane.gl_texture);
     glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, atlas_size.x, atlas_size.y, plane.layer_count_max, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -140,6 +140,14 @@ GLuint atlas::plane_texture(std::size_t plane_id)
     if(plane_id < planes.size())
         return planes[plane_id].gl_texture;
     return 0;
+}
+
+void atlas::generate_mipmaps(void)
+{
+    for(const AtlasPlane &plane : planes) {
+        glBindTexture(GL_TEXTURE_2D_ARRAY, plane.gl_texture);
+        glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+    }
 }
 
 AtlasStrip *atlas::find_or_load(const std::vector<std::string> &paths)

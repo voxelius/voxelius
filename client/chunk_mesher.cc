@@ -11,9 +11,9 @@
 #include <shared/event/chunk_create.hh>
 #include <shared/event/chunk_remove.hh>
 #include <shared/event/voxel_set.hh>
-#include <shared/util/coord.hh>
 #include <shared/util/crc64.hh>
 #include <shared/const.hh>
+#include <shared/coord.hh>
 #include <shared/vdef.hh>
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
@@ -63,10 +63,10 @@ static const CachedChunkPos get_cached_cpos(const ChunkPos &pivot, const ChunkPo
 
 static bool vis_test(WorkerContext *ctx, Voxel voxel, const VoxelInfo *info, const LocalPos &lpos)
 {
-    const auto pvpos = util::to_voxel(ctx->coord, lpos);
-    const auto pcpos = util::to_chunk(pvpos);
-    const auto plpos = util::to_local(pvpos);
-    const auto index = util::to_index(plpos);
+    const auto pvpos = chunk_pos::to_voxel(ctx->coord, lpos);
+    const auto pcpos = voxel_pos::to_chunk(pvpos);
+    const auto plpos = voxel_pos::to_local(pvpos);
+    const auto index = local_pos::to_index(plpos);
 
     const auto cached_cpos = get_cached_cpos(ctx->coord, pcpos);
     const auto &voxels = ctx->cache.at(cached_cpos);
@@ -169,7 +169,7 @@ static void process(WorkerContext *ctx)
         }
 
         const auto voxel = voxels->at(i);
-        const auto lpos = util::to_local(i);
+        const auto lpos = local_pos::from_index(i);
 
         const VoxelInfo *info = vdef::find(voxel);
 
@@ -193,7 +193,7 @@ static void process(WorkerContext *ctx)
         if(vis_test(ctx, voxel, info, lpos + LocalPos(WDIR_DOWN)))
             vis |= VIS_DOWN;
 
-        const VoxelPos vpos = util::to_voxel(ctx->coord, lpos);
+        const VoxelPos vpos = chunk_pos::to_voxel(ctx->coord, lpos);
         const VoxelPos::value_type entropy_src = vpos.x * vpos.y * vpos.z;
         const auto entropy = util::crc64(&entropy_src, sizeof(entropy_src));
 

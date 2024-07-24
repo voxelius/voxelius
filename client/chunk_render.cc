@@ -13,7 +13,6 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <entt/entity/registry.hpp>
 #include <shared/entity/chunk.hh>
-#include <shared/util/coord.hh>
 #include <spdlog/spdlog.h>
 
 #include <GLFW/glfw3.h> // FIXME
@@ -105,7 +104,7 @@ void chunk_render::render(void)
     timings.z = voxel_anims::frame;
 
     const glm::fmat4x4 &matrix = camera::matrix();
-    const ChunkPos &cam_chunk = camera::chunk_position();
+    const EntityPos &cam_pos = camera::position();
 
     const auto group = globals::registry.group(entt::get<ChunkComponent, ChunkMeshComponent, ChunkVisibleComponent>);
 
@@ -125,8 +124,8 @@ void chunk_render::render(void)
                 continue;
             if(!mesh.quad[plane_id].size)
                 continue;
-        
-            const glm::fvec3 wpos = util::to_world(chunk.coord - cam_chunk);
+
+            const glm::fvec3 wpos = chunk_pos::to_world(chunk.coord - cam_pos.chunk);
             glUniform3fv(quad_pipeline.u_world_position, 1, glm::value_ptr(wpos));
 
             glBindBuffer(GL_ARRAY_BUFFER, mesh.quad[plane_id].handle);

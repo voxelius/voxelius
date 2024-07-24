@@ -10,7 +10,7 @@ void inertial::update(float frametime)
 {
     const auto group = globals::registry.group<VelocityComponent>(entt::get<TransformComponent>);
     for(const auto [entity, velocity, transform] : group.each()) {
-        transform.position += velocity.linear * frametime;
+        transform.position.local += velocity.linear * frametime;
         transform.angles += velocity.angular * frametime;
     }
 }
