@@ -316,7 +316,7 @@ void client_game::layout(void)
         if(globals::registry.valid(globals::player)) {
             const float width_f = static_cast<float>(globals::width);
             const float height_f = static_cast<float>(globals::height);
-            const ImU32 splash = ImGui::GetColorU32(ImVec4(0.000, 0.000, 0.000, 0.900));
+            const ImU32 splash = ImGui::GetColorU32(ImVec4(0.000f, 0.000f, 0.000f, 0.900f));
             ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(), ImVec2(width_f, height_f), splash);
         }
 
