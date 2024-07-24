@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/entity/chunk_mesh.hh>
+#include <client/atlas.hh>
 #include <client/chunk_mesher.hh>
 #include <client/globals.hh>
 #include <client/quad_vertex.hh>
-#include <client/voxel_atlas.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <shared/entity/chunk.hh>
@@ -110,19 +110,19 @@ static VoxelFacing get_facing(VoxelFace face, VoxelType type)
     }
 }
 
-static void push_quad_a(WorkerContext *ctx, const VoxelInfoAnimated *info, const glm::fvec3 &pos, const glm::fvec2 &size, VoxelFace face)
+static void push_quad_a(WorkerContext *ctx, const VoxelInfo *info, const glm::fvec3 &pos, const glm::fvec2 &size, VoxelFace face)
 {
     const VoxelFacing facing = get_facing(face, info->type);
-    const VoxelTextureAnimated &vtex = info->textures[static_cast<std::size_t>(face)];
-    ctx->quads[ANIMATION_PLANE_ID].push_back(make_quad_vertex(pos, size, facing, vtex.cached_offset, vtex.paths.size()));
+    const VoxelTexture &vtex = info->textures[static_cast<std::size_t>(face)];
+    ctx->quads[vtex.cached_plane].push_back(make_quad_vertex(pos, size, facing, vtex.cached_offset, vtex.paths.size()));
 }
 
-static void push_quad_v(WorkerContext *ctx, const VoxelInfoVaried *info, const glm::fvec3 &pos, const glm::fvec2 &size, VoxelFace face, std::size_t entropy)
+static void push_quad_v(WorkerContext *ctx, const VoxelInfo *info, const glm::fvec3 &pos, const glm::fvec2 &size, VoxelFace face, std::size_t entropy)
 {
     const VoxelFacing facing = get_facing(face, info->type);
-    const VoxelTextureVaried &vtex = info->textures[static_cast<std::size_t>(face)];
+    const VoxelTexture &vtex = info->textures[static_cast<std::size_t>(face)];
     const std::size_t entropy_mod = entropy % vtex.paths.size();
-    ctx->quads[vtex.planes[entropy_mod]].push_back(make_quad_vertex(pos, size, facing, vtex.indices[entropy_mod], 0));
+    ctx->quads[vtex.cached_plane].push_back(make_quad_vertex(pos, size, facing, vtex.cached_offset + entropy_mod, 0));
 }
 
 static void make_cube(WorkerContext *ctx, Voxel voxel, const VoxelInfo *info, const LocalPos &lpos, VoxelVis vis, std::size_t entropy)
@@ -131,22 +131,20 @@ static void make_cube(WorkerContext *ctx, Voxel voxel, const VoxelInfo *info, co
     const glm::fvec2 fsize = glm::fvec2(1.0f, 1.0f);
 
     if(info->animated) {
-        const VoxelInfoAnimated *info_a = static_cast<const VoxelInfoAnimated *>(info);
-        if(vis & VIS_NORTH) push_quad_a(ctx, info_a, fpos, fsize, VoxelFace::CubeNorth);
-        if(vis & VIS_SOUTH) push_quad_a(ctx, info_a, fpos, fsize, VoxelFace::CubeSouth);
-        if(vis & VIS_EAST)  push_quad_a(ctx, info_a, fpos, fsize, VoxelFace::CubeEast);
-        if(vis & VIS_WEST)  push_quad_a(ctx, info_a, fpos, fsize, VoxelFace::CubeWest);
-        if(vis & VIS_UP)    push_quad_a(ctx, info_a, fpos, fsize, VoxelFace::CubeTop);
-        if(vis & VIS_DOWN)  push_quad_a(ctx, info_a, fpos, fsize, VoxelFace::CubeBottom);
+        if(vis & VIS_NORTH) push_quad_a(ctx, info, fpos, fsize, VoxelFace::CubeNorth);
+        if(vis & VIS_SOUTH) push_quad_a(ctx, info, fpos, fsize, VoxelFace::CubeSouth);
+        if(vis & VIS_EAST)  push_quad_a(ctx, info, fpos, fsize, VoxelFace::CubeEast);
+        if(vis & VIS_WEST)  push_quad_a(ctx, info, fpos, fsize, VoxelFace::CubeWest);
+        if(vis & VIS_UP)    push_quad_a(ctx, info, fpos, fsize, VoxelFace::CubeTop);
+        if(vis & VIS_DOWN)  push_quad_a(ctx, info, fpos, fsize, VoxelFace::CubeBottom);
     }
     else {
-        const VoxelInfoVaried *info_v = static_cast<const VoxelInfoVaried *>(info);
-        if(vis & VIS_NORTH) push_quad_v(ctx, info_v, fpos, fsize, VoxelFace::CubeNorth, entropy);
-        if(vis & VIS_SOUTH) push_quad_v(ctx, info_v, fpos, fsize, VoxelFace::CubeSouth, entropy);
-        if(vis & VIS_EAST)  push_quad_v(ctx, info_v, fpos, fsize, VoxelFace::CubeEast, entropy);
-        if(vis & VIS_WEST)  push_quad_v(ctx, info_v, fpos, fsize, VoxelFace::CubeWest, entropy);
-        if(vis & VIS_UP)    push_quad_v(ctx, info_v, fpos, fsize, VoxelFace::CubeTop, entropy);
-        if(vis & VIS_DOWN)  push_quad_v(ctx, info_v, fpos, fsize, VoxelFace::CubeBottom, entropy);
+        if(vis & VIS_NORTH) push_quad_v(ctx, info, fpos, fsize, VoxelFace::CubeNorth, entropy);
+        if(vis & VIS_SOUTH) push_quad_v(ctx, info, fpos, fsize, VoxelFace::CubeSouth, entropy);
+        if(vis & VIS_EAST)  push_quad_v(ctx, info, fpos, fsize, VoxelFace::CubeEast, entropy);
+        if(vis & VIS_WEST)  push_quad_v(ctx, info, fpos, fsize, VoxelFace::CubeWest, entropy);
+        if(vis & VIS_UP)    push_quad_v(ctx, info, fpos, fsize, VoxelFace::CubeTop, entropy);
+        if(vis & VIS_DOWN)  push_quad_v(ctx, info, fpos, fsize, VoxelFace::CubeBottom, entropy);
     }
 }
 
@@ -160,7 +158,7 @@ static void cache_chunk(WorkerContext *ctx, const ChunkPos &cpos)
 
 static void process(WorkerContext *ctx)
 {
-    ctx->quads.resize(voxel_atlas::plane_count());
+    ctx->quads.resize(atlas::plane_count());
 
     const std::unique_ptr<VoxelArray> &voxels = ctx->cache.at(CPOS_ITSELF);
 

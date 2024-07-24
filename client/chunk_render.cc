@@ -4,12 +4,12 @@
 #include <client/entity/chunk_visible.hh>
 #include <client/util/program.hh>
 #include <client/util/shader.hh>
+#include <client/atlas.hh>
 #include <client/camera.hh>
 #include <client/chunk_render.hh>
 #include <client/globals.hh>
 #include <client/quad_vertex.hh>
 #include <client/voxel_anims.hh>
-#include <client/voxel_atlas.hh>
 #include <glm/gtc/type_ptr.hpp>
 #include <entt/entity/registry.hpp>
 #include <shared/entity/chunk.hh>
@@ -18,21 +18,18 @@
 
 #include <GLFW/glfw3.h> // FIXME
 
-constexpr static GLuint UBO_ANIMATIONS_BINDING = 0;
-
-struct ChunkProgram final {
-    GLuint gl_program {};
+struct Pipeline final {
+    GLuint program {};
     GLint u_camera_matrix {};
     GLint u_world_position {};
     GLint u_timings {};
 };
 
-static ChunkProgram quad_animated = {};
-static ChunkProgram quad_varied = {};
+static Pipeline quad_pipeline = {};
 static GLuint quad_vaobj = {};
 static GLuint quad_vbo = {};
 
-static void setup_program(ChunkProgram &program, const std::string &name)
+static void setup_pipeline(Pipeline &pipeline, const std::string &name)
 {
     const std::string vert_path = fmt::format("shaders/{}.vert", name);
     const std::string frag_path = fmt::format("shaders/{}.frag", name);
@@ -45,75 +42,29 @@ static void setup_program(ChunkProgram &program, const std::string &name)
         std::terminate();
     }
 
-    program.gl_program = util::link_program(vert, frag);
+    pipeline.program = util::link_program(vert, frag);
 
     glDeleteShader(frag);
     glDeleteShader(vert);
 
-    if(!program.gl_program) {
+    if(!pipeline.program) {
         spdlog::critical("chunk_render: {}: program link failed", name);
         std::terminate();
     }
 
-    program.u_camera_matrix = glGetUniformLocation(program.gl_program, "u_CameraMatrix");
-    program.u_world_position = glGetUniformLocation(program.gl_program, "u_WorldPosition");
-    program.u_timings = glGetUniformLocation(program.gl_program, "u_Timings");
-
-    const GLuint animations_index = glGetUniformBlockIndex(program.gl_program, "u_Animations");
-
-    if(animations_index != GL_INVALID_INDEX) {
-        glUniformBlockBinding(program.gl_program, animations_index, UBO_ANIMATIONS_BINDING);
-    }
-}
-
-static void draw_quads(std::size_t plane_id, const ChunkProgram &program, const ChunkPos &cam_cpos, bool blending)
-{
-    const auto group = globals::registry.group(entt::get<ChunkComponent, ChunkMeshComponent, ChunkVisibleComponent>);
-
-    for(const auto [entity, chunk, mesh] : group.each()) {
-        if(mesh.quad.size() <= plane_id)
-            continue;
-        if(!mesh.quad[plane_id].handle)
-            continue;
-        if(!mesh.quad[plane_id].size)
-            continue;
-
-        const glm::fvec3 wpos = util::to_world(chunk.coord - cam_cpos);
-        glUniform3fv(program.u_world_position, 1, glm::value_ptr(wpos));
-
-        glBindBuffer(GL_ARRAY_BUFFER, mesh.quad[plane_id].handle);
-
-        glEnableVertexAttribArray(1);
-        glVertexAttribDivisor(1, 1);
-        glVertexAttribIPointer(1, 2, GL_UNSIGNED_INT, sizeof(QuadVertex), nullptr);
-        
-        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, mesh.quad[plane_id].size);
-    }
+    pipeline.u_camera_matrix = glGetUniformLocation(pipeline.program, "u_CameraMatrix");
+    pipeline.u_world_position = glGetUniformLocation(pipeline.program, "u_WorldPosition");
+    pipeline.u_timings = glGetUniformLocation(pipeline.program, "u_Timings");
 }
 
 void chunk_render::init(void)
 {
-    setup_program(quad_animated, "chunk_quad_animated");
-    setup_program(quad_varied, "chunk_quad_varied");
+    setup_pipeline(quad_pipeline, "chunk_quad");
 
-#if 0
-    const glm::fvec3 vertices[6] = {
-        glm::fvec3(0.0f, 0.0f,  0.0f),
-        glm::fvec3(0.0f, 0.0f, -1.0f),
-        glm::fvec3(1.0f, 0.0f, -1.0f),
-
-        glm::fvec3(1.0f, 0.0f, -1.0f),
-        glm::fvec3(1.0f, 0.0f,  0.0f),
-        glm::fvec3(0.0f, 0.0f,  0.0f),
-    };
-#else
     const glm::fvec3 vertices[4] = {
-        glm::fvec3(0.0f, 0.0f, -1.0f),
-        glm::fvec3(0.0f, 0.0f,  0.0f),
-        glm::fvec3(1.0f, 0.0f, -1.0f),
-        glm::fvec3(1.0f, 0.0f,  0.0f)
+        glm::fvec3(0.0f, 0.0f, -1.0f), glm::fvec3(0.0f, 0.0f, 0.0f),
+        glm::fvec3(1.0f, 0.0f, -1.0f), glm::fvec3(1.0f, 0.0f, 0.0f)
     };
-#endif
 
     glGenVertexArrays(1, &quad_vaobj);
     glBindVertexArray(quad_vaobj);
@@ -125,14 +76,14 @@ void chunk_render::init(void)
     glEnableVertexAttribArray(0);
     glVertexAttribDivisor(0, 0);
     glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(glm::fvec3), nullptr);
+
 }
 
 void chunk_render::deinit(void)
 {
     glDeleteBuffers(1, &quad_vbo);
     glDeleteVertexArrays(1, &quad_vaobj);
-    glDeleteProgram(quad_varied.gl_program);
-    glDeleteProgram(quad_animated.gl_program);
+    glDeleteProgram(quad_pipeline.program);
 }
 
 void chunk_render::render(void)
@@ -148,8 +99,6 @@ void chunk_render::render(void)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, UBO_ANIMATIONS_BINDING, voxel_anims::buffer());
-
     glm::uvec3 timings = {};
     timings.x = globals::frametime;
     timings.y = globals::frametime_avg;
@@ -158,23 +107,35 @@ void chunk_render::render(void)
     const glm::fmat4x4 &matrix = camera::matrix();
     const ChunkPos &cam_chunk = camera::chunk_position();
 
-    for(std::size_t plane = 0; plane < voxel_atlas::plane_count(); ++plane) {
-        glBindTexture(GL_TEXTURE_2D_ARRAY, voxel_atlas::plane_texture(plane));
+    const auto group = globals::registry.group(entt::get<ChunkComponent, ChunkMeshComponent, ChunkVisibleComponent>);
+
+    for(std::size_t plane_id = 0; plane_id < atlas::plane_count(); ++plane_id) {
+        glBindTexture(GL_TEXTURE_2D_ARRAY, atlas::plane_texture(plane_id));
         glActiveTexture(GL_TEXTURE0);
 
         glBindVertexArray(quad_vaobj);
+        glUseProgram(quad_pipeline.program);
+        glUniformMatrix4fv(quad_pipeline.u_camera_matrix, 1, false, glm::value_ptr(matrix));
+        glUniform3uiv(quad_pipeline.u_timings, 1, glm::value_ptr(timings));
+        
+        for(const auto [entity, chunk, mesh] : group.each()) {
+            if(plane_id >= mesh.quad.size())
+                continue;
+            if(!mesh.quad[plane_id].handle)
+                continue;
+            if(!mesh.quad[plane_id].size)
+                continue;
+        
+            const glm::fvec3 wpos = util::to_world(chunk.coord - cam_chunk);
+            glUniform3fv(quad_pipeline.u_world_position, 1, glm::value_ptr(wpos));
 
-        if(plane == ANIMATION_PLANE_ID) {
-            glUseProgram(quad_animated.gl_program);
-            glUniformMatrix4fv(quad_animated.u_camera_matrix, 1, false, glm::value_ptr(matrix));
-            glUniform3uiv(quad_animated.u_timings, 1, glm::value_ptr(timings));
-            draw_quads(plane, quad_animated, cam_chunk, false);
-        }
-        else {
-            glUseProgram(quad_varied.gl_program);
-            glUniformMatrix4fv(quad_varied.u_camera_matrix, 1, false, glm::value_ptr(matrix));
-            glUniform3uiv(quad_varied.u_timings, 1, glm::value_ptr(timings));
-            draw_quads(plane, quad_varied, cam_chunk, false);
+            glBindBuffer(GL_ARRAY_BUFFER, mesh.quad[plane_id].handle);
+
+            glEnableVertexAttribArray(1);
+            glVertexAttribDivisor(1, 1);
+            glVertexAttribIPointer(1, 2, GL_UNSIGNED_INT, sizeof(QuadVertex), nullptr);
+            
+            glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, mesh.quad[plane_id].size);
         }
     }
 }

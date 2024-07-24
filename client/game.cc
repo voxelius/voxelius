@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/event/glfw_framebuffer_size.hh>
+#include <client/atlas.hh>
 #include <client/background.hh>
 #include <client/camera.hh>
 #include <client/chunk_mesher.hh>
@@ -17,7 +18,6 @@
 #include <client/ui_server_list.hh>
 #include <client/ui_settings.hh>
 #include <client/voxel_anims.hh>
-#include <client/voxel_atlas.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
@@ -237,7 +237,7 @@ void client_game::init_late(void)
 
 void client_game::deinit(void)
 {
-    voxel_atlas::deinit();
+    atlas::destroy();
 
     glDeleteRenderbuffers(1, &globals::world_fbo_depth);
     glDeleteTextures(1, &globals::world_fbo_color);

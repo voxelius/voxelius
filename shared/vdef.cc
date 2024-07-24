@@ -7,7 +7,7 @@
 
 std::unordered_map<std::string, VDefBuilder> vdef::builders = {};
 std::unordered_map<std::string, Voxel> vdef::names = {};
-std::vector<VoxelInfo *> vdef::voxels = {};
+std::vector<VoxelInfo> vdef::voxels = {};
 
 static VoxelFace parse_face_name(const std::string &face_str)
 {
@@ -109,7 +109,7 @@ Voxel VDefBuilder::build(void) const
     }
 
     std::size_t face_count = {};
-    std::vector<VoxelInfo *> infos = {};
+    std::vector<VoxelInfo> infos = {};
     Voxel base = vdef::voxels.size() + 1;
 
     switch(type) {
@@ -142,10 +142,6 @@ Voxel VDefBuilder::build(void) const
     }
 
     for(const std::string &state_name : states) {
-        VoxelInfoAnimated *info_a = nullptr;
-        VoxelInfoVaried *info_v = nullptr;
-        VoxelInfo *info = nullptr;
-
         const JSON_Object *state = json_object_get_object(json, state_name.c_str());
 
         if(!state) {
@@ -154,24 +150,12 @@ Voxel VDefBuilder::build(void) const
             return NULL_VOXEL;
         }
 
-        if(json_object_get_boolean(state, "animated")) {
-            info_a = new VoxelInfoAnimated();
-            info_a->animated = true;
-            info_a->textures.resize(face_count);
-            info = info_a;
-        }
-        else {
-            info_v = new VoxelInfoVaried();
-            info_v->animated = false;
-            info_v->textures.resize(face_count);
-            info = info_v;
-        }
-
-        info->name = name;
-        info->type = type;
-        info->base = base;
-
-        info->blending = json_object_get_boolean(state, "blending");
+        VoxelInfo info = {};
+        info.animated = json_object_get_boolean(state, "animated");
+        info.blending = json_object_get_boolean(state, "blending");
+        info.name = name;
+        info.type = type;
+        info.base = base;
 
         const JSON_Object *textures = json_object_get_object(state, "textures");
         const std::size_t num_textures = json_object_get_count(textures);
@@ -184,18 +168,12 @@ Voxel VDefBuilder::build(void) const
             return NULL_VOXEL;
         }
 
-        if(info->animated) {
-            for(std::size_t i = 0; i < face_count; ++i) {
-                info_a->textures[i].paths = default_texture;
-                info_a->textures[i].cached_offset = SIZE_MAX;
-            }
-        }
-        else {
-            for(std::size_t i = 0; i < face_count; ++i) {
-                info_v->textures[i].paths = default_texture;
-                info_v->textures[i].planes.assign(default_texture.size(), SIZE_MAX);
-                info_v->textures[i].indices.assign(default_texture.size(), SIZE_MAX);
-            }
+        info.textures.resize(face_count);
+
+        for(std::size_t i = 0; i < face_count; ++i) {
+            info.textures[i].paths = default_texture;
+            info.textures[i].cached_offset = SIZE_MAX;
+            info.textures[i].cached_plane = SIZE_MAX;
         }
 
         for(std::size_t i = 0; i < num_textures; ++i) {
@@ -226,26 +204,14 @@ Voxel VDefBuilder::build(void) const
                 return NULL_VOXEL;
             }
 
-            std::vector<std::string> paths = {};
-
-            if(!parse_string_array(texture, paths)) {
+            if(!parse_string_array(texture, info.textures[face_index].paths)) {
                 spdlog::warn("vdef: {}: {}: {}: non-string array entry", json_path, state_name, tex_name);
                 json_value_free(jsonv);
                 return NULL_VOXEL;
             }
-
-            if(info->animated) {
-                info_a->textures[face_index].paths = paths;
-                info_a->textures[face_index].cached_offset = SIZE_MAX;
-            }
-            else {
-                info_v->textures[face_index].paths = paths;
-                info_v->textures[face_index].planes.assign(paths.size(), SIZE_MAX);
-                info_v->textures[face_index].indices.assign(paths.size(), SIZE_MAX);
-            }
         }
 
-        infos.push_back(info);
+        infos.push_back(std::move(info));
     }
 
     json_value_free(jsonv);
@@ -274,14 +240,12 @@ VoxelInfo *vdef::find(const std::string &name)
 VoxelInfo *vdef::find(const Voxel voxel)
 {
     if((voxel != NULL_VOXEL) && (voxel <= vdef::voxels.size()))
-        return vdef::voxels[voxel - 1];
+        return &vdef::voxels[voxel - 1];
     return nullptr;
 }
 
 void vdef::purge(void)
 {
-    for(VoxelInfo *info : vdef::voxels)
-        delete info;
     vdef::builders.clear();
     vdef::names.clear();
     vdef::voxels.clear();
