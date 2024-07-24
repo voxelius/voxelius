@@ -24,6 +24,7 @@ endif()
 
 if(MSVC)
     # https://github.com/voxelius/voxelius/issues/2#issuecomment-1757782477
+    target_compile_options(shared PUBLIC /wd4018)
     target_compile_options(shared PUBLIC /wd4244)
     target_compile_options(shared PUBLIC /wd4267)
 endif()
