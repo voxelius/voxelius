@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
+#include <client/atlas.hh>
 #include <client/debug_session.hh>
 #include <client/globals.hh>
-#include <client/voxel_anims.hh>
-#include <client/voxel_atlas.hh>
 #include <entt/entity/registry.hpp>
 #include <glm/gtc/noise.hpp>
 #include <shared/entity/head.hh>
@@ -68,38 +67,33 @@ void debug_session::run(void)
     v_dirt = vdef::create("dirt", VoxelType::Cube).add_default_state().build();
     v_test = vdef::create("vtest", VoxelType::Cube).add_default_state().build();
 
-    voxel_atlas::init(16, 16);
+    // Figure out the total texture count
+    // NOTE: this is debug, early and a very
+    // conservative limit choice. There must be a way
+    // to make it less shit if we talk about memory conservation
+    std::size_t max_texture_count = 0;
 
-    for(VoxelInfo *info : vdef::voxels) {
-        if(info->animated) {
-            VoxelInfoAnimated *info_a = static_cast<VoxelInfoAnimated *>(info);
-            for(VoxelTextureAnimated &vtex : info_a->textures) {
-                for(const std::string &path : vtex.paths) {
-                    if(AtlasTexture *atex = voxel_atlas::find_or_load(path, true))
-                        continue;
-                    spdlog::critical("voxel_atlas: {}: load failed", path);
-                    std::terminate();
-                }
-            }
-        }
-        else {
-            VoxelInfoVaried *info_v = static_cast<VoxelInfoVaried *>(info);
-            for(VoxelTextureVaried &vtex : info_v->textures) {
-                for(std::size_t i = 0; i < vtex.paths.size(); ++i) {
-                    if(AtlasTexture *atex = voxel_atlas::find_or_load(vtex.paths[i], false)) {
-                        vtex.indices[i] = atex->index;
-                        vtex.planes[i] = atex->plane;
-                        continue;
-                    }
-
-                    spdlog::critical("voxel_atlas: {}: load failed", vtex.paths[i]);
-                    std::terminate();
-                }
-            }
+    for(const VoxelInfo &info : vdef::voxels) {
+        for(const VoxelTexture &vtex : info.textures) {
+            max_texture_count += vtex.paths.size();
         }
     }
 
-    voxel_anims::construct();
+    atlas::create(16, 16, max_texture_count);
+
+    // Add cached strip values to the VoxelTexture objects
+    for(VoxelInfo &info : vdef::voxels) {
+        for(VoxelTexture &vtex : info.textures) {
+            if(AtlasStrip *strip = atlas::find_or_load(vtex.paths)) {
+                vtex.cached_offset = strip->offset;
+                vtex.cached_plane = strip->plane;
+                continue;
+            }
+            
+            spdlog::critical("debug_session: {}: failed to load atlas strips", info.name);
+            std::terminate();
+        }
+    }
 
     unsigned int w = 0U;
     for(int x = -8; x < 8; x += 2)

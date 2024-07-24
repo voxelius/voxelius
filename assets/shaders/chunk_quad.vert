@@ -1,4 +1,3 @@
-// VARIED
 #version 330 core
 
 #define FACING_NORTH    0x0000U
@@ -33,7 +32,7 @@ void main(void)
 
     uint quad_facing = (0x000FU & (vert_Quad.y >> 28U));
     uint quad_toffset = (0x07FFU & (vert_Quad.y >> 17));
-    uint quad_tframes = (0x001FU & (vert_Quad.y >> 12)) + 1U;
+    uint quad_tframes = max(1U, (0x001FU & (vert_Quad.y >> 12)));
 
     gl_Position.xyz = vert_Position;
     gl_Position.x *= quad_scale.x;
@@ -76,7 +75,7 @@ void main(void)
     }
     
     // FIXME: add variant shaders
-    frag_TexCoord.z = floor(float(quad_toffset) + 0.5);
+    frag_TexCoord.z = floor(float(quad_toffset + u_Timings.z % quad_tframes) + 0.5);
 
     gl_Position.w = 1.0;
     gl_Position.xyz += quad_offset + u_WorldPosition;

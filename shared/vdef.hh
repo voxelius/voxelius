@@ -66,24 +66,14 @@ constexpr static VoxelVis VIS_WEST  = 1 << FACING_WEST;
 constexpr static VoxelVis VIS_UP    = 1 << FACING_UP;
 constexpr static VoxelVis VIS_DOWN  = 1 << FACING_DOWN;
 
-// This is dictated by hardware limitations. A single
-// voxel atlas plane upper limit is assumed to be 256
-// so we at least want to have 16 animated voxel types
-constexpr static std::size_t MAX_ANIM_FRAMES = 16;
-
-struct VoxelTextureAnimated final {
+struct VoxelTexture final {
     std::vector<std::string> paths {};
     std::size_t cached_offset {};
+    std::size_t cached_plane {};
 };
 
-struct VoxelTextureVaried final {
-    std::vector<std::string> paths {};
-    std::vector<std::size_t> planes {};
-    std::vector<std::size_t> indices {};
-};
-
-struct VoxelInfo {
-    virtual ~VoxelInfo(void) = default;
+struct VoxelInfo final {
+    std::vector<VoxelTexture> textures {};
     std::string name {};
     VoxelType type {};
     bool animated {};
@@ -91,26 +81,11 @@ struct VoxelInfo {
     Voxel base {};
 };
 
-struct VoxelInfoAnimated final : public VoxelInfo {
-    virtual ~VoxelInfoAnimated(void) = default;
-    std::vector<VoxelTextureAnimated> textures {};
-};
-
-struct VoxelInfoVaried final : public VoxelInfo {
-    virtual ~VoxelInfoVaried(void) = default;
-    std::vector<VoxelTextureVaried> textures {};
-};
-
 class VDefBuilder final {
 public:
     VDefBuilder(void) = delete;
     VDefBuilder(const std::string &name, VoxelType type);
     virtual ~VDefBuilder(void) = default;
-
-public:
-    constexpr const VoxelType get_type(void) const;
-    constexpr const std::string &get_name(void) const;
-    constexpr const std::vector<std::string> &get_states(void) const;
 
 public:
     VDefBuilder &add_state(const std::string &name);
@@ -131,7 +106,7 @@ namespace vdef
 {
 extern std::unordered_map<std::string, VDefBuilder> builders;
 extern std::unordered_map<std::string, Voxel> names;
-extern std::vector<VoxelInfo *> voxels;
+extern std::vector<VoxelInfo> voxels;
 } // namespace vdef
 
 namespace vdef
@@ -145,20 +120,5 @@ namespace vdef
 {
 void purge(void);
 } // namespace vdef
-
-constexpr inline const VoxelType VDefBuilder::get_type(void) const
-{
-    return type;
-}
-
-constexpr inline const std::string &VDefBuilder::get_name(void) const
-{
-    return name;
-}
-
-constexpr inline const std::vector<std::string> &VDefBuilder::get_states(void) const
-{
-    return states;
-}
 
 #endif /* SHARED_VDEF_HH */
