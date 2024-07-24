@@ -10,7 +10,6 @@
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
-#include <shared/util/coord.hh>
 #include <shared/vdef.hh>
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
@@ -48,8 +47,8 @@ static void generate(const ChunkPos &cpos)
     Chunk *chunk = world::find_or_create_chunk(cpos);
 
     for(std::size_t i = 0; i < CHUNK_VOLUME; ++i) {
-        const auto lpos = util::to_local(i);
-        const auto vpos = util::to_voxel(cpos, lpos);
+        const auto lpos = local_pos::from_index(i);
+        const auto vpos = chunk_pos::to_voxel(cpos, lpos);
         const auto voxel = voxel_at(vpos);
         chunk->voxels.at(i) = voxel;
     }
@@ -95,9 +94,11 @@ void debug_session::run(void)
         }
     }
 
+    atlas::generate_mipmaps();
+
     unsigned int w = 0U;
-    for(int x = -8; x < 8; x += 2)
-    for(int z = -8; z < 8; z += 2)
+    for(int x = -8; x < 8; x += 1)
+    for(int z = -8; z < 8; z += 1)
     for(int y = -2; y < 1; y += 1) {
         generate({x, y, z});
         //Chunk *chunk = world::find_or_create_chunk({x, y, z});
@@ -116,7 +117,7 @@ void debug_session::run(void)
     head.offset = glm::dvec3{0.4, 1.4, 0.4};
 
     auto &transform = globals::registry.emplace<TransformComponent>(globals::player);
-    transform.position.y += 16.0;
+    transform.position.local.y += 16.0;
 
     globals::ui_screen = 0U;
 }

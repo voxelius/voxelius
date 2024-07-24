@@ -2,7 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_CAMERA_HH
 #define CLIENT_CAMERA_HH
-#include <shared/types.hh>
+#include <shared/coord.hh>
 
 namespace camera
 {
@@ -19,11 +19,9 @@ void update(void);
 
 namespace camera
 {
-const glm::fvec3 &position(void);
+const EntityPos &position(void);
 const glm::fvec3 &euler_angles(void);
 const glm::fvec3 &direction(void);
-const glm::fvec3 &chunk_local(void);
-const ChunkPos &chunk_position(void);
 const glm::fmat4x4 &matrix(void);
 } // namespace camera
 

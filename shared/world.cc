@@ -7,7 +7,7 @@
 #include <shared/event/chunk_create.hh>
 #include <shared/event/chunk_remove.hh>
 #include <shared/event/voxel_set.hh>
-#include <shared/util/coord.hh>
+#include <shared/coord.hh>
 #include <shared/globals.hh>
 #include <shared/world.hh>
 
@@ -85,17 +85,17 @@ void world::purge_chunks(void)
 
 Voxel world::get_voxel(const VoxelPos &vpos)
 {
-    const auto cpos = util::to_chunk(vpos);
-    const auto lpos = util::to_local(vpos);
+    const auto cpos = voxel_pos::to_chunk(vpos);
+    const auto lpos = voxel_pos::to_local(vpos);
     return world::get_voxel(cpos, lpos);
 }
 
 Voxel world::get_voxel(const ChunkPos &cpos, const LocalPos &lpos)
 {
-    const auto rvpos = util::to_voxel(cpos, lpos);
-    const auto rcpos = util::to_chunk(rvpos);
-    const auto rlpos = util::to_local(rvpos);
-    const auto index = util::to_index(rlpos);
+    const auto rvpos = chunk_pos::to_voxel(cpos, lpos);
+    const auto rcpos = voxel_pos::to_chunk(rvpos);
+    const auto rlpos = voxel_pos::to_local(rvpos);
+    const auto index = local_pos::to_index(rlpos);
 
     const auto it = chunks.find(rcpos);
 
@@ -106,17 +106,17 @@ Voxel world::get_voxel(const ChunkPos &cpos, const LocalPos &lpos)
 
 void world::set_voxel(Voxel voxel, const VoxelPos &vpos)
 {
-    const auto cpos = util::to_chunk(vpos);
-    const auto lpos = util::to_local(vpos);
+    const auto cpos = voxel_pos::to_chunk(vpos);
+    const auto lpos = voxel_pos::to_local(vpos);
     world::set_voxel(voxel, cpos, lpos);
 }
 
 void world::set_voxel(Voxel voxel, const ChunkPos &cpos, const LocalPos &lpos)
 {
-    const auto rvpos = util::to_voxel(cpos, lpos);
-    const auto rcpos = util::to_chunk(rvpos);
-    const auto rlpos = util::to_local(rvpos);
-    const auto index = util::to_index(rlpos);
+    const auto rvpos = chunk_pos::to_voxel(cpos, lpos);
+    const auto rcpos = voxel_pos::to_chunk(rvpos);
+    const auto rlpos = voxel_pos::to_local(rvpos);
+    const auto index = local_pos::to_index(rlpos);
 
     Chunk *chunk = world::find_or_create_chunk(rcpos);
 

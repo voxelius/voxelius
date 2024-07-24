@@ -22,6 +22,7 @@ namespace atlas
 {
 std::size_t plane_count(void);
 GLuint plane_texture(std::size_t plane_id);
+void generate_mipmaps(void);
 } // namespace atlas
 
 namespace atlas
