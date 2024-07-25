@@ -125,7 +125,7 @@ void chunk_render::render(void)
             if(!mesh.quad[plane_id].size)
                 continue;
 
-            const glm::fvec3 wpos = chunk_pos::to_world(chunk.coord - cam_pos.chunk);
+            const glm::fvec3 wpos = coord::to_world(chunk.coord - cam_pos.chunk);
             glUniform3fv(quad_pipeline.u_world_position, 1, glm::value_ptr(wpos));
 
             glBindBuffer(GL_ARRAY_BUFFER, mesh.quad[plane_id].handle);

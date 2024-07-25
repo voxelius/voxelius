@@ -32,7 +32,7 @@ constexpr static CachedChunkPos CPOS_BOTTOM = 0x0006;
 constexpr static const size_t NUM_CACHED_CPOS = 7;
 
 struct WorkerContext final {
-    std::array<std::unique_ptr<VoxelArray>, NUM_CACHED_CPOS> cache {};
+    std::array<Chunk, NUM_CACHED_CPOS> cache {};
     std::vector<QuadBuilder> quads {};
     std::shared_future<bool> future {};
     bool is_cancelled {};
@@ -63,14 +63,14 @@ static const CachedChunkPos get_cached_cpos(const ChunkPos &pivot, const ChunkPo
 
 static bool vis_test(WorkerContext *ctx, Voxel voxel, const VoxelInfo *info, const LocalPos &lpos)
 {
-    const auto pvpos = chunk_pos::to_voxel(ctx->coord, lpos);
-    const auto pcpos = voxel_pos::to_chunk(pvpos);
-    const auto plpos = voxel_pos::to_local(pvpos);
-    const auto index = local_pos::to_index(plpos);
+    const auto pvpos = coord::to_voxel(ctx->coord, lpos);
+    const auto pcpos = coord::to_chunk(pvpos);
+    const auto plpos = coord::to_local(pvpos);
+    const auto index = coord::to_index(plpos);
 
     const auto cached_cpos = get_cached_cpos(ctx->coord, pcpos);
-    const auto &voxels = ctx->cache.at(cached_cpos);
-    const auto neighbour = voxels ? voxels->at(index) : NULL_VOXEL;
+    const auto &chunk = ctx->cache.at(cached_cpos);
+    const auto neighbour = Chunk::get_voxel(chunk, index);
 
     if(neighbour == NULL_VOXEL)
         return true;
@@ -151,16 +151,17 @@ static void make_cube(WorkerContext *ctx, Voxel voxel, const VoxelInfo *info, co
 static void cache_chunk(WorkerContext *ctx, const ChunkPos &cpos)
 {
     const auto index = get_cached_cpos(ctx->coord, cpos);
-    if(const Chunk *chunk = world::find_chunk(cpos))
-        ctx->cache[index] = std::make_unique<VoxelArray>(chunk->voxels);
-    else ctx->cache[index] = nullptr;
+    if(const Chunk *chunk = world::find_chunk(cpos)) {
+        Chunk::create_storage(ctx->cache[index], chunk[0]);
+        return;
+    }
 }
 
 static void process(WorkerContext *ctx)
 {
     ctx->quads.resize(atlas::plane_count());
 
-    const std::unique_ptr<VoxelArray> &voxels = ctx->cache.at(CPOS_ITSELF);
+    const Chunk &chunk = ctx->cache.at(CPOS_ITSELF);
 
     for(std::size_t i = 0; i < CHUNK_VOLUME; ++i) {
         if(ctx->is_cancelled) {
@@ -168,8 +169,8 @@ static void process(WorkerContext *ctx)
             return;
         }
 
-        const auto voxel = voxels->at(i);
-        const auto lpos = local_pos::from_index(i);
+        const auto voxel = Chunk::get_voxel(chunk, i);
+        const auto lpos = coord::to_local(i);
 
         const VoxelInfo *info = vdef::find(voxel);
 
@@ -193,7 +194,7 @@ static void process(WorkerContext *ctx)
         if(vis_test(ctx, voxel, info, lpos + LocalPos(WDIR_DOWN)))
             vis |= VIS_DOWN;
 
-        const VoxelPos vpos = chunk_pos::to_voxel(ctx->coord, lpos);
+        const VoxelPos vpos = coord::to_voxel(ctx->coord, lpos);
         const VoxelPos::value_type entropy_src = vpos.x * vpos.y * vpos.z;
         const auto entropy = util::crc64(&entropy_src, sizeof(entropy_src));
 

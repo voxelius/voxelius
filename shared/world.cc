@@ -21,8 +21,7 @@ Chunk *world::find_or_create_chunk(const ChunkPos &cpos)
 
 
     Chunk *chunk = new Chunk();
-    chunk->voxels.fill(NULL_VOXEL);
-    chunk->lightmap.fill(NULL_LIGHT);
+    Chunk::create_storage(chunk[0]);
     chunk->entity = globals::registry.create();
 
     auto &component = globals::registry.emplace<ChunkComponent>(chunk->entity);
@@ -85,42 +84,42 @@ void world::purge_chunks(void)
 
 Voxel world::get_voxel(const VoxelPos &vpos)
 {
-    const auto cpos = voxel_pos::to_chunk(vpos);
-    const auto lpos = voxel_pos::to_local(vpos);
+    const auto cpos = coord::to_chunk(vpos);
+    const auto lpos = coord::to_local(vpos);
     return world::get_voxel(cpos, lpos);
 }
 
 Voxel world::get_voxel(const ChunkPos &cpos, const LocalPos &lpos)
 {
-    const auto rvpos = chunk_pos::to_voxel(cpos, lpos);
-    const auto rcpos = voxel_pos::to_chunk(rvpos);
-    const auto rlpos = voxel_pos::to_local(rvpos);
-    const auto index = local_pos::to_index(rlpos);
+    const auto rvpos = coord::to_voxel(cpos, lpos);
+    const auto rcpos = coord::to_chunk(rvpos);
+    const auto rlpos = coord::to_local(rvpos);
+    const auto index = coord::to_index(rlpos);
 
     const auto it = chunks.find(rcpos);
 
     if(it != chunks.cend())
-        return it->second->voxels[index];
+        return Chunk::get_voxel(it->second[0], index);
     return NULL_VOXEL;
 }
 
 void world::set_voxel(Voxel voxel, const VoxelPos &vpos)
 {
-    const auto cpos = voxel_pos::to_chunk(vpos);
-    const auto lpos = voxel_pos::to_local(vpos);
+    const auto cpos = coord::to_chunk(vpos);
+    const auto lpos = coord::to_local(vpos);
     world::set_voxel(voxel, cpos, lpos);
 }
 
 void world::set_voxel(Voxel voxel, const ChunkPos &cpos, const LocalPos &lpos)
 {
-    const auto rvpos = chunk_pos::to_voxel(cpos, lpos);
-    const auto rcpos = voxel_pos::to_chunk(rvpos);
-    const auto rlpos = voxel_pos::to_local(rvpos);
-    const auto index = local_pos::to_index(rlpos);
+    const auto rvpos = coord::to_voxel(cpos, lpos);
+    const auto rcpos = coord::to_chunk(rvpos);
+    const auto rlpos = coord::to_local(rvpos);
+    const auto index = coord::to_index(rlpos);
 
     Chunk *chunk = world::find_or_create_chunk(rcpos);
 
-    chunk->voxels[index] = voxel;
+    Chunk::set_voxel(chunk[0], voxel, index);
 
     VoxelSetEvent event = {};
     event.cpos = rcpos;

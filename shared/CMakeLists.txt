@@ -3,6 +3,7 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/util/epoch.cc"
     "${CMAKE_CURRENT_LIST_DIR}/util/physfs.cc"
     "${CMAKE_CURRENT_LIST_DIR}/util/string.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/chunk.cc"
     "${CMAKE_CURRENT_LIST_DIR}/cmdline.cc"
     "${CMAKE_CURRENT_LIST_DIR}/config.cc"
     "${CMAKE_CURRENT_LIST_DIR}/floatfix.cc"

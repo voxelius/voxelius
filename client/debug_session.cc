@@ -16,6 +16,7 @@
 
 #include <random>
 
+static Voxel v_slate = {};
 static Voxel v_stone = {};
 static Voxel v_grass = {};
 static Voxel v_dirt = {};
@@ -31,6 +32,8 @@ static Voxel voxel_at(const VoxelPos &vpos)
     static std::uniform_int_distribution intdist = std::uniform_int_distribution(-2, +2);
     static std::mt19937_64 twister = std::mt19937_64(std::random_device()());
     int64_t surf = SURFACE + 5.0f * glm::simplex(glm::fvec2(vpos.x, vpos.z) / 32.0f);
+    if(vpos.y <= surf - 32 + intdist(twister))
+        return v_slate;
     if(vpos.y <= surf - 8 + intdist(twister))
         return v_stone;
     if(vpos.y <= surf - 1)
@@ -47,10 +50,14 @@ static void generate(const ChunkPos &cpos)
     Chunk *chunk = world::find_or_create_chunk(cpos);
 
     for(std::size_t i = 0; i < CHUNK_VOLUME; ++i) {
-        const auto lpos = local_pos::from_index(i);
-        const auto vpos = chunk_pos::to_voxel(cpos, lpos);
+        const auto lpos = coord::to_local(i);
+        const auto vpos = coord::to_voxel(cpos, lpos);
         const auto voxel = voxel_at(vpos);
-        chunk->voxels.at(i) = voxel;
+
+        if(voxel != NULL_VOXEL) {
+            Chunk::set_voxel(chunk[0], voxel, i);
+            continue;
+        }
     }
 }
 
@@ -61,6 +68,7 @@ void debug_session::run(void)
         return;
     }
 
+    v_slate = vdef::create("slate", VoxelType::Cube).add_default_state().build();
     v_stone = vdef::create("stone", VoxelType::Cube).add_default_state().build();
     v_grass = vdef::create("grass", VoxelType::Cube).add_default_state().build();
     v_dirt = vdef::create("dirt", VoxelType::Cube).add_default_state().build();
@@ -96,17 +104,22 @@ void debug_session::run(void)
 
     atlas::generate_mipmaps();
 
+#if 1
+    constexpr int WSIZE = 4;
+    constexpr int WHEIGHT = 4;
     unsigned int w = 0U;
-    for(int x = -8; x < 8; x += 1)
-    for(int z = -8; z < 8; z += 1)
-    for(int y = -2; y < 1; y += 1) {
+    for(int x = -WSIZE; x < WSIZE; x += 1)
+    for(int z = -WSIZE; z < WSIZE; z += 1)
+    for(int y = -WHEIGHT; y < WHEIGHT; y += 1) {
         generate({x, y, z});
         //Chunk *chunk = world::find_or_create_chunk({x, y, z});
         //chunk->voxels.fill(v_stone);
     }
+#endif
 
     Chunk *chunk = world::find_or_create_chunk({0, 1, 0});
-    chunk->voxels.fill(v_test);
+    //for(int x = 0; x < CHUNK_SIZE; ++x) Chunk::set_voxel(chunk[0], v_test, {x, x, x});
+    Chunk::fill(chunk[0], v_test);
 
     spdlog::info("spawning local player");
     globals::player = globals::registry.create();
