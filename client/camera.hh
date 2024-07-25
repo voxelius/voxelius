@@ -6,14 +6,13 @@
 
 namespace camera
 {
-extern float horizontal_fov;
+extern float vertical_fov;
 extern unsigned int view_distance;
 } // namespace camera
 
 namespace camera
 {
 void init(void);
-void init_late(void);
 void update(void);
 } // namespace camera
 

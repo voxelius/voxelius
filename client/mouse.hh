@@ -12,7 +12,6 @@ extern float sensitivity;
 namespace mouse
 {
 void init(void);
-void init_late(void);
 void update_late(void);
 } // namespace mouse
 

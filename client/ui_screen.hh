@@ -3,13 +3,10 @@
 #ifndef CLIENT_UI_SCREEN_HH
 #define CLIENT_UI_SCREEN_HH
 
-namespace ui
-{
-constexpr static const unsigned int SCREEN_NONE         = 0U;
-constexpr static const unsigned int SCREEN_MAIN_MENU    = 1U;
-constexpr static const unsigned int SCREEN_SERVER_LIST  = 2U;
-constexpr static const unsigned int SCREEN_SETTINGS     = 3U;
-constexpr static const unsigned int SCREEN_PROGRESS     = 4U;
-} // namespace ui
+constexpr static unsigned int UI_SCREEN_NONE    = 0x0000U;
+constexpr static unsigned int UI_MAIN_MENU      = 0x0001U;
+constexpr static unsigned int UI_SERVER_LIST    = 0x0002U;
+constexpr static unsigned int UI_SETTINGS       = 0x0003U;
+constexpr static unsigned int UI_PROGRESS       = 0x0004U;
 
 #endif /* CLIENT_UI_SCREEN_HH */

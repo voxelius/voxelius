@@ -7,7 +7,6 @@
 namespace keyboard
 {
 void init(void);
-void init_late(void);
 void update(void);
 } // namespace keyboard
 
