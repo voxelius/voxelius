@@ -76,7 +76,7 @@ void ui::main_menu::layout(void)
         ImGui::PopFont();
 
         ImGui::PushFont(globals::font_menu_button);
-        constexpr static const char *subtitle_str = VOXELIUS_SEMVER;
+        constexpr static const char *subtitle_str = GAME_VERSION_STRING;
         const float subtitle_width = ImGui::CalcTextSize(subtitle_str).x;
         const float subtitle_xpos = 0.5f * (window_size.x - subtitle_width);
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 10.0f * globals::ui_scale);

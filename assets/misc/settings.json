@@ -34,6 +34,41 @@
     "type": "language",
     "tooltip": false
   },
+  "keyboard.move_forward": {
+    "location": "controls.keyboard",
+    "type": "keybind",
+    "tooltip": false
+  },
+  "keyboard.move_back": {
+    "location": "controls.keyboard",
+    "type": "keybind",
+    "tooltip": false
+  },
+  "keyboard.move_left": {
+    "location": "controls.keyboard",
+    "type": "keybind",
+    "tooltip": false
+  },
+  "keyboard.move_right": {
+    "location": "controls.keyboard",
+    "type": "keybind",
+    "tooltip": false
+  },
+  "keyboard.move_up": {
+    "location": "controls.keyboard",
+    "type": "keybind",
+    "tooltip": false
+  },
+  "keyboard.move_down": {
+    "location": "controls.keyboard",
+    "type": "keybind",
+    "tooltip": false
+  },
+  "screenshot.key": {
+    "location": "controls.keyboard",
+    "type": "keybind",
+    "tooltip": false
+  },
   "mouse.raw_input": {
     "location": "controls.mouse",
     "type": "checkbox",

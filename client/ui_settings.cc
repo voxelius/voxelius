@@ -3,6 +3,7 @@
 #include <client/event/glfw_key.hh>
 #include <client/event/language_set.hh>
 #include <client/globals.hh>
+#include <client/key_name.hh>
 #include <client/lang.hh>
 #include <client/ui_screen.hh>
 #include <client/ui_settings.hh>
@@ -37,6 +38,7 @@ enum class ValueType {
     TextInput   = 0x0005,
     UintInput   = 0x0006,
     UintSlider  = 0x0007,
+    KeyBind     = 0x0008,
 };
 
 using ValueFlags = unsigned short;
@@ -53,6 +55,7 @@ public:
 public:
     std::string title {};
     std::string tooltip {};
+    std::string title_label {};
 
 public:
     std::string slider_format {};
@@ -67,6 +70,7 @@ public:
     static void layout_text_input(const SettingsValue *value);
     static void layout_uint_input(const SettingsValue *value);
     static void layout_uint_slider(const SettingsValue *value);
+    static void layout_keybind(const SettingsValue *value);
 
 public:
     // Every SettingsValue can have a tooltip if
@@ -183,6 +187,24 @@ void SettingsValue::layout_uint_slider(const SettingsValue *value)
     }
 }
 
+void SettingsValue::layout_keybind(const SettingsValue *value)
+{
+    if(value->data_ptr) {
+        std::string key_name = {};
+        int *value_keyptr = reinterpret_cast<int *>(value->data_ptr);
+
+        if(globals::ui_keybind_ptr == value->data_ptr)
+            key_name = fmt::format("...###{}", value->data_ptr);
+        else key_name = fmt::format("{}###{}", key_name::get(value_keyptr[0]), value->data_ptr);
+
+        if(ImGui::Button(key_name.c_str(), ImVec2(ImGui::GetWindowSize().x * 0.3f, 0.0f)))
+            globals::ui_keybind_ptr = value_keyptr;
+        ImGui::SameLine();
+        ImGui::TextUnformatted(value->title_label.c_str());
+        SettingsValue::layout_tooltip(value);
+    }
+}
+
 void SettingsValue::layout_tooltip(const SettingsValue *value)
 {
     if(value->flags & VALUE_FLAG_TOOLTIP) {
@@ -244,6 +266,9 @@ bool SettingsValue::parse(const JSON_Object *object, const std::string &name, Se
         value.type = ValueType::UintSlider;
         value.slider_format = "%u";
     }
+    else if(!type.compare("keybind")) {
+        value.type = ValueType::KeyBind;
+    }
     else {
         // Implied invalid type because
         // everything else has a faily defined
@@ -263,15 +288,26 @@ void SettingsValue::update_strings(const std::string &name, SettingsValue &value
 {
     value.title = lang::resolve_ui(fmt::format("settings.value.{}", name));
     value.tooltip = lang::resolve(fmt::format("settings.tooltip.{}", name));
+    value.title_label = lang::resolve(fmt::format("settings.value.{}", name));
 }
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if((event.key == GLFW_KEY_ESCAPE) && (event.action == GLFW_PRESS)) {
-        switch(globals::ui_screen) {
-            case ui::SCREEN_SETTINGS:
-                globals::ui_screen = ui::SCREEN_MAIN_MENU;
-                break;
+    if(event.action == GLFW_PRESS) {
+        if(globals::ui_keybind_ptr) {
+            if(event.key == GLFW_KEY_ESCAPE) {
+                globals::ui_keybind_ptr = nullptr;
+                return;
+            }
+            
+            globals::ui_keybind_ptr[0] = event.key;
+            globals::ui_keybind_ptr = nullptr;
+            return;
+        }
+        
+        if((event.key == GLFW_KEY_ESCAPE) && (globals::ui_screen == ui::SCREEN_SETTINGS)) {
+            globals::ui_screen = ui::SCREEN_MAIN_MENU;
+            return;
         }
     }
 }
@@ -324,6 +360,9 @@ static void layout_list(const std::vector<SettingsValue *> &values_vector)
                 break;
             case ValueType::UintSlider:
                 SettingsValue::layout_uint_slider(value);
+                break;
+            case ValueType::KeyBind:
+                SettingsValue::layout_keybind(value);
                 break;
         }
     }
@@ -469,9 +508,12 @@ void ui::settings::layout(void)
             if(ImGui::TabItemButton("<<")) {
                 // Go back to the main menu
                 globals::ui_screen = ui::SCREEN_MAIN_MENU;
+                globals::ui_keybind_ptr = nullptr;
             }
 
             if(ImGui::BeginTabItem(str_general.c_str())) {
+                globals::ui_keybind_ptr = nullptr;
+
                 if(ImGui::BeginChild("###settings.general.child")) {
                     layout_list(values_general);
                     ImGui::SeparatorText(str_general_multiplayer.c_str());
@@ -497,6 +539,8 @@ void ui::settings::layout(void)
             }
 
             if(ImGui::BeginTabItem(str_graphics.c_str())) {
+                globals::ui_keybind_ptr = nullptr;
+
                 if(ImGui::BeginChild("###settings.graphics.child")) {
                     ImGui::SeparatorText(str_graphics_performance.c_str());
                     layout_list(values_graphics_performance);
@@ -509,6 +553,8 @@ void ui::settings::layout(void)
             }
 
             if(ImGui::BeginTabItem(str_sound.c_str())) {
+                globals::ui_keybind_ptr = nullptr;
+
                 if(ImGui::BeginChild("###settings.sound.child")) {
                     layout_list(values_sound);
                 }
@@ -529,7 +575,7 @@ void ui::settings::layout(void)
 void ui::settings::link(const std::string &name, int &vref)
 {
     if(SettingsValue *value = find_value(name)) {
-        if((value->type != ValueType::IntInput) && (value->type != ValueType::IntSlider)) {
+        if((value->type != ValueType::IntInput) && (value->type != ValueType::IntSlider) && (value->type != ValueType::KeyBind)) {
             spdlog::warn("ui::settings: {}: invalid link type", name);
             return;
         }

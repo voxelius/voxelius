@@ -6,7 +6,7 @@
 #include <client/util/shader.hh>
 #include <client/atlas.hh>
 #include <client/camera.hh>
-#include <client/chunk_render.hh>
+#include <client/chunk_renderer.hh>
 #include <client/globals.hh>
 #include <client/quad_vertex.hh>
 #include <client/voxel_anims.hh>
@@ -37,7 +37,7 @@ static void setup_pipeline(Pipeline &pipeline, const std::string &name)
     GLuint frag = util::compile_shader(frag_path, GL_FRAGMENT_SHADER);
 
     if(!vert || !frag) {
-        spdlog::critical("chunk_render: {}: shader compile failed", name);
+        spdlog::critical("chunk_renderer: {}: shader compile failed", name);
         std::terminate();
     }
 
@@ -47,7 +47,7 @@ static void setup_pipeline(Pipeline &pipeline, const std::string &name)
     glDeleteShader(vert);
 
     if(!pipeline.program) {
-        spdlog::critical("chunk_render: {}: program link failed", name);
+        spdlog::critical("chunk_renderer: {}: program link failed", name);
         std::terminate();
     }
 
@@ -56,7 +56,7 @@ static void setup_pipeline(Pipeline &pipeline, const std::string &name)
     pipeline.u_timings = glGetUniformLocation(pipeline.program, "u_Timings");
 }
 
-void chunk_render::init(void)
+void chunk_renderer::init(void)
 {
     setup_pipeline(quad_pipeline, "chunk_quad");
 
@@ -78,14 +78,14 @@ void chunk_render::init(void)
 
 }
 
-void chunk_render::deinit(void)
+void chunk_renderer::deinit(void)
 {
     glDeleteBuffers(1, &quad_vbo);
     glDeleteVertexArrays(1, &quad_vaobj);
     glDeleteProgram(quad_pipeline.program);
 }
 
-void chunk_render::render(void)
+void chunk_renderer::render(void)
 {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);

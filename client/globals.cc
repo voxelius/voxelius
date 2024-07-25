@@ -26,5 +26,6 @@ GLuint globals::world_fbo_depth = 0;
 ImFont *globals::font_menu_title = nullptr;
 ImFont *globals::font_menu_button = nullptr;
 
+int *globals::ui_keybind_ptr = nullptr;
 unsigned int globals::ui_scale = 0U;
 unsigned int globals::ui_screen = ui::SCREEN_NONE;

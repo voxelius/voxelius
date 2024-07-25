@@ -10,16 +10,16 @@
 
 void chunk_vis::update(void)
 {
-    const auto view = globals::registry.view<ChunkComponent>();
-
     // Comparing squared distances is always faster than figuring square roots out
-    const ChunkPos::value_type view_distance = camera::view_distance * CHUNK_SIZE;
+    const ChunkPos::value_type view_distance = camera::view_distance;
     const ChunkPos::value_type view_distance_square = view_distance * view_distance;
     const EntityPos &camera_pos = camera::position();
 
+    const auto view = globals::registry.view<ChunkComponent>();
+
     for(const auto [entity, chunk] : view.each()) {
         const ChunkPos diff = chunk.coord - camera_pos.chunk;
-        const ChunkPos::value_type dist = diff.x * diff.x + diff.y * diff.y + diff.z * diff.z;
+        const ChunkPos::value_type dist = diff.x * diff.x + diff.z * diff.z;
 
         if(dist <= view_distance_square)
             globals::registry.emplace_or_replace<ChunkVisibleComponent>(entity);

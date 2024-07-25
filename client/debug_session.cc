@@ -104,8 +104,9 @@ void debug_session::run(void)
 
     atlas::generate_mipmaps();
 
+
 #if 1
-    constexpr int WSIZE = 4;
+    constexpr int WSIZE = 8;
     constexpr int WHEIGHT = 4;
     unsigned int w = 0U;
     for(int x = -WSIZE; x < WSIZE; x += 1)
