@@ -5,15 +5,17 @@
 #include <client/background.hh>
 #include <client/camera.hh>
 #include <client/chunk_mesher.hh>
-#include <client/chunk_render.hh>
+#include <client/chunk_renderer.hh>
 #include <client/chunk_vis.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
+#include <client/key_name.hh>
 #include <client/keyboard.hh>
 #include <client/lang.hh>
 #include <client/mouse.hh>
 #include <client/screenshot.hh>
 #include <client/ui_main_menu.hh>
+#include <client/ui_progress.hh>
 #include <client/ui_screen.hh>
 #include <client/ui_server_list.hh>
 #include <client/ui_settings.hh>
@@ -126,6 +128,8 @@ void client_game::init(void)
 
     lang::init();
 
+    key_name::init();
+
     keyboard::init();
     mouse::init();
 
@@ -136,7 +140,7 @@ void client_game::init(void)
     voxel_anims::init();
 
     chunk_mesher::init();
-    chunk_render::init();
+    chunk_renderer::init();
 
     ImGuiStyle &style = ImGui::GetStyle();
 
@@ -214,6 +218,7 @@ void client_game::init(void)
     background::init();
 
     ui::main_menu::init();
+    ui::progress::init();
     ui::server_list::init();
     ui::settings::init();
 
@@ -227,7 +232,10 @@ void client_game::init_late(void)
 {
     lang::init_late();
 
+    keyboard::init_late();
     mouse::init_late();
+
+    screenshot::init_late();
 
     camera::init_late();
 
@@ -246,7 +254,7 @@ void client_game::deinit(void)
 
     background::deinit();
 
-    chunk_render::deinit();
+    chunk_renderer::deinit();
     chunk_mesher::deinit();
 
     world::purge_chunks();
@@ -291,7 +299,7 @@ void client_game::render(void)
     glBindFramebuffer(GL_FRAMEBUFFER, globals::world_fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    chunk_render::render();
+    chunk_renderer::render();
 
     glViewport(0, 0, globals::width, globals::height);
     glClearColor(0.000f, 0.000f, 0.000f, 1.000f);
@@ -332,6 +340,9 @@ void client_game::layout(void)
                 break;
             case ui::SCREEN_SETTINGS:
                 ui::settings::layout();
+                break;
+            case ui::SCREEN_PROGRESS:
+                ui::progress::layout();
                 break;
         }
     }

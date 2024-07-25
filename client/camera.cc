@@ -23,6 +23,11 @@ void camera::init(void)
 {
     Config::add(globals::client_config, "camera.horizontal_fov", camera::horizontal_fov);
     Config::add(globals::client_config, "camera.view_distance", camera::view_distance);
+
+    cam_position = EntityPos();
+    cam_euler_angles = glm::fvec3();
+    cam_direction = DIR_FORWARD;
+    cam_matrix = glm::identity<glm::fmat4x4>();
 }
 
 void camera::init_late(void)

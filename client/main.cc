@@ -126,7 +126,7 @@ static void on_opengl_message(GLenum source, GLenum type, GLuint id, GLenum seve
 
 void client::main(void)
 {
-    spdlog::info("client: game version: {}", VOXELIUS_SEMVER);
+    spdlog::info("client: game version: {}", GAME_VERSION_STRING);
 
     glfwSetErrorCallback(&on_glfw_error);
 
@@ -167,7 +167,7 @@ void client::main(void)
     Image image = {};
     GLFWimage icon = {};
 
-    if(Image::load_rgba(image, "32x32.png", false)) {
+    if(Image::load_rgba(image, "textures/32x32.png", false)) {
         icon.width = image.size.x;
         icon.height = image.size.y;
         icon.pixels = reinterpret_cast<unsigned char *>(image.pixels);

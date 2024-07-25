@@ -36,6 +36,7 @@ extern GLuint world_fbo_depth;
 extern ImFont *font_menu_title;
 extern ImFont *font_menu_button;
 
+extern int *ui_keybind_ptr;
 extern unsigned int ui_scale;
 extern unsigned int ui_screen;
 } // namespace globals

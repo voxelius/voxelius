@@ -12,6 +12,6 @@
 #define CMAKE_CXX_COMPILER_VERSION "19.39.33523.0"
 #define CMAKE_CXX_STANDARD 17
 
-#define VOXELIUS_SEMVER "0.0.1-indev"
+#define GAME_VERSION_STRING "Alpha 0.0.1"
 
 #endif /* SHARED_CMAKE_HH_IN */

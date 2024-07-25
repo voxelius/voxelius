@@ -6,6 +6,6 @@
 
 void server::main(void)
 {
-    spdlog::info("server: game version: {}", VOXELIUS_SEMVER);
+    spdlog::info("server: game version: {}", GAME_VERSION_STRING);
     std::terminate();
 }
