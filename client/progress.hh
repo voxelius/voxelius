@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#ifndef CLIENT_UI_PROGRESS_HH
-#define CLIENT_UI_PROGRESS_HH
+#ifndef CLIENT_PROGRESS_HH
+#define CLIENT_PROGRESS_HH
 #include <string>
 
-namespace ui::progress
+namespace progress
 {
 void init(void);
 void layout(void);
-} // ui::progress
+} // progress
 
-namespace ui::progress
+namespace progress
 {
 void set_title(const std::string &title);
 void set_subtitle(const std::string &subtitle);
-void set_progress(float progress);
-} // namespace ui::progress
+void set(float value);
+} // namespace progress
 
-#endif /* CLIENT_UI_PROGRESS_HH */
+#endif /* CLIENT_PROGRESS_HH */

@@ -4,21 +4,16 @@
 #include <client/event/glfw_key.hh>
 #include <client/event/language_set.hh>
 #include <client/globals.hh>
-#include <client/ui_main_menu.hh>
+#include <client/main_menu.hh>
 #include <client/ui_screen.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <imgui.h>
 #include <shared/cmake.hh>
 
-constexpr static ImGuiWindowFlags MENU_FLAGS = (
-    ImGuiWindowFlags_NoBackground       |
-    ImGuiWindowFlags_NoCollapse         |
-    ImGuiWindowFlags_NoMove             |
-    ImGuiWindowFlags_NoResize           |
-    ImGuiWindowFlags_NoSavedSettings    |
-    ImGuiWindowFlags_NoTitleBar
-);
+constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground |
+    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
+    ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar;
 
 static std::string str_debug_session = {};
 static std::string str_server_list = {};
@@ -29,13 +24,14 @@ static void on_glfw_key(const GlfwKeyEvent &event)
 {
     if((event.key == GLFW_KEY_ESCAPE) && (event.action == GLFW_PRESS)) {
         if(globals::registry.valid(globals::player)) {
-            switch(globals::ui_screen) {
-                case ui::SCREEN_NONE:
-                    globals::ui_screen = ui::SCREEN_MAIN_MENU;
-                    break;
-                case ui::SCREEN_MAIN_MENU:
-                    globals::ui_screen = ui::SCREEN_NONE;
-                    break;
+            if(globals::ui_screen == UI_SCREEN_NONE) {
+                globals::ui_screen = UI_MAIN_MENU;
+                return;
+            }
+
+            if(globals::ui_screen == UI_MAIN_MENU) {
+                globals::ui_screen = UI_SCREEN_NONE;
+                return;
             }
         }
     }
@@ -49,13 +45,13 @@ static void on_language_set(const LanguageSetEvent &event)
     str_quit = lang::resolve("main_menu.quit");
 }
 
-void ui::main_menu::init(void)
+void main_menu::init(void)
 {
     globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
     globals::dispatcher.sink<LanguageSetEvent>().connect<&on_language_set>();
 }
 
-void ui::main_menu::layout(void)
+void main_menu::layout(void)
 {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     const ImVec2 window_start = ImVec2(0.0f, viewport->Size.y * 0.10f);
@@ -64,7 +60,7 @@ void ui::main_menu::layout(void)
     ImGui::SetNextWindowPos(window_start);
     ImGui::SetNextWindowSize(window_size);
 
-    if(ImGui::Begin("###MainMenu", nullptr, MENU_FLAGS)) {
+    if(ImGui::Begin("###main_menu", nullptr, MENU_FLAGS)) {
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 2.0f * globals::ui_scale));
 
         ImGui::PushFont(globals::font_menu_title);
@@ -98,12 +94,12 @@ void ui::main_menu::layout(void)
 
         ImGui::SetCursorPosX(button_xpos);
         if(ImGui::Button(str_server_list.c_str(), ImVec2(button_width, 0.0f)))
-            globals::ui_screen = ui::SCREEN_SERVER_LIST;
+            globals::ui_screen = UI_SERVER_LIST;
         ImGui::Spacing();
 
         ImGui::SetCursorPosX(button_xpos);
         if(ImGui::Button(str_settings.c_str(), ImVec2(button_width, 0.0f)))
-            globals::ui_screen = ui::SCREEN_SETTINGS;
+            globals::ui_screen = UI_SETTINGS;
         ImGui::Spacing();
 
         ImGui::SetCursorPosX(button_xpos);

@@ -12,19 +12,19 @@
 #include <client/key_name.hh>
 #include <client/keyboard.hh>
 #include <client/lang.hh>
+#include <client/main_menu.hh>
 #include <client/mouse.hh>
+#include <client/progress.hh>
 #include <client/screenshot.hh>
-#include <client/ui_main_menu.hh>
-#include <client/ui_progress.hh>
+#include <client/server_list.hh>
+#include <client/settings.hh>
 #include <client/ui_screen.hh>
-#include <client/ui_server_list.hh>
-#include <client/ui_settings.hh>
 #include <client/voxel_anims.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
-#include <imgui.h>
 #include <imgui_impl_opengl3.h>
+#include <imgui.h>
 #include <shared/util/physfs.hh>
 #include <shared/config.hh>
 #include <shared/floatfix.hh>
@@ -126,6 +126,10 @@ void client_game::init(void)
     Config::add(globals::client_config, "game.pixel_size", client_game::pixel_size);
     Config::add(globals::client_config, "game.username", client_game::username);
 
+    settings::add_checkbox(0, settings::VIDEO_GUI, "game.menu_background", client_game::menu_background, true);
+    settings::add_slider(1, settings::VIDEO, "game.pixel_size", client_game::pixel_size, 1U, 4U, true);
+    settings::add_input(1, settings::GENERAL, "game.username", client_game::username, false, false);
+
     lang::init();
 
     key_name::init();
@@ -179,9 +183,9 @@ void client_game::init(void)
     style.Colors[ImGuiCol_Button]                   = ImVec4(0.00f, 0.00f, 0.00f, 0.75f);
     style.Colors[ImGuiCol_ButtonHovered]            = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
     style.Colors[ImGuiCol_ButtonActive]             = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);
-    style.Colors[ImGuiCol_Header]                   = ImVec4(0.39f, 0.39f, 0.39f, 1.00f);
-    style.Colors[ImGuiCol_HeaderHovered]            = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
-    style.Colors[ImGuiCol_HeaderActive]             = ImVec4(0.78f, 0.78f, 0.78f, 1.00f);
+    style.Colors[ImGuiCol_Header]                   = ImVec4(0.00f, 0.00f, 0.00f, 0.75f);
+    style.Colors[ImGuiCol_HeaderHovered]            = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
+    style.Colors[ImGuiCol_HeaderActive]             = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);
     style.Colors[ImGuiCol_Separator]                = ImVec4(0.49f, 0.49f, 0.49f, 0.50f);
     style.Colors[ImGuiCol_SeparatorHovered]         = ImVec4(0.56f, 0.56f, 0.56f, 0.78f);
     style.Colors[ImGuiCol_SeparatorActive]          = ImVec4(0.90f, 0.90f, 0.90f, 1.00f);
@@ -217,13 +221,14 @@ void client_game::init(void)
 
     background::init();
 
-    ui::main_menu::init();
-    ui::progress::init();
-    ui::server_list::init();
-    ui::settings::init();
+    main_menu::init();
+    progress::init();
+    server_list::init();
+    settings::init();
 
+    globals::ui_keybind_ptr = nullptr;
     globals::ui_scale = 0U;
-    globals::ui_screen = ui::SCREEN_MAIN_MENU;
+    globals::ui_screen = UI_MAIN_MENU;
 
     globals::dispatcher.sink<GlfwFramebufferSizeEvent>().connect<&on_glfw_framebuffer_size>();
 }
@@ -232,16 +237,7 @@ void client_game::init_late(void)
 {
     lang::init_late();
 
-    keyboard::init_late();
-    mouse::init_late();
-
-    screenshot::init_late();
-
-    camera::init_late();
-
-    ui::settings::link("game.menu_background", client_game::menu_background);
-    ui::settings::link("game.pixel_size", client_game::pixel_size);
-    ui::settings::link("game.username", client_game::username);
+    settings::init_late();
 }
 
 void client_game::deinit(void)
@@ -332,17 +328,17 @@ void client_game::layout(void)
         }
 
         switch(globals::ui_screen) {
-            case ui::SCREEN_MAIN_MENU:
-                ui::main_menu::layout();
+            case UI_MAIN_MENU:
+                main_menu::layout();
                 break;
-            case ui::SCREEN_SERVER_LIST:
-                ui::server_list::layout();
+            case UI_SERVER_LIST:
+                server_list::layout();
                 break;
-            case ui::SCREEN_SETTINGS:
-                ui::settings::layout();
+            case UI_SETTINGS:
+                settings::layout();
                 break;
-            case ui::SCREEN_PROGRESS:
-                ui::progress::layout();
+            case UI_PROGRESS:
+                progress::layout();
                 break;
         }
     }

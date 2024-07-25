@@ -2,28 +2,27 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/event/glfw_key.hh>
 #include <client/globals.hh>
+#include <client/server_list.hh>
 #include <client/ui_screen.hh>
-#include <client/ui_server_list.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <imgui.h>
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
     if((event.key == GLFW_KEY_ESCAPE) && (event.action == GLFW_PRESS)) {
-        switch(globals::ui_screen) {
-            case ui::SCREEN_SERVER_LIST:
-                globals::ui_screen = ui::SCREEN_MAIN_MENU;
-                break;
+        if(globals::ui_screen == UI_SERVER_LIST) {
+            globals::ui_screen = UI_MAIN_MENU;
+            return;
         }
     }
 }
 
-void ui::server_list::init(void)
+void server_list::init(void)
 {
     globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
 }
 
-void ui::server_list::layout(void)
+void server_list::layout(void)
 {
-    ImGui::ShowDemoWindow();
+    ImGui::ShowStyleEditor();
 }

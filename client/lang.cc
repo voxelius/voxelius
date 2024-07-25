@@ -3,6 +3,7 @@
 #include <client/event/language_set.hh>
 #include <client/globals.hh>
 #include <client/lang.hh>
+#include <client/settings.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <parson.h>
 #include <shared/util/physfs.hh>
@@ -29,6 +30,8 @@ static void send_event(LangIterator language)
 void lang::init(void)
 {
     Config::add(globals::client_config, "language", config_language);
+
+    settings::add_language_select(0, settings::GENERAL, "language");
 
     // Available languages are kept in a
     // special manifest file which consists

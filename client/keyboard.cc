@@ -3,7 +3,7 @@
 #include <client/event/glfw_key.hh>
 #include <client/globals.hh>
 #include <client/keyboard.hh>
-#include <client/ui_settings.hh>
+#include <client/settings.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -26,12 +26,12 @@ constexpr static KeyboardBits KB_RIGHT      = 0x0008;
 constexpr static KeyboardBits KB_UP         = 0x0010;
 constexpr static KeyboardBits KB_DOWN       = 0x0020;
 
-static int bind_move_forward    = GLFW_KEY_W;
-static int bind_move_back       = GLFW_KEY_S;
-static int bind_move_left       = GLFW_KEY_A;
-static int bind_move_right      = GLFW_KEY_D;
-static int bind_move_up         = GLFW_KEY_SPACE;
-static int bind_move_down       = GLFW_KEY_LEFT_SHIFT;
+static int key_forward  = GLFW_KEY_W;
+static int key_back     = GLFW_KEY_S;
+static int key_left     = GLFW_KEY_A;
+static int key_right    = GLFW_KEY_D;
+static int key_up       = GLFW_KEY_SPACE;
+static int key_down     = GLFW_KEY_LEFT_SHIFT;
 
 static KeyboardBits pressed_keys = KB_NULL;
 
@@ -50,32 +50,32 @@ static inline void update_key(KeyboardBits key_bit, int action)
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if(event.key == bind_move_forward) {
+    if(event.key == key_forward) {
         update_key(KB_FORWARD, event.action);
         return;
     }
 
-    if(event.key == bind_move_back) {
+    if(event.key == key_back) {
         update_key(KB_BACK, event.action);
         return;
     }
 
-    if(event.key == bind_move_left) {
+    if(event.key == key_left) {
         update_key(KB_LEFT, event.action);
         return;
     }
 
-    if(event.key == bind_move_right) {
+    if(event.key == key_right) {
         update_key(KB_RIGHT, event.action);
         return;
     }
 
-    if(event.key == bind_move_up) {
+    if(event.key == key_up) {
         update_key(KB_UP, event.action);
         return;
     }
 
-    if(event.key == bind_move_down) {
+    if(event.key == key_down) {
         update_key(KB_DOWN, event.action);
         return;
     }
@@ -83,24 +83,21 @@ static void on_glfw_key(const GlfwKeyEvent &event)
 
 void keyboard::init(void)
 {
-    Config::add(globals::client_config, "keyboard.move_forward", bind_move_forward);
-    Config::add(globals::client_config, "keyboard.move_back", bind_move_back);
-    Config::add(globals::client_config, "keyboard.move_left", bind_move_left);
-    Config::add(globals::client_config, "keyboard.move_right", bind_move_right);
-    Config::add(globals::client_config, "keyboard.move_up", bind_move_up);
-    Config::add(globals::client_config, "keyboard.move_down", bind_move_down);
+    Config::add(globals::client_config, "key.forward", key_forward);
+    Config::add(globals::client_config, "key.back", key_back);
+    Config::add(globals::client_config, "key.left", key_left);
+    Config::add(globals::client_config, "key.right", key_right);
+    Config::add(globals::client_config, "key.up", key_up);
+    Config::add(globals::client_config, "key.down", key_down);
+
+    settings::add_key_binding(1, settings::CONTROLS_KEYBOARD_MOVEMENT, "key.forward", key_forward);
+    settings::add_key_binding(2, settings::CONTROLS_KEYBOARD_MOVEMENT, "key.back", key_back);
+    settings::add_key_binding(3, settings::CONTROLS_KEYBOARD_MOVEMENT, "key.left", key_left);
+    settings::add_key_binding(4, settings::CONTROLS_KEYBOARD_MOVEMENT, "key.right", key_right);
+    settings::add_key_binding(5, settings::CONTROLS_KEYBOARD_MOVEMENT, "key.up", key_up);
+    settings::add_key_binding(6, settings::CONTROLS_KEYBOARD_MOVEMENT, "key.down", key_down);
 
     globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
-}
-
-void keyboard::init_late(void)
-{
-    ui::settings::link("keyboard.move_forward", bind_move_forward);
-    ui::settings::link("keyboard.move_back", bind_move_back);
-    ui::settings::link("keyboard.move_left", bind_move_left);
-    ui::settings::link("keyboard.move_right", bind_move_right);
-    ui::settings::link("keyboard.move_up", bind_move_up);
-    ui::settings::link("keyboard.move_down", bind_move_down);
 }
 
 void keyboard::update(void)

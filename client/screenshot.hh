@@ -6,11 +6,6 @@
 namespace screenshot
 {
 void init(void);
-void init_late(void);
-} // namespace screenshot
-
-namespace screenshot
-{
 void take(void);
 } // namespace screenshot
 

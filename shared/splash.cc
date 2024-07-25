@@ -12,7 +12,7 @@ static std::vector<std::string> titles = {};
 
 void splash::init(void)
 {
-    const std::string path = std::string("misc/splashes.txt");
+    const std::string path = std::string("texts/splashes.txt");
 
     std::string source = {};
 

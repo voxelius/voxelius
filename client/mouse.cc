@@ -3,7 +3,7 @@
 #include <client/event/glfw_cursor_pos.hh>
 #include <client/globals.hh>
 #include <client/mouse.hh>
-#include <client/ui_settings.hh>
+#include <client/settings.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
@@ -48,16 +48,13 @@ void mouse::init(void)
     Config::add(globals::client_config, "mouse.raw_input", mouse::raw_input);
     Config::add(globals::client_config, "mouse.sensitivity", mouse::sensitivity);
 
+    settings::add_checkbox(0, settings::CONTROLS_MOUSE, "mouse.raw_input", mouse::raw_input, true);
+    settings::add_slider(1, settings::CONTROLS_MOUSE, "mouse.sensitivity", mouse::sensitivity, 0.15f, 0.75f, true, "%.02f");
+
     previous_xpos = 0.5f * static_cast<float>(globals::width);
     previous_ypos = 0.5f * static_cast<float>(globals::height);
 
     globals::dispatcher.sink<GlfwCursorPosEvent>().connect<&on_glfw_cursor_pos>();
-}
-
-void mouse::init_late(void)
-{
-    ui::settings::link("mouse.raw_input", mouse::raw_input);
-    ui::settings::link("mouse.sensitivity", mouse::sensitivity);
 }
 
 void mouse::update_late(void)

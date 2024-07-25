@@ -3,7 +3,7 @@
 #include <client/event/glfw_key.hh>
 #include <client/globals.hh>
 #include <client/screenshot.hh>
-#include <client/ui_settings.hh>
+#include <client/settings.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <shared/util/epoch.hh>
 #include <shared/util/physfs.hh>
@@ -11,7 +11,7 @@
 #include <spdlog/fmt/fmt.h>
 #include <stb_image_write.h>
 
-static int screenshot_key = GLFW_KEY_F2;
+static int key_screenshot = GLFW_KEY_F2;
 
 static void png_write(void *context, void *data, int size)
 {
@@ -22,7 +22,7 @@ static void png_write(void *context, void *data, int size)
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
     if(!globals::ui_keybind_ptr) {    
-        if((event.key == screenshot_key) && (event.action == GLFW_PRESS)) {
+        if((event.key == key_screenshot) && (event.action == GLFW_PRESS)) {
             screenshot::take();
             return;
         }
@@ -31,14 +31,11 @@ static void on_glfw_key(const GlfwKeyEvent &event)
 
 void screenshot::init(void)
 {
-    Config::add(globals::client_config, "screenshot.key", screenshot_key);
+    Config::add(globals::client_config, "screenshot.key", key_screenshot);
     
-    globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
-}
+    settings::add_key_binding(0, settings::CONTROLS_KEYBOARD_MISC, "key.screenshot", key_screenshot);
 
-void screenshot::init_late(void)
-{
-    ui::settings::link("screenshot.key", screenshot_key);
+    globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
 }
 
 void screenshot::take(void)
