@@ -55,7 +55,9 @@ public:
 public:
     std::string title {};
     std::string tooltip {};
-    std::string title_label {};
+
+public:
+    std::string title_ui {};
 
 public:
     std::string slider_format {};
@@ -84,29 +86,31 @@ public:
 
 static std::unordered_map<std::string, SettingsValue> values = {};
 static std::vector<SettingsValue *> values_general = {};
-static std::vector<SettingsValue *> values_general_multiplayer = {};
-static std::vector<SettingsValue *> values_controls_keyboard = {};
+static std::vector<SettingsValue *> values_controls_keyboard_movement = {};
+static std::vector<SettingsValue *> values_controls_keyboard_gameplay = {};
+static std::vector<SettingsValue *> values_controls_keyboard_miscellaneous = {};
 static std::vector<SettingsValue *> values_controls_mouse = {};
 static std::vector<SettingsValue *> values_controls_gamepad = {};
-static std::vector<SettingsValue *> values_graphics_performance = {};
-static std::vector<SettingsValue *> values_graphics_ui = {};
+static std::vector<SettingsValue *> values_video = {};
+static std::vector<SettingsValue *> values_video_gui = {};
 static std::vector<SettingsValue *> values_sound = {};
 
-static std::string str_general = {};
-static std::string str_general_multiplayer = {};
-static std::string str_controls = {};
+static std::string str_general_title = {};
+static std::string str_controls_title = {};
 static std::string str_controls_keyboard = {};
+static std::string str_controls_keyboard_movement = {};
+static std::string str_controls_keyboard_gameplay = {};
+static std::string str_controls_keyboard_miscellaneous = {};
 static std::string str_controls_mouse = {};
 static std::string str_controls_gamepad = {};
-static std::string str_graphics = {};
-static std::string str_graphics_performance = {};
-static std::string str_graphics_ui = {};
-static std::string str_sound = {};
+static std::string str_video_title = {};
+static std::string str_video_gui = {};
+static std::string str_sound_title = {};
 
 void SettingsValue::layout_checkbox(const SettingsValue *value)
 {
     if(value->data_ptr) {
-        ImGui::Checkbox(value->title.c_str(), reinterpret_cast<bool *>(value->data_ptr));
+        ImGui::Checkbox(value->title_ui.c_str(), reinterpret_cast<bool *>(value->data_ptr));
         SettingsValue::layout_tooltip(value);
     }
 }
@@ -117,7 +121,7 @@ void SettingsValue::layout_float_slider(const SettingsValue *value)
         const char *v_format = value->slider_format.c_str();
         const float v_min = value->slider_limit.x;
         const float v_max = value->slider_limit.y;
-        ImGui::SliderFloat(value->title.c_str(), reinterpret_cast<float *>(value->data_ptr), v_min, v_max, v_format);
+        ImGui::SliderFloat(value->title_ui.c_str(), reinterpret_cast<float *>(value->data_ptr), v_min, v_max, v_format);
         SettingsValue::layout_tooltip(value);
     }
 }
@@ -125,7 +129,7 @@ void SettingsValue::layout_float_slider(const SettingsValue *value)
 void SettingsValue::layout_int_input(const SettingsValue *value)
 {
     if(value->data_ptr) {
-        ImGui::InputInt(value->title.c_str(), reinterpret_cast<int *>(value->data_ptr));
+        ImGui::InputInt(value->title_ui.c_str(), reinterpret_cast<int *>(value->data_ptr));
         SettingsValue::layout_tooltip(value);
     }
 }
@@ -135,7 +139,7 @@ void SettingsValue::layout_int_slider(const SettingsValue *value)
     if(value->data_ptr) {
         const int v_min = value->slider_limit.x;
         const int v_max = value->slider_limit.y;
-        ImGui::SliderInt(value->title.c_str(), reinterpret_cast<int *>(value->data_ptr), v_min, v_max);
+        ImGui::SliderInt(value->title_ui.c_str(), reinterpret_cast<int *>(value->data_ptr), v_min, v_max);
         SettingsValue::layout_tooltip(value);
     }
 }
@@ -144,7 +148,7 @@ void SettingsValue::layout_language(const SettingsValue *value)
 {
     const LangIterator current = lang::current();
 
-    if(ImGui::BeginCombo(value->title.c_str(), current->display.c_str())) {
+    if(ImGui::BeginCombo(value->title_ui.c_str(), current->display.c_str())) {
         for(LangIterator it = lang::cbegin(); it != lang::cend(); ++it) {
             if(ImGui::Selectable(it->display.c_str(), it == current)) {
                 lang::set(it);
@@ -164,7 +168,7 @@ void SettingsValue::layout_text_input(const SettingsValue *value)
         ImGuiInputTextFlags flags = 0;
         if(value->flags & VALUE_FLAG_NO_SPACE)
             flags |= ImGuiInputTextFlags_CharsNoBlank;
-        ImGui::InputText(value->title.c_str(), reinterpret_cast<std::string *>(value->data_ptr), flags);
+        ImGui::InputText(value->title_ui.c_str(), reinterpret_cast<std::string *>(value->data_ptr), flags);
         SettingsValue::layout_tooltip(value);
     }
 }
@@ -172,7 +176,7 @@ void SettingsValue::layout_text_input(const SettingsValue *value)
 void SettingsValue::layout_uint_input(const SettingsValue *value)
 {
     if(value->data_ptr) {
-        ImGui::InputScalar(value->title.c_str(), ImGuiDataType_U32, reinterpret_cast<unsigned int *>(value->data_ptr));
+        ImGui::InputScalar(value->title_ui.c_str(), ImGuiDataType_U32, reinterpret_cast<unsigned int *>(value->data_ptr));
         SettingsValue::layout_tooltip(value);
     }
 }
@@ -182,7 +186,7 @@ void SettingsValue::layout_uint_slider(const SettingsValue *value)
     if(value->data_ptr) {
         const unsigned int v_min = value->slider_limit.x;
         const unsigned int v_max = value->slider_limit.y;
-        ImGui::SliderScalar(value->title.c_str(), ImGuiDataType_U32, reinterpret_cast<unsigned int *>(value->data_ptr), &v_min, &v_max);
+        ImGui::SliderScalar(value->title_ui.c_str(), ImGuiDataType_U32, reinterpret_cast<unsigned int *>(value->data_ptr), &v_min, &v_max);
         SettingsValue::layout_tooltip(value);
     }
 }
@@ -197,10 +201,10 @@ void SettingsValue::layout_keybind(const SettingsValue *value)
             key_name = fmt::format("...###{}", value->data_ptr);
         else key_name = fmt::format("{}###{}", key_name::get(value_keyptr[0]), value->data_ptr);
 
-        if(ImGui::Button(key_name.c_str(), ImVec2(ImGui::GetWindowSize().x * 0.3f, 0.0f)))
+        if(ImGui::Button(key_name.c_str(), ImVec2(ImGui::GetWindowSize().x * 0.45f, 0.0f)))
             globals::ui_keybind_ptr = value_keyptr;
         ImGui::SameLine();
-        ImGui::TextUnformatted(value->title_label.c_str());
+        ImGui::TextUnformatted(value->title.c_str());
         SettingsValue::layout_tooltip(value);
     }
 }
@@ -286,9 +290,9 @@ bool SettingsValue::parse(const JSON_Object *object, const std::string &name, Se
 
 void SettingsValue::update_strings(const std::string &name, SettingsValue &value)
 {
-    value.title = lang::resolve_ui(fmt::format("settings.value.{}", name));
+    value.title = lang::resolve(fmt::format("settings.value.{}", name));
     value.tooltip = lang::resolve(fmt::format("settings.tooltip.{}", name));
-    value.title_label = lang::resolve(fmt::format("settings.value.{}", name));
+    value.title_ui = fmt::format("{}###settings.value.{}", value.title, name);
 }
 
 static void on_glfw_key(const GlfwKeyEvent &event)
@@ -318,19 +322,20 @@ static void on_language_set(const LanguageSetEvent &event)
         SettingsValue::update_strings(it.first, it.second);
     }
 
-    str_general = lang::resolve_ui("settings.general");
-    str_general_multiplayer = lang::resolve_ui("settings.general.multiplayer");
+    str_general_title = lang::resolve_ui("settings.general.title");
 
-    str_controls = lang::resolve_ui("settings.controls");
+    str_controls_title = lang::resolve_ui("settings.controls.title");
     str_controls_keyboard = lang::resolve_ui("settings.controls.keyboard");
+    str_controls_keyboard_movement = lang::resolve_ui("settings.controls.keyboard.movement");
+    str_controls_keyboard_gameplay = lang::resolve_ui("settings.controls.keyboard.gameplay");
+    str_controls_keyboard_miscellaneous = lang::resolve_ui("settings.controls.keyboard.miscellaneous");
     str_controls_mouse = lang::resolve_ui("settings.controls.mouse");
     str_controls_gamepad = lang::resolve_ui("settings.controls.gamepad");
 
-    str_graphics = lang::resolve_ui("settings.graphics");
-    str_graphics_performance = lang::resolve_ui("settings.graphics.performance");
-    str_graphics_ui = lang::resolve_ui("settings.graphics.ui");
+    str_video_title = lang::resolve_ui("settings.video.title");
+    str_video_gui = lang::resolve_ui("settings.video.gui");
 
-    str_sound = lang::resolve_ui("settings.sound");
+    str_sound_title = lang::resolve_ui("settings.sound.title");
 }
 
 static void layout_list(const std::vector<SettingsValue *> &values_vector)
@@ -446,13 +451,18 @@ void ui::settings::init(void)
             continue;
         }
 
-        if(!location.compare("general.multiplayer")) {
-            values_general_multiplayer.push_back(value_ptr);
+        if(!location.compare("controls.keyboard.movement")) {
+            values_controls_keyboard_movement.push_back(value_ptr);
             continue;
         }
-
-        if(!location.compare("controls.keyboard")) {
-            values_controls_keyboard.push_back(value_ptr);
+        
+        if(!location.compare("controls.keyboard.gameplay")) {
+            values_controls_keyboard_gameplay.push_back(value_ptr);
+            continue;
+        }
+        
+        if(!location.compare("controls.keyboard.miscellaneous")) {
+            values_controls_keyboard_miscellaneous.push_back(value_ptr);
             continue;
         }
 
@@ -466,13 +476,13 @@ void ui::settings::init(void)
             continue;
         }
 
-        if(!location.compare("graphics.performance")) {
-            values_graphics_performance.push_back(value_ptr);
+        if(!location.compare("video")) {
+            values_video.push_back(value_ptr);
             continue;
         }
 
-        if(!location.compare("graphics.ui")) {
-            values_graphics_ui.push_back(value_ptr);
+        if(!location.compare("video.gui")) {
+            values_video_gui.push_back(value_ptr);
             continue;
         }
 
@@ -506,28 +516,27 @@ void ui::settings::layout(void)
 
         if(ImGui::BeginTabBar("###settings.tabs", ImGuiTabBarFlags_FittingPolicyResizeDown)) {
             if(ImGui::TabItemButton("<<")) {
-                // Go back to the main menu
                 globals::ui_screen = ui::SCREEN_MAIN_MENU;
                 globals::ui_keybind_ptr = nullptr;
             }
 
-            if(ImGui::BeginTabItem(str_general.c_str())) {
+            if(ImGui::BeginTabItem(str_general_title.c_str())) {
                 globals::ui_keybind_ptr = nullptr;
-
-                if(ImGui::BeginChild("###settings.general.child")) {
+                if(ImGui::BeginChild("###settings.general.child"))
                     layout_list(values_general);
-                    ImGui::SeparatorText(str_general_multiplayer.c_str());
-                    layout_list(values_general_multiplayer);
-                }
-
                 ImGui::EndChild();
                 ImGui::EndTabItem();
             }
 
-            if(ImGui::BeginTabItem(str_controls.c_str())) {
+            if(ImGui::BeginTabItem(str_controls_title.c_str())) {
                 if(ImGui::BeginChild("###settings.controls.child")) {
                     ImGui::SeparatorText(str_controls_keyboard.c_str());
-                    layout_list(values_controls_keyboard);
+                    if(ImGui::CollapsingHeader(str_controls_keyboard_movement.c_str()))
+                        layout_list(values_controls_keyboard_movement);
+                    if(ImGui::CollapsingHeader(str_controls_keyboard_gameplay.c_str()))
+                        layout_list(values_controls_keyboard_gameplay);
+                    if(ImGui::CollapsingHeader(str_controls_keyboard_miscellaneous.c_str()))
+                        layout_list(values_controls_keyboard_miscellaneous);
                     ImGui::SeparatorText(str_controls_mouse.c_str());
                     layout_list(values_controls_mouse);
                     ImGui::SeparatorText(str_controls_gamepad.c_str());
@@ -538,21 +547,20 @@ void ui::settings::layout(void)
                 ImGui::EndTabItem();
             }
 
-            if(ImGui::BeginTabItem(str_graphics.c_str())) {
+            if(ImGui::BeginTabItem(str_video_title.c_str())) {
                 globals::ui_keybind_ptr = nullptr;
 
                 if(ImGui::BeginChild("###settings.graphics.child")) {
-                    ImGui::SeparatorText(str_graphics_performance.c_str());
-                    layout_list(values_graphics_performance);
-                    ImGui::SeparatorText(str_graphics_ui.c_str());
-                    layout_list(values_graphics_ui);
+                    layout_list(values_video);
+                    ImGui::SeparatorText(str_video_gui.c_str());
+                    layout_list(values_video_gui);
                 }
 
                 ImGui::EndChild();
                 ImGui::EndTabItem();
             }
 
-            if(ImGui::BeginTabItem(str_sound.c_str())) {
+            if(ImGui::BeginTabItem(str_sound_title.c_str())) {
                 globals::ui_keybind_ptr = nullptr;
 
                 if(ImGui::BeginChild("###settings.sound.child")) {
