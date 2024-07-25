@@ -47,10 +47,14 @@ static void generate(const ChunkPos &cpos)
     Chunk *chunk = world::find_or_create_chunk(cpos);
 
     for(std::size_t i = 0; i < CHUNK_VOLUME; ++i) {
-        const auto lpos = local_pos::from_index(i);
-        const auto vpos = chunk_pos::to_voxel(cpos, lpos);
+        const auto lpos = coord::to_local(i);
+        const auto vpos = coord::to_voxel(cpos, lpos);
         const auto voxel = voxel_at(vpos);
-        chunk->voxels.at(i) = voxel;
+
+        if(voxel != NULL_VOXEL) {
+            Chunk::set_voxel(chunk[0], voxel, i);
+            continue;
+        }
     }
 }
 
@@ -106,7 +110,7 @@ void debug_session::run(void)
     }
 
     Chunk *chunk = world::find_or_create_chunk({0, 1, 0});
-    chunk->voxels.fill(v_test);
+    Chunk::fill(chunk[0], v_test);
 
     spdlog::info("spawning local player");
     globals::player = globals::registry.create();
