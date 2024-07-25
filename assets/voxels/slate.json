@@ -1,0 +1,12 @@
+{
+  "default": {
+    "animated": false,
+    "blending": false,
+    "textures": {
+      "default": [
+        "textures/voxels/slate_01.png",
+        "textures/voxels/slate_02.png"
+      ]
+    }
+  }
+}
