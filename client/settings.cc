@@ -111,15 +111,14 @@ struct SettingValue_KeyBind final : public SettingValue {
 };
 
 static std::string str_general = {};
-static std::string str_controls = {};
-static std::string str_controls_keyboard = {};
-static std::string str_controls_keyboard_movement = {};
-static std::string str_controls_keyboard_gameplay = {};
-static std::string str_controls_keyboard_misc = {};
-static std::string str_controls_mouse = {};
-static std::string str_controls_gamepad = {};
-static std::string str_video_gui = {};
+static std::string str_keyboard = {};
+static std::string str_keyboard_movement = {};
+static std::string str_keyboard_gameplay = {};
+static std::string str_keyboard_misc = {};
+static std::string str_mouse = {};
+static std::string str_gamepad = {};
 static std::string str_video = {};
+static std::string str_video_gui = {};
 static std::string str_sound = {};
 
 static std::vector<SettingValue *> values_all = {};
@@ -129,7 +128,7 @@ void SettingValue::layout_tooltip(const SettingValue *value)
 {
     if(value->tooltip) {
         ImGui::SameLine();
-        ImGui::TextDisabled("[?]");
+        ImGui::TextDisabled("[ ? ]");
 
         if(ImGui::BeginItemTooltip()) {
             ImGui::PushTextWrapPos(ImGui::GetFontSize() * 16.0f);
@@ -246,18 +245,14 @@ static void on_language_set(const LanguageSetEvent &event)
     }
 
     str_general = lang::resolve_ui("settings.general");
-
-    str_controls = lang::resolve_ui("settings.controls");
-    str_controls_keyboard = lang::resolve_ui("settings.controls.keyboard");
-    str_controls_keyboard_movement = lang::resolve_ui("settings.controls.keyboard.movement");
-    str_controls_keyboard_gameplay = lang::resolve_ui("settings.controls.keyboard.gameplay");
-    str_controls_keyboard_misc = lang::resolve_ui("settings.controls.keyboard.miscellaneous");
-    str_controls_mouse = lang::resolve_ui("settings.controls.mouse");
-    str_controls_gamepad = lang::resolve_ui("settings.controls.gamepad");
-
+    str_keyboard = lang::resolve_ui("settings.keyboard");
+    str_keyboard_movement = lang::resolve_ui("settings.keyboard.movement");
+    str_keyboard_gameplay = lang::resolve_ui("settings.keyboard.gameplay");
+    str_keyboard_misc = lang::resolve_ui("settings.keyboard.misc");
+    str_mouse = lang::resolve_ui("settings.mouse");
+    str_gamepad = lang::resolve_ui("settings.gamepad");
     str_video = lang::resolve_ui("settings.video");
     str_video_gui = lang::resolve_ui("settings.video.gui");
-
     str_sound = lang::resolve_ui("settings.sound");
 }
 
@@ -294,6 +289,59 @@ static void layout_values(std::size_t location)
                 break;
         }
     }
+}
+
+static void layout_general(void)
+{
+    if(ImGui::BeginChild("###settings.general.child"))
+        layout_values(settings::GENERAL);
+    ImGui::EndChild();
+}
+
+static void layout_keyboard(void)
+{
+    if(ImGui::BeginChild("###settings.keyboard.child")) {
+        ImGui::SeparatorText(str_keyboard_movement.c_str());
+        layout_values(settings::KEYBOARD_MOVEMENT);
+        ImGui::SeparatorText(str_keyboard_gameplay.c_str());
+        layout_values(settings::KEYBOARD_GAMEPLAY);
+        ImGui::SeparatorText(str_keyboard_misc.c_str());
+        layout_values(settings::KEYBOARD_MISC);
+    }
+
+    ImGui::EndChild();
+}
+
+static void layout_mouse(void)
+{
+    if(ImGui::BeginChild("###settings.mouse.child"))
+        layout_values(settings::MOUSE);
+    ImGui::EndChild();
+}
+
+static void layout_gamepad(void)
+{
+    if(ImGui::BeginChild("###settings.gamepad.child"))
+        layout_values(settings::GAMEPAD);
+    ImGui::EndChild();
+}
+
+static void layout_video(void)
+{
+    if(ImGui::BeginChild("###settings.video.child")) {
+        layout_values(settings::VIDEO);
+        ImGui::SeparatorText(str_video_gui.c_str());
+        layout_values(settings::VIDEO_GUI);
+    }
+
+    ImGui::EndChild();
+}
+
+static void layout_sound(void)
+{
+    if(ImGui::BeginChild("###settings.sound.child"))
+        layout_values(settings::SOUND);
+    ImGui::EndChild();
 }
 
 void settings::init(void)
@@ -340,59 +388,36 @@ void settings::layout(void)
 
             if(ImGui::BeginTabItem(str_general.c_str())) {
                 globals::ui_keybind_ptr = nullptr;
-
-                if(ImGui::BeginChild("###settings.general.child")) {
-                    layout_values(settings::GENERAL);
-                }
-
-                ImGui::EndChild();
+                layout_general();
                 ImGui::EndTabItem();
             }
 
-            if(ImGui::BeginTabItem(str_controls.c_str())) {
-                if(ImGui::BeginChild("###settings.controls.child")) {
-                    ImGui::SeparatorText(str_controls_keyboard.c_str());
+            if(ImGui::BeginTabItem(str_keyboard.c_str())) {
+                layout_keyboard();
+                ImGui::EndTabItem();
+            }
 
-                    if(ImGui::CollapsingHeader(str_controls_keyboard_movement.c_str()))
-                        layout_values(settings::CONTROLS_KEYBOARD_MOVEMENT);
-                    if(ImGui::CollapsingHeader(str_controls_keyboard_gameplay.c_str()))
-                        layout_values(settings::CONTROLS_KEYBOARD_GAMEPLAY);
-                    if(ImGui::CollapsingHeader(str_controls_keyboard_misc.c_str()))
-                        layout_values(settings::CONTROLS_KEYBOARD_MISC);
+            if(ImGui::BeginTabItem(str_mouse.c_str())) {
+                globals::ui_keybind_ptr = nullptr;
+                layout_mouse();
+                ImGui::EndTabItem();
+            }
 
-                    ImGui::SeparatorText(str_controls_mouse.c_str());
-                    layout_values(settings::CONTROLS_MOUSE);
-
-                    ImGui::SeparatorText(str_controls_gamepad.c_str());
-                    layout_values(settings::CONTROLS_GAMEPAD);
-                }
-
-                ImGui::EndChild();
+            if(ImGui::BeginTabItem(str_gamepad.c_str())) {
+                globals::ui_keybind_ptr = nullptr;
+                layout_gamepad();
                 ImGui::EndTabItem();
             }
 
             if(ImGui::BeginTabItem(str_video.c_str())) {
                 globals::ui_keybind_ptr = nullptr;
-
-                if(ImGui::BeginChild("###settings.video.child")) {
-                    layout_values(settings::VIDEO);
-
-                    ImGui::SeparatorText(str_video_gui.c_str());
-                    layout_values(settings::VIDEO_GUI);
-                }
-
-                ImGui::EndChild();
+                layout_video();
                 ImGui::EndTabItem();
             }
 
             if(ImGui::BeginTabItem(str_sound.c_str())) {
                 globals::ui_keybind_ptr = nullptr;
-
-                if(ImGui::BeginChild("###settings.sound.child")) {
-                    layout_values(settings::SOUND);
-                }
-
-                ImGui::EndChild();
+                layout_sound();
                 ImGui::EndTabItem();
             }
 
