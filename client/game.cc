@@ -33,6 +33,7 @@
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
 
+bool client_game::vertical_sync = true;
 static bool menu_background = true;
 static unsigned int pixel_size = 4U;
 std::string client_game::username = "player";
@@ -58,7 +59,8 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
     glBindFramebuffer(GL_FRAMEBUFFER, globals::world_fbo);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, globals::world_fbo_color, 0);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, globals::world_fbo_depth);
-    
+
+#if !defined(_WIN32)
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         spdlog::critical("opengl: world framebuffer is incomplete");
         glDeleteRenderbuffers(1, &globals::world_fbo_depth);
@@ -66,6 +68,7 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
         glDeleteFramebuffers(1, &globals::world_fbo);
         std::terminate();
     }
+#endif
 
     constexpr float width_base = 320.0f;
     constexpr float height_base = 240.0f;
@@ -105,6 +108,10 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
             std::terminate();
         globals::font_menu_title = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 64.0f * scale, &font_config);
 
+        if(!util::read_bytes("fonts/AnonymousPro-Bold.ttf", fontbin))
+            std::terminate();
+        globals::font_debug = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 8.0f * scale, &font_config);
+
         if(!util::read_bytes("fonts/PTMono-Regular.ttf", fontbin))
             std::terminate();
         globals::font_menu_button = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 16.0f * scale, &font_config, ranges.Data);
@@ -127,10 +134,12 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
 
 void client_game::init(void)
 {
+    Config::add(globals::client_config, "game.vertical_sync", client_game::vertical_sync);
     Config::add(globals::client_config, "game.menu_background", menu_background);
     Config::add(globals::client_config, "game.pixel_size", pixel_size);
     Config::add(globals::client_config, "game.username", client_game::username);
 
+    settings::add_checkbox(5, settings::VIDEO, "game.vertical_sync", client_game::vertical_sync, false);
     settings::add_checkbox(0, settings::VIDEO_GUI, "game.menu_background", menu_background, true);
     settings::add_slider(1, settings::VIDEO, "game.pixel_size", pixel_size, 1U, 4U, true);
     settings::add_input(1, settings::GENERAL, "game.username", client_game::username, false, false);
@@ -290,6 +299,10 @@ void client_game::update(void)
 void client_game::update_late(void)
 {
     mouse::update_late();
+
+    if(client_game::vertical_sync)
+        glfwSwapInterval(1);
+    else glfwSwapInterval(0);
 }
 
 void client_game::render(void)
@@ -349,6 +362,7 @@ void client_game::layout(void)
                 break;
         }
     }
-
-    debug::layout();
+    else {
+        debug::layout();
+    }
 }

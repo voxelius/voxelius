@@ -242,6 +242,7 @@ void client::main(void)
         globals::frametime = static_cast<float>(globals::curtime - last_curtime) / 1000000.0f;
         globals::frametime_avg += globals::frametime;
         globals::frametime_avg *= 0.5f;
+        globals::num_triangles = 0;
 
         last_curtime = globals::curtime;
 

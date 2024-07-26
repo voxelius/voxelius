@@ -2,6 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_GLOBALS_HH
 #define CLIENT_GLOBALS_HH
+#include <cstddef>
 #include <cstdint>
 #include <glad/gl.h>
 #include <entt/entity/entity.hpp>
@@ -26,6 +27,7 @@ extern float frametime;
 extern float frametime_avg;
 extern std::uint64_t curtime;
 extern std::uint64_t framecount;
+extern std::size_t num_triangles;
 
 extern entt::entity player;
 
@@ -33,6 +35,7 @@ extern GLuint world_fbo;
 extern GLuint world_fbo_color;
 extern GLuint world_fbo_depth;
 
+extern ImFont *font_debug;
 extern ImFont *font_menu_title;
 extern ImFont *font_menu_button;
 
