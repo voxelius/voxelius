@@ -25,7 +25,7 @@
   "settings.value.key.back": "Move back",
   "settings.value.key.left": "Move left",
   "settings.value.key.right": "Move right",
-  "settings.value.key.up": "Move up (jump)",
+  "settings.value.key.up": "Move up",
   "settings.value.key.down": "Move down",
   "settings.value.key.screenshot": "Take a screenshot",
   "settings.value.mouse.raw_input": "Enable raw input",
