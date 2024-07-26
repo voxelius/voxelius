@@ -4,6 +4,8 @@
   "main_menu.server_list": "Connect to a Server",
   "main_menu.settings": "Settings",
 
+  "settings.checkbox.false": "OFF",
+  "settings.checkbox.true": "ON",
   "settings.general": "General",
   "settings.keyboard.gameplay": "Gameplay",
   "settings.keyboard.misc": "Miscellaneous",
@@ -16,10 +18,10 @@
 
   "settings.value.camera.vertical_fov": "FOV",
   "settings.value.camera.view_distance": "View distance",
-  "settings.value.game.menu_background": "Enable menu background",
+  "settings.value.game.menu_background": "Menu background",
   "settings.value.game.pixel_size": "Pixel size",
   "settings.value.game.username": "Username",
-  "settings.value.game.vertical_sync": "Vertical synchronization",
+  "settings.value.game.vertical_sync": "Vertical sync",
   "settings.value.key.back": "Move back",
   "settings.value.key.debug.toggle": "Debug - toggle info lines",
   "settings.value.key.debug.sequence": "Debug - sequence start",
@@ -32,7 +34,7 @@
   "settings.value.key.screenshot": "Take a screenshot",
   "settings.value.key.up": "Move up",
   "settings.value.language": "Language",
-  "settings.value.mouse.raw_input": "Enable raw input",
+  "settings.value.mouse.raw_input": "Raw input",
   "settings.value.mouse.sensitivity": "Sensitivity",
 
   "settings.tooltip.camera.vertical_fov": "Field Of View",
