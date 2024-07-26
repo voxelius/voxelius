@@ -104,13 +104,13 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
             std::terminate();
         io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 13.0f * scale, &font_config, ranges.Data);
 
+        if(!util::read_bytes("fonts/AnonymousPro-Bold.ttf", fontbin))
+            std::terminate();
+        globals::font_debug = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 6.0f * scale, &font_config);
+
         if(!util::read_bytes("fonts/din1451alt.ttf", fontbin))
             std::terminate();
         globals::font_menu_title = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 64.0f * scale, &font_config);
-
-        if(!util::read_bytes("fonts/AnonymousPro-Bold.ttf", fontbin))
-            std::terminate();
-        globals::font_debug = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 8.0f * scale, &font_config);
 
         if(!util::read_bytes("fonts/PTMono-Regular.ttf", fontbin))
             std::terminate();
