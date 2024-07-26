@@ -128,8 +128,6 @@ void debug_session::run(void)
     globals::registry.emplace<VelocityComponent>(globals::player);
 
     auto &head = globals::registry.emplace<HeadComponent>(globals::player);
-    head.offset = glm::dvec3{0.4, 1.4, 0.4};
-
     auto &transform = globals::registry.emplace<TransformComponent>(globals::player);
     transform.position.local.y += 16.0;
 

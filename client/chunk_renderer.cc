@@ -60,8 +60,10 @@ void chunk_renderer::init(void)
     setup_pipeline(quad_pipeline, "chunk_quad");
 
     const glm::fvec3 vertices[4] = {
-        glm::fvec3(0.0f, 0.0f, -1.0f), glm::fvec3(0.0f, 0.0f, 0.0f),
-        glm::fvec3(1.0f, 0.0f, -1.0f), glm::fvec3(1.0f, 0.0f, 0.0f)
+        glm::fvec3(1.0f, 0.0f, 1.0f),
+        glm::fvec3(1.0f, 0.0f, 0.0f),
+        glm::fvec3(0.0f, 0.0f, 1.0f),
+        glm::fvec3(0.0f, 0.0f, 0.0f),
     };
 
     glGenVertexArrays(1, &quad_vaobj);

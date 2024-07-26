@@ -19,8 +19,8 @@ constexpr static glm::fvec3 DIR_RIGHT           = glm::fvec3( 1.00f,  0.00f,  0.
 constexpr static glm::fvec3 DIR_DOWN            = glm::fvec3( 0.00f, -1.00f,  0.00f);
 constexpr static glm::fvec3 DIR_UP              = glm::fvec3( 0.00f,  1.00f,  0.00f);
 
-constexpr static glm::fvec3 WDIR_NORTH          = DIR_FORWARD;
-constexpr static glm::fvec3 WDIR_SOUTH          = DIR_BACK;
+constexpr static glm::fvec3 WDIR_NORTH          = DIR_BACK;
+constexpr static glm::fvec3 WDIR_SOUTH          = DIR_FORWARD;
 constexpr static glm::fvec3 WDIR_EAST           = DIR_RIGHT;
 constexpr static glm::fvec3 WDIR_WEST           = DIR_LEFT;
 constexpr static glm::fvec3 WDIR_DOWN           = DIR_DOWN;
