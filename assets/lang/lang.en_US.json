@@ -28,6 +28,10 @@
   "settings.value.key.up": "Move up",
   "settings.value.key.down": "Move down",
   "settings.value.key.screenshot": "Take a screenshot",
+  "settings.value.key.debug.line_toggle": "Debug: toggle info lines",
+  "settings.value.key.debug.sequence_start": "Debug: sequence start",
+  "settings.value.key.debug.sequence_wireframe": "Debug: toggle wireframe",
+  "settings.value.key.debug.sequence_language": "Debug: reload language",
   "settings.value.mouse.raw_input": "Enable raw input",
   "settings.value.mouse.sensitivity": "Sensitivity",
 

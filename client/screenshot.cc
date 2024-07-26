@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/event/glfw_key.hh>
+#include <client/debug.hh>
 #include <client/globals.hh>
 #include <client/screenshot.hh>
 #include <client/settings.hh>
@@ -21,7 +22,7 @@ static void png_write(void *context, void *data, int size)
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if(!globals::ui_keybind_ptr) {    
+    if(globals::ui_keybind_ptr && !debug::active_sequence) {    
         if((event.key == key_screenshot) && (event.action == GLFW_PRESS)) {
             screenshot::take();
             return;

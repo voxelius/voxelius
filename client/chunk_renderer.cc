@@ -7,6 +7,7 @@
 #include <client/atlas.hh>
 #include <client/camera.hh>
 #include <client/chunk_renderer.hh>
+#include <client/debug.hh>
 #include <client/globals.hh>
 #include <client/quad_vertex.hh>
 #include <client/voxel_anims.hh>
@@ -14,8 +15,6 @@
 #include <entt/entity/registry.hpp>
 #include <shared/entity/chunk.hh>
 #include <spdlog/spdlog.h>
-
-#include <GLFW/glfw3.h> // FIXME
 
 struct Pipeline final {
     GLuint program {};
@@ -94,7 +93,7 @@ void chunk_renderer::render(void)
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    if(glfwGetMouseButton(globals::window, GLFW_MOUSE_BUTTON_4)) // FIXME
+    if(debug::render_wireframe)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 

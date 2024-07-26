@@ -13,9 +13,7 @@
 #include <glm/vec2.hpp>
 #include <imgui.h>
 #include <imgui_stdlib.h>
-#include <parson.h>
 #include <shared/util/cxmath.hh>
-#include <shared/util/physfs.hh>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
 #include <unordered_map>
