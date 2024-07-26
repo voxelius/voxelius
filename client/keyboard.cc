@@ -90,12 +90,12 @@ void keyboard::init(void)
     Config::add(globals::client_config, "key.up", key_up);
     Config::add(globals::client_config, "key.down", key_down);
 
-    settings::add_key_binding(1, settings::CONTROLS_KEYBOARD_MOVEMENT, "key.forward", key_forward);
-    settings::add_key_binding(2, settings::CONTROLS_KEYBOARD_MOVEMENT, "key.back", key_back);
-    settings::add_key_binding(3, settings::CONTROLS_KEYBOARD_MOVEMENT, "key.left", key_left);
-    settings::add_key_binding(4, settings::CONTROLS_KEYBOARD_MOVEMENT, "key.right", key_right);
-    settings::add_key_binding(5, settings::CONTROLS_KEYBOARD_MOVEMENT, "key.up", key_up);
-    settings::add_key_binding(6, settings::CONTROLS_KEYBOARD_MOVEMENT, "key.down", key_down);
+    settings::add_key_binding(1, settings::KEYBOARD_MOVEMENT, "key.forward", key_forward);
+    settings::add_key_binding(2, settings::KEYBOARD_MOVEMENT, "key.back", key_back);
+    settings::add_key_binding(3, settings::KEYBOARD_MOVEMENT, "key.left", key_left);
+    settings::add_key_binding(4, settings::KEYBOARD_MOVEMENT, "key.right", key_right);
+    settings::add_key_binding(5, settings::KEYBOARD_MOVEMENT, "key.up", key_up);
+    settings::add_key_binding(6, settings::KEYBOARD_MOVEMENT, "key.down", key_down);
 
     globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
 }

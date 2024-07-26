@@ -33,7 +33,7 @@ void screenshot::init(void)
 {
     Config::add(globals::client_config, "screenshot.key", key_screenshot);
     
-    settings::add_key_binding(0, settings::CONTROLS_KEYBOARD_MISC, "key.screenshot", key_screenshot);
+    settings::add_key_binding(0, settings::KEYBOARD_MISC, "key.screenshot", key_screenshot);
 
     globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
 }

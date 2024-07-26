@@ -7,16 +7,16 @@
 
 namespace settings
 {
-constexpr static std::size_t GENERAL                    = 0x0000;
-constexpr static std::size_t CONTROLS_KEYBOARD_MOVEMENT = 0x0001;
-constexpr static std::size_t CONTROLS_KEYBOARD_GAMEPLAY = 0x0002;
-constexpr static std::size_t CONTROLS_KEYBOARD_MISC     = 0x0003;
-constexpr static std::size_t CONTROLS_MOUSE             = 0x0004;
-constexpr static std::size_t CONTROLS_GAMEPAD           = 0x0005;
-constexpr static std::size_t VIDEO                      = 0x0006;
-constexpr static std::size_t VIDEO_GUI                  = 0x0007;
-constexpr static std::size_t SOUND                      = 0x0008;
-constexpr static std::size_t NUM_LOCATIONS              = 0x0009;
+constexpr static std::size_t GENERAL            = 0x0000;
+constexpr static std::size_t KEYBOARD_MOVEMENT  = 0x0001;
+constexpr static std::size_t KEYBOARD_GAMEPLAY  = 0x0002;
+constexpr static std::size_t KEYBOARD_MISC      = 0x0003;
+constexpr static std::size_t MOUSE              = 0x0004;
+constexpr static std::size_t GAMEPAD            = 0x0005;
+constexpr static std::size_t VIDEO              = 0x0006;
+constexpr static std::size_t VIDEO_GUI          = 0x0007;
+constexpr static std::size_t SOUND              = 0x0008;
+constexpr static std::size_t NUM_LOCATIONS      = 0x0009;
 } // namespace settings
 
 namespace settings
