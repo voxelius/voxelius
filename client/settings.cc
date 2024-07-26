@@ -19,9 +19,7 @@
 #include <unordered_map>
 #include <vector>
 
-constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground |
-    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-    ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar;
+constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
 
 enum class SettingValueType {
     Checkbox        = 0x0000,

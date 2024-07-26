@@ -7,9 +7,7 @@
 #include <imgui.h>
 #include <imgui_stdlib.h>
 
-constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground |
-    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-    ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar;
+constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
 
 static std::string str_title = {};
 static std::string str_subtitle = {};

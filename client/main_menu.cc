@@ -11,9 +11,7 @@
 #include <imgui.h>
 #include <shared/cmake.hh>
 
-constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground |
-    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
-    ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoTitleBar;
+constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
 
 static std::string str_debug_session = {};
 static std::string str_server_list = {};

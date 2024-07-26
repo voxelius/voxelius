@@ -134,6 +134,8 @@ void chunk_renderer::render(void)
             glVertexAttribIPointer(1, 2, GL_UNSIGNED_INT, sizeof(QuadVertex), nullptr);
             
             glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, mesh.quad[plane_id].size);
+            
+            globals::num_triangles += 2 * mesh.quad[plane_id].size;
         }
     }
 }

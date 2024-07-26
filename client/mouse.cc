@@ -49,7 +49,7 @@ void mouse::init(void)
     Config::add(globals::client_config, "mouse.sensitivity", sensitivity);
 
     settings::add_checkbox(1, settings::MOUSE, "mouse.raw_input", raw_input, true);
-    settings::add_slider(0, settings::MOUSE, "mouse.sensitivity", sensitivity, 0.15f, 0.75f, true, "%.02f");
+    settings::add_slider(0, settings::MOUSE, "mouse.sensitivity", sensitivity, 0.05f, 0.50f, true, "%.02f");
 
     previous_xpos = 0.5f * static_cast<float>(globals::width);
     previous_ypos = 0.5f * static_cast<float>(globals::height);

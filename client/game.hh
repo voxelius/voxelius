@@ -6,6 +6,7 @@
 
 namespace client_game
 {
+extern bool vertical_sync;
 extern std::string username;
 } // namespace client_game
 
