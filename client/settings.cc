@@ -34,24 +34,32 @@ enum class SettingValueType {
 };
 
 struct SettingValue {
+public:
     static void layout_tooltip(const SettingValue *value);
+    static void layout_label(const SettingValue *value);
     virtual ~SettingValue(void) = default;
-    SettingValueType type {};
-    std::string str_title_noui {};
-    std::string str_title_ui {};
+    SettingValueType value_type {};
     std::string str_tooltip {};
+    std::string str_title {};
+    int sorting_priority {};
+    bool has_tooltip {};
     std::string name {};
-    int priority {};
-    bool tooltip {};
+};
+
+struct SettingValueWID : public SettingValue {
+    virtual ~SettingValueWID(void) = default;
+    std::string wid {};
 };
 
 struct SettingValue_Checkbox final : public SettingValue {
+    static void refresh_wids(SettingValue_Checkbox *value);
     static void layout(const SettingValue_Checkbox *value);
     virtual ~SettingValue_Checkbox(void) = default;
+    std::string wid[2] {};
     bool *value_ptr {};
 };
 
-struct SettingValue_FloatSlider final : public SettingValue {
+struct SettingValue_FloatSlider final : public SettingValueWID {
     static void layout(const SettingValue_FloatSlider *value);
     virtual ~SettingValue_FloatSlider(void) = default;
     std::string format {};
@@ -60,13 +68,13 @@ struct SettingValue_FloatSlider final : public SettingValue {
     float value_max {};
 };
 
-struct SettingValue_IntInput final : public SettingValue {
+struct SettingValue_IntInput final : public SettingValueWID {
     static void layout(const SettingValue_IntInput *value);
     virtual ~SettingValue_IntInput(void) = default;
     int *value_ptr {};
 };
 
-struct SettingValue_IntSlider final : public SettingValue {
+struct SettingValue_IntSlider final : public SettingValueWID {
     static void layout(const SettingValue_IntSlider *value);
     virtual ~SettingValue_IntSlider(void) = default;
     int *value_ptr {};
@@ -74,25 +82,25 @@ struct SettingValue_IntSlider final : public SettingValue {
     int value_max {};
 };
 
-struct SettingValue_LanguageSelect final : public SettingValue {
+struct SettingValue_LanguageSelect final : public SettingValueWID {
     static void layout(const SettingValue_LanguageSelect *value);
     virtual ~SettingValue_LanguageSelect(void) = default;
 };
 
-struct SettingValue_TextInput final : public SettingValue {
+struct SettingValue_TextInput final : public SettingValueWID {
     static void layout(const SettingValue_TextInput *value);
     virtual ~SettingValue_TextInput(void) = default;
     ImGuiInputTextFlags flags {};
     std::string *value_ptr {};
 };
 
-struct SettingValue_UintInput final : public SettingValue {
+struct SettingValue_UintInput final : public SettingValueWID {
     static void layout(const SettingValue_UintInput *value);
     virtual ~SettingValue_UintInput(void) = default;
     unsigned int *value_ptr {};
 };
 
-struct SettingValue_UintSlider final : public SettingValue {
+struct SettingValue_UintSlider final : public SettingValueWID {
     static void layout(const SettingValue_UintSlider *value);
     virtual ~SettingValue_UintSlider(void) = default;
     unsigned int *value_ptr {};
@@ -102,10 +110,14 @@ struct SettingValue_UintSlider final : public SettingValue {
 
 struct SettingValue_KeyBind final : public SettingValue {
     static void layout(const SettingValue_KeyBind *value);
+    static void refresh_wids(SettingValue_KeyBind *value);
     virtual ~SettingValue_KeyBind(void) = default;
+    std::string wid[2] {};
     int *value_ptr {};
 };
 
+static std::string str_checkbox_true = {};
+static std::string str_checkbox_false = {};
 static std::string str_general = {};
 static std::string str_keyboard = {};
 static std::string str_keyboard_movement = {};
@@ -121,7 +133,7 @@ static std::vector<SettingValue *> values[settings::NUM_LOCATIONS] = {};
 
 void SettingValue::layout_tooltip(const SettingValue *value)
 {
-    if(value->tooltip) {
+    if(value->has_tooltip) {
         ImGui::SameLine();
         ImGui::TextDisabled("[ ? ]");
 
@@ -134,27 +146,45 @@ void SettingValue::layout_tooltip(const SettingValue *value)
     }
 }
 
+void SettingValue::layout_label(const SettingValue *value)
+{
+    ImGui::SameLine();
+    ImGui::TextUnformatted(value->str_title.c_str());
+}
+
+void SettingValue_Checkbox::refresh_wids(SettingValue_Checkbox *value)
+{
+    value->wid[0] = fmt::format("{}###{}", str_checkbox_false, static_cast<void *>(value));
+    value->wid[1] = fmt::format("{}###{}", str_checkbox_true, static_cast<void *>(value));    
+}
+
 void SettingValue_Checkbox::layout(const SettingValue_Checkbox *value)
 {
-    ImGui::Checkbox(value->str_title_ui.c_str(), value->value_ptr);
+    const std::string &wid = value->value_ptr[0] ? value->wid[1] : value->wid[0];
+    if(ImGui::Button(wid.c_str(), ImVec2(ImGui::CalcItemWidth(), 0.0f)))
+        value->value_ptr[0] = !value->value_ptr[0];
+    SettingValue::layout_label(value);
     SettingValue::layout_tooltip(value);
 }
 
 void SettingValue_FloatSlider::layout(const SettingValue_FloatSlider *value)
 {
-    ImGui::SliderFloat(value->str_title_ui.c_str(), value->value_ptr, value->value_min, value->value_max, value->format.c_str());
+    ImGui::SliderFloat(value->wid.c_str(), value->value_ptr, value->value_min, value->value_max, value->format.c_str());
+    SettingValue::layout_label(value);
     SettingValue::layout_tooltip(value);
 }
 
 void SettingValue_IntInput::layout(const SettingValue_IntInput *value)
 {
-    ImGui::InputInt(value->str_title_ui.c_str(), value->value_ptr);
+    ImGui::InputInt(value->wid.c_str(), value->value_ptr);
+    SettingValue::layout_label(value);
     SettingValue::layout_tooltip(value);
 }
 
 void SettingValue_IntSlider::layout(const SettingValue_IntSlider *value)
 {
-    ImGui::SliderInt(value->str_title_ui.c_str(), value->value_ptr, value->value_min, value->value_max);
+    ImGui::SliderInt(value->wid.c_str(), value->value_ptr, value->value_min, value->value_max);
+    SettingValue::layout_label(value);
     SettingValue::layout_tooltip(value);
 }
 
@@ -162,7 +192,7 @@ void SettingValue_LanguageSelect::layout(const SettingValue_LanguageSelect *valu
 {
     const LangIterator current = lang::current();
 
-    if(ImGui::BeginCombo(value->str_title_ui.c_str(), current->display.c_str())) {
+    if(ImGui::BeginCombo(value->wid.c_str(), current->display.c_str())) {
         for(LangIterator it = lang::cbegin(); it != lang::cend(); ++it) {
             if(ImGui::Selectable(it->display.c_str(), it == current)) {
                 lang::set(it);
@@ -173,41 +203,55 @@ void SettingValue_LanguageSelect::layout(const SettingValue_LanguageSelect *valu
         ImGui::EndCombo();
     }
 
+    SettingValue::layout_label(value);
     SettingValue::layout_tooltip(value);
 }
 
 void SettingValue_TextInput::layout(const SettingValue_TextInput *value)
 {
-    ImGui::InputText(value->str_title_ui.c_str(), value->value_ptr, value->flags);
+    ImGui::InputText(value->wid.c_str(), value->value_ptr, value->flags);
+    SettingValue::layout_label(value);
     SettingValue::layout_tooltip(value);
 }
 
 void SettingValue_UintInput::layout(const SettingValue_UintInput *value)
 {
-    ImGui::InputScalar(value->str_title_ui.c_str(), ImGuiDataType_U32, value->value_ptr);
+    ImGui::InputScalar(value->wid.c_str(), ImGuiDataType_U32, value->value_ptr);
+    SettingValue::layout_label(value);
     SettingValue::layout_tooltip(value);
 }
 
 void SettingValue_UintSlider::layout(const SettingValue_UintSlider *value)
 {
-    ImGui::SliderScalar(value->str_title_ui.c_str(), ImGuiDataType_U32, value->value_ptr, &value->value_min, &value->value_max);
+    ImGui::SliderScalar(value->wid.c_str(), ImGuiDataType_U32, value->value_ptr, &value->value_min, &value->value_max);
+    SettingValue::layout_label(value);
     SettingValue::layout_tooltip(value);
 }
 
 void SettingValue_KeyBind::layout(const SettingValue_KeyBind *value)
 {
-    std::string label = {};
-
-    if(globals::ui_keybind_ptr == value->value_ptr)
-        label = fmt::format("...###{}", static_cast<const void *>(value->value_ptr));
-    else label = fmt::format("{}###{}", key_name::get(value->value_ptr[0]), static_cast<const void *>(value->value_ptr));
-
-    if(ImGui::Button(label.c_str(), ImVec2(ImGui::GetWindowSize().x * 0.25f, 0.0f)))
+    const bool is_active = (globals::ui_keybind_ptr == value->value_ptr);
+    const std::string &wid = is_active ? value->wid[0] : value->wid[1];
+    if(ImGui::Button(wid.c_str(), ImVec2(ImGui::CalcItemWidth() * 0.75f, 0.0f)))
         globals::ui_keybind_ptr = value->value_ptr;
-    ImGui::SameLine();
-    ImGui::TextUnformatted(value->str_title_noui.c_str());
-
+    SettingValue::layout_label(value);
     SettingValue::layout_tooltip(value);
+}
+
+void SettingValue_KeyBind::refresh_wids(SettingValue_KeyBind *value)
+{
+    value->wid[0] = fmt::format("...###{}", static_cast<void *>(value));
+    value->wid[1] = fmt::format("{}###{}", key_name::get(value->value_ptr[0]), static_cast<void *>(value));
+}
+
+static void refresh_key_bind_wids(void)
+{
+    for(SettingValue *value : values_all) {
+        if(value->value_type == SettingValueType::KeyBind) {
+            SettingValue_KeyBind::refresh_wids(static_cast<SettingValue_KeyBind *>(value));
+            continue;
+        }
+    }
 }
 
 static void on_glfw_key(const GlfwKeyEvent &event)
@@ -221,6 +265,9 @@ static void on_glfw_key(const GlfwKeyEvent &event)
             
             globals::ui_keybind_ptr[0] = event.key;
             globals::ui_keybind_ptr = nullptr;
+
+            refresh_key_bind_wids();
+
             return;
         }
         
@@ -233,12 +280,8 @@ static void on_glfw_key(const GlfwKeyEvent &event)
 
 static void on_language_set(const LanguageSetEvent &event)
 {
-    for(SettingValue *value : values_all) {
-        value->str_title_noui = lang::resolve(fmt::format("settings.value.{}", value->name));
-        value->str_title_ui = lang::resolve_ui(fmt::format("settings.value.{}", value->name));
-        value->str_tooltip = lang::resolve(fmt::format("settings.tooltip.{}", value->name));
-    }
-
+    str_checkbox_false = lang::resolve("settings.checkbox.false");
+    str_checkbox_true = lang::resolve("settings.checkbox.true");
     str_general = lang::resolve_ui("settings.general");
     str_keyboard = lang::resolve_ui("settings.keyboard");
     str_keyboard_movement = lang::resolve_ui("settings.keyboard.movement");
@@ -248,12 +291,21 @@ static void on_language_set(const LanguageSetEvent &event)
     str_video = lang::resolve_ui("settings.video");
     str_video_gui = lang::resolve_ui("settings.video.gui");
     str_sound = lang::resolve_ui("settings.sound");
+
+    for(SettingValue *value : values_all) {
+        if(value->value_type == SettingValueType::Checkbox)
+            SettingValue_Checkbox::refresh_wids(static_cast<SettingValue_Checkbox *>(value));
+        value->str_title = lang::resolve(fmt::format("settings.value.{}", value->name));
+        value->str_tooltip = lang::resolve(fmt::format("settings.tooltip.{}", value->name));
+    }
 }
 
 static void layout_values(std::size_t location)
 {
+    ImGui::PushItemWidth(ImGui::CalcItemWidth() * 0.80f);
+
     for(const SettingValue *value : values[location]) {
-        switch(value->type) {
+        switch(value->value_type) {
             case SettingValueType::Checkbox:
                 SettingValue_Checkbox::layout(static_cast<const SettingValue_Checkbox *>(value));
                 break;
@@ -283,6 +335,8 @@ static void layout_values(std::size_t location)
                 break;
         }
     }
+
+    ImGui::PopItemWidth();
 }
 
 static void layout_general(void)
@@ -340,15 +394,15 @@ void settings::init(void)
 void settings::init_late(void)
 {
     for(std::size_t location = 0; location < settings::NUM_LOCATIONS; ++location) {
-        std::sort(values[location].begin(), values[location].end(), [](SettingValue *a, SettingValue *b) {
-            return a->priority < b->priority;
+        std::sort(values[location].begin(), values[location].end(), [](const SettingValue *a, const SettingValue *b) {
+            return a->sorting_priority < b->sorting_priority;
         });
     }
 }
 
 void settings::deinit(void)
 {
-    for(SettingValue *value : values_all)
+    for(const SettingValue *value : values_all)
         delete value;
     for(std::size_t location = 0; location < settings::NUM_LOCATIONS; ++location)
         values[location].clear();
@@ -358,8 +412,8 @@ void settings::deinit(void)
 void settings::layout(void)
 {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
-    const ImVec2 window_start = ImVec2(viewport->Size.x * 0.10f, viewport->Size.y * 0.10f);
-    const ImVec2 window_size = ImVec2(viewport->Size.x * 0.80f, viewport->Size.y * 0.80f);
+    const ImVec2 window_start = ImVec2(viewport->Size.x * 0.05f, viewport->Size.y * 0.05f);
+    const ImVec2 window_size = ImVec2(viewport->Size.x * 0.90f, viewport->Size.y * 0.90f);
 
     ImGui::SetNextWindowPos(window_start);
     ImGui::SetNextWindowSize(window_size);
@@ -414,11 +468,13 @@ void settings::layout(void)
 void settings::add_checkbox(int priority, std::size_t location, const std::string &name, bool &vref, bool tooltip)
 {
     SettingValue_Checkbox *value = new SettingValue_Checkbox();
-    value->type = SettingValueType::Checkbox;
-    value->tooltip = tooltip;
+    value->value_type = SettingValueType::Checkbox;
+    value->sorting_priority = priority;
+    value->has_tooltip = tooltip;
     value->value_ptr = &vref;
-    value->priority = priority;
     value->name = name;
+
+    SettingValue_Checkbox::refresh_wids(value);
 
     values[location].push_back(value);
     values_all.push_back(value);
@@ -427,11 +483,13 @@ void settings::add_checkbox(int priority, std::size_t location, const std::strin
 void settings::add_input(int priority, std::size_t location, const std::string &name, int &vref, bool tooltip)
 {
     SettingValue_IntInput *value = new SettingValue_IntInput();
-    value->type = SettingValueType::IntInput;
-    value->tooltip = tooltip;
+    value->value_type = SettingValueType::IntInput;
+    value->sorting_priority = priority;
+    value->has_tooltip = tooltip;
     value->value_ptr = &vref;
-    value->priority = priority;
     value->name = name;
+
+    value->wid = fmt::format("###{}", static_cast<void *>(value));
 
     values[location].push_back(value);
     values_all.push_back(value);
@@ -440,11 +498,13 @@ void settings::add_input(int priority, std::size_t location, const std::string &
 void settings::add_input(int priority, std::size_t location, const std::string &name, std::string &vref, bool tooltip, bool allow_whitespace)
 {
     SettingValue_TextInput *value = new SettingValue_TextInput();
-    value->type = SettingValueType::TextInput;
-    value->tooltip = tooltip;
+    value->value_type = SettingValueType::TextInput;
+    value->sorting_priority = priority;
+    value->has_tooltip = tooltip;
     value->value_ptr = &vref;
-    value->priority = priority;
     value->name = name;
+
+    value->wid = fmt::format("###{}", static_cast<void *>(value));
 
     if(!allow_whitespace)
         value->flags |= ImGuiInputTextFlags_CharsNoBlank;
@@ -458,11 +518,13 @@ void settings::add_input(int priority, std::size_t location, const std::string &
 void settings::add_input(int priority, std::size_t location, const std::string &name, unsigned int &vref, bool tooltip)
 {
     SettingValue_UintInput *value = new SettingValue_UintInput();
-    value->type = SettingValueType::UintInput;
-    value->tooltip = tooltip;
+    value->value_type = SettingValueType::UintInput;
+    value->sorting_priority = priority;
+    value->has_tooltip = tooltip;
     value->value_ptr = &vref;
-    value->priority = priority;
     value->name = name;
+
+    value->wid = fmt::format("###{}", static_cast<void *>(value));
 
     values[location].push_back(value);
     values_all.push_back(value);
@@ -471,10 +533,12 @@ void settings::add_input(int priority, std::size_t location, const std::string &
 void settings::add_key_binding(int priority, std::size_t location, const std::string &name, int &vref)
 {
     SettingValue_KeyBind *value = new SettingValue_KeyBind();
-    value->type = SettingValueType::KeyBind;
+    value->value_type = SettingValueType::KeyBind;
+    value->sorting_priority = priority;
     value->value_ptr = &vref;
-    value->priority = priority;
     value->name = name;
+
+    SettingValue_KeyBind::refresh_wids(value);
 
     values[location].push_back(value);
     values_all.push_back(value);
@@ -483,9 +547,11 @@ void settings::add_key_binding(int priority, std::size_t location, const std::st
 void settings::add_language_select(int priority, std::size_t location, const std::string &name)
 {
     SettingValue_LanguageSelect *value = new SettingValue_LanguageSelect();
-    value->type = SettingValueType::LanguageSelect;
-    value->priority = priority;
+    value->value_type = SettingValueType::LanguageSelect;
+    value->sorting_priority = priority;
     value->name = name;
+
+    value->wid = fmt::format("###{}", static_cast<void *>(value));
 
     values[location].push_back(value);
     values_all.push_back(value);
@@ -494,13 +560,15 @@ void settings::add_language_select(int priority, std::size_t location, const std
 void settings::add_slider(int priority, std::size_t location, const std::string &name, float &vref, float min, float max, bool tooltip, const char *format)
 {
     SettingValue_FloatSlider *value = new SettingValue_FloatSlider();
-    value->type = SettingValueType::FloatSlider;
-    value->tooltip = tooltip;
+    value->value_type = SettingValueType::FloatSlider;
+    value->sorting_priority = priority;
+    value->has_tooltip = tooltip;
     value->value_ptr = &vref;
     value->value_min = min;
     value->value_max = max;
-    value->priority = priority;
     value->name = name;
+
+    value->wid = fmt::format("###{}", static_cast<void *>(value));
 
     if(format)
         value->format = std::string(format);
@@ -513,13 +581,15 @@ void settings::add_slider(int priority, std::size_t location, const std::string 
 void settings::add_slider(int priority, std::size_t location, const std::string &name, int &vref, int min, int max, bool tooltip)
 {
     SettingValue_IntSlider *value = new SettingValue_IntSlider();
-    value->type = SettingValueType::IntSlider;
-    value->tooltip = tooltip;
+    value->value_type = SettingValueType::IntSlider;
+    value->sorting_priority = priority;
+    value->has_tooltip = tooltip;
     value->value_ptr = &vref;
     value->value_min = min;
     value->value_max = max;
-    value->priority = priority;
     value->name = name;
+
+    value->wid = fmt::format("###{}", static_cast<void *>(value));
 
     values[location].push_back(value);
     values_all.push_back(value);
@@ -528,13 +598,15 @@ void settings::add_slider(int priority, std::size_t location, const std::string 
 void settings::add_slider(int priority, std::size_t location, const std::string &name, unsigned int &vref, unsigned int min, unsigned int max, bool tooltip)
 {
     SettingValue_UintSlider *value = new SettingValue_UintSlider();
-    value->type = SettingValueType::UintSlider;
-    value->tooltip = tooltip;
+    value->value_type = SettingValueType::UintSlider;
+    value->sorting_priority = priority;
+    value->has_tooltip = tooltip;
     value->value_ptr = &vref;
     value->value_min = min;
     value->value_max = max;
-    value->priority = priority;
     value->name = name;
+
+    value->wid = fmt::format("###{}", static_cast<void *>(value));
 
     values[location].push_back(value);
     values_all.push_back(value);
