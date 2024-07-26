@@ -82,9 +82,9 @@ constexpr static inline LocalPos coord::to_local(const VoxelPos &vpos)
 constexpr static inline LocalPos coord::to_local(const EntityPos &epos)
 {
     LocalPos result = {};
-    result.x = static_cast<LocalPos::value_type>(epos.local.x);
-    result.y = static_cast<LocalPos::value_type>(epos.local.y);
-    result.z = static_cast<LocalPos::value_type>(epos.local.z);
+    result.x = util::floor<LocalPos::value_type>(epos.local.x);
+    result.y = util::floor<LocalPos::value_type>(epos.local.y);
+    result.z = util::floor<LocalPos::value_type>(epos.local.z);
     return result;
 }
 

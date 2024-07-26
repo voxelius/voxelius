@@ -39,13 +39,13 @@ void main(void)
     gl_Position.z *= quad_scale.y;
 
     if(quad_facing == FACING_NORTH) {
-        gl_Position.xyz = vec3(gl_Position.x, gl_Position.z + 1.0, -1.0);
-        frag_TexCoord.xy = vec2(1.0 - vert_Position.x, vert_Position.z + 1.0);
+        gl_Position.xyz = vec3(gl_Position.x, 1.0 - gl_Position.z, 1.0);
+        frag_TexCoord.xy = vec2(vert_Position.x, 1.0 - vert_Position.z);
         frag_Shade = 0.8;
     }
     else if(quad_facing == FACING_SOUTH) {
-        gl_Position.xyz = vec3(gl_Position.x, -gl_Position.z, 0.0);
-        frag_TexCoord.xy = vec2(vert_Position.x, -vert_Position.z);
+        gl_Position.xyz = vec3(gl_Position.x, gl_Position.z, 0.0);
+        frag_TexCoord.xy = vec2(1.0 - vert_Position.x, vert_Position.z);
         frag_Shade = 0.8;
     }
     else if(quad_facing == FACING_EAST) {
@@ -60,12 +60,12 @@ void main(void)
     }
     else if(quad_facing == FACING_UP) {
         gl_Position.xyz = vec3(gl_Position.x, 1.0, gl_Position.z);
-        frag_TexCoord.xy = vec2(vert_Position.x, -vert_Position.z);
+        frag_TexCoord.xy = vec2(1.0 - vert_Position.x, vert_Position.z);
         frag_Shade = 1.0;
     }
     else if(quad_facing == FACING_DOWN) {
-        gl_Position.xyz = vec3(gl_Position.x, 0.0, -1.0 - gl_Position.z);
-        frag_TexCoord.xy = vec2(vert_Position.x, -vert_Position.z);
+        gl_Position.xyz = vec3(gl_Position.x, 0.0, 1.0 - gl_Position.z);
+        frag_TexCoord.xy = vec2(1.0 - vert_Position.x, vert_Position.z);
         frag_Shade = 0.4;
     }
     else {

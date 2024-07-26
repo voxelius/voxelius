@@ -159,7 +159,7 @@ void client_game::init(void)
 
     chunk_mesher::init();
     chunk_renderer::init();
-
+    
     ImGuiStyle &style = ImGui::GetStyle();
 
     // Rounding on elements looks cool but I am
