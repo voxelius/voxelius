@@ -22,7 +22,7 @@ static void png_write(void *context, void *data, int size)
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if(globals::ui_keybind_ptr && !debug::active_sequence) {    
+    if(!globals::ui_keybind_ptr && !debug::active_sequence) {    
         if((event.key == key_screenshot) && (event.action == GLFW_PRESS)) {
             screenshot::take();
             return;
