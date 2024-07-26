@@ -28,6 +28,10 @@
   "settings.value.key.up": "Двигаться вверх",
   "settings.value.key.down": "Двигаться вниз",
   "settings.value.key.screenshot": "Снимок экрана",
+  "settings.value.key.debug.line_toggle": "Debug: отображение информации",
+  "settings.value.key.debug.sequence_start": "Debug: начало комбинации",
+  "settings.value.key.debug.sequence_wireframe": "Debug: отрисовка линиями",
+  "settings.value.key.debug.sequence_language": "Debug: обновить перевод",
   "settings.value.mouse.raw_input": "Необработанный ввод",
   "settings.value.mouse.sensitivity": "Чувствительность",
 

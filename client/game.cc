@@ -7,6 +7,7 @@
 #include <client/chunk_mesher.hh>
 #include <client/chunk_renderer.hh>
 #include <client/chunk_vis.hh>
+#include <client/debug.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
 #include <client/key_name.hh>
@@ -66,9 +67,13 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
         std::terminate();
     }
 
-    const float height_base = 240.0f;
+    constexpr float width_base = 320.0f;
+    constexpr float height_base = 240.0f;
+    const float width_float = event.width;
     const float height_float = event.height;
-    const unsigned int scale = util::max(1U, util::floor<unsigned int>(height_float / height_base));
+    const unsigned int wscale = util::max(1U, util::floor<unsigned int>(width_float / width_base));
+    const unsigned int hscale = util::max(1U, util::floor<unsigned int>(height_float / height_base));
+    const unsigned int scale = util::min(wscale, hscale);
 
     if(globals::ui_scale != scale) {
         ImGuiIO &io = ImGui::GetIO();
@@ -219,6 +224,8 @@ void client_game::init(void)
     // so there's simply no point for an INI file.
     ImGui::GetIO().IniFilename = nullptr;
 
+    debug::init();
+
     background::init();
 
     main_menu::init();
@@ -342,4 +349,6 @@ void client_game::layout(void)
                 break;
         }
     }
+
+    debug::layout();
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/event/glfw_key.hh>
+#include <client/debug.hh>
 #include <client/globals.hh>
 #include <client/keyboard.hh>
 #include <client/settings.hh>
@@ -50,34 +51,36 @@ static inline void update_key(KeyboardBits key_bit, int action)
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if(event.key == key_forward) {
-        update_key(KB_FORWARD, event.action);
-        return;
-    }
+    if(!debug::active_sequence) {
+        if(event.key == key_forward) {
+            update_key(KB_FORWARD, event.action);
+            return;
+        }
 
-    if(event.key == key_back) {
-        update_key(KB_BACK, event.action);
-        return;
-    }
+        if(event.key == key_back) {
+            update_key(KB_BACK, event.action);
+            return;
+        }
 
-    if(event.key == key_left) {
-        update_key(KB_LEFT, event.action);
-        return;
-    }
+        if(event.key == key_left) {
+            update_key(KB_LEFT, event.action);
+            return;
+        }
 
-    if(event.key == key_right) {
-        update_key(KB_RIGHT, event.action);
-        return;
-    }
+        if(event.key == key_right) {
+            update_key(KB_RIGHT, event.action);
+            return;
+        }
 
-    if(event.key == key_up) {
-        update_key(KB_UP, event.action);
-        return;
-    }
+        if(event.key == key_up) {
+            update_key(KB_UP, event.action);
+            return;
+        }
 
-    if(event.key == key_down) {
-        update_key(KB_DOWN, event.action);
-        return;
+        if(event.key == key_down) {
+            update_key(KB_DOWN, event.action);
+            return;
+        }
     }
 }
 
