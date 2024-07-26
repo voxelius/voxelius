@@ -104,9 +104,9 @@ void debug::layout(void)
             const float ui_frametime = 1000.0f * globals::frametime_avg;
   
             if(client_game::vertical_sync)
-                ImGui::Text("%.0f FPS [%.0f ms] [VSYNC]", ui_framerate, ui_frametime);
-            else ImGui::Text("%.0f FPS [%.0f ms]", ui_framerate, ui_frametime);
-            
+                ImGui::Text("%.02f FPS [%.02f ms] [VSYNC]", ui_framerate, ui_frametime);
+            else ImGui::Text("%.02f FPS [%.02f ms]", ui_framerate, ui_frametime);
+
             ImGui::Text("World triangles: %zu", globals::num_triangles);
             ImGui::Text("GL_VERSION: %s", gl_version.c_str());
             ImGui::Text("GL_RENDERER: %s", gl_renderer.c_str());
