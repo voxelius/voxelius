@@ -6,8 +6,6 @@
 
 namespace client_game
 {
-extern bool menu_background;
-extern unsigned int pixel_size;
 extern std::string username;
 } // namespace client_game
 

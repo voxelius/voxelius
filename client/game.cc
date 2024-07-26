@@ -32,8 +32,8 @@
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
 
-bool client_game::menu_background = true;
-unsigned int client_game::pixel_size = 4U;
+static bool menu_background = true;
+static unsigned int pixel_size = 4U;
 std::string client_game::username = "player";
 
 static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
@@ -122,12 +122,12 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
 
 void client_game::init(void)
 {
-    Config::add(globals::client_config, "game.menu_background", client_game::menu_background);
-    Config::add(globals::client_config, "game.pixel_size", client_game::pixel_size);
+    Config::add(globals::client_config, "game.menu_background", menu_background);
+    Config::add(globals::client_config, "game.pixel_size", pixel_size);
     Config::add(globals::client_config, "game.username", client_game::username);
 
-    settings::add_checkbox(0, settings::VIDEO_GUI, "game.menu_background", client_game::menu_background, true);
-    settings::add_slider(1, settings::VIDEO, "game.pixel_size", client_game::pixel_size, 1U, 4U, true);
+    settings::add_checkbox(0, settings::VIDEO_GUI, "game.menu_background", menu_background, true);
+    settings::add_slider(1, settings::VIDEO, "game.pixel_size", pixel_size, 1U, 4U, true);
     settings::add_input(1, settings::GENERAL, "game.username", client_game::username, false, false);
 
     lang::init();
@@ -287,8 +287,8 @@ void client_game::update_late(void)
 
 void client_game::render(void)
 {
-    const int scaled_width = globals::width / util::max(1U, client_game::pixel_size);
-    const int scaled_height = globals::height / util::max(1U, client_game::pixel_size);
+    const int scaled_width = globals::width / util::max(1U, pixel_size);
+    const int scaled_height = globals::height / util::max(1U, pixel_size);
 
     glViewport(0, 0, scaled_width, scaled_height);
     glClearColor(0.529f, 0.808f, 0.922f, 1.000f);
@@ -310,7 +310,7 @@ void client_game::render(void)
 void client_game::layout(void)
 {
     if(!globals::registry.valid(globals::player)) {
-        if(client_game::menu_background) {
+        if(menu_background) {
             background::render();
         }
         else {

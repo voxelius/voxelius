@@ -116,7 +116,6 @@ static std::string str_keyboard_movement = {};
 static std::string str_keyboard_gameplay = {};
 static std::string str_keyboard_misc = {};
 static std::string str_mouse = {};
-static std::string str_gamepad = {};
 static std::string str_video = {};
 static std::string str_video_gui = {};
 static std::string str_sound = {};
@@ -250,7 +249,6 @@ static void on_language_set(const LanguageSetEvent &event)
     str_keyboard_gameplay = lang::resolve_ui("settings.keyboard.gameplay");
     str_keyboard_misc = lang::resolve_ui("settings.keyboard.misc");
     str_mouse = lang::resolve_ui("settings.mouse");
-    str_gamepad = lang::resolve_ui("settings.gamepad");
     str_video = lang::resolve_ui("settings.video");
     str_video_gui = lang::resolve_ui("settings.video.gui");
     str_sound = lang::resolve_ui("settings.sound");
@@ -316,13 +314,6 @@ static void layout_mouse(void)
 {
     if(ImGui::BeginChild("###settings.mouse.child"))
         layout_values(settings::MOUSE);
-    ImGui::EndChild();
-}
-
-static void layout_gamepad(void)
-{
-    if(ImGui::BeginChild("###settings.gamepad.child"))
-        layout_values(settings::GAMEPAD);
     ImGui::EndChild();
 }
 
@@ -400,12 +391,6 @@ void settings::layout(void)
             if(ImGui::BeginTabItem(str_mouse.c_str())) {
                 globals::ui_keybind_ptr = nullptr;
                 layout_mouse();
-                ImGui::EndTabItem();
-            }
-
-            if(ImGui::BeginTabItem(str_gamepad.c_str())) {
-                globals::ui_keybind_ptr = nullptr;
-                layout_gamepad();
                 ImGui::EndTabItem();
             }
 

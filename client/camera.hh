@@ -6,7 +6,6 @@
 
 namespace camera
 {
-extern float vertical_fov;
 extern unsigned int view_distance;
 } // namespace camera
 

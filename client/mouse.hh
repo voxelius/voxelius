@@ -5,12 +5,6 @@
 
 namespace mouse
 {
-extern bool raw_input;
-extern float sensitivity;
-} // namespace mouse
-
-namespace mouse
-{
 void init(void);
 void update_late(void);
 } // namespace mouse
