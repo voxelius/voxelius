@@ -25,13 +25,21 @@ static Voxel v_test = {};
 // Surface level for world generation
 constexpr static const int64_t SURFACE = 0;
 
+static float octanoise(const glm::fvec2 &vec, int count)
+{
+    float result = 0.0f;
+    for(int i = 1; i <= count; ++i)
+        result += glm::simplex(vec * static_cast<float>(i)) / static_cast<float>(i);
+    return result;
+}
+
 // This is VERY SLOW
 // UNDONE/TODO: move this into server worldgen code
 static Voxel voxel_at(const VoxelPos &vpos)
 {
     static std::uniform_int_distribution intdist = std::uniform_int_distribution(-2, +2);
     static std::mt19937_64 twister = std::mt19937_64(std::random_device()());
-    int64_t surf = SURFACE + 5.0f * glm::simplex(glm::fvec2(vpos.x, vpos.z) / 32.0f);
+    int64_t surf = SURFACE + 5.0f * octanoise(glm::fvec2(vpos.x, vpos.z) / 32.0f, 4);
     if(vpos.y <= surf - 32 + intdist(twister))
         return v_slate;
     if(vpos.y <= surf - 8 + intdist(twister))
