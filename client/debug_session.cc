@@ -39,7 +39,7 @@ static Voxel voxel_at(const VoxelPos &vpos)
 {
     static std::uniform_int_distribution intdist = std::uniform_int_distribution(-2, +2);
     static std::mt19937_64 twister = std::mt19937_64(std::random_device()());
-    int64_t surf = SURFACE + 5.0f * octanoise(glm::fvec2(vpos.x, vpos.z) / 32.0f, 4);
+    int64_t surf = SURFACE + 3.0f * octanoise(glm::fvec2(vpos.x, vpos.z) / 64.0f, 4);
     if(vpos.y <= surf - 32 + intdist(twister))
         return v_slate;
     if(vpos.y <= surf - 8 + intdist(twister))
@@ -114,12 +114,12 @@ void debug_session::run(void)
 
 
 #if 1
-    constexpr int WSIZE = 8;
-    constexpr int WHEIGHT = 4;
+    constexpr int WSIZE = 32;
+    constexpr int WHEIGHT = 1;
     unsigned int w = 0U;
     for(int x = -WSIZE; x < WSIZE; x += 1)
     for(int z = -WSIZE; z < WSIZE; z += 1)
-    for(int y = -WHEIGHT; y < WHEIGHT; y += 1) {
+    for(int y = -1; y < WHEIGHT; y += 1) {
         generate({x, y, z});
         //Chunk *chunk = world::find_or_create_chunk({x, y, z});
         //chunk->voxels.fill(v_stone);

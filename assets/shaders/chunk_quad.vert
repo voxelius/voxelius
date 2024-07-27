@@ -74,10 +74,13 @@ void main(void)
         frag_Shade = 1.0;
     }
     
-    // FIXME: add variant shaders
     frag_TexCoord.z = floor(float(quad_toffset + u_Timings.z % quad_tframes) + 0.5);
 
     gl_Position.w = 1.0;
     gl_Position.xyz += quad_offset + u_WorldPosition;
     gl_Position = u_CameraMatrix * gl_Position;
+    gl_Position.y += gl_Position.z * gl_Position.z / 384.0;
+    gl_Position.y += gl_Position.x * gl_Position.x / 384.0;
+    //gl_Position.y += 2.0 * sqrt(gl_Position.z + 2.0);
+    //gl_Position.y += 2.0 * sqrt(gl_Position.x + 2.0);
 }
