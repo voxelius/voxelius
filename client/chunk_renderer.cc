@@ -7,7 +7,7 @@
 #include <client/atlas.hh>
 #include <client/camera.hh>
 #include <client/chunk_renderer.hh>
-#include <client/debug.hh>
+#include <client/debug_keys.hh>
 #include <client/globals.hh>
 #include <client/quad_vertex.hh>
 #include <client/voxel_anims.hh>
@@ -95,7 +95,7 @@ void chunk_renderer::render(void)
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
 
-    if(debug::render_wireframe)
+    if(debug_keys::render_wireframe)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 

@@ -2,32 +2,20 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/event/glfw_key.hh>
 #include <client/camera.hh>
-#include <client/debug.hh>
+#include <client/debug_screen.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
-#include <client/lang.hh>
-#include <client/settings.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
 #include <glad/gl.h>
 #include <imgui.h>
 #include <imgui_stdlib.h>
-#include <shared/cmake.hh>
-#include <shared/config.hh>
 #include <spdlog/spdlog.h>
 
 constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav;
 
-bool debug::active_sequence = false;
-bool debug::render_wireframe = false;
-
-static int key_toggle = GLFW_KEY_F3;
-static int key_sequence = GLFW_KEY_F4;
-static int key_wireframe = GLFW_KEY_Z;
-static int key_language = GLFW_KEY_L;
-
-static bool debug_gui_enable = false;
+static bool debug_screen_enable = false;
 
 static std::string gl_version = {};
 static std::string gl_renderer = {};
@@ -35,65 +23,28 @@ static std::string gl_renderer = {};
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
     if(globals::ui_keybind_ptr) {
-        // The setting menu requested a
-        // key to be pressed; we must not
-        // interfere with it's businiess
+        // The UI keybind subsystem has the authority
+        // over debug screen and it hogs the input keys
         return;
     }
 
-    if(event.action == GLFW_PRESS) {
-        if(event.key == key_toggle) {
-            debug_gui_enable = !debug_gui_enable;
-            return;
-        }
-        
-        if(event.key == key_sequence) {
-            debug::active_sequence = true;
-            return;
-        }
-        
-        if(debug::active_sequence) {
-            if(event.key == key_wireframe) {
-                debug::render_wireframe = !debug::render_wireframe;
-                return;
-            }
-            
-            if(event.key == key_language) {
-                lang::set(lang::current());
-                return;
-            }
-        }
-    }
-
-    if(event.action == GLFW_RELEASE) {
-        if(event.key == key_sequence) {
-            debug::active_sequence = false;
-            return;
-        }
+    if((event.key == GLFW_KEY_F3) && (event.action == GLFW_PRESS)) {
+        debug_screen_enable = !debug_screen_enable;
+        return;
     }
 }
 
-void debug::init(void)
+void debug_screen::init(void)
 {
-    Config::add(globals::client_config, "key.debug.toggle", key_toggle);
-    Config::add(globals::client_config, "key.debug.sequence", key_sequence);
-    Config::add(globals::client_config, "key.debug.wireframe", key_wireframe);
-    Config::add(globals::client_config, "key.debug.language", key_language);
-
-    settings::add_key_binding(1, settings::KEYBOARD_MISC, "key.debug.toggle", key_toggle);
-    settings::add_key_binding(2, settings::KEYBOARD_MISC, "key.debug.sequence", key_sequence);
-    settings::add_key_binding(3, settings::KEYBOARD_MISC, "key.debug.wireframe", key_wireframe);
-    settings::add_key_binding(3, settings::KEYBOARD_MISC, "key.debug.language", key_language);
-
     gl_version = reinterpret_cast<const char *>(glGetString(GL_VERSION));
     gl_renderer = reinterpret_cast<const char *>(glGetString(GL_RENDERER));
 
     globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
 }
 
-void debug::layout(void)
+void debug_screen::layout(void)
 {
-    if(debug_gui_enable) {
+    if(debug_screen_enable) {
         const ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowSize(viewport->Size);
         ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
@@ -121,5 +72,4 @@ void debug::layout(void)
         ImGui::PopFont();
         ImGui::End();
     }
-    
 }

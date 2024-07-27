@@ -7,7 +7,10 @@
 #include <client/chunk_mesher.hh>
 #include <client/chunk_renderer.hh>
 #include <client/chunk_vis.hh>
-#include <client/debug.hh>
+#include <client/debug_draw.hh>
+#include <client/debug_keys.hh>
+#include <client/debug_screen.hh>
+#include <client/debug_session.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
 #include <client/key_name.hh>
@@ -233,7 +236,10 @@ void client_game::init(void)
     // so there's simply no point for an INI file.
     ImGui::GetIO().IniFilename = nullptr;
 
-    debug::init();
+    debug_draw::init();
+    debug_keys::init();
+    debug_screen::init();
+    debug_session::init();
 
     background::init();
 
@@ -241,6 +247,8 @@ void client_game::init(void)
     progress::init();
     server_list::init();
     settings::init();
+
+    debug_session::init();
 
     globals::ui_keybind_ptr = nullptr;
     globals::ui_scale = 0U;
@@ -266,6 +274,8 @@ void client_game::deinit(void)
 
     background::deinit();
 
+    debug_draw::deinit();
+
     chunk_renderer::deinit();
     chunk_mesher::deinit();
 
@@ -281,6 +291,8 @@ void client_game::deinit(void)
 
 void client_game::update(void)
 {
+    debug_session::update();
+
     keyboard::update();
 
     inertial::update(globals::frametime);
@@ -305,6 +317,8 @@ void client_game::update_late(void)
     else glfwSwapInterval(0);
 }
 
+#include <shared/ray_dda.hh>
+
 void client_game::render(void)
 {
     const int scaled_width = globals::width / util::max(1U, pixel_size);
@@ -316,6 +330,23 @@ void client_game::render(void)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     chunk_renderer::render();
+
+    RayDDA ray = {};
+    RayDDA::setup(ray, camera::position(), camera::direction());
+
+    do {
+        if(RayDDA::step(ray) != NULL_VOXEL) {
+            glm::fvec3 endpos = camera::direction();
+            endpos.x *= ray.distance;
+            endpos.y *= ray.distance;
+            endpos.z *= ray.distance;
+
+            debug_draw::begin(true);
+            debug_draw::cube(coord::to_entity(ray.vpos), glm::fvec3(1.0f), 2.0f, COLOR_LIGHT_GRAY);
+
+            break;
+        }
+    } while(ray.distance < 16.0f);
 
     glViewport(0, 0, globals::width, globals::height);
     glClearColor(0.000f, 0.000f, 0.000f, 1.000f);
@@ -363,6 +394,7 @@ void client_game::layout(void)
         }
     }
     else {
-        debug::layout();
+        // Draw only when the menu is hidden
+        debug_screen::layout();
     }
 }

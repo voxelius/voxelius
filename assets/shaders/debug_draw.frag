@@ -2,14 +2,14 @@
 // Copyright (C) 2024, Voxelius Contributors
 #version 330 core
 
-in vec3 vs_TexCoord;
-in float vs_Shade;
-
 out vec4 frag_Target;
 
-uniform sampler2DArray u_Textures;
+uniform vec3 u_Color;
 
 void main(void)
 {
-    frag_Target = vs_Shade * texture(u_Textures, vs_TexCoord);
+    frag_Target.x = u_Color.x;
+    frag_Target.y = u_Color.y;
+    frag_Target.z = u_Color.z;
+    frag_Target.w = 1.0;
 }

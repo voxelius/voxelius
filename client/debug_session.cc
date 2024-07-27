@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
+#include <client/event/glfw_mouse_button.hh>
 #include <client/atlas.hh>
+#include <client/camera.hh>
 #include <client/debug_session.hh>
 #include <client/globals.hh>
 #include <entt/entity/registry.hpp>
+#include <entt/signal/dispatcher.hpp>
 #include <glm/gtc/noise.hpp>
 #include <shared/entity/head.hh>
 #include <shared/entity/health.hh>
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
+#include <shared/ray_dda.hh>
 #include <shared/vdef.hh>
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
@@ -63,10 +67,48 @@ static void generate(const ChunkPos &cpos)
         const auto voxel = voxel_at(vpos);
 
         if(voxel != NULL_VOXEL) {
-            Chunk::set_voxel(chunk[0], voxel, i);
+            chunk->voxels[i] = voxel;
             continue;
         }
     }
+}
+
+static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
+{
+    if(!globals::ui_screen && globals::registry.valid(globals::player)) {
+        if(event.action == GLFW_PRESS) {
+            const EntityPos &position = camera::position();
+            const glm::fvec3 &direction = camera::direction();
+
+            RayDDA ray = {};
+            RayDDA::setup(ray, position, direction);
+
+            do {
+                if(RayDDA::step(ray) != NULL_VOXEL) {
+                    if(event.button == GLFW_MOUSE_BUTTON_LEFT) {
+                        world::set_voxel(NULL_VOXEL, ray.vpos);
+                        return;
+                    }
+
+                    if(event.button == GLFW_MOUSE_BUTTON_RIGHT) {
+                        world::set_voxel(v_stone, ray.vpos + ray.vnormal);
+                        return;
+                    }
+
+                    break;
+                }
+            } while(ray.distance < 16.0f);
+        }
+    }
+}
+
+void debug_session::init(void)
+{
+    globals::dispatcher.sink<GlfwMouseButtonEvent>().connect<&on_glfw_mouse_button>();
+}
+
+void debug_session::update(void)
+{
 }
 
 void debug_session::run(void)
@@ -114,12 +156,12 @@ void debug_session::run(void)
 
 
 #if 1
-    constexpr int WSIZE = 32;
+    constexpr int WSIZE = 8;
     constexpr int WHEIGHT = 1;
     unsigned int w = 0U;
     for(int x = -WSIZE; x < WSIZE; x += 1)
     for(int z = -WSIZE; z < WSIZE; z += 1)
-    for(int y = -1; y < WHEIGHT; y += 1) {
+    for(int y = -2; y < WHEIGHT; y += 1) {
         generate({x, y, z});
         //Chunk *chunk = world::find_or_create_chunk({x, y, z});
         //chunk->voxels.fill(v_stone);
@@ -127,8 +169,7 @@ void debug_session::run(void)
 #endif
 
     Chunk *chunk = world::find_or_create_chunk({0, 1, 0});
-    //for(int x = 0; x < CHUNK_SIZE; ++x) Chunk::set_voxel(chunk[0], v_test, {x, x, x});
-    Chunk::fill(chunk[0], v_test);
+    chunk->voxels.fill(v_test);
 
     spdlog::info("spawning local player");
     globals::player = globals::registry.create();
