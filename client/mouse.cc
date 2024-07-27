@@ -13,8 +13,8 @@
 
 // PQ tried to bully me into using his fix for the view matrix
 // going nuts when the pitch angle is 90 degrees but I forgot how it's done
-constexpr static float PITCH_MIN = -1.0f * glm::radians(89.99f);
-constexpr static float PITCH_MAX = +1.0f * glm::radians(89.99f);
+constexpr static float PITCH_MIN = -1.0f * glm::radians(90.0f);
+constexpr static float PITCH_MAX = +1.0f * glm::radians(90.0f);
 
 static float previous_xpos = 0.0f;
 static float previous_ypos = 0.0f;
