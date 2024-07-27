@@ -32,7 +32,7 @@ constexpr static CachedChunkPos CPOS_BOTTOM = 0x0006;
 constexpr static const size_t NUM_CACHED_CPOS = 7;
 
 struct WorkerContext final {
-    std::array<Chunk, NUM_CACHED_CPOS> cache {};
+    std::array<VoxelStorage, NUM_CACHED_CPOS> cache {};
     std::vector<QuadBuilder> quads {};
     std::shared_future<bool> future {};
     bool is_cancelled {};
@@ -69,8 +69,8 @@ static bool vis_test(WorkerContext *ctx, Voxel voxel, const VoxelInfo *info, con
     const auto index = coord::to_index(plpos);
 
     const auto cached_cpos = get_cached_cpos(ctx->coord, pcpos);
-    const auto &chunk = ctx->cache.at(cached_cpos);
-    const auto neighbour = Chunk::get_voxel(chunk, index);
+    const auto &voxels = ctx->cache.at(cached_cpos);
+    const auto neighbour = voxels[index];
 
     if(neighbour == NULL_VOXEL)
         return true;
@@ -152,7 +152,7 @@ static void cache_chunk(WorkerContext *ctx, const ChunkPos &cpos)
 {
     const auto index = get_cached_cpos(ctx->coord, cpos);
     if(const Chunk *chunk = world::find_chunk(cpos)) {
-        Chunk::create_storage(ctx->cache[index], chunk[0]);
+        ctx->cache[index] = chunk->voxels;
         return;
     }
 }
@@ -161,7 +161,7 @@ static void process(WorkerContext *ctx)
 {
     ctx->quads.resize(atlas::plane_count());
 
-    const Chunk &chunk = ctx->cache.at(CPOS_ITSELF);
+    const VoxelStorage &voxels = ctx->cache.at(CPOS_ITSELF);
 
     for(std::size_t i = 0; i < CHUNK_VOLUME; ++i) {
         if(ctx->is_cancelled) {
@@ -169,7 +169,7 @@ static void process(WorkerContext *ctx)
             return;
         }
 
-        const auto voxel = Chunk::get_voxel(chunk, i);
+        const auto voxel = voxels[i];
         const auto lpos = coord::to_local(i);
 
         const VoxelInfo *info = vdef::find(voxel);

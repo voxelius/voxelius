@@ -118,9 +118,9 @@ constexpr static inline VoxelPos coord::to_voxel(const ChunkPos &cpos, const Loc
 constexpr static inline VoxelPos coord::to_voxel(const EntityPos &epos)
 {
     VoxelPos result = {};
-    result.x = static_cast<VoxelPos::value_type>((epos.chunk.x << CHUNK_SIZE_LOG2) + epos.local.x);
-    result.y = static_cast<VoxelPos::value_type>((epos.chunk.y << CHUNK_SIZE_LOG2) + epos.local.y);
-    result.z = static_cast<VoxelPos::value_type>((epos.chunk.z << CHUNK_SIZE_LOG2) + epos.local.z);
+    result.x = static_cast<VoxelPos::value_type>((epos.chunk.x << CHUNK_SIZE_LOG2) + util::floor<VoxelPos::value_type>(epos.local.x));
+    result.y = static_cast<VoxelPos::value_type>((epos.chunk.y << CHUNK_SIZE_LOG2) + util::floor<VoxelPos::value_type>(epos.local.y));
+    result.z = static_cast<VoxelPos::value_type>((epos.chunk.z << CHUNK_SIZE_LOG2) + util::floor<VoxelPos::value_type>(epos.local.z));
     return result;
 }
 

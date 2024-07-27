@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/event/glfw_key.hh>
-#include <client/debug.hh>
+#include <client/debug_keys.hh>
 #include <client/globals.hh>
 #include <client/keyboard.hh>
 #include <client/settings.hh>
@@ -51,7 +51,7 @@ static inline void update_key(KeyboardBits key_bit, int action)
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if(!debug::active_sequence) {
+    if(!debug_keys::is_sequence_await) {
         if(event.key == key_forward) {
             update_key(KB_FORWARD, event.action);
             return;

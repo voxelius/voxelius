@@ -21,8 +21,8 @@ Chunk *world::find_or_create_chunk(const ChunkPos &cpos)
 
 
     Chunk *chunk = new Chunk();
-    Chunk::create_storage(chunk[0]);
     chunk->entity = globals::registry.create();
+    chunk->voxels.fill(NULL_VOXEL);
 
     auto &component = globals::registry.emplace<ChunkComponent>(chunk->entity);
     component.chunk = chunk;
@@ -99,7 +99,7 @@ Voxel world::get_voxel(const ChunkPos &cpos, const LocalPos &lpos)
     const auto it = chunks.find(rcpos);
 
     if(it != chunks.cend())
-        return Chunk::get_voxel(it->second[0], index);
+        return it->second->voxels[index];
     return NULL_VOXEL;
 }
 
@@ -119,7 +119,7 @@ void world::set_voxel(Voxel voxel, const ChunkPos &cpos, const LocalPos &lpos)
 
     Chunk *chunk = world::find_or_create_chunk(rcpos);
 
-    Chunk::set_voxel(chunk[0], voxel, index);
+    chunk->voxels[index] = voxel;
 
     VoxelSetEvent event = {};
     event.cpos = rcpos;

@@ -5,6 +5,8 @@
 
 namespace debug_session
 {
+void init(void);
+void update(void);
 void run(void);
 } // namespace debug_session
 
