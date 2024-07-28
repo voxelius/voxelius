@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <shared/util/cxmath.hh>
+#include <shared/constexpr.hh>
 #include <shared/ray_dda.hh>
 #include <shared/world.hh>
 
@@ -9,9 +9,9 @@ void RayDDA::setup(RayDDA &ray, const WorldPos &start, const Vector3D &direction
     ray.direction = direction;
     ray.start = start;
 
-    ray.delta_dist[0] = direction[0] ? std::fabs(1.0f / direction[0]) : std::numeric_limits<float>::max();
-    ray.delta_dist[1] = direction[1] ? std::fabs(1.0f / direction[1]) : std::numeric_limits<float>::max();
-    ray.delta_dist[2] = direction[2] ? std::fabs(1.0f / direction[2]) : std::numeric_limits<float>::max();
+    ray.delta_dist[0] = direction[0] ? cxpr::abs(1.0f / direction[0]) : std::numeric_limits<float>::max();
+    ray.delta_dist[1] = direction[1] ? cxpr::abs(1.0f / direction[1]) : std::numeric_limits<float>::max();
+    ray.delta_dist[2] = direction[2] ? cxpr::abs(1.0f / direction[2]) : std::numeric_limits<float>::max();
 
     ray.distance = 0.0f;
     ray.vpos = WorldPos::to_voxel(ray.start);

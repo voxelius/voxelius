@@ -32,9 +32,9 @@ static void on_glfw_cursor_pos(const GlfwCursorPosEvent &event)
     const float dy = event.ypos - previous_ypos;
 
     auto &head = globals::registry.get<HeadComponent>(globals::player);
-    head.angles[0] -= util::radians(dy) * sensitivity;
-    head.angles[1] -= util::radians(dx) * sensitivity;
-    head.angles[0] = util::clamp(head.angles[0], PITCH_MIN, PITCH_MAX);
+    head.angles[0] -= cxpr::radians(dy) * sensitivity;
+    head.angles[1] -= cxpr::radians(dx) * sensitivity;
+    head.angles[0] = cxpr::clamp(head.angles[0], PITCH_MIN, PITCH_MAX);
     head.angles = Angle3D::wrap_180(head.angles);
 
     previous_xpos = event.xpos;

@@ -78,9 +78,9 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
     constexpr float height_base = 240.0f;
     const float width_float = event.width;
     const float height_float = event.height;
-    const unsigned int wscale = util::max(1U, util::floor<unsigned int>(width_float / width_base));
-    const unsigned int hscale = util::max(1U, util::floor<unsigned int>(height_float / height_base));
-    const unsigned int scale = util::min(wscale, hscale);
+    const unsigned int wscale = cxpr::max(1U, cxpr::floor<unsigned int>(width_float / width_base));
+    const unsigned int hscale = cxpr::max(1U, cxpr::floor<unsigned int>(height_float / height_base));
+    const unsigned int scale = cxpr::min(wscale, hscale);
 
     if(globals::ui_scale != scale) {
         ImGuiIO &io = ImGui::GetIO();
@@ -322,8 +322,8 @@ void client_game::update_late(void)
 
 void client_game::render(void)
 {
-    const int scaled_width = globals::width / util::max(1U, pixel_size);
-    const int scaled_height = globals::height / util::max(1U, pixel_size);
+    const int scaled_width = globals::width / cxpr::max(1U, pixel_size);
+    const int scaled_height = globals::height / cxpr::max(1U, pixel_size);
 
     glViewport(0, 0, scaled_width, scaled_height);
     glClearColor(0.529f, 0.808f, 0.922f, 1.000f);

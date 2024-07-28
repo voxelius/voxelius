@@ -10,18 +10,18 @@
 LocalPos WorldPos::to_local(const WorldPos &wpos)
 {
     LocalPos result = {};
-    result[0] = util::floor<std::int64_t>(wpos.local[0]);
-    result[1] = util::floor<std::int64_t>(wpos.local[1]);
-    result[2] = util::floor<std::int64_t>(wpos.local[2]);
+    result[0] = cxpr::floor<std::int64_t>(wpos.local[0]);
+    result[1] = cxpr::floor<std::int64_t>(wpos.local[1]);
+    result[2] = cxpr::floor<std::int64_t>(wpos.local[2]);
     return std::move(result);
 }
 
 VoxelPos WorldPos::to_voxel(const WorldPos &wpos)
 {
     VoxelPos result = {};
-    result[0] = util::floor<std::int64_t>(wpos.local[0]) + (wpos.chunk[0] << CHUNK_SIZE_LOG2);
-    result[1] = util::floor<std::int64_t>(wpos.local[1]) + (wpos.chunk[1] << CHUNK_SIZE_LOG2);
-    result[2] = util::floor<std::int64_t>(wpos.local[2]) + (wpos.chunk[2] << CHUNK_SIZE_LOG2);
+    result[0] = cxpr::floor<std::int64_t>(wpos.local[0]) + (wpos.chunk[0] << CHUNK_SIZE_LOG2);
+    result[1] = cxpr::floor<std::int64_t>(wpos.local[1]) + (wpos.chunk[1] << CHUNK_SIZE_LOG2);
+    result[2] = cxpr::floor<std::int64_t>(wpos.local[2]) + (wpos.chunk[2] << CHUNK_SIZE_LOG2);
     return std::move(result);
 }
 

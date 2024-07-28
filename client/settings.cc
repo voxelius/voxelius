@@ -11,7 +11,6 @@
 #include <entt/signal/dispatcher.hpp>
 #include <imgui.h>
 #include <imgui_stdlib.h>
-#include <shared/util/cxmath.hh>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
 #include <unordered_map>

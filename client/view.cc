@@ -55,7 +55,7 @@ void view::update(void)
 
     const auto z_near = 0.01f;
     const auto z_far = view::max_distance * static_cast<float>(CHUNK_SIZE);
-    Matrix4x4 proj = Matrix4x4::persp(util::radians(view::vertical_fov), globals::aspect, z_near, z_far);
+    Matrix4x4 proj = Matrix4x4::persp(cxpr::radians(view::vertical_fov), globals::aspect, z_near, z_far);
     Matrix4x4 view = Matrix4x4::psrc_view(view::position.local, view::angles);
 
     view::matrix = Matrix4x4::product(proj, view);

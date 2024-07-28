@@ -9,9 +9,9 @@
 
 ChunkPos::ChunkPos(const Vector3D &other)
 {
-    this[0][0] = util::floor<std::int64_t>(other[0]);
-    this[0][1] = util::floor<std::int64_t>(other[1]);
-    this[0][2] = util::floor<std::int64_t>(other[2]);
+    this[0][0] = cxpr::floor<std::int64_t>(other[0]);
+    this[0][1] = cxpr::floor<std::int64_t>(other[1]);
+    this[0][2] = cxpr::floor<std::int64_t>(other[2]);
 }
 
 ChunkPos::ChunkPos(const Vector3Di64 &other)

@@ -128,15 +128,15 @@ void keyboard::update(void)
     if(direction[0] || direction[2]) {
         Vector3D forward, right;
         Angle3D::vectors(Vector3D(0.0f, head.angles[1], 0.0f), &forward, &right, nullptr);
-        velocity.linear[0] = util::lerp(velocity.linear[0], Vector3D::dot_product(right, direction) * PLAYER_MOVE_SPEED, PLAYER_ACCELERATE);
-        velocity.linear[2] = util::lerp(velocity.linear[2], Vector3D::dot_product(forward, direction) * PLAYER_MOVE_SPEED, PLAYER_ACCELERATE);
+        velocity.linear[0] = cxpr::lerp(velocity.linear[0], Vector3D::dot_product(right, direction) * PLAYER_MOVE_SPEED, PLAYER_ACCELERATE);
+        velocity.linear[2] = cxpr::lerp(velocity.linear[2], Vector3D::dot_product(forward, direction) * PLAYER_MOVE_SPEED, PLAYER_ACCELERATE);
     }
     else {
-        velocity.linear[0] = util::lerp(velocity.linear[0], 0.0f, PLAYER_DECELERATE);
-        velocity.linear[2] = util::lerp(velocity.linear[2], 0.0f, PLAYER_DECELERATE);
+        velocity.linear[0] = cxpr::lerp(velocity.linear[0], 0.0f, PLAYER_DECELERATE);
+        velocity.linear[2] = cxpr::lerp(velocity.linear[2], 0.0f, PLAYER_DECELERATE);
     }
 
     if(direction[1])
-        velocity.linear[1] = util::lerp(velocity.linear[1], direction[1] * PLAYER_MOVE_SPEED, PLAYER_ACCELERATE);
-    else velocity.linear[1] = util::lerp(velocity.linear[1], 0.0f, PLAYER_DECELERATE);
+        velocity.linear[1] = cxpr::lerp(velocity.linear[1], direction[1] * PLAYER_MOVE_SPEED, PLAYER_ACCELERATE);
+    else velocity.linear[1] = cxpr::lerp(velocity.linear[1], 0.0f, PLAYER_DECELERATE);
 }

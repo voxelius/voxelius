@@ -46,9 +46,9 @@ static const CachedChunkPos get_cached_cpos(const ChunkPos &pivot, const ChunkPo
 
     if(pivot != cpos) {
         ChunkPos delta = pivot - cpos;
-        delta[0] = util::clamp<std::int64_t>(delta[0], -1, 1);
-        delta[1] = util::clamp<std::int64_t>(delta[1], -1, 1);
-        delta[2] = util::clamp<std::int64_t>(delta[2], -1, 1);
+        delta[0] = cxpr::clamp<std::int64_t>(delta[0], -1, 1);
+        delta[1] = cxpr::clamp<std::int64_t>(delta[1], -1, 1);
+        delta[2] = cxpr::clamp<std::int64_t>(delta[2], -1, 1);
 
         if(delta[0])
             return nx[delta[0] + 1];
