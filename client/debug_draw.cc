@@ -2,8 +2,8 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/util/program.hh>
 #include <client/util/shader.hh>
-#include <client/camera.hh>
 #include <client/debug_draw.hh>
+#include <client/view.hh>
 #include <glm/gtc/type_ptr.hpp>
 #include <spdlog/spdlog.h>
 
@@ -12,7 +12,7 @@ static GLuint draw_vaobj = {};
 static GLuint cube_vbo = {};
 static GLuint line_vbo = {};
 
-static GLint u_camera_matrix = {};
+static GLint u_vproj_matrix = {};
 static GLint u_world_position = {};
 static GLint u_scale = {};
 static GLint u_color = {};
@@ -67,7 +67,7 @@ void debug_draw::init(void)
     glBindBuffer(GL_ARRAY_BUFFER, line_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(line_vertices), line_vertices, GL_STATIC_DRAW);
 
-    u_camera_matrix = glGetUniformLocation(draw_program, "u_CameraMatrix");
+    u_vproj_matrix = glGetUniformLocation(draw_program, "u_ViewProjMatrix");
     u_world_position = glGetUniformLocation(draw_program, "u_WorldPosition");
     u_scale = glGetUniformLocation(draw_program, "u_Scale");
     u_color = glGetUniformLocation(draw_program, "u_Color");
@@ -92,7 +92,7 @@ void debug_draw::begin(bool depth_testing)
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     glUseProgram(draw_program);
-    glUniformMatrix4fv(u_camera_matrix, 1, false, glm::value_ptr(camera::matrix()));
+    glUniformMatrix4fv(u_vproj_matrix, 1, false, glm::value_ptr(view::matrix));
 
     glBindVertexArray(draw_vaobj);
     glEnableVertexAttribArray(0);
@@ -101,7 +101,7 @@ void debug_draw::begin(bool depth_testing)
 void debug_draw::cube(const EntityPos &start, const glm::fvec3 &scale, float width, const glm::fvec3 &color)
 {
     EntityPos patch = start;
-    patch.chunk -= camera::position().chunk;
+    patch.chunk -= view::position.chunk;
 
     glLineWidth(width);
     
@@ -117,7 +117,7 @@ void debug_draw::cube(const EntityPos &start, const glm::fvec3 &scale, float wid
 void debug_draw::line(const EntityPos &start, const glm::fvec3 &scale, float width, const glm::fvec3 &color)
 {
     EntityPos patch = start;
-    patch.chunk -= camera::position().chunk;
+    patch.chunk -= view::position.chunk;
 
     glLineWidth(width);
     

@@ -4,7 +4,7 @@
 
 layout(location = 0) in vec3 vert_Position;
 
-uniform mat4x4 u_CameraMatrix;
+uniform mat4x4 u_ViewProjMatrix;
 uniform vec3 u_WorldPosition;
 uniform vec3 u_Scale;
 
@@ -20,5 +20,5 @@ void main(void)
 
     gl_Position.w = 1.0;
     gl_Position.xyz = positions[gl_InstanceID] * u_Scale + u_WorldPosition;
-    gl_Position = u_CameraMatrix * gl_Position;
+    gl_Position = u_ViewProjMatrix * gl_Position;
 }

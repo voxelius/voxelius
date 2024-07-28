@@ -3,7 +3,6 @@
 #include <client/event/glfw_framebuffer_size.hh>
 #include <client/atlas.hh>
 #include <client/background.hh>
-#include <client/camera.hh>
 #include <client/chunk_mesher.hh>
 #include <client/chunk_renderer.hh>
 #include <client/chunk_vis.hh>
@@ -23,6 +22,7 @@
 #include <client/server_list.hh>
 #include <client/settings.hh>
 #include <client/ui_screen.hh>
+#include <client/view.hh>
 #include <client/voxel_anims.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
@@ -156,7 +156,7 @@ void client_game::init(void)
 
     screenshot::init();
 
-    camera::init();
+    view::init();
 
     voxel_anims::init();
 
@@ -299,7 +299,7 @@ void client_game::update(void)
 
     floatfix::update();
 
-    camera::update();
+    view::update();
 
     voxel_anims::update();
 
@@ -332,11 +332,11 @@ void client_game::render(void)
     chunk_renderer::render();
 
     RayDDA ray = {};
-    RayDDA::setup(ray, camera::position(), camera::direction());
+    RayDDA::setup(ray, view::position, view::direction);
 
     do {
         if(RayDDA::step(ray) != NULL_VOXEL) {
-            glm::fvec3 endpos = camera::direction();
+            glm::fvec3 endpos = view::direction;
             endpos.x *= ray.distance;
             endpos.y *= ray.distance;
             endpos.z *= ray.distance;

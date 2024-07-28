@@ -7,7 +7,7 @@
 #include <glm/vec3.hpp>
 
 struct HeadComponent final {
-    glm::fvec2 angles {};
+    glm::fvec3 angles {};
     glm::fvec3 offset {};
 };
 

@@ -3,7 +3,6 @@ add_library(client STATIC
     "${CMAKE_CURRENT_LIST_DIR}/util/shader.cc"
     "${CMAKE_CURRENT_LIST_DIR}/atlas.cc"
     "${CMAKE_CURRENT_LIST_DIR}/background.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/camera.cc"
     "${CMAKE_CURRENT_LIST_DIR}/chunk_mesher.cc"
     "${CMAKE_CURRENT_LIST_DIR}/chunk_renderer.cc"
     "${CMAKE_CURRENT_LIST_DIR}/chunk_vis.cc"
@@ -23,6 +22,7 @@ add_library(client STATIC
     "${CMAKE_CURRENT_LIST_DIR}/screenshot.cc"
     "${CMAKE_CURRENT_LIST_DIR}/server_list.cc"
     "${CMAKE_CURRENT_LIST_DIR}/settings.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/view.cc"
     "${CMAKE_CURRENT_LIST_DIR}/voxel_anims.cc")
 target_compile_definitions(client PUBLIC GLFW_INCLUDE_NONE)
 target_include_directories(client PUBLIC "${CMAKE_SOURCE_DIR}")
