@@ -4,7 +4,6 @@
 #include <client/util/shader.hh>
 #include <client/debug_draw.hh>
 #include <client/view.hh>
-#include <glm/gtc/type_ptr.hpp>
 #include <spdlog/spdlog.h>
 
 static GLuint draw_program = {};
@@ -43,16 +42,16 @@ void debug_draw::init(void)
         std::terminate();
     }
 
-    const glm::fvec3 cube_vertices[4] = {
-        glm::fvec3(0.0f, 0.0f, 0.0f),
-        glm::fvec3(0.0f, 0.0f, 1.0f),
-        glm::fvec3(1.0f, 0.0f, 1.0f),
-        glm::fvec3(1.0f, 0.0f, 0.0f),
+    const Vector3D cube_vertices[4] = {
+        Vector3D(0.0f, 0.0f, 0.0f),
+        Vector3D(0.0f, 0.0f, 1.0f),
+        Vector3D(1.0f, 0.0f, 1.0f),
+        Vector3D(1.0f, 0.0f, 0.0f),
     };
 
-    const glm::fvec3 line_vertices[2] = {
-        glm::fvec3(0.0f, 0.0f, 0.0f),
-        glm::fvec3(1.0f, 1.0f, 1.0f),
+    const Vector3D line_vertices[2] = {
+        Vector3D(0.0f, 0.0f, 0.0f),
+        Vector3D(1.0f, 1.0f, 1.0f),
     };
 
     glGenVertexArrays(1, &draw_vaobj);
@@ -92,40 +91,40 @@ void debug_draw::begin(bool depth_testing)
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     glUseProgram(draw_program);
-    glUniformMatrix4fv(u_vproj_matrix, 1, false, glm::value_ptr(view::matrix));
+    glUniformMatrix4fv(u_vproj_matrix, 1, false, view::matrix.data()->data());
 
     glBindVertexArray(draw_vaobj);
     glEnableVertexAttribArray(0);
 }
 
-void debug_draw::cube(const EntityPos &start, const glm::fvec3 &scale, float width, const glm::fvec3 &color)
+void debug_draw::cube(const WorldPos &start, const Vector3D &scale, float width, const Vector4D &color)
 {
-    EntityPos patch = start;
+    WorldPos patch = start;
     patch.chunk -= view::position.chunk;
 
     glLineWidth(width);
     
-    glUniform3fv(u_world_position, 1, glm::value_ptr(coord::to_world(patch)));
-    glUniform3fv(u_scale, 1, glm::value_ptr(scale));
-    glUniform3fv(u_color, 1, glm::value_ptr(color));
+    glUniform3fv(u_world_position, 1, WorldPos::to_vector3D(patch).data());
+    glUniform3fv(u_scale, 1, scale.data());
+    glUniform4fv(u_color, 1, color.data());
 
     glBindBuffer(GL_ARRAY_BUFFER, cube_vbo);
-    glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(glm::fvec3), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vector3D), nullptr);
     glDrawArraysInstanced(GL_LINE_LOOP, 0, 4, 6);
 }
 
-void debug_draw::line(const EntityPos &start, const glm::fvec3 &scale, float width, const glm::fvec3 &color)
+void debug_draw::line(const WorldPos &start, const Vector3D &scale, float width, const Vector4D &color)
 {
-    EntityPos patch = start;
+    WorldPos patch = start;
     patch.chunk -= view::position.chunk;
 
     glLineWidth(width);
     
-    glUniform3fv(u_world_position, 1, glm::value_ptr(coord::to_world(patch)));
-    glUniform3fv(u_scale, 1, glm::value_ptr(scale));
-    glUniform3fv(u_color, 1, glm::value_ptr(color));
+    glUniform3fv(u_world_position, 1, WorldPos::to_vector3D(patch).data());
+    glUniform3fv(u_scale, 1, scale.data());
+    glUniform4fv(u_color, 1, color.data());
 
     glBindBuffer(GL_ARRAY_BUFFER, line_vbo);
-    glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(glm::fvec3), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vector3D), nullptr);
     glDrawArrays(GL_LINES, 0, 2);
 }

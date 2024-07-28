@@ -7,7 +7,6 @@
 #include <client/settings.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
-#include <glm/gtc/quaternion.hpp>
 #include <shared/entity/head.hh>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
@@ -111,43 +110,33 @@ void keyboard::update(void)
         return;
     }
 
-    glm::fvec3 direction = {};
+    Vector3D direction = {};
 
     if(!globals::ui_screen) {
-        if(pressed_keys & KB_FORWARD)
-            direction += DIR_FORWARD;
-        if(pressed_keys & KB_BACK)
-            direction += DIR_BACK;
-        if(pressed_keys & KB_LEFT)
-            direction += DIR_LEFT;
-        if(pressed_keys & KB_RIGHT)
-            direction += DIR_RIGHT;
-        if(pressed_keys & KB_UP)
-            direction += DIR_UP;
-        if(pressed_keys & KB_DOWN)
-            direction += DIR_DOWN;
+        if(pressed_keys & KB_FORWARD) direction += DIR_FORWARD;
+        if(pressed_keys & KB_BACK) direction += DIR_BACK;
+        if(pressed_keys & KB_LEFT) direction += DIR_LEFT;
+        if(pressed_keys & KB_RIGHT) direction += DIR_RIGHT;
+        if(pressed_keys & KB_UP) direction += DIR_UP;
+        if(pressed_keys & KB_DOWN) direction += DIR_DOWN;
     }
 
     const auto &head = globals::registry.get<HeadComponent>(globals::player);
     auto &transform = globals::registry.get<TransformComponent>(globals::player);
     auto &velocity = globals::registry.get<VelocityComponent>(globals::player);
 
-    if(direction.x || direction.z) {
-        const auto orient = glm::fquat(glm::fvec3(0.0f, head.angles.y, 0.0f));
-        const auto wishdir = glm::fvec3(direction.x, 0.0f, direction.z);
-        const auto wishvel = orient * wishdir * PLAYER_MOVE_SPEED;
-        velocity.linear.x = glm::mix(velocity.linear.x, wishvel.x, PLAYER_ACCELERATE);
-        velocity.linear.z = glm::mix(velocity.linear.z, wishvel.z, PLAYER_ACCELERATE);
+    if(direction[0] || direction[2]) {
+        Vector3D forward, right;
+        Angle3D::vectors(Vector3D(0.0f, head.angles[1], 0.0f), &forward, &right, nullptr);
+        velocity.linear[0] = util::lerp(velocity.linear[0], Vector3D::dot_product(right, direction) * PLAYER_MOVE_SPEED, PLAYER_ACCELERATE);
+        velocity.linear[2] = util::lerp(velocity.linear[2], Vector3D::dot_product(forward, direction) * PLAYER_MOVE_SPEED, PLAYER_ACCELERATE);
     }
     else {
-        velocity.linear.x = glm::mix(velocity.linear.x, 0.0f, PLAYER_DECELERATE);
-        velocity.linear.z = glm::mix(velocity.linear.z, 0.0f, PLAYER_DECELERATE);
+        velocity.linear[0] = util::lerp(velocity.linear[0], 0.0f, PLAYER_DECELERATE);
+        velocity.linear[2] = util::lerp(velocity.linear[2], 0.0f, PLAYER_DECELERATE);
     }
 
-    // FIXME: this only does flight move now; maybe
-    // add some collision detection in the future you lazy fuck?
-
-    if(direction.y)
-        velocity.linear.y = glm::mix(velocity.linear.y, direction.y * PLAYER_MOVE_SPEED, PLAYER_ACCELERATE);
-    else velocity.linear.y = glm::mix(velocity.linear.y, 0.0f, PLAYER_DECELERATE);
+    if(direction[1])
+        velocity.linear[1] = util::lerp(velocity.linear[1], direction[1] * PLAYER_MOVE_SPEED, PLAYER_ACCELERATE);
+    else velocity.linear[1] = util::lerp(velocity.linear[1], 0.0f, PLAYER_DECELERATE);
 }

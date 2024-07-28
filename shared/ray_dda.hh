@@ -6,12 +6,12 @@
 
 class RayDDA final {
 public:
-    glm::fvec3 direction {};
-    EntityPos start {};
+    Vector3D direction {};
+    WorldPos start {};
 
 public:
-    glm::fvec3 delta_dist {};
-    glm::fvec3 side_dist {};
+    Vector3D delta_dist {};
+    Vector3D side_dist {};
     VoxelPos vstep {};
 
 public:
@@ -20,7 +20,7 @@ public:
     VoxelPos vpos {};
 
 public:
-    static void setup(RayDDA &ray, const EntityPos &start, const glm::fvec3 &direction);
+    static void setup(RayDDA &ray, const WorldPos &start, const Vector3D &direction);
     static Voxel step(RayDDA &ray);
 };
 

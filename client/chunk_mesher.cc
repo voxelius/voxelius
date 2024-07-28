@@ -46,16 +46,16 @@ static const CachedChunkPos get_cached_cpos(const ChunkPos &pivot, const ChunkPo
     static const CachedChunkPos nz[3] = {CPOS_NORTH, 0, CPOS_SOUTH};
 
     if(pivot != cpos) {
-        ChunkPos delta = (pivot - cpos);
-        delta.x = util::clamp(delta.x, -1, 1);
-        delta.y = util::clamp(delta.y, -1, 1);
-        delta.z = util::clamp(delta.z, -1, 1);
+        ChunkPos delta = pivot - cpos;
+        delta[0] = util::clamp<std::int64_t>(delta[0], -1, 1);
+        delta[1] = util::clamp<std::int64_t>(delta[1], -1, 1);
+        delta[2] = util::clamp<std::int64_t>(delta[2], -1, 1);
 
-        if(delta.x)
-            return nx[delta.x + 1];
-        if(delta.y)
-            return ny[delta.y + 1];
-        return nz[delta.z + 1];
+        if(delta[0])
+            return nx[delta[0] + 1];
+        if(delta[1])
+            return ny[delta[1] + 1];
+        return nz[delta[2] + 1];
     }
 
     return CPOS_ITSELF;
@@ -63,10 +63,10 @@ static const CachedChunkPos get_cached_cpos(const ChunkPos &pivot, const ChunkPo
 
 static bool vis_test(WorkerContext *ctx, Voxel voxel, const VoxelInfo *info, const LocalPos &lpos)
 {
-    const auto pvpos = coord::to_voxel(ctx->coord, lpos);
-    const auto pcpos = coord::to_chunk(pvpos);
-    const auto plpos = coord::to_local(pvpos);
-    const auto index = coord::to_index(plpos);
+    const auto pvpos = ChunkPos::to_voxel(ctx->coord, lpos);
+    const auto pcpos = VoxelPos::to_chunk(pvpos);
+    const auto plpos = VoxelPos::to_local(pvpos);
+    const auto index = LocalPos::to_index(plpos);
 
     const auto cached_cpos = get_cached_cpos(ctx->coord, pcpos);
     const auto &voxels = ctx->cache.at(cached_cpos);
@@ -110,14 +110,14 @@ static VoxelFacing get_facing(VoxelFace face, VoxelType type)
     }
 }
 
-static void push_quad_a(WorkerContext *ctx, const VoxelInfo *info, const glm::fvec3 &pos, const glm::fvec2 &size, VoxelFace face)
+static void push_quad_a(WorkerContext *ctx, const VoxelInfo *info, const Vector3D &pos, const Vector2D &size, VoxelFace face)
 {
     const VoxelFacing facing = get_facing(face, info->type);
     const VoxelTexture &vtex = info->textures[static_cast<std::size_t>(face)];
     ctx->quads[vtex.cached_plane].push_back(make_quad_vertex(pos, size, facing, vtex.cached_offset, vtex.paths.size()));
 }
 
-static void push_quad_v(WorkerContext *ctx, const VoxelInfo *info, const glm::fvec3 &pos, const glm::fvec2 &size, VoxelFace face, std::size_t entropy)
+static void push_quad_v(WorkerContext *ctx, const VoxelInfo *info, const Vector3D &pos, const Vector2D &size, VoxelFace face, std::size_t entropy)
 {
     const VoxelFacing facing = get_facing(face, info->type);
     const VoxelTexture &vtex = info->textures[static_cast<std::size_t>(face)];
@@ -127,8 +127,8 @@ static void push_quad_v(WorkerContext *ctx, const VoxelInfo *info, const glm::fv
 
 static void make_cube(WorkerContext *ctx, Voxel voxel, const VoxelInfo *info, const LocalPos &lpos, VoxelVis vis, std::size_t entropy)
 {
-    const glm::fvec3 fpos = glm::fvec3(lpos);
-    const glm::fvec2 fsize = glm::fvec2(1.0f, 1.0f);
+    const Vector3D fpos = LocalPos::to_vector3D(lpos);
+    const Vector2D fsize = Vector2D(1.0f, 1.0f);
 
     if(info->animated) {
         if(vis & VIS_NORTH) push_quad_a(ctx, info, fpos, fsize, VoxelFace::CubeNorth);
@@ -170,7 +170,7 @@ static void process(WorkerContext *ctx)
         }
 
         const auto voxel = voxels[i];
-        const auto lpos = coord::to_local(i);
+        const auto lpos = LocalPos::from_index(i);
 
         const VoxelInfo *info = vdef::find(voxel);
 
@@ -194,8 +194,8 @@ static void process(WorkerContext *ctx)
         if(vis_test(ctx, voxel, info, lpos + LocalPos(WDIR_DOWN)))
             vis |= VIS_DOWN;
 
-        const VoxelPos vpos = coord::to_voxel(ctx->coord, lpos);
-        const VoxelPos::value_type entropy_src = vpos.x * vpos.y * vpos.z;
+        const VoxelPos vpos = ChunkPos::to_voxel(ctx->coord, lpos);
+        const VoxelPos::value_type entropy_src = vpos[0] * vpos[1] * vpos[2];
         const auto entropy = util::crc64(&entropy_src, sizeof(entropy_src));
 
         // FIXME: handle different voxel types

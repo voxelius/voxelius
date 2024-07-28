@@ -8,11 +8,11 @@
 #include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
 #include <shared/entity/head.hh>
-#include <shared/util/angle.hh>
 #include <shared/config.hh>
+#include <shared/const.hh>
 
-constexpr static float PITCH_MIN = -1.0f * glm::radians(90.0f);
-constexpr static float PITCH_MAX = +1.0f * glm::radians(90.0f);
+constexpr static float PITCH_MIN = -1.0f * ANGLE_90D;
+constexpr static float PITCH_MAX = +1.0f * ANGLE_90D;
 
 static float previous_xpos = 0.0f;
 static float previous_ypos = 0.0f;
@@ -32,10 +32,10 @@ static void on_glfw_cursor_pos(const GlfwCursorPosEvent &event)
     const float dy = event.ypos - previous_ypos;
 
     auto &head = globals::registry.get<HeadComponent>(globals::player);
-    head.angles.x -= glm::radians(dy) * sensitivity;
-    head.angles.y -= glm::radians(dx) * sensitivity;
-    head.angles.x = glm::clamp(head.angles.x, PITCH_MIN, PITCH_MAX);
-    head.angles = util::wrap_180_n(head.angles);
+    head.angles[0] -= util::radians(dy) * sensitivity;
+    head.angles[1] -= util::radians(dx) * sensitivity;
+    head.angles[0] = util::clamp(head.angles[0], PITCH_MIN, PITCH_MAX);
+    head.angles = Angle3D::wrap_180(head.angles);
 
     previous_xpos = event.xpos;
     previous_ypos = event.ypos;

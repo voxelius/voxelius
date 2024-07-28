@@ -84,17 +84,17 @@ void world::purge_chunks(void)
 
 Voxel world::get_voxel(const VoxelPos &vpos)
 {
-    const auto cpos = coord::to_chunk(vpos);
-    const auto lpos = coord::to_local(vpos);
+    const auto cpos = VoxelPos::to_chunk(vpos);
+    const auto lpos = VoxelPos::to_local(vpos);
     return world::get_voxel(cpos, lpos);
 }
 
 Voxel world::get_voxel(const ChunkPos &cpos, const LocalPos &lpos)
 {
-    const auto rvpos = coord::to_voxel(cpos, lpos);
-    const auto rcpos = coord::to_chunk(rvpos);
-    const auto rlpos = coord::to_local(rvpos);
-    const auto index = coord::to_index(rlpos);
+    const auto rvpos = ChunkPos::to_voxel(cpos, lpos);
+    const auto rcpos = VoxelPos::to_chunk(rvpos);
+    const auto rlpos = VoxelPos::to_local(rvpos);
+    const auto index = LocalPos::to_index(rlpos);
 
     const auto it = chunks.find(rcpos);
 
@@ -105,17 +105,17 @@ Voxel world::get_voxel(const ChunkPos &cpos, const LocalPos &lpos)
 
 void world::set_voxel(Voxel voxel, const VoxelPos &vpos)
 {
-    const auto cpos = coord::to_chunk(vpos);
-    const auto lpos = coord::to_local(vpos);
+    const auto cpos = VoxelPos::to_chunk(vpos);
+    const auto lpos = VoxelPos::to_local(vpos);
     world::set_voxel(voxel, cpos, lpos);
 }
 
 void world::set_voxel(Voxel voxel, const ChunkPos &cpos, const LocalPos &lpos)
 {
-    const auto rvpos = coord::to_voxel(cpos, lpos);
-    const auto rcpos = coord::to_chunk(rvpos);
-    const auto rlpos = coord::to_local(rvpos);
-    const auto index = coord::to_index(rlpos);
+    const auto rvpos = ChunkPos::to_voxel(cpos, lpos);
+    const auto rcpos = VoxelPos::to_chunk(rvpos);
+    const auto rlpos = VoxelPos::to_local(rvpos);
+    const auto index = LocalPos::to_index(rlpos);
 
     Chunk *chunk = world::find_or_create_chunk(rcpos);
 

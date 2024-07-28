@@ -9,8 +9,6 @@
 #include <client/settings.hh>
 #include <client/ui_screen.hh>
 #include <entt/signal/dispatcher.hpp>
-#include <glm/fwd.hpp>
-#include <glm/vec2.hpp>
 #include <imgui.h>
 #include <imgui_stdlib.h>
 #include <shared/util/cxmath.hh>

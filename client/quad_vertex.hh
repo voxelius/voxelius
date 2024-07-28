@@ -2,17 +2,16 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_QUAD_VERTEX_HH
 #define CLIENT_QUAD_VERTEX_HH
-#include <glm/fwd.hpp>
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
 #include <shared/util/cxmath.hh>
 #include <shared/vdef.hh>
+#include <shared/vector2D.hh>
+#include <shared/vector3D.hh>
 
 // [0] XXXXXXXXYYYYYYYYZZZZZZZZWWWWHHHH
 // [1] FFFFTTTTTTTTTTTAAAAA------------
-using QuadVertex = glm::vec<2, std::uint32_t>;
+using QuadVertex = std::array<std::uint32_t, 2>;
 
-constexpr inline static QuadVertex make_quad_vertex(const glm::fvec3 &position, const glm::fvec2 &size, VoxelFacing facing, std::size_t texture, std::size_t frames)
+constexpr inline static QuadVertex make_quad_vertex(const Vector3D &position, const Vector2D &size, VoxelFacing facing, std::size_t texture, std::size_t frames)
 {
     QuadVertex result = {};
     result[0] = 0x00000000;
@@ -20,14 +19,14 @@ constexpr inline static QuadVertex make_quad_vertex(const glm::fvec3 &position, 
 
     // [0] XXXXXXXXYYYYYYYYZZZZZZZZ--------
     // [1] --------------------------------
-    result[0] |= util::min<std::uint32_t>(0x00FF, position.x * 16.0f) << 24;
-    result[0] |= util::min<std::uint32_t>(0x00FF, position.y * 16.0f) << 16;
-    result[0] |= util::min<std::uint32_t>(0x00FF, position.z * 16.0f) << 8;
+    result[0] |= util::min<std::uint32_t>(0x00FF, position[0] * 16.0f) << 24;
+    result[0] |= util::min<std::uint32_t>(0x00FF, position[1] * 16.0f) << 16;
+    result[0] |= util::min<std::uint32_t>(0x00FF, position[2] * 16.0f) << 8;
 
     // [0] ------------------------WWWWHHHH
     // [1] --------------------------------
-    result[0] |= util::min<std::uint32_t>(0x000F, size.x * 16.0f - 1.0f) << 4;
-    result[0] |= util::min<std::uint32_t>(0x000F, size.y * 16.0f - 1.0f);
+    result[0] |= util::min<std::uint32_t>(0x000F, size[0] * 16.0f - 1.0f) << 4;
+    result[0] |= util::min<std::uint32_t>(0x000F, size[1] * 16.0f - 1.0f);
 
     // [0] --------------------------------
     // [1] FFFF----------------------------

@@ -2,12 +2,11 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_ENTITY_VELOCITY_HH
 #define SHARED_ENTITY_VELOCITY_HH
-#include <glm/fwd.hpp>
-#include <glm/vec3.hpp>
+#include <shared/angle3D.hh>
 
 struct VelocityComponent final {
-    glm::fvec3 angular {};
-    glm::fvec3 linear {};
+    Vector3D linear {};
+    Angle3D angular {};
 };
 
 #endif /* SHARED_ENTITY_VELOCITY_HH */

@@ -5,9 +5,9 @@
 #include <client/background.hh>
 #include <client/globals.hh>
 #include <GLFW/glfw3.h>
-#include <glm/fwd.hpp>
-#include <glm/vec2.hpp>
 #include <shared/const.hh>
+#include <shared/vector2D.hh>
+#include <shared/vector3D.hh>
 #include <spdlog/spdlog.h>
 
 static GLint u_time = {};
@@ -42,11 +42,11 @@ void background::init(void)
 
     u_time = glGetUniformLocation(bg_program, "u_Time");
 
-    const glm::fvec2 vertices[4] = {
-        glm::fvec2(-1.0f,  1.0f),
-        glm::fvec2(-1.0f, -1.0f),
-        glm::fvec2( 1.0f,  1.0f),
-        glm::fvec2( 1.0f, -1.0f),
+    const Vector2D vertices[4] = {
+        Vector2D(-1.0f,  1.0f),
+        Vector2D(-1.0f, -1.0f),
+        Vector2D( 1.0f,  1.0f),
+        Vector2D( 1.0f, -1.0f),
     };
 
     glGenVertexArrays(1, &bg_vaobj);
@@ -58,7 +58,7 @@ void background::init(void)
 
     glEnableVertexAttribArray(0);
     glVertexAttribDivisor(0, 0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(glm::fvec2), nullptr);
+    glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(Vector2D), nullptr);
 }
 
 void background::deinit(void)

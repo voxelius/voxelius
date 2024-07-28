@@ -11,7 +11,6 @@
 #include <client/quad_vertex.hh>
 #include <client/view.hh>
 #include <client/voxel_anims.hh>
-#include <glm/gtc/type_ptr.hpp>
 #include <entt/entity/registry.hpp>
 #include <shared/entity/chunk.hh>
 #include <spdlog/spdlog.h>
@@ -59,11 +58,11 @@ void chunk_renderer::init(void)
 {
     setup_pipeline(quad_pipeline, "chunk_quad");
 
-    const glm::fvec3 vertices[4] = {
-        glm::fvec3(1.0f, 0.0f, 1.0f),
-        glm::fvec3(1.0f, 0.0f, 0.0f),
-        glm::fvec3(0.0f, 0.0f, 1.0f),
-        glm::fvec3(0.0f, 0.0f, 0.0f),
+    const Vector3D vertices[4] = {
+        Vector3D(1.0f, 0.0f, 1.0f),
+        Vector3D(1.0f, 0.0f, 0.0f),
+        Vector3D(0.0f, 0.0f, 1.0f),
+        Vector3D(0.0f, 0.0f, 0.0f),
     };
 
     glGenVertexArrays(1, &quad_vaobj);
@@ -75,7 +74,7 @@ void chunk_renderer::init(void)
 
     glEnableVertexAttribArray(0);
     glVertexAttribDivisor(0, 0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(glm::fvec3), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vector3D), nullptr);
 
 }
 
@@ -99,10 +98,10 @@ void chunk_renderer::render(void)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    glm::uvec3 timings = {};
-    timings.x = globals::frametime;
-    timings.y = globals::frametime_avg;
-    timings.z = voxel_anims::frame;
+    GLuint timings[3] = {};
+    timings[0] = globals::frametime;
+    timings[1] = globals::frametime_avg;
+    timings[2] = voxel_anims::frame;
 
     const auto group = globals::registry.group(entt::get<ChunkComponent, ChunkMeshComponent, ChunkVisibleComponent>);
 
@@ -112,8 +111,8 @@ void chunk_renderer::render(void)
 
         glBindVertexArray(quad_vaobj);
         glUseProgram(quad_pipeline.program);
-        glUniformMatrix4fv(quad_pipeline.u_vproj_matrix, 1, false, glm::value_ptr(view::matrix));
-        glUniform3uiv(quad_pipeline.u_timings, 1, glm::value_ptr(timings));
+        glUniformMatrix4fv(quad_pipeline.u_vproj_matrix, 1, false, view::matrix.data()->data());
+        glUniform3uiv(quad_pipeline.u_timings, 1, timings);
         
         for(const auto [entity, chunk, mesh] : group.each()) {
             if(plane_id >= mesh.quad.size())
@@ -123,8 +122,8 @@ void chunk_renderer::render(void)
             if(!mesh.quad[plane_id].size)
                 continue;
 
-            const glm::fvec3 wpos = coord::to_world(chunk.coord - view::position.chunk);
-            glUniform3fv(quad_pipeline.u_world_position, 1, glm::value_ptr(wpos));
+            const Vector3D wpos = ChunkPos::to_vector3D(chunk.coord - view::position.chunk);
+            glUniform3fv(quad_pipeline.u_world_position, 1, wpos.data());
 
             glBindBuffer(GL_ARRAY_BUFFER, mesh.quad[plane_id].handle);
 

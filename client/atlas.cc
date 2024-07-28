@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/atlas.hh>
-#include <glm/fwd.hpp>
-#include <glm/vec2.hpp>
 #include <shared/util/crc64.hh>
 #include <shared/util/cxmath.hh>
 #include <shared/util/physfs.hh>
@@ -19,7 +17,8 @@ struct AtlasPlane final {
     GLuint gl_texture;
 };
 
-static glm::ivec2 atlas_size = {};
+static int atlas_width = {};
+static int atlas_height = {};
 static std::size_t atlas_count = {};
 static std::vector<AtlasPlane> planes = {};
 
@@ -39,7 +38,7 @@ static void plane_setup(AtlasPlane &plane)
 {
     glGenTextures(1, &plane.gl_texture);
     glBindTexture(GL_TEXTURE_2D_ARRAY, plane.gl_texture);
-    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, atlas_size.x, atlas_size.y, plane.layer_count_max, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, atlas_width, atlas_height, plane.layer_count_max, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -73,14 +72,14 @@ static AtlasStrip *plane_new_strip(AtlasPlane &plane, const std::vector<std::str
             continue;
         }
         
-        if(image.size != atlas_size) {
+        if((image.width != atlas_width) || (image.height != atlas_height)) {
             spdlog::warn("atlas: {}: size mismatch", paths[i]);
             Image::unload(image);
             continue;
         }
         
         const std::size_t offset = strip.offset + i;
-        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, offset, image.size.x, image.size.y, 1, GL_RGBA, GL_UNSIGNED_BYTE, image.pixels);
+        glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, offset, image.width, image.height, 1, GL_RGBA, GL_UNSIGNED_BYTE, image.pixels);
         Image::unload(image);
     }
     
@@ -96,8 +95,8 @@ void atlas::create(int width, int height, std::size_t count)
 {
     GLint max_plane_layers;
 
-    atlas_size.x = 1 << util::log2(width);
-    atlas_size.y = 1 << util::log2(height);
+    atlas_width = 1 << util::log2(width);
+    atlas_height = 1 << util::log2(height);
 
     // Clipping this at OpenGL 4.5 limit of 2048 is important due to
     // how voxel quad meshes are packed in memory: each texture index is
@@ -117,7 +116,7 @@ void atlas::create(int width, int height, std::size_t count)
     }
 
     spdlog::debug("atlas: count={}", count);
-    spdlog::debug("atlas: atlas_size=[{}x{}]", atlas_size.x, atlas_size.y);
+    spdlog::debug("atlas: atlas_size=[{}x{}]", atlas_width, atlas_height);
     spdlog::debug("atlas: max_plane_layers={}", max_plane_layers);
 }
 
@@ -125,8 +124,8 @@ void atlas::destroy(void)
 {
     for(const AtlasPlane &plane : planes)
         glDeleteTextures(1, &plane.gl_texture);
-    atlas_size.x = 0;
-    atlas_size.y = 0;
+    atlas_width = 0;
+    atlas_height = 0;
     planes.clear();
 }
 

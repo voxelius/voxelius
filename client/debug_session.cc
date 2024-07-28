@@ -7,7 +7,6 @@
 #include <client/view.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
-#include <glm/gtc/noise.hpp>
 #include <shared/entity/head.hh>
 #include <shared/entity/health.hh>
 #include <shared/entity/player.hh>
@@ -29,6 +28,7 @@ static Voxel v_test = {};
 // Surface level for world generation
 constexpr static const int64_t SURFACE = 0;
 
+#if 0
 static float octanoise(const glm::fvec2 &vec, int count)
 {
     float result = 0.0f;
@@ -72,6 +72,7 @@ static void generate(const ChunkPos &cpos)
         }
     }
 }
+#endif
 
 static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
 {
@@ -106,6 +107,7 @@ void debug_session::init(void)
 
 void debug_session::update(void)
 {
+
 }
 
 void debug_session::run(void)
@@ -152,7 +154,7 @@ void debug_session::run(void)
     atlas::generate_mipmaps();
 
 
-#if 1
+#if 0
     constexpr int WSIZE = 8;
     constexpr int WHEIGHT = 1;
     unsigned int w = 0U;
@@ -165,8 +167,11 @@ void debug_session::run(void)
     }
 #endif
 
-    Chunk *chunk = world::find_or_create_chunk({0, 1, 0});
-    chunk->voxels.fill(v_test);
+    for(int i = -8; i < 8; i += 2)
+    for(int j = -8; j < 8; j += 2) {
+        Chunk *chunk = world::find_or_create_chunk({i, 0, j});
+        chunk->voxels.fill(v_test);
+    }
 
     spdlog::info("spawning local player");
     globals::player = globals::registry.create();
@@ -175,7 +180,7 @@ void debug_session::run(void)
 
     auto &head = globals::registry.emplace<HeadComponent>(globals::player);
     auto &transform = globals::registry.emplace<TransformComponent>(globals::player);
-    transform.position.local.y += 16.0;
+    //transform.position.local[1] += 16.0;
 
     globals::ui_screen = 0U;
 }

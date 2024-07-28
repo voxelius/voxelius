@@ -4,7 +4,7 @@
 #define SHARED_CHUNK_HH
 #include <array>
 #include <entt/entity/entity.hpp>
-#include <shared/coord.hh>
+#include <shared/const.hh>
 #include <shared/voxel.hh>
 
 using VoxelStorage = std::array<Voxel, CHUNK_VOLUME>;
