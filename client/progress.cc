@@ -3,7 +3,6 @@
 #include <client/globals.hh>
 #include <client/lang.hh>
 #include <client/progress.hh>
-#include <glm/common.hpp>
 #include <imgui.h>
 #include <imgui_stdlib.h>
 

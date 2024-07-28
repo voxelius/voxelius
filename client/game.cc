@@ -31,6 +31,7 @@
 #include <imgui.h>
 #include <shared/util/physfs.hh>
 #include <shared/config.hh>
+#include <shared/const.hh>
 #include <shared/floatfix.hh>
 #include <shared/inertial.hh>
 #include <shared/world.hh>
@@ -336,13 +337,13 @@ void client_game::render(void)
 
     do {
         if(RayDDA::step(ray) != NULL_VOXEL) {
-            glm::fvec3 endpos = view::direction;
-            endpos.x *= ray.distance;
-            endpos.y *= ray.distance;
-            endpos.z *= ray.distance;
+            Vector3D endpos = view::direction;
+            endpos[0] *= ray.distance;
+            endpos[1] *= ray.distance;
+            endpos[2] *= ray.distance;
 
             debug_draw::begin(true);
-            debug_draw::cube(coord::to_entity(ray.vpos), glm::fvec3(1.0f), 2.0f, COLOR_LIGHT_GRAY);
+            debug_draw::cube(VoxelPos::to_world(ray.vpos), Vector3D(1.0f), 2.0f, COLOR_LIGHT_GRAY);
 
             break;
         }

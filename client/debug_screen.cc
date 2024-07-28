@@ -62,10 +62,12 @@ void debug_screen::layout(void)
             ImGui::Text("GL_VERSION: %s", gl_version.c_str());
             ImGui::Text("GL_RENDERER: %s", gl_renderer.c_str());
             
-            const auto cam_vpos = glm::vec<3, std::intmax_t>(coord::to_voxel(view::position));
-            const auto cam_cpos = glm::vec<3, std::intmax_t>(view::position.chunk);
-            ImGui::Text("voxel: [%jd; %jd; %jd]", cam_vpos.x, cam_vpos.y, cam_vpos.z);
-            ImGui::Text("chunk: [%jd; %jd; %jd]", cam_cpos.x, cam_cpos.y, cam_cpos.z);
+            const ChunkPos &cpos = view::position.chunk;
+            const VoxelPos vpos = WorldPos::to_voxel(view::position);
+            const std::intmax_t jcpos[3] = { cpos[0], cpos[1], cpos[2] };
+            const std::intmax_t jvpos[3] = { vpos[0], vpos[1], vpos[2] };
+            ImGui::Text("voxel: [%jd; %jd; %jd]", jvpos[0], jvpos[1], jvpos[2]);
+            ImGui::Text("chunk: [%jd; %jd; %jd]", jcpos[0], jcpos[1], jcpos[2]);
         }
         
         ImGui::PopFont();

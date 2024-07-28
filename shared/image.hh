@@ -2,12 +2,12 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_IMAGE_HH
 #define SHARED_IMAGE_HH
-#include <glm/vec2.hpp>
 #include <string>
 
 class Image final {
 public:
-    glm::ivec2 size {};
+    int width {};
+    int height {};
     void *pixels {};
 
 public:

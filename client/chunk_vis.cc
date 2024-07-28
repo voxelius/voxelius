@@ -18,7 +18,7 @@ void chunk_vis::update(void)
 
     for(const auto [entity, chunk] : view.each()) {
         const ChunkPos diff = chunk.coord - view::position.chunk;
-        const ChunkPos::value_type dist = diff.x * diff.x + diff.z * diff.z;
+        const ChunkPos::value_type dist = diff[0] * diff[0] + diff[2] * diff[2];
 
         if(dist <= view_distance_square)
             globals::registry.emplace_or_replace<ChunkVisibleComponent>(entity);

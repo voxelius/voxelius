@@ -2,13 +2,11 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_ENTITY_HEAD_HH
 #define SHARED_ENTITY_HEAD_HH
-#include <glm/fwd.hpp>
-#include <glm/vec2.hpp>
-#include <glm/vec3.hpp>
+#include <shared/angle3D.hh>
 
 struct HeadComponent final {
-    glm::fvec3 angles {};
-    glm::fvec3 offset {};
+    Vector3D offset {};
+    Angle3D angles {};
 };
 
 #endif /* SHARED_ENTITY_HEAD_HH */

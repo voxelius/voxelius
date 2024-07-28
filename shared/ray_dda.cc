@@ -1,81 +1,81 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <glm/geometric.hpp>
+#include <shared/util/cxmath.hh>
 #include <shared/ray_dda.hh>
 #include <shared/world.hh>
 
-void RayDDA::setup(RayDDA &ray, const EntityPos &start, const glm::fvec3 &direction)
+void RayDDA::setup(RayDDA &ray, const WorldPos &start, const Vector3D &direction)
 {
     ray.direction = direction;
     ray.start = start;
 
-    ray.delta_dist.x = direction.x ? glm::abs(1.0f / direction.x) : std::numeric_limits<float>::max();
-    ray.delta_dist.y = direction.y ? glm::abs(1.0f / direction.y) : std::numeric_limits<float>::max();
-    ray.delta_dist.z = direction.z ? glm::abs(1.0f / direction.z) : std::numeric_limits<float>::max();
+    ray.delta_dist[0] = direction[0] ? std::fabs(1.0f / direction[0]) : std::numeric_limits<float>::max();
+    ray.delta_dist[1] = direction[1] ? std::fabs(1.0f / direction[1]) : std::numeric_limits<float>::max();
+    ray.delta_dist[2] = direction[2] ? std::fabs(1.0f / direction[2]) : std::numeric_limits<float>::max();
 
     ray.distance = 0.0f;
-    ray.vpos = coord::to_voxel(ray.start);
+    ray.vpos = WorldPos::to_voxel(ray.start);
     ray.vnormal = VoxelPos(0, 0, 0);
 
     // Need this for initial direction calculations
-    const LocalPos lpos = coord::to_local(start);
+    const LocalPos lpos = WorldPos::to_local(start);
 
-    if(direction.x < 0.0f) {
-        ray.side_dist.x = ray.delta_dist.x * (ray.start.local.x - lpos.x);
-        ray.vstep.x = INT64_C(-1);
+    if(direction[0] < 0.0f) {
+        ray.side_dist[0] = ray.delta_dist[0] * (ray.start.local[0] - lpos[0]);
+        ray.vstep[0] = INT64_C(-1);
     }
     else {
-        ray.side_dist.x = ray.delta_dist.x * (lpos.x + 1.0f - ray.start.local.x);
-        ray.vstep.x = INT64_C(+1);
+        ray.side_dist[0] = ray.delta_dist[0] * (lpos[0] + 1.0f - ray.start.local[0]);
+        ray.vstep[0] = INT64_C(+1);
     }
 
-    if(direction.y < 0.0f) {
-        ray.side_dist.y = ray.delta_dist.y * (ray.start.local.y - lpos.y);
-        ray.vstep.y = INT64_C(-1);
+    if(direction[1] < 0.0f) {
+        ray.side_dist[1] = ray.delta_dist[1] * (ray.start.local[1] - lpos[1]);
+        ray.vstep[1] = INT64_C(-1);
     }
     else {
-        ray.side_dist.y = ray.delta_dist.y * (lpos.y + 1.0f - ray.start.local.y);
-        ray.vstep.y = INT64_C(+1);
+        ray.side_dist[1] = ray.delta_dist[1] * (lpos[1] + 1.0f - ray.start.local[1]);
+        ray.vstep[1] = INT64_C(+1);
     }
 
-    if(direction.z < 0.0f) {
-        ray.side_dist.z = ray.delta_dist.z * (ray.start.local.z - lpos.z);
-        ray.vstep.z = INT64_C(-1);
+    if(direction[2] < 0.0f) {
+        ray.side_dist[2] = ray.delta_dist[2] * (ray.start.local[2] - lpos[2]);
+        ray.vstep[2] = INT64_C(-1);
     }
     else {
-        ray.side_dist.z = ray.delta_dist.z * (lpos.z + 1.0f - ray.start.local.z);
-        ray.vstep.z = INT64_C(+1);
+        ray.side_dist[2] = ray.delta_dist[2] * (lpos[2] + 1.0f - ray.start.local[2]);
+        ray.vstep[2] = INT64_C(+1);
     }
 }
 
 Voxel RayDDA::step(RayDDA &ray)
 {
-    if(ray.side_dist.x < ray.side_dist.z) {
-        if(ray.side_dist.x < ray.side_dist.y) {
-            ray.vnormal = VoxelPos(-ray.vstep.x, 0, 0);
-            ray.distance = ray.side_dist.x;
-            ray.side_dist.x += ray.delta_dist.x;
-            ray.vpos.x += ray.vstep.x;
+    if(ray.side_dist[0] < ray.side_dist[2]) {
+        if(ray.side_dist[0] < ray.side_dist[1]) {
+            ray.vnormal = VoxelPos(-ray.vstep[0], 0, 0);
+            ray.distance = ray.side_dist[0];
+            ray.side_dist[0] += ray.delta_dist[0];
+            ray.vpos[0] += ray.vstep[0];
         }
         else {
-            ray.vnormal = VoxelPos(0, -ray.vstep.y, 0);
-            ray.distance = ray.side_dist.y;
-            ray.side_dist.y += ray.delta_dist.y;
-            ray.vpos.y += ray.vstep.y;
+            ray.vnormal = VoxelPos(0, -ray.vstep[1], 0);
+            ray.distance = ray.side_dist[1];
+            ray.side_dist[1] += ray.delta_dist[1];
+            ray.vpos[1] += ray.vstep[1];
         }
     }
     else {
-        if(ray.side_dist.z < ray.side_dist.y) {
-            ray.vnormal = VoxelPos(0, 0, -ray.vstep.z);
-            ray.distance = ray.side_dist.z;
-            ray.side_dist.z += ray.delta_dist.z;
-            ray.vpos.z += ray.vstep.z;
+        if(ray.side_dist[2] < ray.side_dist[1]) {
+            ray.vnormal = VoxelPos(0, 0, -ray.vstep[2]);
+            ray.distance = ray.side_dist[2];
+            ray.side_dist[2] += ray.delta_dist[2];
+            ray.vpos[2] += ray.vstep[2];
         }
         else {
-            ray.vnormal = VoxelPos(0, -ray.vstep.y, 0);
-            ray.distance = ray.side_dist.y;
-            ray.side_dist.y += ray.delta_dist.y;
-            ray.vpos.y += ray.vstep.y;
+            ray.vnormal = VoxelPos(0, -ray.vstep[1], 0);
+            ray.distance = ray.side_dist[1];
+            ray.side_dist[1] += ray.delta_dist[1];
+            ray.vpos[1] += ray.vstep[1];
         }
     }
 

@@ -3,6 +3,7 @@
 #ifndef SHARED_WORLD_HH
 #define SHARED_WORLD_HH
 #include <shared/chunk.hh>
+#include <shared/coord.hh>
 
 namespace world
 {

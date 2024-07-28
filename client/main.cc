@@ -168,8 +168,8 @@ void client::main(void)
     GLFWimage icon = {};
 
     if(Image::load_rgba(image, "textures/32x32.png", false)) {
-        icon.width = image.size.x;
-        icon.height = image.size.y;
+        icon.width = image.width;
+        icon.height = image.height;
         icon.pixels = reinterpret_cast<unsigned char *>(image.pixels);
 
         glfwSetWindowIcon(globals::window, 1, &icon);

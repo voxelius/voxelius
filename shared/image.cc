@@ -21,9 +21,9 @@ bool Image::load_gray(Image &image, const std::string &path, bool flip)
     const auto buffer_len = static_cast<int>(buffer.size());
     const auto *buffer_uc = reinterpret_cast<const stbi_uc *>(buffer.data());
 
-    image.pixels = stbi_load_from_memory(buffer_uc, buffer_len,
-        &image.size.x, &image.size.y, nullptr, STBI_grey);
-    return image.size.x && image.size.y && image.pixels;
+    image.pixels = stbi_load_from_memory(buffer_uc, buffer_len, &image.width, &image.height, nullptr, STBI_grey);
+
+    return image.width && image.height && image.pixels;
 }
 
 bool Image::load_rgba(Image &image, const std::string &path, bool flip)
@@ -42,9 +42,9 @@ bool Image::load_rgba(Image &image, const std::string &path, bool flip)
     const auto buffer_len = static_cast<int>(buffer.size());
     const auto *buffer_uc = reinterpret_cast<const stbi_uc *>(buffer.data());
 
-    image.pixels = stbi_load_from_memory(buffer_uc, buffer_len,
-        &image.size.x, &image.size.y, nullptr, STBI_rgb_alpha);
-    return image.size.x && image.size.y && image.pixels;
+    image.pixels = stbi_load_from_memory(buffer_uc, buffer_len, &image.width, &image.height, nullptr, STBI_rgb_alpha);
+
+    return image.width && image.height && image.pixels;
 }
 
 void Image::unload(Image &image)
@@ -52,6 +52,6 @@ void Image::unload(Image &image)
     if(image.pixels)
         stbi_image_free(image.pixels);
     image.pixels = nullptr;
-    image.size.x = 0;
-    image.size.y = 0;
+    image.height = 0;
+    image.width = 0;
 }
