@@ -3,6 +3,7 @@
 #ifndef SHARED_RAY_DDA_HH
 #define SHARED_RAY_DDA_HH
 #include <shared/world.hh>
+#include <shared/world_pos.hh>
 
 class RayDDA final {
 public:

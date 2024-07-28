@@ -13,10 +13,10 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui.h>
-#include <shared/util/epoch.hh>
 #include <shared/cmake.hh>
 #include <shared/cmdline.hh>
 #include <shared/config.hh>
+#include <shared/epoch.hh>
 #include <shared/image.hh>
 #include <shared/splash.hh>
 #include <spdlog/spdlog.h>
@@ -222,7 +222,7 @@ void client::main(void)
 
     globals::frametime = 0.0f;
     globals::frametime_avg = 0.0f;
-    globals::curtime = util::epoch_microseconds();
+    globals::curtime = epoch::microseconds();
     globals::framecount = 0;
 
     client_game::init();
@@ -238,7 +238,7 @@ void client::main(void)
     std::uint64_t last_curtime = globals::curtime;
 
     while(!glfwWindowShouldClose(globals::window)) {
-        globals::curtime = util::epoch_microseconds();
+        globals::curtime = epoch::microseconds();
         globals::frametime = static_cast<float>(globals::curtime - last_curtime) / 1000000.0f;
         globals::frametime_avg += globals::frametime;
         globals::frametime_avg *= 0.5f;

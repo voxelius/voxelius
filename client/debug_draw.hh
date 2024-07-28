@@ -3,7 +3,7 @@
 #ifndef CLIENT_DEBUG_DRAW_HH
 #define CLIENT_DEBUG_DRAW_HH
 #include <shared/const.hh>
-#include <shared/coord.hh>
+#include <shared/world_pos.hh>
 
 namespace debug_draw
 {

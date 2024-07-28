@@ -6,9 +6,9 @@
 #include <client/screenshot.hh>
 #include <client/settings.hh>
 #include <entt/signal/dispatcher.hpp>
-#include <shared/util/epoch.hh>
 #include <shared/util/physfs.hh>
 #include <shared/config.hh>
+#include <shared/epoch.hh>
 #include <spdlog/fmt/fmt.h>
 #include <stb_image_write.h>
 
@@ -47,7 +47,7 @@ void screenshot::take(void)
     glReadPixels(0, 0, globals::width, globals::height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 
     const std::string dirname = std::string("screenshots");
-    const std::string path = fmt::format("{}/{}.png", dirname, util::epoch_microseconds());
+    const std::string path = fmt::format("{}/{}.png", dirname, epoch::microseconds());
 
     PHYSFS_mkdir(dirname.c_str());
 

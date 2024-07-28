@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/atlas.hh>
-#include <shared/util/crc64.hh>
+#include <shared/crc64.hh>
+#include <shared/image.hh>
 #include <shared/util/cxmath.hh>
 #include <shared/util/physfs.hh>
-#include <shared/image.hh>
 #include <spdlog/spdlog.h>
 #include <unordered_map>
 
@@ -30,8 +30,8 @@ static std::size_t vector_hash(const std::vector<std::string> &strings)
 {
     std::size_t source = 0;
     for(const std::string &str : strings)
-        source += util::crc64(str);
-    return util::crc64(&source, sizeof(source));
+        source += crc64::get(str);
+    return crc64::get(&source, sizeof(source));
 }
 
 static void plane_setup(AtlasPlane &plane)

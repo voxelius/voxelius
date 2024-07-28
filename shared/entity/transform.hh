@@ -3,7 +3,7 @@
 #ifndef SHARED_ENTITY_TRANSFORM_HH
 #define SHARED_ENTITY_TRANSFORM_HH
 #include <shared/angle3D.hh>
-#include <shared/coord.hh>
+#include <shared/world_pos.hh>
 
 struct TransformComponent final {
     WorldPos position {};
