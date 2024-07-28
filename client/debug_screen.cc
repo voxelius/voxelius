@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/event/glfw_key.hh>
-#include <client/camera.hh>
 #include <client/debug_screen.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
+#include <client/view.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
@@ -62,9 +62,8 @@ void debug_screen::layout(void)
             ImGui::Text("GL_VERSION: %s", gl_version.c_str());
             ImGui::Text("GL_RENDERER: %s", gl_renderer.c_str());
             
-            const EntityPos &pos = camera::position();
-            const auto cam_vpos = glm::vec<3, std::intmax_t>(coord::to_voxel(pos));
-            const auto cam_cpos = glm::vec<3, std::intmax_t>(pos.chunk);
+            const auto cam_vpos = glm::vec<3, std::intmax_t>(coord::to_voxel(view::position));
+            const auto cam_cpos = glm::vec<3, std::intmax_t>(view::position.chunk);
             ImGui::Text("voxel: [%jd; %jd; %jd]", cam_vpos.x, cam_vpos.y, cam_vpos.z);
             ImGui::Text("chunk: [%jd; %jd; %jd]", cam_cpos.x, cam_cpos.y, cam_cpos.z);
         }

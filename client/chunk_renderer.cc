@@ -5,11 +5,11 @@
 #include <client/util/program.hh>
 #include <client/util/shader.hh>
 #include <client/atlas.hh>
-#include <client/camera.hh>
 #include <client/chunk_renderer.hh>
 #include <client/debug_keys.hh>
 #include <client/globals.hh>
 #include <client/quad_vertex.hh>
+#include <client/view.hh>
 #include <client/voxel_anims.hh>
 #include <glm/gtc/type_ptr.hpp>
 #include <entt/entity/registry.hpp>
@@ -18,7 +18,7 @@
 
 struct Pipeline final {
     GLuint program {};
-    GLint u_camera_matrix {};
+    GLint u_vproj_matrix {};
     GLint u_world_position {};
     GLint u_timings {};
 };
@@ -50,7 +50,7 @@ static void setup_pipeline(Pipeline &pipeline, const std::string &name)
         std::terminate();
     }
 
-    pipeline.u_camera_matrix = glGetUniformLocation(pipeline.program, "u_CameraMatrix");
+    pipeline.u_vproj_matrix = glGetUniformLocation(pipeline.program, "u_ViewProjMatrix");
     pipeline.u_world_position = glGetUniformLocation(pipeline.program, "u_WorldPosition");
     pipeline.u_timings = glGetUniformLocation(pipeline.program, "u_Timings");
 }
@@ -104,9 +104,6 @@ void chunk_renderer::render(void)
     timings.y = globals::frametime_avg;
     timings.z = voxel_anims::frame;
 
-    const glm::fmat4x4 &matrix = camera::matrix();
-    const EntityPos &cam_pos = camera::position();
-
     const auto group = globals::registry.group(entt::get<ChunkComponent, ChunkMeshComponent, ChunkVisibleComponent>);
 
     for(std::size_t plane_id = 0; plane_id < atlas::plane_count(); ++plane_id) {
@@ -115,7 +112,7 @@ void chunk_renderer::render(void)
 
         glBindVertexArray(quad_vaobj);
         glUseProgram(quad_pipeline.program);
-        glUniformMatrix4fv(quad_pipeline.u_camera_matrix, 1, false, glm::value_ptr(matrix));
+        glUniformMatrix4fv(quad_pipeline.u_vproj_matrix, 1, false, glm::value_ptr(view::matrix));
         glUniform3uiv(quad_pipeline.u_timings, 1, glm::value_ptr(timings));
         
         for(const auto [entity, chunk, mesh] : group.each()) {
@@ -126,7 +123,7 @@ void chunk_renderer::render(void)
             if(!mesh.quad[plane_id].size)
                 continue;
 
-            const glm::fvec3 wpos = coord::to_world(chunk.coord - cam_pos.chunk);
+            const glm::fvec3 wpos = coord::to_world(chunk.coord - view::position.chunk);
             glUniform3fv(quad_pipeline.u_world_position, 1, glm::value_ptr(wpos));
 
             glBindBuffer(GL_ARRAY_BUFFER, mesh.quad[plane_id].handle);

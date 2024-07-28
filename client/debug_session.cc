@@ -2,9 +2,9 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/event/glfw_mouse_button.hh>
 #include <client/atlas.hh>
-#include <client/camera.hh>
 #include <client/debug_session.hh>
 #include <client/globals.hh>
+#include <client/view.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <glm/gtc/noise.hpp>
@@ -77,11 +77,8 @@ static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
 {
     if(!globals::ui_screen && globals::registry.valid(globals::player)) {
         if(event.action == GLFW_PRESS) {
-            const EntityPos &position = camera::position();
-            const glm::fvec3 &direction = camera::direction();
-
             RayDDA ray = {};
-            RayDDA::setup(ray, position, direction);
+            RayDDA::setup(ray, view::position, view::direction);
 
             do {
                 if(RayDDA::step(ray) != NULL_VOXEL) {

@@ -8,7 +8,7 @@ layout(location = 1) in uvec2 vert_Quad;
 out vec3 vs_TexCoord;
 out float vs_Shade;
 
-uniform mat4x4 u_CameraMatrix;
+uniform mat4x4 u_ViewProjMatrix;
 uniform vec3 u_WorldPosition;
 uniform uvec3 u_Timings;
 
@@ -61,5 +61,5 @@ void main(void)
 
     gl_Position.w = 1.0;
     gl_Position.xyz = positions[quad_facing] + quad_offset + u_WorldPosition;
-    gl_Position = u_CameraMatrix * gl_Position;
+    gl_Position = u_ViewProjMatrix * gl_Position;
 }
