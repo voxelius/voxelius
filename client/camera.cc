@@ -55,7 +55,38 @@ void camera::update(void)
     const float zfar = camera::view_distance * CHUNK_SIZE;
 
     const glm::fmat4x4 proj = glm::perspective(fov, globals::aspect, 0.01f, zfar);
-    const glm::fmat4x4 view = glm::lookAt(cam_position.local, cam_position.local + cam_direction, DIR_UP);
+
+    glm::fvec3 e_sin = glm::sin(cam_euler_angles);
+    glm::fvec3 e_cos = glm::cos(cam_euler_angles);
+    e_cos.y *= -1.0f;
+
+    glm::fvec3 up;
+    up.x = e_sin.x * e_sin.y * e_cos.z + e_cos.y * e_sin.z;
+    up.y = e_cos.x * e_cos.z;
+    up.z = -e_sin.x * e_cos.y * e_cos.z + e_sin.y * e_sin.z;
+    glm::fvec3 front;
+    front.x = e_cos.x * -e_sin.y;
+    front.y = e_sin.x;
+    front.z = e_cos.x * e_cos.y;
+
+    glm::fmat4x4 view;
+    view[0][0] = front.y * up.z - front.z * up.y;
+    view[1][0] = front.z * up.x - front.x * up.z;
+    view[2][0] = front.x * up.y - front.y * up.x;
+    view[3][0] = -view[0][0] * cam_position.local.x - view[1][0] * cam_position.local.y - view[2][0] * cam_position.local.z;
+    view[0][1] = up.x;
+    view[1][1] = up.y;
+    view[2][1] = up.z;
+    view[3][1] = -up.x * cam_position.local.x - up.y * cam_position.local.y - up.z * cam_position.local.z;
+    view[0][2] = -front.x;
+    view[1][2] = -front.y;
+    view[2][2] = -front.z;
+    view[3][2] = front.x * cam_position.local.x + front.y * cam_position.local.y + front.z * cam_position.local.z;
+    view[0][3] = 0.0f;
+    view[1][3] = 0.0f;
+    view[2][3] = 0.0f;
+    view[3][3] = 1.0f;
+
     cam_matrix = proj * view;
 }
 
