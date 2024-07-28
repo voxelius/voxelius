@@ -2,8 +2,8 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_ENTITY_CHUNK_HH
 #define SHARED_ENTITY_CHUNK_HH
+#include <shared/chunk_pos.hh>
 #include <shared/chunk.hh>
-#include <shared/coord.hh>
 
 struct ChunkComponent final {
     ChunkPos coord {};

@@ -7,10 +7,12 @@
 #include <client/view.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
-#include <GLFW/glfw3.h>
 #include <glad/gl.h>
+#include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_stdlib.h>
+#include <shared/chunk_pos.hh>
+#include <shared/voxel_pos.hh>
 #include <spdlog/spdlog.h>
 
 constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav;

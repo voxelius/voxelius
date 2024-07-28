@@ -7,7 +7,6 @@
 #include <shared/event/chunk_create.hh>
 #include <shared/event/chunk_remove.hh>
 #include <shared/event/voxel_set.hh>
-#include <shared/coord.hh>
 #include <shared/globals.hh>
 #include <shared/world.hh>
 

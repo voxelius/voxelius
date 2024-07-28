@@ -3,8 +3,8 @@
 #ifndef CLIENT_VIEW_HH
 #define CLIENT_VIEW_HH
 #include <shared/angle3D.hh>
-#include <shared/coord.hh>
 #include <shared/matrix4x4.hh>
+#include <shared/world_pos.hh>
 
 namespace view
 {

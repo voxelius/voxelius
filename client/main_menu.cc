@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <client/debug_session.hh>
 #include <client/event/glfw_key.hh>
 #include <client/event/language_set.hh>
+#include <client/debug_session.hh>
 #include <client/globals.hh>
 #include <client/main_menu.hh>
 #include <client/ui_screen.hh>

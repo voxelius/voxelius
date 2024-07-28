@@ -3,7 +3,9 @@
 #ifndef SHARED_WORLD_HH
 #define SHARED_WORLD_HH
 #include <shared/chunk.hh>
-#include <shared/coord.hh>
+#include <shared/chunk_pos.hh>
+#include <shared/local_pos.hh>
+#include <shared/voxel_pos.hh>
 
 namespace world
 {
