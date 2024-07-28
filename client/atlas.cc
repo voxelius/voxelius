@@ -3,8 +3,8 @@
 #include <client/atlas.hh>
 #include <shared/crc64.hh>
 #include <shared/image.hh>
-#include <shared/util/cxmath.hh>
 #include <shared/util/physfs.hh>
+#include <shared/constexpr.hh>
 #include <spdlog/spdlog.h>
 #include <unordered_map>
 
@@ -95,19 +95,19 @@ void atlas::create(int width, int height, std::size_t count)
 {
     GLint max_plane_layers;
 
-    atlas_width = 1 << util::log2(width);
-    atlas_height = 1 << util::log2(height);
+    atlas_width = 1 << cxpr::log2(width);
+    atlas_height = 1 << cxpr::log2(height);
 
     // Clipping this at OpenGL 4.5 limit of 2048 is important due to
     // how voxel quad meshes are packed in memory: each texture index is
     // confined in 11 bits so having bigger atlas planes makes no sense;
     glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_plane_layers);
-    max_plane_layers = util::clamp(max_plane_layers, 256, 2048);
+    max_plane_layers = cxpr::clamp(max_plane_layers, 256, 2048);
 
     for(long i = count; i > 0L; i -= max_plane_layers) {
         AtlasPlane plane = {};
         plane.plane_id = planes.size();
-        plane.layer_count_max = util::min<std::size_t>(max_plane_layers, i);
+        plane.layer_count_max = cxpr::min<std::size_t>(max_plane_layers, i);
         plane.layer_count = 0;
 
         const std::size_t save_id = plane.plane_id;

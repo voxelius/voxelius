@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#ifndef SHARED_UTIL_CXMATH_HH
-#define SHARED_UTIL_CXMATH_HH
+#ifndef SHARED_CONSTEXPR_HH
+#define SHARED_CONSTEXPR_HH
 #include <cmath>
 #include <cstddef>
 #include <type_traits>
@@ -10,7 +10,7 @@
 #define M_PI 3.14159265358979323846f
 #endif
 
-namespace util
+namespace cxpr
 {
 template<typename T>
 constexpr static inline const T abs(const T x);
@@ -36,10 +36,10 @@ template<typename T>
 constexpr static inline const T pow2(const T x);
 template<typename T>
 constexpr static inline const T radians(const T x);
-} // namespace util
+} // namespace cxpr
 
 template<typename T>
-constexpr static inline const T util::abs(const T x)
+constexpr static inline const T cxpr::abs(const T x)
 {
     if(x < static_cast<T>(0))
         return -x;
@@ -47,13 +47,13 @@ constexpr static inline const T util::abs(const T x)
 }
 
 template<typename T, std::size_t L>
-constexpr static inline const std::size_t util::array_size(const T(&)[L])
+constexpr static inline const std::size_t cxpr::array_size(const T(&)[L])
 {
     return L;
 }
 
 template<typename T, typename F>
-constexpr static inline const T util::ceil(const F x)
+constexpr static inline const T cxpr::ceil(const F x)
 {
     static_assert(std::is_integral_v<T>);
     static_assert(std::is_floating_point_v<F>);
@@ -65,13 +65,13 @@ constexpr static inline const T util::ceil(const F x)
 }
 
 template<typename T>
-constexpr static inline const T util::degrees(const T x)
+constexpr static inline const T cxpr::degrees(const T x)
 {
     return x * 180.0f / M_1_PI;
 }
 
 template<typename T, typename F>
-constexpr static inline const T util::floor(const F x)
+constexpr static inline const T cxpr::floor(const F x)
 {
     static_assert(std::is_integral_v<T>);
     static_assert(std::is_floating_point_v<F>);
@@ -83,7 +83,7 @@ constexpr static inline const T util::floor(const F x)
 }
 
 template<typename T>
-constexpr static inline const T util::clamp(const T x, const T min, const T max)
+constexpr static inline const T cxpr::clamp(const T x, const T min, const T max)
 {
     if(x < min)
         return min;
@@ -93,7 +93,7 @@ constexpr static inline const T util::clamp(const T x, const T min, const T max)
 }
 
 template<typename T, typename F>
-constexpr static inline const T util::lerp(const T x, const T y, const F a)
+constexpr static inline const T cxpr::lerp(const T x, const T y, const F a)
 {
     static_assert(std::is_arithmetic_v<T>);
     static_assert(std::is_floating_point_v<F>);
@@ -101,15 +101,15 @@ constexpr static inline const T util::lerp(const T x, const T y, const F a)
 }
 
 template<typename T>
-constexpr static inline const T util::log2(const T x)
+constexpr static inline const T cxpr::log2(const T x)
 {
     if(x < 2)
         return 0;
-    return util::log2<T>((x + 1) >> 1) + 1;
+    return cxpr::log2<T>((x + 1) >> 1) + 1;
 }
 
 template<typename T>
-constexpr static inline const T util::max(const T x, const T y)
+constexpr static inline const T cxpr::max(const T x, const T y)
 {
     if(x < y)
         return y;
@@ -117,7 +117,7 @@ constexpr static inline const T util::max(const T x, const T y)
 }
 
 template<typename T>
-constexpr static inline const T util::min(const T x, const T y)
+constexpr static inline const T cxpr::min(const T x, const T y)
 {
     if(x > y)
         return y;
@@ -125,7 +125,7 @@ constexpr static inline const T util::min(const T x, const T y)
 }
 
 template<typename T>
-constexpr static inline const T util::pow2(const T x)
+constexpr static inline const T cxpr::pow2(const T x)
 {
     T value = static_cast<T>(1);
     while(value < x)
@@ -134,9 +134,9 @@ constexpr static inline const T util::pow2(const T x)
 }
 
 template<typename T>
-constexpr static inline const T util::radians(const T x)
+constexpr static inline const T cxpr::radians(const T x)
 {
     return x * M_PI / 180.0f;
 }
 
-#endif /* SHARED_UTIL_CXMATH_HH */
+#endif /* SHARED_CONSTEXPR_HH */

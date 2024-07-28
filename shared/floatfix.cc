@@ -2,7 +2,6 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <entt/entity/registry.hpp>
 #include <shared/entity/transform.hh>
-#include <shared/util/cxmath.hh>
 #include <shared/const.hh>
 #include <shared/floatfix.hh>
 #include <shared/globals.hh>
