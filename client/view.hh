@@ -2,9 +2,9 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_VIEW_HH
 #define CLIENT_VIEW_HH
-#include <shared/angle3D.hh>
-#include <shared/matrix4x4.hh>
-#include <shared/world_pos.hh>
+#include <shared/math/euler_angles.hh>
+#include <shared/math/matrix4x4.hh>
+#include <shared/world/coord.hh>
 
 namespace view
 {
@@ -14,10 +14,10 @@ extern unsigned int max_distance;
 
 namespace view
 {
-extern Angle3D angles;
+extern EulerAngles angles;
 extern Vector3D direction;
 extern Matrix4x4 matrix;
-extern WorldPos position;
+extern WorldCoord position;
 } // namespace view
 
 namespace view

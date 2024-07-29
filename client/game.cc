@@ -1,40 +1,40 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
+#include <client/debug/debug_draw.hh>
+#include <client/debug/debug_screen.hh>
+#include <client/debug/debug_session.hh>
+#include <client/debug/debug_toggles.hh>
 #include <client/event/glfw_framebuffer_size.hh>
-#include <client/atlas.hh>
-#include <client/background.hh>
-#include <client/chunk_mesher.hh>
-#include <client/chunk_renderer.hh>
-#include <client/chunk_vis.hh>
-#include <client/debug_draw.hh>
-#include <client/debug_keys.hh>
-#include <client/debug_screen.hh>
-#include <client/debug_session.hh>
-#include <client/game.hh>
+#include <client/gameui/background.hh>
+#include <client/gameui/language.hh>
+#include <client/gameui/main_menu.hh>
+#include <client/gameui/progress.hh>
+#include <client/gameui/screen.hh>
+#include <client/gameui/server_list.hh>
+#include <client/gameui/settings.hh>
+#include <client/input/keyboard.hh>
+#include <client/input/mouse.hh>
+#include <client/util/keyname.hh>
+#include <client/world/chunk_mesher.hh>
+#include <client/world/chunk_renderer.hh>
+#include <client/world/chunk_visibility.hh>
+#include <client/world/voxel_anims.hh>
+#include <client/world/voxel_atlas.hh>
 #include <client/globals.hh>
-#include <client/key_name.hh>
-#include <client/keyboard.hh>
-#include <client/lang.hh>
-#include <client/main_menu.hh>
-#include <client/mouse.hh>
-#include <client/progress.hh>
 #include <client/screenshot.hh>
-#include <client/server_list.hh>
-#include <client/settings.hh>
-#include <client/ui_screen.hh>
 #include <client/view.hh>
-#include <client/voxel_anims.hh>
+#include <client/game.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
-#include <imgui_impl_opengl3.h>
 #include <imgui.h>
-#include <shared/util/physfs.hh>
+#include <imgui_impl_opengl3.h>
+#include <shared/entity/transform.hh>
+#include <shared/entity/velocity.hh>
+#include <shared/util/vfstools.hh>
+#include <shared/world/ray_dda.hh>
+#include <shared/world/world.hh>
 #include <shared/config.hh>
-#include <shared/const.hh>
-#include <shared/floatfix.hh>
-#include <shared/inertial.hh>
-#include <shared/world.hh>
 #include <spdlog/spdlog.h>
 
 bool client_game::vertical_sync = true;
@@ -104,19 +104,19 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
         ImVector<ImWchar> ranges = {};
         builder.BuildRanges(&ranges);
 
-        if(!util::read_bytes("fonts/RobotoSlab-Medium.ttf", fontbin))
+        if(!vfstools::read_bytes("fonts/RobotoSlab-Medium.ttf", fontbin))
             std::terminate();
         io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 13.0f * scale, &font_config, ranges.Data);
 
-        if(!util::read_bytes("fonts/AnonymousPro-Bold.ttf", fontbin))
+        if(!vfstools::read_bytes("fonts/AnonymousPro-Bold.ttf", fontbin))
             std::terminate();
         globals::font_debug = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 6.0f * scale, &font_config);
 
-        if(!util::read_bytes("fonts/din1451alt.ttf", fontbin))
+        if(!vfstools::read_bytes("fonts/din1451alt.ttf", fontbin))
             std::terminate();
         globals::font_menu_title = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 64.0f * scale, &font_config);
 
-        if(!util::read_bytes("fonts/PTMono-Regular.ttf", fontbin))
+        if(!vfstools::read_bytes("fonts/PTMono-Regular.ttf", fontbin))
             std::terminate();
         globals::font_menu_button = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 16.0f * scale, &font_config, ranges.Data);
 
@@ -148,9 +148,9 @@ void client_game::init(void)
     settings::add_slider(1, settings::VIDEO, "game.pixel_size", pixel_size, 1U, 4U, true);
     settings::add_input(1, settings::GENERAL, "game.username", client_game::username, false, false);
 
-    lang::init();
+    language::init();
 
-    key_name::init();
+    keyname::init();
 
     keyboard::init();
     mouse::init();
@@ -238,7 +238,7 @@ void client_game::init(void)
     ImGui::GetIO().IniFilename = nullptr;
 
     debug_draw::init();
-    debug_keys::init();
+    debug_toggles::init();
     debug_screen::init();
     debug_session::init();
 
@@ -260,14 +260,14 @@ void client_game::init(void)
 
 void client_game::init_late(void)
 {
-    lang::init_late();
+    language::init_late();
 
     settings::init_late();
 }
 
 void client_game::deinit(void)
 {
-    atlas::destroy();
+    voxel_atlas::destroy();
 
     glDeleteRenderbuffers(1, &globals::world_fbo_depth);
     glDeleteTextures(1, &globals::world_fbo_color);
@@ -296,9 +296,8 @@ void client_game::update(void)
 
     keyboard::update();
 
-    inertial::update(globals::frametime);
-
-    floatfix::update();
+    VelocityComponent::update(globals::frametime);
+    TransformComponent::update();
 
     view::update();
 
@@ -306,7 +305,7 @@ void client_game::update(void)
 
     chunk_mesher::update();
 
-    chunk_vis::update();
+    chunk_visibility::update();
 }
 
 void client_game::update_late(void)
@@ -317,8 +316,6 @@ void client_game::update_late(void)
         glfwSwapInterval(1);
     else glfwSwapInterval(0);
 }
-
-#include <shared/ray_dda.hh>
 
 void client_game::render(void)
 {
@@ -343,7 +340,7 @@ void client_game::render(void)
             endpos[2] *= ray.distance;
 
             debug_draw::begin(true);
-            debug_draw::cube(VoxelPos::to_world(ray.vpos), Vector3D(1.0f), 2.0f, COLOR_LIGHT_GRAY);
+            debug_draw::cube(VoxelCoord::to_world(ray.vpos), Vector3D(1.0f), 2.0f, Vector4D::light_gray());
 
             break;
         }

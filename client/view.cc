@@ -1,28 +1,27 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
+#include <client/gameui/settings.hh>
 #include <client/globals.hh>
-#include <client/settings.hh>
 #include <client/view.hh>
 #include <entt/entity/registry.hpp>
 #include <shared/entity/head.hh>
 #include <shared/entity/transform.hh>
 #include <shared/config.hh>
-#include <shared/const.hh>
 
 float view::vertical_fov = 90.0f;
 unsigned int view::max_distance = 16U;
 
-Angle3D view::angles = {};
+EulerAngles view::angles = {};
 Vector3D view::direction = {};
 Matrix4x4 view::matrix = {};
-WorldPos view::position = {};
+WorldCoord view::position = {};
 
 static void reset(void)
 {
-    view::angles = Angle3D();
-    view::direction = DIR_FORWARD;
+    view::angles = EulerAngles();
+    view::direction = Vector3D::dir_forward();
     view::matrix = Matrix4x4::identity();
-    view::position = WorldPos();
+    view::position = WorldCoord();
 }
 
 void view::init(void)
@@ -51,12 +50,12 @@ void view::update(void)
     view::position.local += head.offset;
 
     // Figure out where the camera is pointed
-    Angle3D::vectors(view::angles, &view::direction, nullptr, nullptr);
+    EulerAngles::vectors(view::angles, &view::direction, nullptr, nullptr);
 
     const auto z_near = 0.01f;
     const auto z_far = view::max_distance * static_cast<float>(CHUNK_SIZE);
-    Matrix4x4 proj = Matrix4x4::persp(cxpr::radians(view::vertical_fov), globals::aspect, z_near, z_far);
-    Matrix4x4 view = Matrix4x4::psrc_view(view::position.local, view::angles);
+    Matrix4x4 proj = Matrix4x4::proj_persp(cxpr::radians(view::vertical_fov), globals::aspect, z_near, z_far);
+    Matrix4x4 view = Matrix4x4::view_psrc(view::position.local, view::angles);
 
     view::matrix = Matrix4x4::product(proj, view);
 }

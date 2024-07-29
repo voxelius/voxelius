@@ -1,28 +1,18 @@
 add_library(shared STATIC
-    "${CMAKE_CURRENT_LIST_DIR}/util/physfs.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/util/string.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/angle3D.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/chunk_pos.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/entity/transform.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/entity/velocity.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/util/crc64.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/util/epoch.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/util/strtools.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/util/vfstools.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/world/ray_dda.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/world/vdef.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/world/world.cc"
     "${CMAKE_CURRENT_LIST_DIR}/cmdline.cc"
     "${CMAKE_CURRENT_LIST_DIR}/config.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/crc64.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/epoch.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/floatfix.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
     "${CMAKE_CURRENT_LIST_DIR}/image.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/inertial.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/local_pos.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/matrix4x4.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/ray_dda.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/splash.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/vdef.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/vector2D.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/vector3D.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/vector3Di64.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/vector4D.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/voxel_pos.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/world_pos.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/world.cc")
+    "${CMAKE_CURRENT_LIST_DIR}/splash.cc")
 target_include_directories(shared PUBLIC "${CMAKE_SOURCE_DIR}")
 target_link_libraries(shared PUBLIC emhash entt parson physfs)
 target_link_libraries(shared PUBLIC spdlog stb thread_pool)

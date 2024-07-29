@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <server/main.hh>
-#include <shared/util/physfs.hh>
+#include <shared/util/vfstools.hh>
 #include <shared/cmdline.hh>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
@@ -88,7 +88,7 @@ int main(int argc, char **argv)
     logger->set_pattern("[%H:%M:%S] %^[%L]%$ %v");
 
     if(!PHYSFS_init(argv[0])) {
-        spdlog::critical("physfs: init failed: {}", util::physfs_error());
+        spdlog::critical("physfs: init failed: {}", vfstools::last_error());
         std::terminate();
     }
 
@@ -103,17 +103,17 @@ int main(int argc, char **argv)
     std::filesystem::create_directories(userpath, dingus);
 
     if(!PHYSFS_mount(gamepath.string().c_str(), nullptr, false)) {
-        spdlog::critical("physfs: mount {} failed: {}", gamepath.string(), util::physfs_error());
+        spdlog::critical("physfs: mount {} failed: {}", gamepath.string(), vfstools::last_error());
         std::terminate();
     }
 
     if(!PHYSFS_mount(userpath.string().c_str(), nullptr, false)) {
-        spdlog::critical("physfs: mount {} failed: {}", userpath.string(), util::physfs_error());
+        spdlog::critical("physfs: mount {} failed: {}", userpath.string(), vfstools::last_error());
         std::terminate();
     }
 
     if(!PHYSFS_setWriteDir(userpath.string().c_str())) {
-        spdlog::critical("physfs: setwritedir {} failed: {}", userpath.string(), util::physfs_error());
+        spdlog::critical("physfs: setwritedir {} failed: {}", userpath.string(), vfstools::last_error());
         std::terminate();
     }
 
@@ -131,7 +131,7 @@ int main(int argc, char **argv)
 #endif
 
     if(!PHYSFS_deinit()) {
-        spdlog::critical("physfs: deinit failed: {}", util::physfs_error());
+        spdlog::critical("physfs: deinit failed: {}", vfstools::last_error());
         std::terminate();
     }
 

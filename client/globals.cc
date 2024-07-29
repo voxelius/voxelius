@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
+#include <client/gameui/screen.hh>
 #include <client/globals.hh>
-#include <client/ui_screen.hh>
 #include <shared/config.hh>
 
 Config globals::client_config = {};

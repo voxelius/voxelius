@@ -2,11 +2,18 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_ENTITY_VELOCITY_HH
 #define SHARED_ENTITY_VELOCITY_HH
-#include <shared/angle3D.hh>
+#include <shared/math/euler_angles.hh>
 
-struct VelocityComponent final {
+class VelocityComponent final {
+public:
+    EulerAngles angular {};
     Vector3D linear {};
-    Angle3D angular {};
+
+public:
+    // Updates entities TransformComponent values
+    // according to velocities multiplied by frametime.
+    // This system was previously called inertial
+    static void update(float frametime);
 };
 
 #endif /* SHARED_ENTITY_VELOCITY_HH */
