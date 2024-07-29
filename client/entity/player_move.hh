@@ -12,8 +12,6 @@ void update(void);
 
 namespace player_move
 {
-// This can be either set by keyboard input
-// or by a gamepad axes mapped to player movement
 void set_direction(const Vector3D &direction);
 } // namespace player_move
 

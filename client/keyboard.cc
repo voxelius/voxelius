@@ -17,11 +17,9 @@ static int key_right = GLFW_KEY_D;
 static int key_down = GLFW_KEY_LEFT_SHIFT;
 static int key_up = GLFW_KEY_SPACE;
 
-// The direction vector updated by key presses
-// Mind you it is submitted to player_move only when
-// a key is pressed so both keyboard and gamepad can
-// be used to move around if you're perverted enough
-static Vector3D keyboard_dir = {};
+// This direction vector is updated every time
+// a key is pressed and then is submitted to player_move
+static Vector3D keyboard_wishdir = {};
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
@@ -40,75 +38,75 @@ static void on_glfw_key(const GlfwKeyEvent &event)
 
     if(event.action == GLFW_PRESS) {
         if(event.key == key_forward) {
-            keyboard_dir += Vector3D::dir_forward();
-            player_move::set_direction(keyboard_dir);
+            keyboard_wishdir += Vector3D::dir_forward();
+            player_move::set_direction(keyboard_wishdir);
             return;
         }
 
         if(event.key == key_back) {
-            keyboard_dir += Vector3D::dir_back();
-            player_move::set_direction(keyboard_dir);
+            keyboard_wishdir += Vector3D::dir_back();
+            player_move::set_direction(keyboard_wishdir);
             return;
         }
 
         if(event.key == key_left) {
-            keyboard_dir += Vector3D::dir_left();
-            player_move::set_direction(keyboard_dir);
+            keyboard_wishdir += Vector3D::dir_left();
+            player_move::set_direction(keyboard_wishdir);
             return;
         }
 
         if(event.key == key_right) {
-            keyboard_dir += Vector3D::dir_right();
-            player_move::set_direction(keyboard_dir);
+            keyboard_wishdir += Vector3D::dir_right();
+            player_move::set_direction(keyboard_wishdir);
             return;
         }
 
         if(event.key == key_down) {
-            keyboard_dir += Vector3D::dir_down();
-            player_move::set_direction(keyboard_dir);
+            keyboard_wishdir += Vector3D::dir_down();
+            player_move::set_direction(keyboard_wishdir);
             return;
         }
 
         if(event.key == key_up) {
-            keyboard_dir += Vector3D::dir_up();
-            player_move::set_direction(keyboard_dir);
+            keyboard_wishdir += Vector3D::dir_up();
+            player_move::set_direction(keyboard_wishdir);
             return;
         }
     }
     else if(event.action == GLFW_RELEASE) {
         if(event.key == key_forward) {
-            keyboard_dir -= Vector3D::dir_forward();
-            player_move::set_direction(keyboard_dir);
+            keyboard_wishdir -= Vector3D::dir_forward();
+            player_move::set_direction(keyboard_wishdir);
             return;
         }
 
         if(event.key == key_back) {
-            keyboard_dir -= Vector3D::dir_back();
-            player_move::set_direction(keyboard_dir);
+            keyboard_wishdir -= Vector3D::dir_back();
+            player_move::set_direction(keyboard_wishdir);
             return;
         }
 
         if(event.key == key_left) {
-            keyboard_dir -= Vector3D::dir_left();
-            player_move::set_direction(keyboard_dir);
+            keyboard_wishdir -= Vector3D::dir_left();
+            player_move::set_direction(keyboard_wishdir);
             return;
         }
 
         if(event.key == key_right) {
-            keyboard_dir -= Vector3D::dir_right();
-            player_move::set_direction(keyboard_dir);
+            keyboard_wishdir -= Vector3D::dir_right();
+            player_move::set_direction(keyboard_wishdir);
             return;
         }
 
         if(event.key == key_down) {
-            keyboard_dir -= Vector3D::dir_down();
-            player_move::set_direction(keyboard_dir);
+            keyboard_wishdir -= Vector3D::dir_down();
+            player_move::set_direction(keyboard_wishdir);
             return;
         }
 
         if(event.key == key_up) {
-            keyboard_dir -= Vector3D::dir_up();
-            player_move::set_direction(keyboard_dir);
+            keyboard_wishdir -= Vector3D::dir_up();
+            player_move::set_direction(keyboard_wishdir);
             return;
         }
     }

@@ -27,7 +27,7 @@ static void on_glfw_cursor_pos(const GlfwCursorPosEvent &event)
 
     const float dx = -1.0f * mouse::sensitivity * cxpr::radians(event.xpos - previous_xpos);
     const float dy = -1.0f * mouse::sensitivity * cxpr::radians(event.ypos - previous_ypos);
-    player_look::add_angles(Vector2D(dy, dx));
+    player_look::add_angles(dy, dx);
 
     previous_xpos = event.xpos;
     previous_ypos = event.ypos;
