@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/globals.hh>
-#include <client/gameui/language.hh>
-#include <client/gameui/progress.hh>
+#include <client/gui/language.hh>
+#include <client/gui/progress.hh>
 #include <imgui.h>
 #include <imgui_stdlib.h>
 
@@ -29,7 +29,7 @@ void progress::layout(void)
     ImGui::SetNextWindowSize(window_size);
 
     if(ImGui::Begin("###UIProgress", nullptr, MENU_FLAGS)) {
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 2.0f * globals::ui_scale));
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 2.0f * globals::gui_scale));
         
         ImGui::PushFont(globals::font_menu_button);
         const float title_width = ImGui::CalcTextSize(str_title.c_str()).x;
@@ -44,9 +44,9 @@ void progress::layout(void)
             ImGui::TextUnformatted(str_subtitle.c_str());
         }
 
-        ImGui::Dummy(ImVec2(0.0f, 16.0f * globals::ui_scale));
+        ImGui::Dummy(ImVec2(0.0f, 16.0f * globals::gui_scale));
 
-        const float bar_width = 240.0f * globals::ui_scale;
+        const float bar_width = 240.0f * globals::gui_scale;
         ImGui::SetCursorPosX(0.5f * (window_size.x - bar_width));
         ImGui::ProgressBar(progress_value, ImVec2(bar_width, 0.0f), "");
 

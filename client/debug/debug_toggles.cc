@@ -2,7 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/debug/debug_toggles.hh>
 #include <client/event/glfw_key.hh>
-#include <client/gameui/language.hh>
+#include <client/gui/language.hh>
 #include <client/globals.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <spdlog/spdlog.h>
@@ -16,7 +16,7 @@ bool debug_toggles::render_wireframe = false;
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if(globals::ui_keybind_ptr) {
+    if(globals::gui_keybind_ptr) {
         // The UI keybind subsystem has the authority
         // over debug toggles and it hogs the input keys
         return;

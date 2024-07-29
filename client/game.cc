@@ -4,43 +4,45 @@
 #include <client/debug/debug_screen.hh>
 #include <client/debug/debug_session.hh>
 #include <client/debug/debug_toggles.hh>
+#include <client/entity/player_look.hh>
+#include <client/entity/player_move.hh>
 #include <client/event/glfw_framebuffer_size.hh>
-#include <client/gameui/background.hh>
-#include <client/gameui/language.hh>
-#include <client/gameui/main_menu.hh>
-#include <client/gameui/progress.hh>
-#include <client/gameui/screen.hh>
-#include <client/gameui/server_list.hh>
-#include <client/gameui/settings.hh>
-#include <client/input/keyboard.hh>
-#include <client/input/mouse.hh>
-#include <client/util/keyname.hh>
+#include <client/gui/background.hh>
+#include <client/gui/language.hh>
+#include <client/gui/main_menu.hh>
+#include <client/gui/progress.hh>
+#include <client/gui/screen.hh>
+#include <client/gui/server_list.hh>
+#include <client/gui/settings.hh>
 #include <client/world/chunk_mesher.hh>
 #include <client/world/chunk_renderer.hh>
 #include <client/world/chunk_visibility.hh>
 #include <client/world/voxel_anims.hh>
 #include <client/world/voxel_atlas.hh>
+#include <client/game.hh>
 #include <client/globals.hh>
+#include <client/keyboard.hh>
+#include <client/keynames.hh>
+#include <client/mouse.hh>
 #include <client/screenshot.hh>
 #include <client/view.hh>
-#include <client/game.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
-#include <imgui.h>
 #include <imgui_impl_opengl3.h>
+#include <imgui.h>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
-#include <shared/util/vfstools.hh>
+#include <shared/util/physfs.hh>
 #include <shared/world/ray_dda.hh>
 #include <shared/world/world.hh>
 #include <shared/config.hh>
 #include <spdlog/spdlog.h>
 
 bool client_game::vertical_sync = true;
-static bool menu_background = true;
-static unsigned int pixel_size = 4U;
+bool client_game::menu_background = true;
 std::string client_game::username = "player";
+unsigned int client_game::pixel_size = 4U;
 
 static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
 {
@@ -82,7 +84,7 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
     const unsigned int hscale = cxpr::max(1U, cxpr::floor<unsigned int>(height_float / height_base));
     const unsigned int scale = cxpr::min(wscale, hscale);
 
-    if(globals::ui_scale != scale) {
+    if(globals::gui_scale != scale) {
         ImGuiIO &io = ImGui::GetIO();
         ImGuiStyle &style = ImGui::GetStyle();
 
@@ -104,19 +106,19 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
         ImVector<ImWchar> ranges = {};
         builder.BuildRanges(&ranges);
 
-        if(!vfstools::read_bytes("fonts/RobotoSlab-Medium.ttf", fontbin))
+        if(!util::read_bytes("fonts/RobotoSlab-Medium.ttf", fontbin))
             std::terminate();
         io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 13.0f * scale, &font_config, ranges.Data);
 
-        if(!vfstools::read_bytes("fonts/AnonymousPro-Bold.ttf", fontbin))
+        if(!util::read_bytes("fonts/AnonymousPro-Bold.ttf", fontbin))
             std::terminate();
         globals::font_debug = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 6.0f * scale, &font_config);
 
-        if(!vfstools::read_bytes("fonts/din1451alt.ttf", fontbin))
+        if(!util::read_bytes("fonts/din1451alt.ttf", fontbin))
             std::terminate();
         globals::font_menu_title = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 64.0f * scale, &font_config);
 
-        if(!vfstools::read_bytes("fonts/PTMono-Regular.ttf", fontbin))
+        if(!util::read_bytes("fonts/PTMono-Regular.ttf", fontbin))
             std::terminate();
         globals::font_menu_button = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 16.0f * scale, &font_config, ranges.Data);
 
@@ -125,33 +127,34 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
         // device objects defined by the implementation!!!
         ImGui_ImplOpenGL3_CreateDeviceObjects();
 
-        if(globals::ui_scale) {
+        if(globals::gui_scale) {
             // Well, ImGuiStyle::ScaleAllSizes indeed takes
             // the scale values as a RELATIVE scaling, not as
             // absolute. So I have to make a special crutch
-            style.ScaleAllSizes(static_cast<float>(scale) / static_cast<float>(globals::ui_scale));
+            style.ScaleAllSizes(static_cast<float>(scale) / static_cast<float>(globals::gui_scale));
         }
 
-        globals::ui_scale = scale;
+        globals::gui_scale = scale;
     }
 }
 
 void client_game::init(void)
 {
     Config::add(globals::client_config, "game.vertical_sync", client_game::vertical_sync);
-    Config::add(globals::client_config, "game.menu_background", menu_background);
-    Config::add(globals::client_config, "game.pixel_size", pixel_size);
+    Config::add(globals::client_config, "game.menu_background", client_game::menu_background);
     Config::add(globals::client_config, "game.username", client_game::username);
+    Config::add(globals::client_config, "game.pixel_size", client_game::pixel_size);
 
     settings::add_checkbox(5, settings::VIDEO, "game.vertical_sync", client_game::vertical_sync, false);
-    settings::add_checkbox(0, settings::VIDEO_GUI, "game.menu_background", menu_background, true);
-    settings::add_slider(1, settings::VIDEO, "game.pixel_size", pixel_size, 1U, 4U, true);
+    settings::add_checkbox(0, settings::VIDEO_GUI, "game.menu_background", client_game::menu_background, true);
     settings::add_input(1, settings::GENERAL, "game.username", client_game::username, false, false);
+    settings::add_slider(1, settings::VIDEO, "game.pixel_size", client_game::pixel_size, 1U, 4U, true);
 
     language::init();
 
-    keyname::init();
+    player_move::init();
 
+    keynames::init();
     keyboard::init();
     mouse::init();
 
@@ -251,9 +254,9 @@ void client_game::init(void)
 
     debug_session::init();
 
-    globals::ui_keybind_ptr = nullptr;
-    globals::ui_scale = 0U;
-    globals::ui_screen = UI_MAIN_MENU;
+    globals::gui_keybind_ptr = nullptr;
+    globals::gui_scale = 0U;
+    globals::gui_screen = GUI_MAIN_MENU;
 
     globals::dispatcher.sink<GlfwFramebufferSizeEvent>().connect<&on_glfw_framebuffer_size>();
 }
@@ -294,7 +297,7 @@ void client_game::update(void)
 {
     debug_session::update();
 
-    keyboard::update();
+    player_move::update();
 
     VelocityComponent::update(globals::frametime);
     TransformComponent::update();
@@ -319,8 +322,8 @@ void client_game::update_late(void)
 
 void client_game::render(void)
 {
-    const int scaled_width = globals::width / cxpr::max(1U, pixel_size);
-    const int scaled_height = globals::height / cxpr::max(1U, pixel_size);
+    const int scaled_width = globals::width / cxpr::max(1U, client_game::pixel_size);
+    const int scaled_height = globals::height / cxpr::max(1U, client_game::pixel_size);
 
     glViewport(0, 0, scaled_width, scaled_height);
     glClearColor(0.529f, 0.808f, 0.922f, 1.000f);
@@ -359,7 +362,7 @@ void client_game::render(void)
 void client_game::layout(void)
 {
     if(!globals::registry.valid(globals::player)) {
-        if(menu_background) {
+        if(client_game::menu_background) {
             background::render();
         }
         else {
@@ -368,7 +371,7 @@ void client_game::layout(void)
         }
     }
 
-    if(globals::ui_screen) {
+    if(globals::gui_screen) {
         if(globals::registry.valid(globals::player)) {
             const float width_f = static_cast<float>(globals::width);
             const float height_f = static_cast<float>(globals::height);
@@ -376,17 +379,17 @@ void client_game::layout(void)
             ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(), ImVec2(width_f, height_f), splash);
         }
 
-        switch(globals::ui_screen) {
-            case UI_MAIN_MENU:
+        switch(globals::gui_screen) {
+            case GUI_MAIN_MENU:
                 main_menu::layout();
                 break;
-            case UI_SERVER_LIST:
+            case GUI_SERVER_LIST:
                 server_list::layout();
                 break;
-            case UI_SETTINGS:
+            case GUI_SETTINGS:
                 settings::layout();
                 break;
-            case UI_PROGRESS:
+            case GUI_PROGRESS:
                 progress::layout();
                 break;
         }

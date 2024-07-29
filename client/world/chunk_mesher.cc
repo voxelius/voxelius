@@ -194,7 +194,7 @@ static void process(WorkerContext *ctx)
 
         const VoxelCoord vpos = ChunkCoord::to_voxel(ctx->coord, lpos);
         const VoxelCoord::value_type entropy_src = vpos[0] * vpos[1] * vpos[2];
-        const auto entropy = crc64::get(&entropy_src, sizeof(entropy_src));
+        const auto entropy = util::crc64(&entropy_src, sizeof(entropy_src));
 
         // FIXME: handle different voxel types
         make_cube(ctx, voxel, info, lpos, vis, entropy);

@@ -7,7 +7,9 @@
 namespace client_game
 {
 extern bool vertical_sync;
+extern bool menu_background;
 extern std::string username;
+extern unsigned int pixel_size;
 } // namespace client_game
 
 namespace client_game

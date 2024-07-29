@@ -76,7 +76,7 @@ static void generate(const ChunkCoord &cpos)
 
 static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
 {
-    if(!globals::ui_screen && globals::registry.valid(globals::player)) {
+    if(!globals::gui_screen && globals::registry.valid(globals::player)) {
         if(event.action == GLFW_PRESS) {
             RayDDA ray = {};
             RayDDA::setup(ray, view::position, view::direction);
@@ -167,8 +167,8 @@ void debug_session::run(void)
     }
 #endif
 
-    for(int i = -8; i < 8; i += 2)
-    for(int j = -8; j < 8; j += 2) {
+    for(int i = -32; i < 32; i += 2)
+    for(int j = -32; j < 32; j += 2) {
         Chunk *chunk = world::find_or_create_chunk({i, 0, j});
         chunk->voxels.fill(v_test);
     }
@@ -182,5 +182,5 @@ void debug_session::run(void)
     auto &transform = globals::registry.emplace<TransformComponent>(globals::player);
     //transform.position.local[1] += 16.0;
 
-    globals::ui_screen = 0U;
+    globals::gui_screen = 0U;
 }

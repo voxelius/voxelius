@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <client/gameui/background.hh>
+#include <client/gui/background.hh>
 #include <client/globals.hh>
-#include <client/util/shadertools.hh>
+#include <client/util/shader.hh>
+#include <client/util/program.hh>
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 #include <shared/math/vector2D.hh>
@@ -19,15 +20,15 @@ void background::init(void)
     bg_vaobj = 0;
     bg_vbo = 0;
 
-    GLuint vert = shadertools::compile_shader("shaders/background.vert", GL_VERTEX_SHADER);
-    GLuint frag = shadertools::compile_shader("shaders/background.frag", GL_FRAGMENT_SHADER);
+    GLuint vert = util::compile_shader("shaders/background.vert", GL_VERTEX_SHADER);
+    GLuint frag = util::compile_shader("shaders/background.frag", GL_FRAGMENT_SHADER);
 
     if(!vert || !frag) {
         spdlog::critical("background: shader compile failed");
         std::terminate();
     }
 
-    bg_program = shadertools::link_program(vert, frag);
+    bg_program = util::link_program(vert, frag);
 
     glDeleteShader(frag);
     glDeleteShader(vert);

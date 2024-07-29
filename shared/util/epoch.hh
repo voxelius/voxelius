@@ -4,11 +4,11 @@
 #define SHARED_UTIL_EPOCH_HH
 #include <cstdint>
 
-namespace epoch
+namespace util
 {
 std::uint64_t microseconds(void);
 std::uint64_t milliseconds(void);
 std::uint64_t seconds(void);
-} // namespace epoch
+} // namespace util
 
 #endif /* SHARED_UTIL_EPOCH_HH */

@@ -21,4 +21,7 @@ void main(void)
     gl_Position.w = 1.0;
     gl_Position.xyz = positions[gl_InstanceID] * u_Scale + u_WorldPosition;
     gl_Position = u_ViewProjMatrix * gl_Position;
+
+    //gl_Position.y += gl_Position.z * gl_Position.z / 384.0;
+    //gl_Position.y += gl_Position.x * gl_Position.x / 384.0;
 }

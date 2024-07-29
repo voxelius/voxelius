@@ -3,11 +3,11 @@
 #include <algorithm>
 #include <client/event/glfw_key.hh>
 #include <client/event/language_set.hh>
-#include <client/gameui/language.hh>
-#include <client/gameui/screen.hh>
-#include <client/gameui/settings.hh>
-#include <client/util/keyname.hh>
+#include <client/gui/language.hh>
+#include <client/gui/screen.hh>
+#include <client/gui/settings.hh>
 #include <client/globals.hh>
+#include <client/keynames.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <imgui.h>
 #include <imgui_stdlib.h>
@@ -227,10 +227,10 @@ void SettingValue_UintSlider::layout(const SettingValue_UintSlider *value)
 
 void SettingValue_KeyBind::layout(const SettingValue_KeyBind *value)
 {
-    const bool is_active = (globals::ui_keybind_ptr == value->value_ptr);
+    const bool is_active = (globals::gui_keybind_ptr == value->value_ptr);
     const std::string &wid = is_active ? value->wid[0] : value->wid[1];
     if(ImGui::Button(wid.c_str(), ImVec2(ImGui::CalcItemWidth() * 0.75f, 0.0f)))
-        globals::ui_keybind_ptr = value->value_ptr;
+        globals::gui_keybind_ptr = value->value_ptr;
     SettingValue::layout_label(value);
     SettingValue::layout_tooltip(value);
 }
@@ -238,7 +238,7 @@ void SettingValue_KeyBind::layout(const SettingValue_KeyBind *value)
 void SettingValue_KeyBind::refresh_wids(SettingValue_KeyBind *value)
 {
     value->wid[0] = fmt::format("...###{}", static_cast<void *>(value));
-    value->wid[1] = fmt::format("{}###{}", keyname::get(value->value_ptr[0]), static_cast<void *>(value));
+    value->wid[1] = fmt::format("{}###{}", keynames::get(value->value_ptr[0]), static_cast<void *>(value));
 }
 
 static void refresh_key_bind_wids(void)
@@ -254,22 +254,22 @@ static void refresh_key_bind_wids(void)
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
     if(event.action == GLFW_PRESS) {
-        if(globals::ui_keybind_ptr) {
+        if(globals::gui_keybind_ptr) {
             if(event.key == GLFW_KEY_ESCAPE) {
-                globals::ui_keybind_ptr = nullptr;
+                globals::gui_keybind_ptr = nullptr;
                 return;
             }
             
-            globals::ui_keybind_ptr[0] = event.key;
-            globals::ui_keybind_ptr = nullptr;
+            globals::gui_keybind_ptr[0] = event.key;
+            globals::gui_keybind_ptr = nullptr;
 
             refresh_key_bind_wids();
 
             return;
         }
         
-        if((event.key == GLFW_KEY_ESCAPE) && (globals::ui_screen == UI_SETTINGS)) {
-            globals::ui_screen = UI_MAIN_MENU;
+        if((event.key == GLFW_KEY_ESCAPE) && (globals::gui_screen == GUI_SETTINGS)) {
+            globals::gui_screen = GUI_MAIN_MENU;
             return;
         }
     }
@@ -416,16 +416,16 @@ void settings::layout(void)
     ImGui::SetNextWindowSize(window_size);
 
     if(ImGui::Begin("###settings", nullptr, MENU_FLAGS)) {
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(3.0f * globals::ui_scale, 3.0f * globals::ui_scale));
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(3.0f * globals::gui_scale, 3.0f * globals::gui_scale));
 
         if(ImGui::BeginTabBar("###settings.tabs", ImGuiTabBarFlags_FittingPolicyResizeDown)) {
             if(ImGui::TabItemButton("<<")) {
-                globals::ui_screen = UI_MAIN_MENU;
-                globals::ui_keybind_ptr = nullptr;
+                globals::gui_screen = GUI_MAIN_MENU;
+                globals::gui_keybind_ptr = nullptr;
             }
 
             if(ImGui::BeginTabItem(str_general.c_str())) {
-                globals::ui_keybind_ptr = nullptr;
+                globals::gui_keybind_ptr = nullptr;
                 layout_general();
                 ImGui::EndTabItem();
             }
@@ -436,19 +436,19 @@ void settings::layout(void)
             }
 
             if(ImGui::BeginTabItem(str_mouse.c_str())) {
-                globals::ui_keybind_ptr = nullptr;
+                globals::gui_keybind_ptr = nullptr;
                 layout_mouse();
                 ImGui::EndTabItem();
             }
 
             if(ImGui::BeginTabItem(str_video.c_str())) {
-                globals::ui_keybind_ptr = nullptr;
+                globals::gui_keybind_ptr = nullptr;
                 layout_video();
                 ImGui::EndTabItem();
             }
 
             if(ImGui::BeginTabItem(str_sound.c_str())) {
-                globals::ui_keybind_ptr = nullptr;
+                globals::gui_keybind_ptr = nullptr;
                 layout_sound();
                 ImGui::EndTabItem();
             }

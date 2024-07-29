@@ -4,7 +4,7 @@
 #include <shared/image.hh>
 #include <shared/math/constexpr.hh>
 #include <shared/util/crc64.hh>
-#include <shared/util/vfstools.hh>
+#include <shared/util/physfs.hh>
 #include <spdlog/spdlog.h>
 #include <unordered_map>
 
@@ -30,8 +30,8 @@ static std::size_t vector_hash(const std::vector<std::string> &strings)
 {
     std::size_t source = 0;
     for(const std::string &str : strings)
-        source += crc64::get(str);
-    return crc64::get(&source, sizeof(source));
+        source += util::crc64(str);
+    return util::crc64(&source, sizeof(source));
 }
 
 static void plane_setup(AtlasPlane &plane)
@@ -68,7 +68,7 @@ static AtlasStrip *plane_new_strip(AtlasPlane &plane, const std::vector<std::str
         Image image = {};
         
         if(!Image::load_rgba(image, paths[i], true)) {
-            spdlog::warn("atlas: {}: {}", paths[i], vfstools::last_error());
+            spdlog::warn("atlas: {}: {}", paths[i], util::physfs_error());
             continue;
         }
         

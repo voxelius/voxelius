@@ -39,9 +39,9 @@ extern ImFont *font_debug;
 extern ImFont *font_menu_title;
 extern ImFont *font_menu_button;
 
-extern int *ui_keybind_ptr;
-extern unsigned int ui_scale;
-extern unsigned int ui_screen;
+extern int *gui_keybind_ptr;
+extern unsigned int gui_scale;
+extern unsigned int gui_screen;
 } // namespace globals
 
 #endif /* CLIENT_GLOBALS_HH */

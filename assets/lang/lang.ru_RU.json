@@ -17,8 +17,8 @@
   "settings.video.gui": "Интерфейс",
   "settings.video": "Видео",
 
-  "settings.value.camera.vertical_fov": "FOV",
-  "settings.value.camera.view_distance": "Отрисовка",
+  "settings.value.view.vertical_fov": "FOV",
+  "settings.value.view.max_distance": "Отрисовка",
   "settings.value.game.menu_background": "Фон в меню",
   "settings.value.game.pixel_size": "Размер пикселя",
   "settings.value.game.username": "Имя пользователя",
@@ -31,12 +31,12 @@
   "settings.value.key.screenshot": "Снимок экрана",
   "settings.value.key.up": "Двигаться вверх",
   "settings.value.language": "Язык",
-  "settings.value.mouse.raw_input": "Необработанный ввод",
+  "settings.value.mouse.enable_raw_input": "Необработанный ввод",
   "settings.value.mouse.sensitivity": "Чувствительность",
 
-  "settings.tooltip.camera.vertical_fov": "Поле зрения",
+  "settings.tooltip.view.vertical_fov": "Поле зрения",
   "settings.tooltip.game.menu_background": "Определяет, использовать ли красивый эффект в главном меню...\nЦветасто!",
   "settings.tooltip.game.pixel_size": "Рисовать мир в кадр, размером меньшим чем размер окна",
-  "settings.tooltip.mouse.raw_input": "Обработка данных с мыши напрямую без участия операционной системы",
+  "settings.tooltip.mouse.enable_raw_input": "Обработка данных с мыши напрямую без участия операционной системы",
   "settings.tooltip.mouse.sensitivity": "Определяет насколько сильно камера реагирует на перемещение курсора по плоскости экрана"
 }

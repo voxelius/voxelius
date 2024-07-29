@@ -2,12 +2,12 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/debug/debug_toggles.hh>
 #include <client/event/glfw_key.hh>
-#include <client/gameui/settings.hh>
+#include <client/gui/settings.hh>
 #include <client/globals.hh>
 #include <client/screenshot.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <shared/util/epoch.hh>
-#include <shared/util/vfstools.hh>
+#include <shared/util/physfs.hh>
 #include <shared/config.hh>
 #include <spdlog/fmt/fmt.h>
 #include <stb_image_write.h>
@@ -22,7 +22,7 @@ static void png_write(void *context, void *data, int size)
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if(!globals::ui_keybind_ptr && !debug_toggles::is_sequence_await) {    
+    if(!globals::gui_keybind_ptr && !debug_toggles::is_sequence_await) {    
         if((event.key == key_screenshot) && (event.action == GLFW_PRESS)) {
             screenshot::take();
             return;
@@ -47,7 +47,7 @@ void screenshot::take(void)
     glReadPixels(0, 0, globals::width, globals::height, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 
     const std::string dirname = std::string("screenshots");
-    const std::string path = fmt::format("{}/{}.png", dirname, epoch::microseconds());
+    const std::string path = fmt::format("{}/{}.png", dirname, util::microseconds());
 
     PHYSFS_mkdir(dirname.c_str());
 
