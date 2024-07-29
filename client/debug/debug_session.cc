@@ -167,10 +167,10 @@ void debug_session::run(void)
     }
 #endif
 
-    for(int i = -32; i < 32; i += 2)
-    for(int j = -32; j < 32; j += 2) {
+    for(int i = -32; i < 32; i += 1)
+    for(int j = -32; j < 32; j += 1) {
         Chunk *chunk = world::find_or_create_chunk({i, 0, j});
-        chunk->voxels.fill(v_test);
+        chunk->voxels.fill(v_slate);
     }
 
     spdlog::info("spawning local player");
@@ -180,7 +180,7 @@ void debug_session::run(void)
 
     auto &head = globals::registry.emplace<HeadComponent>(globals::player);
     auto &transform = globals::registry.emplace<TransformComponent>(globals::player);
-    //transform.position.local[1] += 16.0;
+    transform.position.local[1] += 24.0;
 
     globals::gui_screen = 0U;
 }
