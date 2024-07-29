@@ -13,10 +13,10 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui.h>
+#include <shared/util/epoch.hh>
 #include <shared/cmake.hh>
 #include <shared/cmdline.hh>
 #include <shared/config.hh>
-#include <shared/epoch.hh>
 #include <shared/image.hh>
 #include <shared/splash.hh>
 #include <spdlog/spdlog.h>
