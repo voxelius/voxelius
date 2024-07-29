@@ -69,7 +69,7 @@ static const std::uint64_t crc_table[256] = {
     0x5DEDC41A34BBEEB2, 0x1F1D25F19D51D821, 0xD80C07CD676F8394, 0x9AFCE626CE85B507,
 };
 
-std::uint64_t crc64::get(const void *data, std::size_t size, std::uint64_t combine)
+std::uint64_t util::crc64(const void *data, std::size_t size, std::uint64_t combine)
 {
     std::uint64_t result = combine;
     const std::uint8_t *dp = reinterpret_cast<const std::uint8_t *>(data);
@@ -78,12 +78,12 @@ std::uint64_t crc64::get(const void *data, std::size_t size, std::uint64_t combi
     return result;
 }
 
-std::uint64_t crc64::get(const std::vector<std::uint8_t> &data, std::uint64_t combine)
+std::uint64_t util::crc64(const std::vector<std::uint8_t> &data, std::uint64_t combine)
 {
-    return crc64::get(data.data(), data.size(), combine);
+    return util::crc64(data.data(), data.size(), combine);
 }
 
-std::uint64_t crc64::get(const std::string &data, std::uint64_t combine)
+std::uint64_t util::crc64(const std::string &data, std::uint64_t combine)
 {
-    return crc64::get(data.data(), data.size(), combine);
+    return util::crc64(data.data(), data.size(), combine);
 }

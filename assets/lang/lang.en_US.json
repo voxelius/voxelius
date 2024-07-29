@@ -16,8 +16,8 @@
   "settings.video.gui": "GUI",
   "settings.video": "Video",
 
-  "settings.value.camera.vertical_fov": "FOV",
-  "settings.value.camera.view_distance": "View distance",
+  "settings.value.view.vertical_fov": "FOV",
+  "settings.value.view.max_distance": "View distance",
   "settings.value.game.menu_background": "Menu background",
   "settings.value.game.pixel_size": "Pixel size",
   "settings.value.game.username": "Username",
@@ -30,12 +30,12 @@
   "settings.value.key.screenshot": "Take a screenshot",
   "settings.value.key.up": "Move up",
   "settings.value.language": "Language",
-  "settings.value.mouse.raw_input": "Raw input",
+  "settings.value.mouse.enable_raw_input": "Raw input",
   "settings.value.mouse.sensitivity": "Sensitivity",
 
-  "settings.tooltip.camera.vertical_fov": "Field Of View",
+  "settings.tooltip.view.vertical_fov": "Field Of View",
   "settings.tooltip.game.menu_background": "Use a fancy shader-based menu background... Colorful!",
   "settings.tooltip.game.pixel_size": "Draw the world into a fraction of the window's frame size",
-  "settings.tooltip.mouse.raw_input": "Bypass Operating System's mouse handling and instead deal with cursor movement internally",
+  "settings.tooltip.mouse.enable_raw_input": "Bypass Operating System's mouse handling and instead deal with cursor movement internally",
   "settings.tooltip.mouse.sensitivity": "Specifies the rate at which cursor movement on 2D screen is reflected by the camera"
 }

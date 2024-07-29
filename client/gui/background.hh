@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#ifndef CLIENT_GAMEUI_BACKGROUND_HH
-#define CLIENT_GAMEUI_BACKGROUND_HH
+#ifndef CLIENT_GUI_BACKGROUND_HH
+#define CLIENT_GUI_BACKGROUND_HH
 
 namespace background
 {
@@ -10,4 +10,4 @@ void deinit(void);
 void render(void);
 } // namespace background
 
-#endif /* CLIENT_GAMEUI_BACKGROUND_HH */
+#endif /* CLIENT_GUI_BACKGROUND_HH */

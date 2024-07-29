@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <client/gameui/screen.hh>
+#include <client/gui/screen.hh>
 #include <client/globals.hh>
 #include <shared/config.hh>
 
@@ -28,6 +28,6 @@ ImFont *globals::font_debug = nullptr;
 ImFont *globals::font_menu_title = nullptr;
 ImFont *globals::font_menu_button = nullptr;
 
-int *globals::ui_keybind_ptr = nullptr;
-unsigned int globals::ui_scale = 0U;
-unsigned int globals::ui_screen = UI_SCREEN_NONE;
+int *globals::gui_keybind_ptr = nullptr;
+unsigned int globals::gui_scale = 0U;
+unsigned int globals::gui_screen = GUI_SCREEN_NONE;

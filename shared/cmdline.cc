@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <emhash/hash_table8.hpp>
-#include <shared/util/strtools.hh>
+#include <shared/util/string.hh>
 #include <shared/cmdline.hh>
 
 // Valid options always start with
@@ -33,7 +33,7 @@ void cmdline::append(int argc, char **argv)
         const auto opt = get_argv_opt(argv[i]);
         const auto next_i = i + 1;
 
-        if(strtools::is_empty_or_whitespace(opt))
+        if(util::is_empty_or_whitespace(opt))
             continue;
 
         if(next_i < argc && !is_argv_opt(argv[next_i])) {

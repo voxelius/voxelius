@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/debug/debug_draw.hh>
-#include <client/util/shadertools.hh>
+#include <client/util/program.hh>
+#include <client/util/shader.hh>
 #include <client/view.hh>
 #include <spdlog/spdlog.h>
 
@@ -17,8 +18,8 @@ static GLint u_color = {};
 
 void debug_draw::init(void)
 {
-    GLuint vert = shadertools::compile_shader("shaders/debug_draw.vert", GL_VERTEX_SHADER);
-    GLuint frag = shadertools::compile_shader("shaders/debug_draw.frag", GL_FRAGMENT_SHADER);
+    GLuint vert = util::compile_shader("shaders/debug_draw.vert", GL_VERTEX_SHADER);
+    GLuint frag = util::compile_shader("shaders/debug_draw.frag", GL_FRAGMENT_SHADER);
 
     if(!vert || !frag) {
         spdlog::critical("debug_draw: shader compile failed");
@@ -31,7 +32,7 @@ void debug_draw::init(void)
     // the progam can be called for six instances with
     // instance zero being also used for line drawing.
     // It is obscure but it allows me to use less OpenGL
-    draw_program = shadertools::link_program(vert, frag);
+    draw_program = util::link_program(vert, frag);
 
     glDeleteShader(frag);
     glDeleteShader(vert);

@@ -7,7 +7,6 @@
 namespace keyboard
 {
 void init(void);
-void update(void);
 } // namespace keyboard
 
 #endif /* CLIENT_PLAYER_KEYBOARD_HH */

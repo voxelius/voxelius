@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#ifndef CLIENT_GAMEUI_PROGRESS_HH
-#define CLIENT_GAMEUI_PROGRESS_HH
+#ifndef CLIENT_GUI_PROGRESS_HH
+#define CLIENT_GUI_PROGRESS_HH
 #include <string>
 
 namespace progress
@@ -17,4 +17,4 @@ void set_subtitle(const std::string &subtitle);
 void set(float value);
 } // namespace progress
 
-#endif /* CLIENT_GAMEUI_PROGRESS_HH */
+#endif /* CLIENT_GUI_PROGRESS_HH */

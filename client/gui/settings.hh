@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#ifndef CLIENT_GAMEUI_SETTINGS_HH
-#define CLIENT_GAMEUI_SETTINGS_HH
+#ifndef CLIENT_GUI_SETTINGS_HH
+#define CLIENT_GUI_SETTINGS_HH
 #include <cstddef>
 #include <string>
 
@@ -39,4 +39,4 @@ void add_slider(int priority, std::size_t location, const std::string &name, int
 void add_slider(int priority, std::size_t location, const std::string &name, unsigned int &vref, unsigned int min, unsigned int max, bool tooltip);
 } // namespace settings
 
-#endif /* CLIENT_GAMEUI_SETTINGS_HH */
+#endif /* CLIENT_GUI_SETTINGS_HH */

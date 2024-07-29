@@ -33,14 +33,14 @@ static void on_glfw_error(int code, const char *message)
 
 static void on_glfw_char(GLFWwindow *window, unsigned int codepoint)
 {
-    if(globals::ui_screen) {
+    if(globals::gui_screen) {
         ImGui_ImplGlfw_CharCallback(window, codepoint);
     }
 }
 
 static void on_glfw_cursor_enter(GLFWwindow *window, int entered)
 {
-    if(globals::ui_screen) {
+    if(globals::gui_screen) {
         ImGui_ImplGlfw_CursorEnterCallback(window, entered);
     }
 }
@@ -52,7 +52,7 @@ static void on_glfw_cursor_pos(GLFWwindow *window, double xpos, double ypos)
     event.ypos = static_cast<float>(ypos);
     globals::dispatcher.trigger(event);
 
-    if(globals::ui_screen) {
+    if(globals::gui_screen) {
         ImGui_ImplGlfw_CursorPosCallback(window, xpos, ypos);
     }
 }
@@ -79,7 +79,7 @@ static void on_glfw_key(GLFWwindow *window, int key, int scancode, int action, i
     event.mods = mods;
     globals::dispatcher.trigger(event);
 
-    if(globals::ui_screen) {
+    if(globals::gui_screen) {
         ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
     }
 }
@@ -97,7 +97,7 @@ static void on_glfw_mouse_button(GLFWwindow *window, int button, int action, int
     event.mods = mods;
     globals::dispatcher.trigger(event);
 
-    if(globals::ui_screen) {
+    if(globals::gui_screen) {
         ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
     }
 }
@@ -109,7 +109,7 @@ static void on_glfw_scroll(GLFWwindow *window, double dx, double dy)
     event.dx = static_cast<float>(dy);
     globals::dispatcher.trigger(event);
 
-    if(globals::ui_screen) {
+    if(globals::gui_screen) {
         ImGui_ImplGlfw_ScrollCallback(window, dx, dy);
     }
 }
@@ -222,7 +222,7 @@ void client::main(void)
 
     globals::frametime = 0.0f;
     globals::frametime_avg = 0.0f;
-    globals::curtime = epoch::microseconds();
+    globals::curtime = util::microseconds();
     globals::framecount = 0;
 
     client_game::init();
@@ -238,7 +238,7 @@ void client::main(void)
     std::uint64_t last_curtime = globals::curtime;
 
     while(!glfwWindowShouldClose(globals::window)) {
-        globals::curtime = epoch::microseconds();
+        globals::curtime = util::microseconds();
         globals::frametime = static_cast<float>(globals::curtime - last_curtime) / 1000000.0f;
         globals::frametime_avg += globals::frametime;
         globals::frametime_avg *= 0.5f;

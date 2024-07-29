@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#ifndef CLIENT_GAMEUI_LANGUAGE_HH
-#define CLIENT_GAMEUI_LANGUAGE_HH
+#ifndef CLIENT_GUI_LANGUAGE_HH
+#define CLIENT_GUI_LANGUAGE_HH
 #include <string>
 #include <vector>
 
@@ -35,4 +35,4 @@ const std::string &resolve(const std::string &tag);
 const std::string resolve_ui(const std::string &tag);
 } // namespace language
 
-#endif /* CLIENT_GAMEUI_LANGUAGE_HH */
+#endif /* CLIENT_GUI_LANGUAGE_HH */

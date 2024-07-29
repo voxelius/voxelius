@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/debug/debug_toggles.hh>
-#include <client/util/shadertools.hh>
+#include <client/util/shader.hh>
+#include <client/util/program.hh>
 #include <client/world/chunk_mesh.hh>
 #include <client/world/chunk_renderer.hh>
 #include <client/world/chunk_visibility.hh>
@@ -31,15 +32,15 @@ static void setup_pipeline(Pipeline &pipeline, const std::string &name)
     const std::string vert_path = fmt::format("shaders/{}.vert", name);
     const std::string frag_path = fmt::format("shaders/{}.frag", name);
 
-    GLuint vert = shadertools::compile_shader(vert_path, GL_VERTEX_SHADER);
-    GLuint frag = shadertools::compile_shader(frag_path, GL_FRAGMENT_SHADER);
+    GLuint vert = util::compile_shader(vert_path, GL_VERTEX_SHADER);
+    GLuint frag = util::compile_shader(frag_path, GL_FRAGMENT_SHADER);
 
     if(!vert || !frag) {
         spdlog::critical("chunk_renderer: {}: shader compile failed", name);
         std::terminate();
     }
 
-    pipeline.program = shadertools::link_program(vert, frag);
+    pipeline.program = util::link_program(vert, frag);
 
     glDeleteShader(frag);
     glDeleteShader(vert);

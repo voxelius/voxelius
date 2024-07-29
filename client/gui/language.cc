@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/event/language_set.hh>
-#include <client/gameui/language.hh>
-#include <client/gameui/settings.hh>
+#include <client/gui/language.hh>
+#include <client/gui/settings.hh>
 #include <client/globals.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <parson.h>
-#include <shared/util/vfstools.hh>
+#include <shared/util/physfs.hh>
 #include <shared/config.hh>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
@@ -41,8 +41,8 @@ void language::init(void)
 
     std::string source = {};
 
-    if(!vfstools::read_string(manifest_path, source)) {
-        spdlog::critical("language: {}: {}", manifest_path, vfstools::last_error());
+    if(!util::read_string(manifest_path, source)) {
+        spdlog::critical("language: {}: {}", manifest_path, util::physfs_error());
         std::terminate();
     }
 
@@ -110,8 +110,8 @@ void language::set(LangIterator iter)
 
         std::string source = {};
 
-        if(!vfstools::read_string(path, source)) {
-            spdlog::warn("lang: {}: {}", path, vfstools::last_error());
+        if(!util::read_string(path, source)) {
+            spdlog::warn("lang: {}: {}", path, util::physfs_error());
             send_event(iter);
             return;
         }

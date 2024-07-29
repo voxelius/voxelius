@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <client/util/keyname.hh>
+#include <client/keynames.hh>
 #include <GLFW/glfw3.h>
 #include <unordered_map>
 #include <vector>
@@ -130,7 +130,7 @@ static const std::unordered_map<int, std::string> key_names = {
     { GLFW_KEY_MENU,            "MENU"          },
 };
 
-void keyname::init(void)
+void keynames::init(void)
 {
     key_vec.resize(GLFW_KEY_LAST + 1, &unknown_key_name);
 
@@ -142,7 +142,7 @@ void keyname::init(void)
     }
 }
 
-const std::string &keyname::get(int key_code)
+const std::string &keynames::get(int key_code)
 {
     if((key_code >= 0) && (key_code <= GLFW_KEY_LAST))
         return key_vec.at(key_code)[0];

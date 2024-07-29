@@ -22,7 +22,7 @@ static std::string gl_renderer = {};
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if(globals::ui_keybind_ptr) {
+    if(globals::gui_keybind_ptr) {
         // The UI keybind subsystem has the authority
         // over debug screen and it hogs the input keys
         return;

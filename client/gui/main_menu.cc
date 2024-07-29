@@ -3,8 +3,8 @@
 #include <client/debug/debug_session.hh>
 #include <client/event/glfw_key.hh>
 #include <client/event/language_set.hh>
-#include <client/gameui/main_menu.hh>
-#include <client/gameui/screen.hh>
+#include <client/gui/main_menu.hh>
+#include <client/gui/screen.hh>
 #include <client/globals.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
@@ -22,13 +22,13 @@ static void on_glfw_key(const GlfwKeyEvent &event)
 {
     if((event.key == GLFW_KEY_ESCAPE) && (event.action == GLFW_PRESS)) {
         if(globals::registry.valid(globals::player)) {
-            if(globals::ui_screen == UI_SCREEN_NONE) {
-                globals::ui_screen = UI_MAIN_MENU;
+            if(globals::gui_screen == GUI_SCREEN_NONE) {
+                globals::gui_screen = GUI_MAIN_MENU;
                 return;
             }
 
-            if(globals::ui_screen == UI_MAIN_MENU) {
-                globals::ui_screen = UI_SCREEN_NONE;
+            if(globals::gui_screen == GUI_MAIN_MENU) {
+                globals::gui_screen = GUI_SCREEN_NONE;
                 return;
             }
         }
@@ -59,7 +59,7 @@ void main_menu::layout(void)
     ImGui::SetNextWindowSize(window_size);
 
     if(ImGui::Begin("###main_menu", nullptr, MENU_FLAGS)) {
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 2.0f * globals::ui_scale));
+        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 2.0f * globals::gui_scale));
 
         ImGui::PushFont(globals::font_menu_title);
         constexpr static const char *title_str = "Voxelius";
@@ -73,14 +73,14 @@ void main_menu::layout(void)
         constexpr static const char *subtitle_str = GAME_VERSION_STRING;
         const float subtitle_width = ImGui::CalcTextSize(subtitle_str).x;
         const float subtitle_xpos = 0.5f * (window_size.x - subtitle_width);
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 10.0f * globals::ui_scale);
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 10.0f * globals::gui_scale);
         ImGui::SetCursorPosX(subtitle_xpos);
         ImGui::TextUnformatted(subtitle_str);
         ImGui::PopFont();
 
-        ImGui::Dummy(ImVec2(0.0f, 10.0f * globals::ui_scale));
+        ImGui::Dummy(ImVec2(0.0f, 10.0f * globals::gui_scale));
 
-        const float button_width = 240.0f * globals::ui_scale;
+        const float button_width = 240.0f * globals::gui_scale;
         const float button_xpos = 0.5f * (window_size.x - button_width);
 
         ImGui::PushFont(globals::font_menu_button);
@@ -92,12 +92,12 @@ void main_menu::layout(void)
 
         ImGui::SetCursorPosX(button_xpos);
         if(ImGui::Button(str_server_list.c_str(), ImVec2(button_width, 0.0f)))
-            globals::ui_screen = UI_SERVER_LIST;
+            globals::gui_screen = GUI_SERVER_LIST;
         ImGui::Spacing();
 
         ImGui::SetCursorPosX(button_xpos);
         if(ImGui::Button(str_settings.c_str(), ImVec2(button_width, 0.0f)))
-            globals::ui_screen = UI_SETTINGS;
+            globals::gui_screen = GUI_SETTINGS;
         ImGui::Spacing();
 
         ImGui::SetCursorPosX(button_xpos);

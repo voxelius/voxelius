@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#ifndef CLIENT_DEBUG_SESSION_HH
-#define CLIENT_DEBUG_SESSION_HH
+#ifndef CLIENT_DEBUG_DEBUG_SESSION_HH
+#define CLIENT_DEBUG_DEBUG_SESSION_HH
 
 namespace debug_session
 {
@@ -10,4 +10,4 @@ void update(void);
 void run(void);
 } // namespace debug_session
 
-#endif /* CLIENT_DEBUG_SESSION_HH */
+#endif /* CLIENT_DEBUG_DEBUG_SESSION_HH */
