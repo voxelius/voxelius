@@ -7,6 +7,7 @@
 #include <client/view.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
+#include <FastNoiseLite.h>
 #include <shared/entity/head.hh>
 #include <shared/entity/health.hh>
 #include <shared/entity/player.hh>
@@ -28,13 +29,12 @@ static Voxel v_test = {};
 // Surface level for world generation
 constexpr static const int64_t SURFACE = 0;
 
-#if 0
-static float octanoise(const glm::fvec2 &vec, int count)
+static fnl_state noise = {};
+
+static void fn(void)
 {
-    float result = 0.0f;
-    for(int i = 1; i <= count; ++i)
-        result += glm::simplex(vec * static_cast<float>(i)) / static_cast<float>(i);
-    return result;
+
+
 }
 
 // This is VERY SLOW
@@ -43,27 +43,27 @@ static Voxel voxel_at(const VoxelCoord &vpos)
 {
     static std::uniform_int_distribution intdist = std::uniform_int_distribution(-2, +2);
     static std::mt19937_64 twister = std::mt19937_64(std::random_device()());
-    int64_t surf = SURFACE + 3.0f * octanoise(glm::fvec2(vpos.x, vpos.z) / 64.0f, 4);
-    if(vpos.y <= surf - 32 + intdist(twister))
+    int64_t surf = SURFACE + 16.0f * fnlGetNoise2D(&noise, vpos[0] / 2.0f, vpos[2] / 2.0f);
+    if(vpos[1] <= surf - 32 + intdist(twister))
         return v_slate;
-    if(vpos.y <= surf - 8 + intdist(twister))
+    if(vpos[1] <= surf - 8 + intdist(twister))
         return v_stone;
-    if(vpos.y <= surf - 1)
+    if(vpos[1] <= surf - 1)
         return v_dirt;
-    if(vpos.y <= surf)
+    if(vpos[1] <= surf)
         return v_grass;
     return NULL_VOXEL;
 }
 
 static void generate(const ChunkCoord &cpos)
 {
-    spdlog::trace("generating {} {} {}", cpos.x, cpos.y, cpos.z);
+    spdlog::trace("generating {} {} {}", cpos[0], cpos[1], cpos[2]);
 
     Chunk *chunk = world::find_or_create_chunk(cpos);
 
     for(std::size_t i = 0; i < CHUNK_VOLUME; ++i) {
-        const auto lpos = coord::to_local(i);
-        const auto vpos = coord::to_voxel(cpos, lpos);
+        const auto lpos = LocalCoord::from_index(i);
+        const auto vpos = ChunkCoord::to_voxel(cpos, lpos);
         const auto voxel = voxel_at(vpos);
 
         if(voxel != NULL_VOXEL) {
@@ -72,7 +72,6 @@ static void generate(const ChunkCoord &cpos)
         }
     }
 }
-#endif
 
 static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
 {
@@ -153,24 +152,23 @@ void debug_session::run(void)
 
     voxel_atlas::generate_mipmaps();
 
+    noise = fnlCreateState();
+    noise.noise_type = FNL_NOISE_OPENSIMPLEX2S;
+    noise.fractal_type = FNL_FRACTAL_RIDGED;
 
-#if 0
-    constexpr int WSIZE = 8;
-    constexpr int WHEIGHT = 1;
-    unsigned int w = 0U;
+    constexpr int WSIZE = 16;
     for(int x = -WSIZE; x < WSIZE; x += 1)
     for(int z = -WSIZE; z < WSIZE; z += 1)
-    for(int y = -2; y < WHEIGHT; y += 1) {
+    for(int y = -4; y < 1; y += 1) {
         generate({x, y, z});
         //Chunk *chunk = world::find_or_create_chunk({x, y, z});
         //chunk->voxels.fill(v_stone);
     }
-#endif
 
-    for(int i = -32; i < 32; i += 1)
-    for(int j = -32; j < 32; j += 1) {
-        Chunk *chunk = world::find_or_create_chunk({i, 0, j});
-        chunk->voxels.fill(v_slate);
+    for(int i = -WSIZE; i < WSIZE; i += 2)
+    for(int j = -WSIZE; j < WSIZE; j += 2) {
+        Chunk *chunk = world::find_or_create_chunk({i, 4, j});
+        chunk->voxels.fill(v_test);
     }
 
     spdlog::info("spawning local player");
