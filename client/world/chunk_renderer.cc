@@ -94,6 +94,7 @@ void chunk_renderer::render(void)
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
+    glLineWidth(1.0f);
 
     if(debug_toggles::render_wireframe)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);

@@ -31,6 +31,7 @@ public:
     constexpr static Vec4f gray(void);
     constexpr static Vec4f green(void);
     constexpr static Vec4f light_gray(void);
+    constexpr static Vec4f light_blue(void);
     constexpr static Vec4f magenta(void);
     constexpr static Vec4f red(void);
     constexpr static Vec4f transparent(void);
@@ -110,6 +111,11 @@ constexpr inline Vec4f Vec4f::green(void)
 constexpr inline Vec4f Vec4f::light_gray(void)
 {
     return std::move(Vec4f(0.80f, 0.80f, 0.80f, 1.00f));
+}
+
+constexpr inline Vec4f Vec4f::light_blue(void)
+{
+    return std::move(Vec4f(0.68f, 0.85f, 0.90f, 1.00f));
 }
 
 constexpr inline Vec4f Vec4f::magenta(void)
