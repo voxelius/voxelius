@@ -12,11 +12,11 @@ constexpr static float PLAYER_MOVE_SPEED = 16.0f;
 constexpr static float PLAYER_ACCELERATE = 0.05f;
 constexpr static float PLAYER_DECELERATE = 0.15f;
 
-static Vector3D pmove_wishdir = {};
+static Vec3f pmove_wishdir = {};
 
 void player_move::init(void)
 {
-    pmove_wishdir = Vector3D();
+    pmove_wishdir = Vec3f();
 }
 
 void player_move::update(void)
@@ -32,10 +32,10 @@ void player_move::update(void)
     auto &velocity = globals::registry.get<VelocityComponent>(globals::player);
 
     if(pmove_wishdir[0] || pmove_wishdir[2]) {
-        Vector3D forward, right;
-        EulerAngles::vectors(EulerAngles(0.0f, head.angles[1], 0.0f), &forward, &right, nullptr);
-        velocity.linear[0] = cxpr::lerp(velocity.linear[0], Vector3D::dot(right, pmove_wishdir) * PLAYER_MOVE_SPEED, PLAYER_ACCELERATE);
-        velocity.linear[2] = cxpr::lerp(velocity.linear[2], Vector3D::dot(forward, pmove_wishdir) * PLAYER_MOVE_SPEED, PLAYER_ACCELERATE);
+        Vec3f forward, right;
+        Vec3angles::vectors(Vec3angles(0.0f, head.angles[1], 0.0f), &forward, &right, nullptr);
+        velocity.linear[0] = cxpr::lerp(velocity.linear[0], Vec3f::dot(right, pmove_wishdir) * PLAYER_MOVE_SPEED, PLAYER_ACCELERATE);
+        velocity.linear[2] = cxpr::lerp(velocity.linear[2], Vec3f::dot(forward, pmove_wishdir) * PLAYER_MOVE_SPEED, PLAYER_ACCELERATE);
     }
     else {
         velocity.linear[0] = cxpr::lerp(velocity.linear[0], 0.0f, PLAYER_DECELERATE);
@@ -47,7 +47,7 @@ void player_move::update(void)
     else velocity.linear[1] = cxpr::lerp(velocity.linear[1], 0.0f, PLAYER_DECELERATE);
 }
 
-void player_move::set_direction(const Vector3D &direction)
+void player_move::set_direction(const Vec3f &direction)
 {
     pmove_wishdir = direction;
 }

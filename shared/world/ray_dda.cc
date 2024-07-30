@@ -4,7 +4,7 @@
 #include <shared/world/ray_dda.hh>
 #include <shared/world/world.hh>
 
-void RayDDA::setup(RayDDA &ray, const WorldCoord &start, const Vector3D &direction)
+void RayDDA::setup(RayDDA &ray, const WorldCoord &start, const Vec3f &direction)
 {
     ray.direction = direction;
     ray.start = start;

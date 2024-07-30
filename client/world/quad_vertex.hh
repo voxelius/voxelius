@@ -3,15 +3,15 @@
 #ifndef CLIENT_QUAD_VERTEX_HH
 #define CLIENT_QUAD_VERTEX_HH
 #include <shared/math/constexpr.hh>
-#include <shared/math/vector2D.hh>
-#include <shared/math/vector3D.hh>
+#include <shared/math/vec2f.hh>
+#include <shared/math/vec3f.hh>
 #include <shared/world/vdef.hh>
 
 // [0] XXXXXXXXYYYYYYYYZZZZZZZZWWWWHHHH
 // [1] FFFFTTTTTTTTTTTAAAAA------------
 using QuadVertex = std::array<std::uint32_t, 2>;
 
-constexpr inline static QuadVertex make_quad_vertex(const Vector3D &position, const Vector2D &size, VoxelFacing facing, std::size_t texture, std::size_t frames)
+constexpr inline static QuadVertex make_quad_vertex(const Vec3f &position, const Vec2f &size, VoxelFacing facing, std::size_t texture, std::size_t frames)
 {
     QuadVertex result = {};
     result[0] = 0x00000000;

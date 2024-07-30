@@ -42,16 +42,16 @@ void debug_draw::init(void)
         std::terminate();
     }
 
-    const Vector3D cube_vertices[4] = {
-        Vector3D(0.0f, 0.0f, 0.0f),
-        Vector3D(0.0f, 0.0f, 1.0f),
-        Vector3D(1.0f, 0.0f, 1.0f),
-        Vector3D(1.0f, 0.0f, 0.0f),
+    const Vec3f cube_vertices[4] = {
+        Vec3f(0.0f, 0.0f, 0.0f),
+        Vec3f(0.0f, 0.0f, 1.0f),
+        Vec3f(1.0f, 0.0f, 1.0f),
+        Vec3f(1.0f, 0.0f, 0.0f),
     };
 
-    const Vector3D line_vertices[2] = {
-        Vector3D(0.0f, 0.0f, 0.0f),
-        Vector3D(1.0f, 1.0f, 1.0f),
+    const Vec3f line_vertices[2] = {
+        Vec3f(0.0f, 0.0f, 0.0f),
+        Vec3f(1.0f, 1.0f, 1.0f),
     };
 
     glGenVertexArrays(1, &draw_vaobj);
@@ -97,34 +97,34 @@ void debug_draw::begin(bool depth_testing)
     glEnableVertexAttribArray(0);
 }
 
-void debug_draw::cube(const WorldCoord &start, const Vector3D &scale, float width, const Vector4D &color)
+void debug_draw::cube(const WorldCoord &start, const Vec3f &scale, float width, const Vec4f &color)
 {
     WorldCoord patch = start;
     patch.chunk -= view::position.chunk;
 
     glLineWidth(width);
     
-    glUniform3fv(u_world_position, 1, WorldCoord::to_vector3D(patch).data());
+    glUniform3fv(u_world_position, 1, WorldCoord::to_vec3f(patch).data());
     glUniform3fv(u_scale, 1, scale.data());
     glUniform4fv(u_color, 1, color.data());
 
     glBindBuffer(GL_ARRAY_BUFFER, cube_vbo);
-    glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vector3D), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vec3f), nullptr);
     glDrawArraysInstanced(GL_LINE_LOOP, 0, 4, 6);
 }
 
-void debug_draw::line(const WorldCoord &start, const Vector3D &scale, float width, const Vector4D &color)
+void debug_draw::line(const WorldCoord &start, const Vec3f &scale, float width, const Vec4f &color)
 {
     WorldCoord patch = start;
     patch.chunk -= view::position.chunk;
 
     glLineWidth(width);
     
-    glUniform3fv(u_world_position, 1, WorldCoord::to_vector3D(patch).data());
+    glUniform3fv(u_world_position, 1, WorldCoord::to_vec3f(patch).data());
     glUniform3fv(u_scale, 1, scale.data());
     glUniform4fv(u_color, 1, color.data());
 
     glBindBuffer(GL_ARRAY_BUFFER, line_vbo);
-    glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vector3D), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vec3f), nullptr);
     glDrawArrays(GL_LINES, 0, 2);
 }

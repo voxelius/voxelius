@@ -108,14 +108,14 @@ static VoxelFacing get_facing(VoxelFace face, VoxelType type)
     }
 }
 
-static void push_quad_a(WorkerContext *ctx, const VoxelInfo *info, const Vector3D &pos, const Vector2D &size, VoxelFace face)
+static void push_quad_a(WorkerContext *ctx, const VoxelInfo *info, const Vec3f &pos, const Vec2f &size, VoxelFace face)
 {
     const VoxelFacing facing = get_facing(face, info->type);
     const VoxelTexture &vtex = info->textures[static_cast<std::size_t>(face)];
     ctx->quads[vtex.cached_plane].push_back(make_quad_vertex(pos, size, facing, vtex.cached_offset, vtex.paths.size()));
 }
 
-static void push_quad_v(WorkerContext *ctx, const VoxelInfo *info, const Vector3D &pos, const Vector2D &size, VoxelFace face, std::size_t entropy)
+static void push_quad_v(WorkerContext *ctx, const VoxelInfo *info, const Vec3f &pos, const Vec2f &size, VoxelFace face, std::size_t entropy)
 {
     const VoxelFacing facing = get_facing(face, info->type);
     const VoxelTexture &vtex = info->textures[static_cast<std::size_t>(face)];
@@ -125,8 +125,8 @@ static void push_quad_v(WorkerContext *ctx, const VoxelInfo *info, const Vector3
 
 static void make_cube(WorkerContext *ctx, Voxel voxel, const VoxelInfo *info, const LocalCoord &lpos, VoxelVis vis, std::size_t entropy)
 {
-    const Vector3D fpos = LocalCoord::to_vector3D(lpos);
-    const Vector2D fsize = Vector2D(1.0f, 1.0f);
+    const Vec3f fpos = LocalCoord::to_vec3f(lpos);
+    const Vec2f fsize = Vec2f(1.0f, 1.0f);
 
     if(info->animated) {
         if(vis & VIS_NORTH) push_quad_a(ctx, info, fpos, fsize, VoxelFace::CubeNorth);

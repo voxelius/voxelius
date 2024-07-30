@@ -1,6 +1,11 @@
 add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/entity/transform.cc"
     "${CMAKE_CURRENT_LIST_DIR}/entity/velocity.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/math/mat4x4f.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/math/vec2f.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/math/vec3angles.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/math/vec3f.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/math/vec4f.cc"
     "${CMAKE_CURRENT_LIST_DIR}/util/crc64.cc"
     "${CMAKE_CURRENT_LIST_DIR}/util/epoch.cc"
     "${CMAKE_CURRENT_LIST_DIR}/util/physfs.cc"

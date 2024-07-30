@@ -2,12 +2,12 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_ENTITY_VELOCITY_HH
 #define SHARED_ENTITY_VELOCITY_HH
-#include <shared/math/euler_angles.hh>
+#include <shared/math/vec3angles.hh>
 
 class VelocityComponent final {
 public:
-    EulerAngles angular {};
-    Vector3D linear {};
+    Vec3angles angular {};
+    Vec3f linear {};
 
 public:
     // Updates entities TransformComponent values

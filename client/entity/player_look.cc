@@ -15,6 +15,6 @@ void player_look::add_angles(float pitch_d, float yaw_d)
         head.angles[0] += pitch_d;
         head.angles[1] += yaw_d;
         head.angles[0] = cxpr::clamp(head.angles[0], PITCH_MIN, PITCH_MAX);
-        head.angles = EulerAngles::wrap_180(head.angles);
+        head.angles = Vec3angles::wrap_180(head.angles);
     }
 }

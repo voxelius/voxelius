@@ -3,8 +3,7 @@
 #ifndef SHARED_WORLD_COORD_HH
 #define SHARED_WORLD_COORD_HH
 #include <functional>
-#include <shared/math/vector3D.hh>
-#include <shared/math/vector3Di64.hh>
+#include <shared/math/vec3f.hh>
 #include <shared/world/const.hh>
 
 class ChunkCoord;
@@ -12,53 +11,56 @@ class LocalCoord;
 class VoxelCoord;
 class WorldCoord;
 
-class ChunkCoord final : public Vector3Di64 {
+class ChunkCoord final : public Vec3base<std::int32_t> {
 public:
-    constexpr ChunkCoord(const Vector3Di64 &other);
-    using Vector3Di64::Vector3Di64;
+    template<typename T>
+    constexpr ChunkCoord(const Vec3base<T> &other);
+    using Vec3base<std::int32_t>::Vec3base;
 
 public:
     constexpr static VoxelCoord to_voxel(const ChunkCoord &cvec, std::size_t index);
     constexpr static VoxelCoord to_voxel(const ChunkCoord &cvec, const LocalCoord &lvec);
-    constexpr static WorldCoord to_world(const ChunkCoord &cvec, const Vector3D &lvec);
+    constexpr static WorldCoord to_world(const ChunkCoord &cvec, const Vec3f &lvec);
     constexpr static WorldCoord to_world(const ChunkCoord &cvec, const LocalCoord &lvec);
-    constexpr static Vector3D to_vector3D(const ChunkCoord &cvec);
+    constexpr static Vec3f to_vec3f(const ChunkCoord &cvec);
 };
 
-class LocalCoord final : public Vector3Di64 {
+class LocalCoord final : public Vec3base<std::int16_t> {
 public:
-    constexpr LocalCoord(const Vector3Di64 &other);
-    using Vector3Di64::Vector3Di64;
+    template<typename T>
+    constexpr LocalCoord(const Vec3base<T> &other);
+    using Vec3base<std::int16_t>::Vec3base;
 
 public:
     constexpr static LocalCoord from_index(const std::size_t index);
     constexpr static std::size_t to_index(const LocalCoord &lvec);
-    constexpr static Vector3D to_vector3D(const LocalCoord &lvec);
+    constexpr static Vec3f to_vec3f(const LocalCoord &lvec);
 };
 
-class VoxelCoord final : public Vector3Di64 {
+class VoxelCoord final : public Vec3base<std::int64_t> {
 public:
-    constexpr VoxelCoord(const Vector3Di64 &other);
-    using Vector3Di64::Vector3Di64;
+    template<typename T>
+    constexpr VoxelCoord(const Vec3base<T> &other);
+    using Vec3base<std::int64_t>::Vec3base;
 
 public:
     constexpr static ChunkCoord to_chunk(const VoxelCoord &vvec);
     constexpr static LocalCoord to_local(const VoxelCoord &vvec);
     constexpr static WorldCoord to_world(const VoxelCoord &vvec);
-    constexpr static Vector3D to_vector3D(const VoxelCoord &vvec);
+    constexpr static Vec3f to_vec3f(const VoxelCoord &vvec);
 };
 
 class WorldCoord final {
 public:
     ChunkCoord chunk {};
-    Vector3D local {};
+    Vec3f local {};
 
 public:
     constexpr static LocalCoord to_local(const WorldCoord &wvec);
     constexpr static VoxelCoord to_voxel(const WorldCoord &wvec);
-    constexpr static Vector3D to_vector3D(const WorldCoord &wvec);
-    constexpr static Vector3D to_vector3D(const WorldCoord &pivot, const ChunkCoord &cvec);
-    constexpr static Vector3D to_vector3D(const WorldCoord &pivot, const WorldCoord &wvec);
+    constexpr static Vec3f to_vec3f(const WorldCoord &wvec);
+    constexpr static Vec3f to_vec3f(const WorldCoord &pivot, const ChunkCoord &cvec);
+    constexpr static Vec3f to_vec3f(const WorldCoord &pivot, const WorldCoord &wvec);
 };
 
 template<>
@@ -73,11 +75,12 @@ struct std::hash<ChunkCoord> final {
     }
 };
 
-constexpr inline ChunkCoord::ChunkCoord(const Vector3Di64 &other)
+template<typename T>
+constexpr inline ChunkCoord::ChunkCoord(const Vec3base<T> &other)
 {
-    this[0][0] = other[0];
-    this[0][1] = other[1];
-    this[0][2] = other[2];
+    this[0][0] = static_cast<std::int64_t>(other[0]);
+    this[0][1] = static_cast<std::int64_t>(other[1]);
+    this[0][2] = static_cast<std::int64_t>(other[2]);
 }
 
 constexpr inline VoxelCoord ChunkCoord::to_voxel(const ChunkCoord &cvec, std::size_t index)
@@ -94,7 +97,7 @@ constexpr inline VoxelCoord ChunkCoord::to_voxel(const ChunkCoord &cvec, const L
     return std::move(result);
 }
 
-constexpr inline WorldCoord ChunkCoord::to_world(const ChunkCoord &cvec, const Vector3D &lvec)
+constexpr inline WorldCoord ChunkCoord::to_world(const ChunkCoord &cvec, const Vec3f &lvec)
 {
     WorldCoord result = {};
     result.chunk = cvec;
@@ -112,20 +115,21 @@ constexpr inline WorldCoord ChunkCoord::to_world(const ChunkCoord &cvec, const L
     return std::move(result);
 }
 
-constexpr inline Vector3D ChunkCoord::to_vector3D(const ChunkCoord &cvec)
+constexpr inline Vec3f ChunkCoord::to_vec3f(const ChunkCoord &cvec)
 {
-    Vector3D result = {};
+    Vec3f result = {};
     result[0] = static_cast<float>(cvec[0] << CHUNK_SIZE_LOG2);
     result[1] = static_cast<float>(cvec[1] << CHUNK_SIZE_LOG2);
     result[2] = static_cast<float>(cvec[2] << CHUNK_SIZE_LOG2);
     return std::move(result);
 }
 
-constexpr inline LocalCoord::LocalCoord(const Vector3Di64 &other)
+template<typename T>
+constexpr inline LocalCoord::LocalCoord(const Vec3base<T> &other)
 {
-    this[0][0] = other[0];
-    this[0][1] = other[1];
-    this[0][2] = other[2];
+    this[0][0] = static_cast<std::int16_t>(other[0]);
+    this[0][1] = static_cast<std::int16_t>(other[1]);
+    this[0][2] = static_cast<std::int16_t>(other[2]);
 }
 
 constexpr inline LocalCoord LocalCoord::from_index(std::size_t index)
@@ -142,20 +146,21 @@ constexpr inline std::size_t LocalCoord::to_index(const LocalCoord &lvec)
     return static_cast<std::size_t>((lvec[1] * CHUNK_SIZE + lvec[2]) * CHUNK_SIZE + lvec[0]);
 }
 
-constexpr inline Vector3D LocalCoord::to_vector3D(const LocalCoord &lvec)
+constexpr inline Vec3f LocalCoord::to_vec3f(const LocalCoord &lvec)
 {
-    Vector3D result = {};
+    Vec3f result = {};
     result[0] = static_cast<float>(lvec[0]);
     result[1] = static_cast<float>(lvec[1]);
     result[2] = static_cast<float>(lvec[2]);
     return std::move(result);
 }
 
-constexpr inline VoxelCoord::VoxelCoord(const Vector3Di64 &other)
+template<typename T>
+constexpr inline VoxelCoord::VoxelCoord(const Vec3base<T> &other)
 {
-    this[0][0] = other[0];
-    this[0][1] = other[1];
-    this[0][2] = other[2];
+    this[0][0] = static_cast<std::int32_t>(other[0]);
+    this[0][1] = static_cast<std::int32_t>(other[1]);
+    this[0][2] = static_cast<std::int32_t>(other[2]);
 }
 
 constexpr inline ChunkCoord VoxelCoord::to_chunk(const VoxelCoord &vvec)
@@ -188,9 +193,9 @@ constexpr inline WorldCoord VoxelCoord::to_world(const VoxelCoord &vvec)
     return std::move(result);
 }
 
-constexpr inline Vector3D VoxelCoord::to_vector3D(const VoxelCoord &vvec)
+constexpr inline Vec3f VoxelCoord::to_vec3f(const VoxelCoord &vvec)
 {
-    Vector3D result = {};
+    Vec3f result = {};
     result[0] = static_cast<float>(vvec[0]);
     result[1] = static_cast<float>(vvec[1]);
     result[2] = static_cast<float>(vvec[2]);
@@ -215,27 +220,27 @@ constexpr inline VoxelCoord WorldCoord::to_voxel(const WorldCoord &wvec)
     return std::move(result);
 }
 
-constexpr inline Vector3D WorldCoord::to_vector3D(const WorldCoord &wvec)
+constexpr inline Vec3f WorldCoord::to_vec3f(const WorldCoord &wvec)
 {
-    Vector3D result = {};
+    Vec3f result = {};
     result[0] = static_cast<float>(wvec.chunk[0] << CHUNK_SIZE_LOG2) + wvec.local[0];
     result[1] = static_cast<float>(wvec.chunk[1] << CHUNK_SIZE_LOG2) + wvec.local[1];
     result[2] = static_cast<float>(wvec.chunk[2] << CHUNK_SIZE_LOG2) + wvec.local[2];
     return std::move(result);
 }
 
-constexpr inline Vector3D WorldCoord::to_vector3D(const WorldCoord &pivot, const ChunkCoord &cvec)
+constexpr inline Vec3f WorldCoord::to_vec3f(const WorldCoord &pivot, const ChunkCoord &cvec)
 {
-    Vector3D result = {};
+    Vec3f result = {};
     result[0] = static_cast<float>((cvec[0] - pivot.chunk[0]) << CHUNK_SIZE_LOG2) - pivot.local[0];
     result[1] = static_cast<float>((cvec[1] - pivot.chunk[1]) << CHUNK_SIZE_LOG2) - pivot.local[1];
     result[2] = static_cast<float>((cvec[2] - pivot.chunk[2]) << CHUNK_SIZE_LOG2) - pivot.local[2];
     return std::move(result);
 }
 
-constexpr inline Vector3D WorldCoord::to_vector3D(const WorldCoord &pivot, const WorldCoord &wvec)
+constexpr inline Vec3f WorldCoord::to_vec3f(const WorldCoord &pivot, const WorldCoord &wvec)
 {
-    Vector3D result = {};
+    Vec3f result = {};
     result[0] = static_cast<float>((wvec.chunk[0] - pivot.chunk[0]) << CHUNK_SIZE_LOG2) + (wvec.local[0] - pivot.local[0]);
     result[1] = static_cast<float>((wvec.chunk[1] - pivot.chunk[1]) << CHUNK_SIZE_LOG2) + (wvec.local[1] - pivot.local[1]);
     result[2] = static_cast<float>((wvec.chunk[2] - pivot.chunk[2]) << CHUNK_SIZE_LOG2) + (wvec.local[2] - pivot.local[2]);

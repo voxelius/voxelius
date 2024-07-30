@@ -31,12 +31,6 @@ constexpr static const int64_t SURFACE = 0;
 
 static fnl_state noise = {};
 
-static void fn(void)
-{
-
-
-}
-
 // This is VERY SLOW
 // UNDONE/TODO: move this into server worldgen code
 static Voxel voxel_at(const VoxelCoord &vpos)
@@ -153,22 +147,16 @@ void debug_session::run(void)
     voxel_atlas::generate_mipmaps();
 
     noise = fnlCreateState();
-    noise.noise_type = FNL_NOISE_OPENSIMPLEX2S;
+    noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
     noise.fractal_type = FNL_FRACTAL_RIDGED;
 
-    constexpr int WSIZE = 16;
+    constexpr int WSIZE = 8;
     for(int x = -WSIZE; x < WSIZE; x += 1)
     for(int z = -WSIZE; z < WSIZE; z += 1)
-    for(int y = -4; y < 1; y += 1) {
+    for(int y = 0; y < 1; y += 1) {
         generate({x, y, z});
         //Chunk *chunk = world::find_or_create_chunk({x, y, z});
         //chunk->voxels.fill(v_stone);
-    }
-
-    for(int i = -WSIZE; i < WSIZE; i += 2)
-    for(int j = -WSIZE; j < WSIZE; j += 2) {
-        Chunk *chunk = world::find_or_create_chunk({i, 4, j});
-        chunk->voxels.fill(v_test);
     }
 
     spdlog::info("spawning local player");
