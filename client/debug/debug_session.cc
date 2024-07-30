@@ -2,6 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/debug/debug_session.hh>
 #include <client/event/glfw_mouse_button.hh>
+#include <client/world/player_target.hh>
 #include <client/world/voxel_atlas.hh>
 #include <client/globals.hh>
 #include <client/view.hh>
@@ -53,42 +54,40 @@ static void generate(const ChunkCoord &cpos)
 {
     spdlog::trace("generating {} {} {}", cpos[0], cpos[1], cpos[2]);
 
-    Chunk *chunk = world::find_or_create_chunk(cpos);
-
+    VoxelStorage voxels = {};
+    bool voxels_dirty = false;
+    
     for(std::size_t i = 0; i < CHUNK_VOLUME; ++i) {
         const auto lpos = LocalCoord::from_index(i);
         const auto vpos = ChunkCoord::to_voxel(cpos, lpos);
         const auto voxel = voxel_at(vpos);
 
         if(voxel != NULL_VOXEL) {
-            chunk->voxels[i] = voxel;
+            voxels_dirty = true;
+            voxels[i] = voxel;
             continue;
         }
+    }
+
+    if(voxels_dirty) {
+        Chunk *chunk = world::find_or_create_chunk(cpos);
+        chunk->voxels = voxels;
     }
 }
 
 static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
 {
     if(!globals::gui_screen && globals::registry.valid(globals::player)) {
-        if(event.action == GLFW_PRESS) {
-            RayDDA ray = {};
-            RayDDA::setup(ray, view::position, view::direction);
-
-            do {
-                if(RayDDA::step(ray) != NULL_VOXEL) {
-                    if(event.button == GLFW_MOUSE_BUTTON_LEFT) {
-                        world::set_voxel(NULL_VOXEL, ray.vpos);
-                        return;
-                    }
-
-                    if(event.button == GLFW_MOUSE_BUTTON_RIGHT) {
-                        world::set_voxel(v_stone, ray.vpos + ray.vnormal);
-                        return;
-                    }
-
-                    break;
-                }
-            } while(ray.distance < 16.0f);
+        if((event.action == GLFW_PRESS) && (player_target::voxel != NULL_VOXEL)) {
+            if(event.button == GLFW_MOUSE_BUTTON_LEFT) {
+                world::set_voxel(NULL_VOXEL, player_target::vvec);
+                return;
+            }
+            
+            if(event.button == GLFW_MOUSE_BUTTON_RIGHT) {
+                world::set_voxel(v_stone, player_target::vvec + player_target::vnormal);
+                return;
+            }
         }
     }
 }
@@ -150,7 +149,7 @@ void debug_session::run(void)
     noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
     noise.fractal_type = FNL_FRACTAL_RIDGED;
 
-    constexpr int WSIZE = 8;
+    constexpr int WSIZE = 16;
     for(int x = -WSIZE; x < WSIZE; x += 1)
     for(int z = -WSIZE; z < WSIZE; z += 1)
     for(int y = 0; y < 1; y += 1) {

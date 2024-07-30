@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <client/debug/debug_draw.hh>
 #include <client/debug/debug_screen.hh>
 #include <client/debug/debug_session.hh>
 #include <client/debug/debug_toggles.hh>
@@ -17,6 +16,7 @@
 #include <client/world/chunk_mesher.hh>
 #include <client/world/chunk_renderer.hh>
 #include <client/world/chunk_visibility.hh>
+#include <client/world/player_target.hh>
 #include <client/world/voxel_anims.hh>
 #include <client/world/voxel_atlas.hh>
 #include <client/game.hh>
@@ -25,6 +25,7 @@
 #include <client/keynames.hh>
 #include <client/mouse.hh>
 #include <client/screenshot.hh>
+#include <client/vdraw.hh>
 #include <client/view.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
@@ -153,6 +154,7 @@ void client_game::init(void)
     language::init();
 
     player_move::init();
+    player_target::init();
 
     keynames::init();
     keyboard::init();
@@ -166,6 +168,8 @@ void client_game::init(void)
 
     chunk_mesher::init();
     chunk_renderer::init();
+
+    vdraw::init();
     
     ImGuiStyle &style = ImGui::GetStyle();
 
@@ -240,7 +244,6 @@ void client_game::init(void)
     // so there's simply no point for an INI file.
     ImGui::GetIO().IniFilename = nullptr;
 
-    debug_draw::init();
     debug_toggles::init();
     debug_screen::init();
     debug_session::init();
@@ -278,7 +281,7 @@ void client_game::deinit(void)
 
     background::deinit();
 
-    debug_draw::deinit();
+    vdraw::deinit();
 
     chunk_renderer::deinit();
     chunk_mesher::deinit();
@@ -298,6 +301,7 @@ void client_game::update(void)
     debug_session::update();
 
     player_move::update();
+    player_target::update();
 
     VelocityComponent::update(globals::frametime);
     TransformComponent::update();
@@ -332,22 +336,7 @@ void client_game::render(void)
 
     chunk_renderer::render();
 
-    RayDDA ray = {};
-    RayDDA::setup(ray, view::position, view::direction);
-
-    do {
-        if(RayDDA::step(ray) != NULL_VOXEL) {
-            Vec3f endpos = view::direction;
-            endpos[0] *= ray.distance;
-            endpos[1] *= ray.distance;
-            endpos[2] *= ray.distance;
-
-            debug_draw::begin(true);
-            debug_draw::cube(VoxelCoord::to_world(ray.vpos), Vec3f(1.0f), 2.0f, Vec4f::light_gray());
-
-            break;
-        }
-    } while(ray.distance < 16.0f);
+    player_target::render();
 
     glViewport(0, 0, globals::width, globals::height);
     glClearColor(0.000f, 0.000f, 0.000f, 1.000f);
@@ -394,8 +383,10 @@ void client_game::layout(void)
                 break;
         }
     }
-    else {
-        // Draw only when the menu is hidden
+    else if(debug_toggles::draw_debug_screen) {
+        // This contains Minecraft-esque debug information
+        // about the hardware, world state and other
+        // things that might be uesful
         debug_screen::layout();
     }
 }

@@ -14,9 +14,9 @@ extern bool is_sequence_await;
 
 namespace debug_toggles
 {
-extern bool draw_bounding_boxes;
-extern bool draw_chunk_lines;
-extern bool draw_raycasts;
+extern bool draw_chunk_borders;
+extern bool draw_debug_screen;
+extern bool render_fullbright;
 extern bool render_wireframe;
 } // namespace debug_toggles
 

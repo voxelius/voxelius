@@ -22,6 +22,7 @@ public:
     constexpr static VoxelCoord to_voxel(const ChunkCoord &cvec, const LocalCoord &lvec);
     constexpr static WorldCoord to_world(const ChunkCoord &cvec, const Vec3f &lvec);
     constexpr static WorldCoord to_world(const ChunkCoord &cvec, const LocalCoord &lvec);
+    constexpr static WorldCoord to_world(const ChunkCoord &cvec);
     constexpr static Vec3f to_vec3f(const ChunkCoord &cvec);
 };
 
@@ -112,6 +113,13 @@ constexpr inline WorldCoord ChunkCoord::to_world(const ChunkCoord &cvec, const L
     result.local[0] = static_cast<float>(lvec[0]);
     result.local[1] = static_cast<float>(lvec[1]);
     result.local[2] = static_cast<float>(lvec[2]);
+    return std::move(result);
+}
+
+constexpr inline WorldCoord ChunkCoord::to_world(const ChunkCoord &cvec)
+{
+    WorldCoord result = {};
+    result.chunk = cvec;
     return std::move(result);
 }
 

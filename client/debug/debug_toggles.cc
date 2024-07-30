@@ -9,9 +9,9 @@
 
 bool debug_toggles::is_sequence_await = false;
 
-bool debug_toggles::draw_bounding_boxes = false;
-bool debug_toggles::draw_chunk_lines = false;
-bool debug_toggles::draw_raycasts = false;
+bool debug_toggles::draw_chunk_borders = false;
+bool debug_toggles::draw_debug_screen = false;
+bool debug_toggles::render_fullbright = false;
 bool debug_toggles::render_wireframe = false;
 
 static void on_glfw_key(const GlfwKeyEvent &event)
@@ -22,7 +22,7 @@ static void on_glfw_key(const GlfwKeyEvent &event)
         return;
     }
 
-    if(event.key == GLFW_KEY_F4) {
+    if(event.key == GLFW_KEY_F3) {
         if(event.action == GLFW_PRESS) {
             debug_toggles::is_sequence_await = true;
             return;
@@ -36,14 +36,14 @@ static void on_glfw_key(const GlfwKeyEvent &event)
 
     if((event.action == GLFW_PRESS) && debug_toggles::is_sequence_await) {
         switch(event.key) {
-            case GLFW_KEY_B:
-                debug_toggles::draw_bounding_boxes = !debug_toggles::draw_bounding_boxes;
-                return;
             case GLFW_KEY_G:
-                debug_toggles::draw_chunk_lines = !debug_toggles::draw_chunk_lines;
+                debug_toggles::draw_chunk_borders = !debug_toggles::draw_chunk_borders;
+                return;
+            case GLFW_KEY_V:
+                debug_toggles::draw_debug_screen = !debug_toggles::draw_debug_screen;
                 return;
             case GLFW_KEY_J:
-                debug_toggles::draw_raycasts = !debug_toggles::draw_raycasts;
+                debug_toggles::render_fullbright = !debug_toggles::render_fullbright;
                 return;
             case GLFW_KEY_Z:
                 debug_toggles::render_wireframe = !debug_toggles::render_wireframe;
