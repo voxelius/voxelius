@@ -15,7 +15,7 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/splash.cc")
 target_include_directories(shared PUBLIC "${CMAKE_SOURCE_DIR}")
 target_link_libraries(shared PUBLIC emhash entt parson physfs)
-target_link_libraries(shared PUBLIC spdlog stb thread_pool)
+target_link_libraries(shared PUBLIC spdlog FNL stb thread_pool)
 
 configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake.hh.in" "${CMAKE_CURRENT_LIST_DIR}/cmake.hh")
 
