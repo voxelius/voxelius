@@ -7,12 +7,12 @@
 
 class RayDDA final {
 public:
-    Vector3D direction {};
+    Vec3f direction {};
     WorldCoord start {};
 
 public:
-    Vector3D delta_dist {};
-    Vector3D side_dist {};
+    Vec3f delta_dist {};
+    Vec3f side_dist {};
     VoxelCoord vstep {};
 
 public:
@@ -21,7 +21,7 @@ public:
     VoxelCoord vpos {};
 
 public:
-    static void setup(RayDDA &ray, const WorldCoord &start, const Vector3D &direction);
+    static void setup(RayDDA &ray, const WorldCoord &start, const Vec3f &direction);
     static Voxel step(RayDDA &ray);
 };
 

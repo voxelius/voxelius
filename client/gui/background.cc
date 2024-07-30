@@ -6,7 +6,7 @@
 #include <client/util/program.hh>
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
-#include <shared/math/vector2D.hh>
+#include <shared/math/vec2f.hh>
 
 static GLint u_time = {};
 static GLuint bg_program = {};
@@ -40,11 +40,11 @@ void background::init(void)
 
     u_time = glGetUniformLocation(bg_program, "u_Time");
 
-    const Vector2D vertices[4] = {
-        Vector2D(-1.0f,  1.0f),
-        Vector2D(-1.0f, -1.0f),
-        Vector2D( 1.0f,  1.0f),
-        Vector2D( 1.0f, -1.0f),
+    const Vec2f vertices[4] = {
+        Vec2f(-1.0f,  1.0f),
+        Vec2f(-1.0f, -1.0f),
+        Vec2f( 1.0f,  1.0f),
+        Vec2f( 1.0f, -1.0f),
     };
 
     glGenVertexArrays(1, &bg_vaobj);
@@ -56,7 +56,7 @@ void background::init(void)
 
     glEnableVertexAttribArray(0);
     glVertexAttribDivisor(0, 0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(Vector2D), nullptr);
+    glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(Vec2f), nullptr);
 }
 
 void background::deinit(void)

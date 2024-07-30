@@ -2,11 +2,11 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_ENTITY_HEAD_HH
 #define SHARED_ENTITY_HEAD_HH
-#include <shared/math/euler_angles.hh>
+#include <shared/math/vec3angles.hh>
 
 struct HeadComponent final {
-    EulerAngles angles {};
-    Vector3D offset {};
+    Vec3angles angles {};
+    Vec3f offset {};
 };
 
 #endif /* SHARED_ENTITY_HEAD_HH */

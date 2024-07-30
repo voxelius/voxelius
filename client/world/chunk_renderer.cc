@@ -59,11 +59,11 @@ void chunk_renderer::init(void)
 {
     setup_pipeline(quad_pipeline, "chunk_quad");
 
-    const Vector3D vertices[4] = {
-        Vector3D(1.0f, 0.0f, 1.0f),
-        Vector3D(1.0f, 0.0f, 0.0f),
-        Vector3D(0.0f, 0.0f, 1.0f),
-        Vector3D(0.0f, 0.0f, 0.0f),
+    const Vec3f vertices[4] = {
+        Vec3f(1.0f, 0.0f, 1.0f),
+        Vec3f(1.0f, 0.0f, 0.0f),
+        Vec3f(0.0f, 0.0f, 1.0f),
+        Vec3f(0.0f, 0.0f, 0.0f),
     };
 
     glGenVertexArrays(1, &quad_vaobj);
@@ -75,7 +75,7 @@ void chunk_renderer::init(void)
 
     glEnableVertexAttribArray(0);
     glVertexAttribDivisor(0, 0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vector3D), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vec3f), nullptr);
 
 }
 
@@ -123,7 +123,7 @@ void chunk_renderer::render(void)
             if(!mesh.quad[plane_id].size)
                 continue;
 
-            const Vector3D wpos = ChunkCoord::to_vector3D(chunk.coord - view::position.chunk);
+            const Vec3f wpos = ChunkCoord::to_vec3f(chunk.coord - view::position.chunk);
             glUniform3fv(quad_pipeline.u_world_position, 1, wpos.data());
 
             glBindBuffer(GL_ARRAY_BUFFER, mesh.quad[plane_id].handle);

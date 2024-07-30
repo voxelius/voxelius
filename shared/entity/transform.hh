@@ -2,12 +2,12 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_ENTITY_TRANSFORM_HH
 #define SHARED_ENTITY_TRANSFORM_HH
-#include <shared/math/euler_angles.hh>
+#include <shared/math/vec3angles.hh>
 #include <shared/world/coord.hh>
 
 class TransformComponent final {
 public:
-    EulerAngles angles {};
+    Vec3angles angles {};
     WorldCoord position {};
 
 public:

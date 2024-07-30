@@ -11,16 +11,16 @@
 float view::vertical_fov = 90.0f;
 unsigned int view::max_distance = 16U;
 
-EulerAngles view::angles = {};
-Vector3D view::direction = {};
-Matrix4x4 view::matrix = {};
+Vec3angles view::angles = {};
+Vec3f view::direction = {};
+Mat4x4f view::matrix = {};
 WorldCoord view::position = {};
 
 static void reset(void)
 {
-    view::angles = EulerAngles();
-    view::direction = Vector3D::dir_forward();
-    view::matrix = Matrix4x4::identity();
+    view::angles = Vec3angles();
+    view::direction = Vec3f::dir_forward();
+    view::matrix = Mat4x4f::identity();
     view::position = WorldCoord();
 }
 
@@ -50,12 +50,12 @@ void view::update(void)
     view::position.local += head.offset;
 
     // Figure out where the camera is pointed
-    EulerAngles::vectors(view::angles, &view::direction, nullptr, nullptr);
+    Vec3angles::vectors(view::angles, &view::direction, nullptr, nullptr);
 
     const auto z_near = 0.01f;
     const auto z_far = view::max_distance * static_cast<float>(CHUNK_SIZE);
-    Matrix4x4 proj = Matrix4x4::proj_persp(cxpr::radians(view::vertical_fov), globals::aspect, z_near, z_far);
-    Matrix4x4 view = Matrix4x4::view_psrc(view::position.local, view::angles);
+    Mat4x4f proj = Mat4x4f::proj_persp(cxpr::radians(view::vertical_fov), globals::aspect, z_near, z_far);
+    Mat4x4f view = Mat4x4f::view_psrc(view::position.local, view::angles);
 
-    view::matrix = Matrix4x4::product(proj, view);
+    view::matrix = Mat4x4f::product(proj, view);
 }

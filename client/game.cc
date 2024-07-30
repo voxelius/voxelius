@@ -337,13 +337,13 @@ void client_game::render(void)
 
     do {
         if(RayDDA::step(ray) != NULL_VOXEL) {
-            Vector3D endpos = view::direction;
+            Vec3f endpos = view::direction;
             endpos[0] *= ray.distance;
             endpos[1] *= ray.distance;
             endpos[2] *= ray.distance;
 
             debug_draw::begin(true);
-            debug_draw::cube(VoxelCoord::to_world(ray.vpos), Vector3D(1.0f), 2.0f, Vector4D::light_gray());
+            debug_draw::cube(VoxelCoord::to_world(ray.vpos), Vec3f(1.0f), 2.0f, Vec4f::light_gray());
 
             break;
         }
