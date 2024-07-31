@@ -6,7 +6,6 @@
 #include <client/util/program.hh>
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
-#include <shared/math/vec2f.hh>
 
 static GLint u_time = {};
 static GLuint bg_program = {};

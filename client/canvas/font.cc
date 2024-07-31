@@ -5,26 +5,28 @@
 #include <shared/image.hh>
 #include <spdlog/spdlog.h>
 
-bool Font::load_binary(Font &font, int width, int height, const std::string &path)
-{
-    Font::unload(font);
-
-    return false; // UNDONE
-}
-
-bool Font::load_image(Font &font, int width, int height, const std::string &path)
+bool Font::load(Font &font, int glyph_width, int glyph_height, const std::string &path)
 {
     Image image = {};
 
-    Font::unload(font);
-
     if(Image::load_gray(image, path, true)) {
-        font.glyph_width = width;
-        font.glyph_height = height;
-        font.texture_x_glyphs = image.width / width;
-        font.texture_y_glyphs = image.height / height;
+        GLint max_texture_size;
+        glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_texture_size);
 
-        glGenTextures(1, &font.handle);
+        if((image.width > max_texture_size) || (image.height > max_texture_size)) {
+            spdlog::warn("font: {}: texture too big ({}x{}) [{}]", path, image.width, image.height, max_texture_size);
+            Image::unload(image);
+            Font::unload(font);
+            return false;
+        }
+
+        font.glyph_width = glyph_width;
+        font.glyph_height = glyph_height;
+        font.texture_cwidth = image.width / glyph_width;
+        font.texture_cheight = image.height / glyph_height;
+
+        if(!font.handle)
+            glGenTextures(1, &font.handle);
         glBindTexture(GL_TEXTURE_2D, font.handle);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_R8UI, image.width, image.height, 0, GL_RED, GL_UNSIGNED_BYTE, image.pixels);
 
@@ -38,8 +40,8 @@ bool Font::load_image(Font &font, int width, int height, const std::string &path
         return true;
     }
 
-    spdlog::warn("Font: {}: {}", path, util::physfs_error());
-
+    spdlog::warn("font: {}: {}", path, util::physfs_error());
+    Font::unload(font);
     return false;
 }
 
@@ -47,9 +49,9 @@ void Font::unload(Font &font)
 {
     if(font.handle)
         glDeleteTextures(1, &font.handle);
-    font.texture_y_glyphs = 0;
-    font.texture_x_glyphs = 0;
+    font.texture_cheight = 0;
+    font.texture_cwidth = 0;
     font.glyph_height = 0;
     font.glyph_width = 0;
-    font.handle = 0U;
+    font.handle = 0;
 }

@@ -7,15 +7,14 @@
 
 class Font final {
 public:
+    GLuint handle {};
     int glyph_width {};
     int glyph_height {};
-    int texture_x_glyphs {};
-    int texture_y_glyphs {};
-    GLuint handle {};
+    int texture_cwidth {};
+    int texture_cheight {};
 
 public:
-    static bool load_binary(Font &font, int width, int height, const std::string &path);
-    static bool load_image(Font &font, int width, int height, const std::string &path);
+    static bool load(Font &font, int glyph_width, int glyph_height, const std::string &path);
     static void unload(Font &font);
 };
 

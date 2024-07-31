@@ -2,12 +2,9 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_CANVAS_CANVAS_HH
 #define CLIENT_CANVAS_CANVAS_HH
-#include <glad/gl.h>
+#include <client/canvas/font.hh>
+#include <client/canvas/text.hh>
 #include <shared/math/vec4f.hh>
-#include <string>
-
-class Font;
-class Text;
 
 namespace canvas
 {
@@ -18,11 +15,12 @@ void prepare(void);
 
 namespace canvas
 {
-void draw_rect(int xpos, int ypos, int wide, int tall);
-void draw_rect(int xpos, int ypos, int wide, int tall, const Vec4f &color);
-void draw_rect(int xpos, int ypos, int wide, int tall, const Vec4f &color, GLuint texture);
-void draw_rect_h(int xpos, int ypos, int wide, int tall, const Vec4f &acolor, const Vec4f &bcolor);
-void draw_rect_v(int xpos, int ypos, int wide, int tall, const Vec4f &acolor, const Vec4f &bcolor);
+void draw_rect(int xpos, int ypos, int width, int height);
+void draw_rect(int xpos, int ypos, int width, int height, GLuint texture);
+void draw_rect(int xpos, int ypos, int width, int height, const Vec4f &color);
+void draw_rect(int xpos, int ypos, int width, int height, const Vec4f &color, GLuint texture);
+void draw_rect_h(int xpos, int ypos, int width, int height, const Vec4f &colx, const Vec4f &coly);
+void draw_rect_v(int xpos, int ypos, int width, int height, const Vec4f &colx, const Vec4f &coly);
 } // namespace canvas
 
 namespace canvas
