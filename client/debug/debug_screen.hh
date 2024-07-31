@@ -6,7 +6,8 @@
 namespace debug_screen
 {
 void init(void);
-void layout(void);
+void deinit(void);
+void draw_gui(void);
 } // namespace debug_screen
 
 #endif /* CLIENT_DEBUG_DEBUG_SCREEN_HH */

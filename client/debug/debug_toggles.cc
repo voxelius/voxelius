@@ -2,7 +2,6 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/debug/debug_toggles.hh>
 #include <client/event/glfw_key.hh>
-#include <client/gui/language.hh>
 #include <client/globals.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <spdlog/spdlog.h>
@@ -47,12 +46,6 @@ static void on_glfw_key(const GlfwKeyEvent &event)
                 return;
             case GLFW_KEY_Z:
                 debug_toggles::render_wireframe = !debug_toggles::render_wireframe;
-                return;
-            case GLFW_KEY_L:
-                // This causes the language subsystem
-                // to re-parse the JSON file essentially
-                // causing the game to soft-reload language
-                language::set(language::current());
                 return;
         }
     }

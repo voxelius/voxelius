@@ -2,6 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_WORLD_COORD_HH
 #define SHARED_WORLD_COORD_HH
+#include <cstdint>
 #include <functional>
 #include <shared/math/vec3f.hh>
 #include <shared/world/const.hh>

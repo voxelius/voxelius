@@ -2,7 +2,6 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/entity/player_look.hh>
 #include <client/event/glfw_cursor_pos.hh>
-#include <client/gui/settings.hh>
 #include <client/mouse.hh>
 #include <client/globals.hh>
 #include <GLFW/glfw3.h>
@@ -38,8 +37,8 @@ void mouse::init(void)
     Config::add(globals::client_config, "mouse.enable_raw_input", mouse::enable_raw_input);
     Config::add(globals::client_config, "mouse.sensitivity", mouse::sensitivity);
 
-    settings::add_checkbox(1, settings::MOUSE, "mouse.enable_raw_input", mouse::enable_raw_input, true);
-    settings::add_slider(0, settings::MOUSE, "mouse.sensitivity", mouse::sensitivity, 0.05f, 0.50f, true, "%.02f");
+    // settings::add_checkbox(1, settings::MOUSE, "mouse.enable_raw_input", mouse::enable_raw_input, true);
+    // settings::add_slider(0, settings::MOUSE, "mouse.sensitivity", mouse::sensitivity, 0.05f, 0.50f, true, "%.02f");
 
     previous_xpos = 0.5f * static_cast<float>(globals::width);
     previous_ypos = 0.5f * static_cast<float>(globals::height);

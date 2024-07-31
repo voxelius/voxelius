@@ -85,3 +85,15 @@ void Text::set(Text &text, int line, const std::wstring &str)
     glBindTexture(GL_TEXTURE_2D, text.handle);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, text.texture_height - line - 1, text.texture_width, 1, GL_RED, GL_UNSIGNED_INT, text.cache.data());
 }
+
+void Text::destroy(Text &text)
+{
+    if(text.handle)
+        glDeleteTextures(1, &text.handle);
+    text.cache.clear();
+    text.max_text_height = 0;
+    text.max_text_width = 0;
+    text.texture_height = 0;
+    text.texture_width = 0;
+    text.handle = 0;
+}

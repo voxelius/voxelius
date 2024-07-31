@@ -9,9 +9,9 @@
 #include <shared/globals.hh>
 
 class Config;
+class Font;
 
 struct GLFWwindow;
-struct ImFont;
 
 namespace globals
 {
@@ -35,9 +35,8 @@ extern GLuint world_fbo;
 extern GLuint world_fbo_color;
 extern GLuint world_fbo_depth;
 
-extern ImFont *font_debug;
-extern ImFont *font_menu_title;
-extern ImFont *font_menu_button;
+extern Font font_8px;
+extern Font font_16px;
 
 extern int *gui_keybind_ptr;
 extern unsigned int gui_scale;

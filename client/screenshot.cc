@@ -2,7 +2,6 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/debug/debug_toggles.hh>
 #include <client/event/glfw_key.hh>
-#include <client/gui/settings.hh>
 #include <client/globals.hh>
 #include <client/screenshot.hh>
 #include <entt/signal/dispatcher.hpp>
@@ -34,7 +33,7 @@ void screenshot::init(void)
 {
     Config::add(globals::client_config, "screenshot.key", key_screenshot);
     
-    settings::add_key_binding(0, settings::KEYBOARD_MISC, "key.screenshot", key_screenshot);
+    // settings::add_key_binding(0, settings::KEYBOARD_MISC, "key.screenshot", key_screenshot);
 
     globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
 }

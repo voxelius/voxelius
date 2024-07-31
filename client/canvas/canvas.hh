@@ -2,9 +2,11 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_CANVAS_CANVAS_HH
 #define CLIENT_CANVAS_CANVAS_HH
-#include <client/canvas/font.hh>
-#include <client/canvas/text.hh>
+#include <glad/gl.h>
 #include <shared/math/vec4f.hh>
+
+class Font;
+class Text;
 
 namespace canvas
 {

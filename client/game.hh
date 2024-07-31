@@ -20,7 +20,7 @@ void deinit(void);
 void update(void);
 void update_late(void);
 void render(void);
-void layout(void);
+void draw_gui(void);
 } // namespace client_game
 
 #endif /* CLIENT_GAME_HH */
