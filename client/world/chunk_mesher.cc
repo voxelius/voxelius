@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <client/world/chunk_mesh.hh>
 #include <client/world/chunk_mesher.hh>
-#include <client/world/quad_vertex.hh>
-#include <client/world/vertex_buffer.hh>
+#include <client/world/chunk_quad_vertex.hh>
 #include <client/world/voxel_atlas.hh>
 #include <client/globals.hh>
 #include <entt/entity/registry.hpp>
@@ -17,7 +15,7 @@
 #include <spdlog/spdlog.h>
 #include <thread_pool.hpp>
 
-using QuadBuilder = std::vector<QuadVertex>;
+using QuadBuilder = std::vector<ChunkQuadVertex>;
 
 using CachedChunkCoord = unsigned short;
 constexpr static CachedChunkCoord CPOS_ITSELF = 0x0000;
@@ -112,7 +110,7 @@ static void push_quad_a(WorkerContext *ctx, const VoxelInfo *info, const Vec3f &
 {
     const VoxelFacing facing = get_facing(face, info->type);
     const VoxelTexture &vtex = info->textures[static_cast<std::size_t>(face)];
-    ctx->quads[vtex.cached_plane].push_back(make_quad_vertex(pos, size, facing, vtex.cached_offset, vtex.paths.size()));
+    ctx->quads[vtex.cached_plane].push_back(make_chunk_quad(pos, size, facing, vtex.cached_offset, vtex.paths.size()));
 }
 
 static void push_quad_v(WorkerContext *ctx, const VoxelInfo *info, const Vec3f &pos, const Vec2f &size, VoxelFace face, std::size_t entropy)
@@ -120,7 +118,7 @@ static void push_quad_v(WorkerContext *ctx, const VoxelInfo *info, const Vec3f &
     const VoxelFacing facing = get_facing(face, info->type);
     const VoxelTexture &vtex = info->textures[static_cast<std::size_t>(face)];
     const std::size_t entropy_mod = entropy % vtex.paths.size();
-    ctx->quads[vtex.cached_plane].push_back(make_quad_vertex(pos, size, facing, vtex.cached_offset + entropy_mod, 0));
+    ctx->quads[vtex.cached_plane].push_back(make_chunk_quad(pos, size, facing, vtex.cached_offset + entropy_mod, 0));
 }
 
 static void make_cube(WorkerContext *ctx, Voxel voxel, const VoxelInfo *info, const LocalCoord &lpos, VoxelVis vis, std::size_t entropy)
@@ -210,7 +208,7 @@ static void finalize(WorkerContext *ctx, entt::entity entity)
 
     for(std::size_t plane = 0; plane < plane_count; ++plane) {
         QuadBuilder &builder = ctx->quads[plane];
-        VertexBuffer &buffer = comp.quad[plane];
+        ChunkVBO &buffer = comp.quad[plane];
 
         if(builder.empty()) {
             if(buffer.handle) {
@@ -223,7 +221,7 @@ static void finalize(WorkerContext *ctx, entt::entity entity)
             if(!buffer.handle)
                 glGenBuffers(1, &buffer.handle);
             glBindBuffer(GL_ARRAY_BUFFER, buffer.handle);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(QuadVertex) * builder.size(), builder.data(), GL_STATIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(ChunkQuadVertex) * builder.size(), builder.data(), GL_STATIC_DRAW);
             buffer.size = builder.size();
         }
     }

@@ -2,6 +2,12 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_CHUNK_MESHER_HH
 #define CLIENT_CHUNK_MESHER_HH
+#include <client/world/chunk_vbo.hh>
+#include <vector>
+
+struct ChunkMeshComponent final {
+    std::vector<ChunkVBO> quad {};
+};
 
 namespace chunk_mesher
 {
