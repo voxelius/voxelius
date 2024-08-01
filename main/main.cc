@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/main.hh>
+#include <clocale>
 #include <cstdlib>
 #include <filesystem>
 #include <server/main.hh>
@@ -79,6 +80,8 @@ static std::filesystem::path get_userpath(void)
 
 int main(int argc, char **argv)
 {
+    std::setlocale(LC_ALL, "en_US.UTF-8");
+
     cmdline::append(argc, argv);
 
     auto *logger = spdlog::default_logger_raw();

@@ -15,6 +15,7 @@ public:
 public:
     void set_cursor_xpos(unsigned int xpos);
     void set_cursor_ypos(unsigned int ypos);
+    void append(const std::u32string &text);
     void append(const std::string &text);
 
 private:

@@ -3,6 +3,7 @@
 #ifndef CLIENT_GUI_BITMAP_FONT_HH
 #define CLIENT_GUI_BITMAP_FONT_HH
 #include <glad/gl.h>
+#include <shared/math/vec2f.hh>
 #include <string>
 
 class BitmapFont final {

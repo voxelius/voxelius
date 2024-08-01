@@ -14,6 +14,26 @@ void TextBuilder::set_cursor_ypos(unsigned int ypos)
     cursor_ypos = ypos;
 }
 
+void TextBuilder::append(const std::u32string &text)
+{
+    for(const char32_t &unicode : text) {
+        if(unicode == char32_t(U'\n')) {
+            cursor_xpos = 0U;
+            cursor_ypos += 1U;
+            continue;
+        }
+        
+        if(unicode == char32_t(U'\r')) {
+            cursor_xpos = 0U;
+            continue;
+        }
+        
+        push_back(make_text_quad(cursor_xpos, cursor_ypos, unicode));
+        
+        cursor_xpos += 1U;
+    }
+}
+
 void TextBuilder::append(const std::string &text)
 {
     std::mbstate_t state = {};
@@ -30,11 +50,13 @@ void TextBuilder::append(const std::string &text)
         if(unicode == char32_t(U'\n')) {
             cursor_xpos = 0U;
             cursor_ypos += 1U;
+            cstr += count;
             continue;
         }
         
         if(unicode == char32_t(U'\r')) {
             cursor_xpos = 0U;
+            cstr += count;
             continue;
         }
         
