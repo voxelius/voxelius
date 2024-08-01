@@ -3,6 +3,10 @@
 #include <client/entity/player_look.hh>
 #include <client/entity/player_move.hh>
 #include <client/event/glfw_framebuffer_size.hh>
+#include <client/gui/bitmap_font.hh>
+#include <client/gui/canvas.hh>
+#include <client/gui/text_builder.hh>
+#include <client/gui/text_vbo.hh>
 #include <client/input/keyboard.hh>
 #include <client/input/keynames.hh>
 #include <client/input/mouse.hh>
@@ -32,6 +36,10 @@ bool client_game::vertical_sync = true;
 bool client_game::menu_background = true;
 std::string client_game::username = "player";
 unsigned int client_game::pixel_size = 4U;
+
+static BitmapFont font = {};
+static TextBuilder textb = {};
+static TextVBO text = {};
 
 static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
 {
@@ -90,11 +98,16 @@ void client_game::init(void)
     chunk_renderer::init();
     outline_renderer::init();
     
+    canvas::init();
+    
     globals::dispatcher.sink<GlfwFramebufferSizeEvent>().connect<&on_glfw_framebuffer_size>();
 }
 
 void client_game::init_late(void)
 {
+    BitmapFont::load(font, 8, 16, "textures/fonts/unscii_8x16.png");
+    textb.append("а я знаю что такое бипки");
+    TextVBO::create(text, textb.data(), textb.size());
 }
 
 void client_game::deinit(void)
@@ -104,6 +117,11 @@ void client_game::deinit(void)
     glDeleteRenderbuffers(1, &globals::world_fbo_depth);
     glDeleteTextures(1, &globals::world_fbo_color);
     glDeleteFramebuffers(1, &globals::world_fbo);
+
+    TextVBO::destroy(text);
+    BitmapFont::unload(font);
+
+    canvas::deinit();
 
     outline_renderer::deinit();
     chunk_renderer::deinit();
@@ -167,6 +185,9 @@ void client_game::render(void)
     glBindFramebuffer(GL_READ_FRAMEBUFFER, globals::world_fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0, 0, scaled_width, scaled_height, 0, 0, globals::width, globals::height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    canvas::prepare();
+    canvas::draw_text(64, 16, font, text, Vec4f::white(), Vec4f::black(0.80f), 2.0f);
 }
 
 void client_game::layout(void)

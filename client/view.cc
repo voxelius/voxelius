@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <client/gui/settings.hh>
 #include <client/globals.hh>
 #include <client/view.hh>
 #include <entt/entity/registry.hpp>
@@ -28,9 +27,6 @@ void view::init(void)
 {
     Config::add(globals::client_config, "view.vertical_fov", view::vertical_fov);
     Config::add(globals::client_config, "view.max_distance", view::max_distance);
-
-    settings::add_slider(1, settings::GENERAL, "view.vertical_fov", view::vertical_fov, 45.0, 120.0f, true, "%.0f");
-    settings::add_slider(0, settings::VIDEO, "view.max_distance", view::max_distance, 4U, 64U, false);
 
     reset();
 }

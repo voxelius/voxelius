@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <client/debug/debug_toggles.hh>
 #include <client/event/glfw_key.hh>
-#include <client/gui/settings.hh>
 #include <client/globals.hh>
 #include <client/screenshot.hh>
 #include <entt/signal/dispatcher.hpp>
@@ -22,20 +20,18 @@ static void png_write(void *context, void *data, int size)
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if(!globals::gui_keybind_ptr && !debug_toggles::is_sequence_await) {    
+    //if(!globals::gui_keybind_ptr && !debug_toggles::is_sequence_await) {    
         if((event.key == key_screenshot) && (event.action == GLFW_PRESS)) {
             screenshot::take();
             return;
         }
-    }
+    //}
 }
 
 void screenshot::init(void)
 {
     Config::add(globals::client_config, "screenshot.key", key_screenshot);
     
-    settings::add_key_binding(0, settings::KEYBOARD_MISC, "key.screenshot", key_screenshot);
-
     globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
 }
 

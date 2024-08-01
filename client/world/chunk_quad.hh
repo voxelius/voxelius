@@ -19,20 +19,20 @@ constexpr inline static ChunkQuad make_chunk_quad(const Vec3f &position, const V
     result[1] = 0x00000000;
 
     // [0] XXXXXXXXYYYYYYYYZZZZZZZZ--------
-    result[0] |= (0x00FF & static_cast<std::uint32_t>(position[0] * 16.0f)) << 24;
-    result[0] |= (0x00FF & static_cast<std::uint32_t>(position[1] * 16.0f)) << 16;
-    result[0] |= (0x00FF & static_cast<std::uint32_t>(position[2] * 16.0f)) << 8;
+    result[0] |= (0x000000FF & static_cast<std::uint32_t>(position[0] * 16.0f)) << 24;
+    result[0] |= (0x000000FF & static_cast<std::uint32_t>(position[1] * 16.0f)) << 16;
+    result[0] |= (0x000000FF & static_cast<std::uint32_t>(position[2] * 16.0f)) << 8;
 
     // [0] ------------------------WWWWHHHH
-    result[0] |= (0x000F & static_cast<std::uint32_t>(size[0] * 16.0f - 1.0f)) << 4;
-    result[0] |= (0x000F & static_cast<std::uint32_t>(size[1] * 16.0f - 1.0f));
+    result[0] |= (0x0000000F & static_cast<std::uint32_t>(size[0] * 16.0f - 1.0f)) << 4;
+    result[0] |= (0x0000000F & static_cast<std::uint32_t>(size[1] * 16.0f - 1.0f));
 
     // [1] FFFF----------------------------
-    result[1] |= (0x000F & static_cast<std::uint32_t>(facing)) << 28;
+    result[1] |= (0x0000000F & static_cast<std::uint32_t>(facing)) << 28;
 
     // [1] ----TTTTTTTTTTTAAAAA------------
-    result[1] |= (0x07FF & static_cast<std::uint32_t>(texture)) << 17;
-    result[1] |= (0x001F & static_cast<std::uint32_t>(frames)) << 12;
+    result[1] |= (0x000007FF & static_cast<std::uint32_t>(texture)) << 17;
+    result[1] |= (0x0000001F & static_cast<std::uint32_t>(frames)) << 12;
 
     return std::move(result);
 }
