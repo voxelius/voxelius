@@ -28,7 +28,7 @@ bool BitmapFont::load(BitmapFont &font, int width, int height, const std::string
         if(!font.handle)
             glGenTextures(1, &font.handle);
         glBindTexture(GL_TEXTURE_2D, font.handle);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8UI, image.width, image.height, 0, GL_RED, GL_UNSIGNED_BYTE, image.pixels);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, image.width, image.height, 0, GL_RED, GL_UNSIGNED_BYTE, image.pixels);
         
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
