@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#ifndef CLIENT_ATLAS_HH
-#define CLIENT_ATLAS_HH
+#ifndef CLIENT_WORLD_VOXEL_ATLAS_HH
+#define CLIENT_WORLD_VOXEL_ATLAS_HH
 #include <cstddef>
 #include <glad/gl.h>
 #include <string>
@@ -31,4 +31,4 @@ AtlasStrip *find_or_load(const std::vector<std::string> &paths);
 AtlasStrip *find(const std::vector<std::string> &paths);
 } // namespace voxel_atlas
 
-#endif /* CLIENT_ATLAS_HH */
+#endif /* CLIENT_WORLD_VOXEL_ATLAS_HH */

@@ -10,9 +10,6 @@
 #include <client/main.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <glad/gl.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
-#include <imgui.h>
 #include <shared/util/epoch.hh>
 #include <shared/cmake.hh>
 #include <shared/cmdline.hh>
@@ -31,30 +28,12 @@ static void on_glfw_error(int code, const char *message)
     spdlog::error("glfw: {}", message);
 }
 
-static void on_glfw_char(GLFWwindow *window, unsigned int codepoint)
-{
-    if(globals::gui_screen) {
-        ImGui_ImplGlfw_CharCallback(window, codepoint);
-    }
-}
-
-static void on_glfw_cursor_enter(GLFWwindow *window, int entered)
-{
-    if(globals::gui_screen) {
-        ImGui_ImplGlfw_CursorEnterCallback(window, entered);
-    }
-}
-
 static void on_glfw_cursor_pos(GLFWwindow *window, double xpos, double ypos)
 {
     GlfwCursorPosEvent event = {};
     event.xpos = static_cast<float>(xpos);
     event.ypos = static_cast<float>(ypos);
     globals::dispatcher.trigger(event);
-
-    if(globals::gui_screen) {
-        ImGui_ImplGlfw_CursorPosCallback(window, xpos, ypos);
-    }
 }
 
 static void on_glfw_framebuffer_size(GLFWwindow *window, int width, int height)
@@ -78,15 +57,6 @@ static void on_glfw_key(GLFWwindow *window, int key, int scancode, int action, i
     event.action = action;
     event.mods = mods;
     globals::dispatcher.trigger(event);
-
-    if(globals::gui_screen) {
-        ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
-    }
-}
-
-static void on_glfw_monitor_event(GLFWmonitor *monitor, int event)
-{
-    ImGui_ImplGlfw_MonitorCallback(monitor, event);
 }
 
 static void on_glfw_mouse_button(GLFWwindow *window, int button, int action, int mods)
@@ -96,10 +66,6 @@ static void on_glfw_mouse_button(GLFWwindow *window, int button, int action, int
     event.action = action;
     event.mods = mods;
     globals::dispatcher.trigger(event);
-
-    if(globals::gui_screen) {
-        ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
-    }
 }
 
 static void on_glfw_scroll(GLFWwindow *window, double dx, double dy)
@@ -108,15 +74,6 @@ static void on_glfw_scroll(GLFWwindow *window, double dx, double dy)
     event.dx = static_cast<float>(dx);
     event.dx = static_cast<float>(dy);
     globals::dispatcher.trigger(event);
-
-    if(globals::gui_screen) {
-        ImGui_ImplGlfw_ScrollCallback(window, dx, dy);
-    }
-}
-
-static void on_glfw_window_focus(GLFWwindow *window, int focused)
-{
-    ImGui_ImplGlfw_WindowFocusCallback(window, focused);
 }
 
 static void on_opengl_message(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message, const void *param)
@@ -153,16 +110,11 @@ void client::main(void)
     // resolution we can get with that height is the crispy 320x240
     glfwSetWindowSizeLimits(globals::window, 320, 240, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
-    glfwSetCharCallback(globals::window, &on_glfw_char);
-    glfwSetCursorEnterCallback(globals::window, &on_glfw_cursor_enter);
     glfwSetCursorPosCallback(globals::window, &on_glfw_cursor_pos);
     glfwSetFramebufferSizeCallback(globals::window, &on_glfw_framebuffer_size);
     glfwSetKeyCallback(globals::window, &on_glfw_key);
     glfwSetMouseButtonCallback(globals::window, &on_glfw_mouse_button);
     glfwSetScrollCallback(globals::window, &on_glfw_scroll);
-    glfwSetWindowFocusCallback(globals::window, &on_glfw_window_focus);
-
-    glfwSetMonitorCallback(&on_glfw_monitor_event);
 
     Image image = {};
     GLFWimage icon = {};
@@ -210,16 +162,6 @@ void client::main(void)
 
     glDisable(GL_MULTISAMPLE);
 
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGui::StyleColorsDark();
-    ImGui_ImplGlfw_InitForOpenGL(globals::window, false);
-    ImGui_ImplOpenGL3_Init(nullptr);
-
-    ImGuiIO &io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-
     globals::frametime = 0.0f;
     globals::frametime_avg = 0.0f;
     globals::curtime = util::microseconds();
@@ -245,10 +187,6 @@ void client::main(void)
         globals::num_triangles = 0;
 
         last_curtime = globals::curtime;
-
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
 
         client_game::update();
 
@@ -280,10 +218,6 @@ void client::main(void)
         // acts as the definitive UI rendering/logic callback
         client_game::layout();
 
-        ImGui::Render();
-
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
         glfwSwapBuffers(globals::window);
 
         client_game::update_late();
@@ -305,10 +239,6 @@ void client::main(void)
     spdlog::info("client: average frametime: {:.03f} ms", 1000.0f * globals::frametime_avg);
 
     client_game::deinit();
-
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
 
     glfwDestroyWindow(globals::window);
     glfwTerminate();

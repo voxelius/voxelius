@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#ifndef CLIENT_WORLD_CHUNK_QUAD_VERTEX_HH
-#define CLIENT_WORLD_CHUNK_QUAD_VERTEX_HH
+#ifndef CLIENT_WORLD_QUAD_VERTEX_HH
+#define CLIENT_WORLD_QUAD_VERTEX_HH
 #include <shared/math/constexpr.hh>
 #include <shared/math/vec2f.hh>
 #include <shared/math/vec3f.hh>
@@ -37,4 +37,4 @@ constexpr inline static ChunkQuadVertex make_chunk_quad(const Vec3f &position, c
     return std::move(result);
 }
 
-#endif /* CLIENT_WORLD_CHUNK_QUAD_VERTEX_HH */
+#endif /* CLIENT_WORLD_QUAD_VERTEX_HH */

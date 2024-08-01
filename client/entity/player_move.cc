@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/entity/player_move.hh>
-#include <client/gui/screen.hh>
 #include <client/globals.hh>
 #include <entt/entity/registry.hpp>
 #include <shared/entity/head.hh>
@@ -28,12 +27,6 @@ void player_move::update(void)
         // while we're not loaded into a world
         wishdir = Vec3f(0.0f, 0.0f, 0.0f);
         return;
-    }
-
-    if(globals::gui_screen) {
-        // UI is active - player movement should not
-        // update; we at least want to decelerate
-        wishdir = Vec3f(0.0f, 0.0f, 0.0f);
     }
 
     const auto &head = globals::registry.get<HeadComponent>(globals::player);

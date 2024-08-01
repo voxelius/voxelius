@@ -1,7 +1,4 @@
 add_library(client STATIC
-    "${CMAKE_CURRENT_LIST_DIR}/debug/debug_screen.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/debug/debug_session.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/debug/debug_toggles.cc"
     "${CMAKE_CURRENT_LIST_DIR}/entity/player_look.cc"
     "${CMAKE_CURRENT_LIST_DIR}/entity/player_move.cc"
     "${CMAKE_CURRENT_LIST_DIR}/gui/background.cc"
