@@ -107,6 +107,7 @@ void client_game::init_late(void)
 {
     BitmapFont::load(font, 8, 16, "textures/fonts/unscii_8x16.png");
     textb.append("а я знаю что такое бипки");
+
     TextVBO::create(text, textb.data(), textb.size());
 }
 
@@ -187,7 +188,8 @@ void client_game::render(void)
     glBlitFramebuffer(0, 0, scaled_width, scaled_height, 0, 0, globals::width, globals::height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
     canvas::prepare();
-    canvas::draw_text(64, 16, font, text, Vec4f::white(), Vec4f::black(0.80f), 2.0f);
+    const float ttt = static_cast<float>(globals::curtime) / 1000000.0f;
+    canvas::draw_text(64, 16, font, text, Vec4f::white(), Vec4f::black(0.80f), 3.0f + 1.0f * std::sin(ttt));
 }
 
 void client_game::layout(void)
