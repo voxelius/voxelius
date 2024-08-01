@@ -2,6 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_GUI_TEXT_QUAD_VERTEX_HH
 #define CLIENT_GUI_TEXT_QUAD_VERTEX_HH
+#include <cstdint>
 #include <shared/math/constexpr.hh>
 #include <shared/math/vec2f.hh>
 #include <shared/math/vec4f.hh>
@@ -11,11 +12,11 @@
 // [1] CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 // [2] RRRRRRRRGGGGGGGGBBBBBBBBAAAAAAAA (FG)
 // [3] RRRRRRRRGGGGGGGGBBBBBBBBAAAAAAAA (BG)
-using TextQuadVertex = std::array<std::uint32_t, 4>;
+using TextQuad = std::array<std::uint32_t, 4>;
 
-constexpr static inline TextQuadVertex make_text_quad(unsigned int cx, unsigned int cy, wchar_t value, const Vec4f &fg, const Vec4f &bg)
+constexpr static inline TextQuad make_text_quad(unsigned int cx, unsigned int cy, wchar_t value, const Vec4f &fg, const Vec4f &bg)
 {
-    TextQuadVertex result = {};
+    TextQuad result = {};
     result[0] = 0x00000000;
     result[1] = 0x00000000;
     result[2] = 0x00000000;
