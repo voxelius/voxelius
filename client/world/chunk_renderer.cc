@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <client/debug/debug_toggles.hh>
 #include <client/util/shader.hh>
 #include <client/util/program.hh>
 #include <client/world/chunk_mesher.hh>
-#include <client/world/chunk_quad_vertex.hh>
 #include <client/world/chunk_renderer.hh>
 #include <client/world/chunk_visibility.hh>
+#include <client/world/quad_vertex.hh>
 #include <client/world/voxel_anims.hh>
 #include <client/world/voxel_atlas.hh>
 #include <client/globals.hh>
@@ -95,9 +94,9 @@ void chunk_renderer::render(void)
     glDepthFunc(GL_LEQUAL);
     glLineWidth(1.0f);
 
-    if(debug_toggles::render_wireframe)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    //if(debug_toggles::render_wireframe)
+    //    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    //else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     GLuint timings[3] = {};
     timings[0] = globals::frametime;

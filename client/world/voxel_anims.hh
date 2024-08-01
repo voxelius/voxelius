@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#ifndef CLIENT_VOXEL_ANIMS_HH
-#define CLIENT_VOXEL_ANIMS_HH
+#ifndef CLIENT_WORLD_VOXEL_ANIMS_HH
+#define CLIENT_WORLD_VOXEL_ANIMS_HH
 #include <cstdint>
 
 namespace voxel_anims
@@ -16,4 +16,4 @@ void init(void);
 void update(void);
 } // namespace voxel_anims
 
-#endif /* CLIENT_VOXEL_ANIMS_HH */
+#endif /* CLIENT_WORLD_VOXEL_ANIMS_HH */

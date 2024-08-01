@@ -11,7 +11,6 @@
 class Config;
 
 struct GLFWwindow;
-struct ImFont;
 
 namespace globals
 {
@@ -34,14 +33,6 @@ extern entt::entity player;
 extern GLuint world_fbo;
 extern GLuint world_fbo_color;
 extern GLuint world_fbo_depth;
-
-extern ImFont *font_debug;
-extern ImFont *font_menu_title;
-extern ImFont *font_menu_button;
-
-extern int *gui_keybind_ptr;
-extern unsigned int gui_scale;
-extern unsigned int gui_screen;
 } // namespace globals
 
 #endif /* CLIENT_GLOBALS_HH */

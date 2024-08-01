@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/world/chunk_mesher.hh>
-#include <client/world/chunk_quad_vertex.hh>
+#include <client/world/quad_vertex.hh>
 #include <client/world/voxel_atlas.hh>
 #include <client/globals.hh>
 #include <entt/entity/registry.hpp>
