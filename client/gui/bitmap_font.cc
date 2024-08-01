@@ -3,7 +3,7 @@
 #include <client/gui/bitmap_font.hh>
 #include <shared/util/physfs.hh>
 #include <shared/image.hh>
-#include <spdlog/spdlog.hh>
+#include <spdlog/spdlog.h>
 
 bool BitmapFont::load(BitmapFont &font, int width, int height, const std::string &path)
 {

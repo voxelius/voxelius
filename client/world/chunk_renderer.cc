@@ -3,9 +3,9 @@
 #include <client/util/shader.hh>
 #include <client/util/program.hh>
 #include <client/world/chunk_mesher.hh>
+#include <client/world/chunk_quad.hh>
 #include <client/world/chunk_renderer.hh>
 #include <client/world/chunk_visibility.hh>
-#include <client/world/quad_vertex.hh>
 #include <client/world/voxel_anims.hh>
 #include <client/world/voxel_atlas.hh>
 #include <client/globals.hh>
@@ -129,7 +129,7 @@ void chunk_renderer::render(void)
 
             glEnableVertexAttribArray(1);
             glVertexAttribDivisor(1, 1);
-            glVertexAttribIPointer(1, 2, GL_UNSIGNED_INT, sizeof(ChunkQuadVertex), nullptr);
+            glVertexAttribIPointer(1, 2, GL_UNSIGNED_INT, sizeof(ChunkQuad), nullptr);
             
             glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, mesh.quad[plane_id].size);
             

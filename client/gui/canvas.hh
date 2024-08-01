@@ -17,10 +17,13 @@ void prepare(void);
 
 namespace canvas
 {
+
+} // namespace canvas
+
+namespace canvas
+{
 void draw_rect(int xpos, int ypos, int width, int height);
-void draw_rect(int xpos, int ypos, int width, int height, GLuint texture);
 void draw_rect(int xpos, int ypos, int width, int height, const Vec4f &color);
-void draw_rect(int xpos, int ypos, int width, int height, const Vec4f &color, GLuint texture);
 void draw_rect_h(int xpos, int ypos, int width, int height, const Vec4f &colx, const Vec4f &coly);
 void draw_rect_v(int xpos, int ypos, int width, int height, const Vec4f &colx, const Vec4f &coly);
 } // namespace canvas
