@@ -29,10 +29,12 @@ public:
     constexpr static Vec4f dark_green(const float alpha = 1.0f);
     constexpr static Vec4f dark_magenta(const float alpha = 1.0f);
     constexpr static Vec4f dark_red(const float alpha = 1.0f);
+    constexpr static Vec4f dark_yellow(const float alpha = 1.0f);
+    constexpr static Vec4f gold(const float alpha = 1.0f);
     constexpr static Vec4f gray(const float alpha = 1.0f);
     constexpr static Vec4f green(const float alpha = 1.0f);
-    constexpr static Vec4f light_gray(const float alpha = 1.0f);
     constexpr static Vec4f light_blue(const float alpha = 1.0f);
+    constexpr static Vec4f light_gray(const float alpha = 1.0f);
     constexpr static Vec4f magenta(const float alpha = 1.0f);
     constexpr static Vec4f red(const float alpha = 1.0f);
     constexpr static Vec4f white(const float alpha = 1.0f);
@@ -101,6 +103,16 @@ constexpr inline Vec4f Vec4f::dark_magenta(const float alpha)
 constexpr inline Vec4f Vec4f::dark_red(const float alpha)
 {
     return std::move(Vec4f(0.50f, 0.00f, 0.00f, alpha));
+}
+
+constexpr inline Vec4f Vec4f::dark_yellow(const float alpha)
+{
+    return std::move(Vec4f(0.50f, 0.50f, 0.00f, alpha));
+}
+
+constexpr inline Vec4f Vec4f::gold(const float alpha)
+{
+    return std::move(Vec4f(1.00f, 0.67f, 0.50f, alpha));
 }
 
 constexpr inline Vec4f Vec4f::gray(const float alpha)

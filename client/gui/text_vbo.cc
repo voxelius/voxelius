@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
+#include <client/gui/text_builder.hh>
 #include <client/gui/text_vbo.hh>
 
-void TextVBO::create(TextVBO &text, const TextQuad *data, std::size_t size)
+void TextVBO::create(TextVBO &buffer, const TextBuilder &builder)
 {
-    if(!text.handle)
-        glGenBuffers(1, &text.handle);
-    glBindBuffer(GL_ARRAY_BUFFER, text.handle);
-    glBufferData(GL_ARRAY_BUFFER, size * sizeof(TextQuad), data, GL_DYNAMIC_DRAW);
-    text.size = size;
+    if(!buffer.handle)
+        glGenBuffers(1, &buffer.handle);
+    glBindBuffer(GL_ARRAY_BUFFER, buffer.handle);
+    glBufferData(GL_ARRAY_BUFFER, builder.quads.size() * sizeof(TextQuad), builder.quads.data(), GL_DYNAMIC_DRAW);
+    buffer.size = builder.quads.size();
 }
 
-void TextVBO::destroy(TextVBO &text)
+void TextVBO::destroy(TextVBO &buffer)
 {
-    if(text.handle)
-        glDeleteBuffers(1, &text.handle);
-    text.handle = 0;
-    text.size = 0;
+    if(buffer.handle)
+        glDeleteBuffers(1, &buffer.handle);
+    buffer.handle = 0;
+    buffer.size = 0;
 }
