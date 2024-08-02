@@ -4,8 +4,8 @@
 #include <client/entity/player_move.hh>
 #include <client/event/glfw_framebuffer_size.hh>
 #include <client/gui/bitmap_font.hh>
-#include <client/gui/canvas.hh>
 #include <client/gui/text_builder.hh>
+#include <client/gui/text_renderer.hh>
 #include <client/gui/text_vbo.hh>
 #include <client/input/keyboard.hh>
 #include <client/input/keynames.hh>
@@ -38,7 +38,6 @@ std::string client_game::username = "player";
 unsigned int client_game::pixel_size = 4U;
 
 static BitmapFont font = {};
-static TextBuilder textb = {};
 static TextVBO text = {};
 
 static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
@@ -98,7 +97,7 @@ void client_game::init(void)
     chunk_renderer::init();
     outline_renderer::init();
     
-    canvas::init();
+    text_renderer::init();
     
     globals::dispatcher.sink<GlfwFramebufferSizeEvent>().connect<&on_glfw_framebuffer_size>();
 }
@@ -106,9 +105,17 @@ void client_game::init(void)
 void client_game::init_late(void)
 {
     BitmapFont::load(font, 8, 16, "textures/fonts/unscii_8x16.png");
-    textb.append("а я знаю что такое бипки");
 
-    TextVBO::create(text, textb.data(), textb.size());
+    TextBuilder builder = {};
+    builder.mode = TEXT_MODE_ASCII | TEXT_MODE_VT241 | TEXT_MODE_NOTCH;
+    builder.background = Vec4f::transparent();
+    builder.foreground = Vec4f::light_gray();
+
+    TextBuilder::append(builder, "This tests ASCII capabilities\n\tof the text renderer\n");
+    TextBuilder::append(builder, "\033[30mTEST\033[31mTEST\033[32mTEST\033[33mTEST\033[34mTEST\033[35mTEST\033[36mTEST\033[37mTEST\033[38mTEST\033[39mTEST\n\033[40mTEST\033[41mTEST\033[42mTEST\033[43mTEST\033[44mTEST\033[45mTEST\033[46mTEST\033[47mTEST\033[48mTEST\033[49mTEST\n");
+    TextBuilder::append(builder, "\u00a7c\u00a7lTEST\u00a7b\u00a7lTEST\u00a7a\u00a7lTEST\u00a7e\u00a7lTEST\u00a7d\u00a7lTEST\u00a7d\u00a7l\u00a7oTEST?\u00a7d\u00a7l\u00a7o\u00a7kABC\n");
+    TextBuilder::append(builder, "When the \033[8mimposter\033[m is \033[92;8msus");
+    TextVBO::create(text, builder);
 }
 
 void client_game::deinit(void)
@@ -122,7 +129,7 @@ void client_game::deinit(void)
     TextVBO::destroy(text);
     BitmapFont::unload(font);
 
-    canvas::deinit();
+    text_renderer::deinit();
 
     outline_renderer::deinit();
     chunk_renderer::deinit();
@@ -187,9 +194,9 @@ void client_game::render(void)
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0, 0, scaled_width, scaled_height, 0, 0, globals::width, globals::height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
-    canvas::prepare();
-    const float ttt = static_cast<float>(globals::curtime) / 1000000.0f;
-    canvas::draw_text(64, 16, font, text, Vec4f::white(), Vec4f::black(0.80f), 3.0f + 1.0f * std::sin(ttt));
+    text_renderer::prepare();
+    text_renderer::draw(4, 4, font, text, 4.0f, 0.25f);
+    text_renderer::draw(0, 0, font, text, 4.0f);
 }
 
 void client_game::layout(void)

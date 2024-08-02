@@ -4,6 +4,7 @@
 #define SHARED_MATH_CONSTEXPR_HH
 #include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <type_traits>
 
 #ifndef M_PI

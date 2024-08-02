@@ -3,14 +3,14 @@
 #version 330 core
 
 in vec2 vs_TexCoord;
+in vec4 vs_Background;
+in vec4 vs_Foreground;
 
 out vec4 frag_Target;
 
-uniform vec4 u_BackgroundColor;
-uniform vec4 u_ForegroundColor;
 uniform sampler2D u_Font;
 
 void main(void)
 {
-    frag_Target = mix(u_BackgroundColor, u_ForegroundColor, texture(u_Font, vs_TexCoord).x);
+    frag_Target = mix(vs_Background, vs_Foreground, texture(u_Font, vs_TexCoord).x);
 }
