@@ -11,7 +11,8 @@ namespace text_renderer
 void init(void);
 void deinit(void);
 void prepare(void);
-void draw(int xpos, int ypos, const BitmapFont &font, const TextVBO &text, float scale = 1.0f, float tint = 1.0f);
+void draw(float xpos, float ypos, const BitmapFont &font, const TextVBO &text, float scale);
+void draw_shadow(float xpos, float ypos, const BitmapFont &font, const TextVBO &text, float scale);
 } // namespace text_renderer
 
 #endif /* CLIENT_GUI_TEXT_RENDERER_HH */
