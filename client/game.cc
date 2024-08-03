@@ -194,9 +194,14 @@ void client_game::render(void)
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0, 0, scaled_width, scaled_height, 0, 0, globals::width, globals::height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
+    const float hs = static_cast<float>(globals::height) / 240.0f;
+    const float ws = static_cast<float>(globals::width) / 320.0f;
+    const float scale = cxpr::min(hs, ws);
+    const float scl = 0.5f * scale;
+
     text_renderer::prepare();
-    text_renderer::draw(4, 4, font, text, 4.0f, 0.25f);
-    text_renderer::draw(0, 0, font, text, 4.0f);
+    text_renderer::draw_shadow(scale, scale, font, text, scale);
+    text_renderer::draw(0, 0, font, text, scale);
 }
 
 void client_game::layout(void)
