@@ -12,8 +12,12 @@ layout(location = 0) in vec2 vert_Position;
 layout(location = 1) in uvec4 vert_Quad;
 
 out vec2 vs_TexCoord;
+out vec2 vs_GlyphCoord;
 out vec4 vs_Background;
 out vec4 vs_Foreground;
+out float vs_Oversample;
+out float vs_Strikethrough;
+out float vs_Underline;
 
 uniform vec4 u_ScreenSize;
 uniform vec2 u_Offset;
@@ -46,14 +50,27 @@ void main(void)
         unicode %= uint(u_AtlasSize.x * u_AtlasSize.y);
     }
 
+    if((attributes & TEXT_BOLD) != 0U)
+        vs_Oversample = 1.0;
+    else vs_Oversample = 0.0;
+
+    if((attributes & TEXT_STRIKETHROUGH) != 0U)
+        vs_Strikethrough = 1.0;
+    else vs_Strikethrough = 0.0;
+
+    if((attributes & TEXT_UNDERLINE) != 0U)
+        vs_Underline = 1.0;
+    else vs_Underline = 0.0;
+
     if((attributes & TEXT_ITALIC) != 0U) {
         if(u_Tint < 1.0)
             offset.x -= 0.25 * u_GlyphSize.z;
         offset.x -= 0.5 * u_GlyphSize.z * u_GlyphSize.x * vert_Position.y;
     }
 
-    vs_TexCoord.x = (vert_Position.x + float(unicode % uint(u_AtlasSize.x))) / u_AtlasSize.x;
-    vs_TexCoord.y = 1.0 - (vert_Position.y + float(unicode / uint(u_AtlasSize.x))) / u_AtlasSize.y;
+    vs_TexCoord = vert_Position;
+    vs_GlyphCoord.x = (vert_Position.x + float(unicode % uint(u_AtlasSize.x))) / u_AtlasSize.x;
+    vs_GlyphCoord.y = 1.0 - (vert_Position.y + float(unicode / uint(u_AtlasSize.x))) / u_AtlasSize.y;
 
     vs_Background.x = float(0x000000FFU & (vert_Quad.z >> 24U)) / 255.0 * u_Tint;
     vs_Background.y = float(0x000000FFU & (vert_Quad.z >> 16U)) / 255.0 * u_Tint;

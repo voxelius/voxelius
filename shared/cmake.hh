@@ -3,9 +3,9 @@
 #ifndef SHARED_CMAKE_HH_IN
 #define SHARED_CMAKE_HH_IN
 
-#define CMAKE_SYSTEM "Linux-6.10.0-arch1-2"
+#define CMAKE_SYSTEM "Linux-6.10.2-arch1-1"
 #define CMAKE_SYSTEM_NAME "Linux"
-#define CMAKE_SYSTEM_VERSION "6.10.0-arch1-2"
+#define CMAKE_SYSTEM_VERSION "6.10.2-arch1-1"
 #define CMAKE_SYSTEM_PROCESSOR "x86_64"
 
 #define CMAKE_CXX_COMPILER_ID "GNU"
