@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 
+class BitmapFont;
 class TextBuilder final {
 public:
     TextModeBits mode {};
@@ -22,7 +23,7 @@ public:
     unsigned int cursor_y {};
 
 public:
-    static void append(TextBuilder &builder, const std::string &text);
+    static void append(TextBuilder &builder, const BitmapFont &font, const std::string &text);
     static void clear(TextBuilder &builder);
 };
 

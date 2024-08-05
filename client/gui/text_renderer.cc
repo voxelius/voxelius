@@ -18,7 +18,6 @@ static GLuint vbo = {};
 
 static GLint u_screen_size = {};
 static GLint u_offset = {};
-static GLint u_atlas_size = {};
 static GLint u_glyph_size = {};
 static GLint u_tint = {};
 static GLint u_time = {};
@@ -65,7 +64,6 @@ void text_renderer::init(void)
 
     u_screen_size = glGetUniformLocation(program, "u_ScreenSize");
     u_offset = glGetUniformLocation(program, "u_Offset");
-    u_atlas_size = glGetUniformLocation(program, "u_AtlasSize");
     u_glyph_size = glGetUniformLocation(program, "u_GlyphSize");
     u_tint = glGetUniformLocation(program, "u_Tint");
     u_time = glGetUniformLocation(program, "u_Time");
@@ -102,35 +100,14 @@ void text_renderer::prepare(void)
     glBindVertexArray(vaobj);
 }
 
-void text_renderer::draw(float xpos, float ypos, const BitmapFont &font, const TextVBO &text, float scale)
+void text_renderer::draw(float xpos, float ypos, const BitmapFont &font, const TextVBO &text, float scale, bool shadow)
 {
-    glBindTexture(GL_TEXTURE_2D, font.handle);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, font.handle);
     glActiveTexture(GL_TEXTURE0);
     
     glUniform2f(u_offset, xpos, ypos);
-    glUniform2f(u_atlas_size, font.num_glyphs_x, font.num_glyphs_y);
-    glUniform3f(u_glyph_size, font.glyph_width, font.glyph_height, scale);
-    glUniform1f(u_tint, 1.0f);
-    glUniform1i(u_font, 0); // GL_TEXTURE0
-
-    glBindBuffer(GL_ARRAY_BUFFER, text.handle);
-    
-    glEnableVertexAttribArray(1);
-    glVertexAttribDivisor(1, 1);
-    glVertexAttribIPointer(1, 4, GL_UNSIGNED_INT, sizeof(TextQuad), nullptr);
-
-    glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, text.size);
-}
-
-void text_renderer::draw_shadow(float xpos, float ypos, const BitmapFont &font, const TextVBO &text, float scale)
-{
-    glBindTexture(GL_TEXTURE_2D, font.handle);
-    glActiveTexture(GL_TEXTURE0);
-    
-    glUniform2f(u_offset, xpos, ypos);
-    glUniform2f(u_atlas_size, font.num_glyphs_x, font.num_glyphs_y);
-    glUniform3f(u_glyph_size, font.glyph_width, font.glyph_height, scale);
-    glUniform1f(u_tint, 0.25f);
+    glUniform2f(u_glyph_size, font.glyph_height, scale);
+    glUniform1f(u_tint, shadow ? 0.25f : 1.0f);
     glUniform1i(u_font, 0); // GL_TEXTURE0
 
     glBindBuffer(GL_ARRAY_BUFFER, text.handle);

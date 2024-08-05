@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
+#include <client/gui/bitmap_font.hh>
 #include <client/gui/text_builder.hh>
 #include <cstdlib>
 #include <cuchar>
@@ -31,7 +32,7 @@ public:
     bool notch_escape {};
 };
 
-static bool parse_ascii(TextBuilder &builder, ParserData &parser, char32_t unicode)
+static bool parse_ascii(TextBuilder &builder, ParserData &parser, const BitmapFont &font, char32_t unicode)
 {
     if(unicode == ASCII_HT) {
         builder.cursor_x += (4U - (builder.cursor_x % 4U));
@@ -40,7 +41,7 @@ static bool parse_ascii(TextBuilder &builder, ParserData &parser, char32_t unico
 
     if(unicode == ASCII_LF) {
         builder.cursor_x = 0U;
-        builder.cursor_y += 1U;
+        builder.cursor_y += font.glyph_height;
         return true;
     }
 
@@ -52,7 +53,7 @@ static bool parse_ascii(TextBuilder &builder, ParserData &parser, char32_t unico
     return false;
 }
 
-static bool parse_vt241(TextBuilder &builder, ParserData &parser, char32_t unicode)
+static bool parse_vt241(TextBuilder &builder, ParserData &parser, const BitmapFont &font, char32_t unicode)
 {
     // Start sequence
     if((parser.vt.escape == VT241_NUL) && (unicode == VT241_ESC)) {
@@ -258,8 +259,8 @@ static bool parse_vt241(TextBuilder &builder, ParserData &parser, char32_t unico
     parser.vt.escape = VT241_NUL;
     return true;
 }
-#include <spdlog/spdlog.h>
-static bool parse_notch(TextBuilder &builder, ParserData &parser, char32_t unicode)
+
+static bool parse_notch(TextBuilder &builder, ParserData &parser, const BitmapFont &font, char32_t unicode)
 {
     if(parser.notch_escape && (unicode == NOTCH_ESC)) {
         // Normally, Minecraft ignores two NOTCH_ESC characters
@@ -351,7 +352,7 @@ static bool parse_notch(TextBuilder &builder, ParserData &parser, char32_t unico
     return true;
 }
 
-void TextBuilder::append(TextBuilder &builder, const std::string &text)
+void TextBuilder::append(TextBuilder &builder, const BitmapFont &font, const std::string &text)
 {
     ParserData parser = {};
     std::mbstate_t state = {};
@@ -375,28 +376,33 @@ void TextBuilder::append(TextBuilder &builder, const std::string &text)
         if(count == static_cast<std::size_t>(-2)) break;
 
         if(builder.mode & TEXT_MODE_ASCII) {
-            if(parse_ascii(builder, parser, unicode)) {
+            if(parse_ascii(builder, parser, font, unicode)) {
                 cstr += count;
                 continue;
             }
         }
 
         if(builder.mode & TEXT_MODE_VT241) {
-            if(parse_vt241(builder, parser, unicode)) {
+            if(parse_vt241(builder, parser, font, unicode)) {
                 cstr += count;
                 continue;
             }
         }
 
         if(builder.mode & TEXT_MODE_NOTCH) {
-            if(parse_notch(builder, parser, unicode)) {
+            if(parse_notch(builder, parser, font, unicode)) {
                 cstr += count;
                 continue;
             }
         }
 
-        builder.quads.push_back(make_text_quad(builder.cursor_x, builder.cursor_y, parser.attributes, unicode, parser.background, parser.foreground));
-        builder.cursor_x += 1U;
+        if(unicode >= font.glyph_widths.size()) {
+            cstr += count;
+            continue;
+        }
+
+        builder.quads.push_back(make_text_quad(builder.cursor_x, builder.cursor_y, parser.attributes, unicode, parser.background, parser.foreground, font.glyph_widths[unicode]));
+        builder.cursor_x += font.glyph_widths[unicode];
         cstr += count;
     }
 }
