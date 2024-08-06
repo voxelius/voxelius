@@ -3,40 +3,74 @@
 #include <client/gui/bitmap_font.hh>
 #include <shared/math/constexpr.hh>
 #include <shared/util/physfs.hh>
+#include <parson.h>
 #include <shared/image.hh>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
 
-bool BitmapFont::load(BitmapFont &font, int height, const std::string &name)
+bool BitmapFont::load(BitmapFont &font, const std::string &path)
 {
-    const std::string blob_path = fmt::format("fonts/{}.glyph_sizes.bin", name);
-    std::vector<std::uint8_t> widths_blob = {};
+    std::string source = {};
 
-    if(!util::read_bytes(blob_path, widths_blob)) {
-        spdlog::warn("bitmap_font: {}: {}", blob_path, util::physfs_error());
+    if(!util::read_string(path, source)) {
+        spdlog::warn("bitmap_font: {}: {}", path, util::physfs_error());
         BitmapFont::unload(font);
         return false;
     }
 
-    font.glyph_height = height;
-    font.num_pages = widths_blob.size() / UPAGE_AREA;
-    font.glyph_widths.resize(widths_blob.size());
+    JSON_Value *jsonv = json_parse_string(source.c_str());
+    const JSON_Object *json = json_value_get_object(jsonv);
 
-    for(std::size_t i = 0; i < widths_blob.size(); ++i) {
-        // The Minecraft (pre-1.13) font format requires glyphs to
-        // be of uniform height while allowing widths up to the value of height
-        font.glyph_widths[i] = (0x0F & (widths_blob[i] >> 4U)) + (0x0F & (widths_blob[i] >> 0U));
-        // font.glyph_widths[i] = 0x0F & (widths_blob[i] >> 0U); // cxpr::min<int>(font.glyph_height, widths_blob[i]);
+    if(!jsonv) {
+        spdlog::warn("bitmap_font: {}: parse error", path);
+        BitmapFont::unload(font);
+        return false;
+    }
+
+    if(!json) {
+        spdlog::warn("bitmap_font: {}: root is not an object", path);
+        BitmapFont::unload(font);
+        json_value_free(jsonv);
+        return false;
+    }
+
+    // If not specified, use Minecraft's default of 16
+    font.glyph_height = static_cast<int>(json_object_get_number(json, "glyph_height"));
+    font.glyph_height = font.glyph_height ? font.glyph_height : 16;
+
+    // If not specified, use Minecraft's default path
+    // NOTE: this would mean all fonts will pull the same file
+    const char *blob_path_cstr = json_object_get_string(json, "glyph_sizes_path");
+    const std::string blob_path = blob_path_cstr ? blob_path_cstr : std::string("fonts/glyph_sizes.bin");
+    std::vector<std::uint8_t> blob = {};
+
+    if(!util::read_bytes(blob_path, blob)) {
+        spdlog::warn("bitmap_font: {}: {}", blob_path, util::physfs_error());
+        BitmapFont::unload(font);
+        json_value_free(jsonv);
+        return false;
     }
 
     GLint max_font_pages;
     glGetIntegerv(GL_MAX_ARRAY_TEXTURE_LAYERS, &max_font_pages);
-    font.num_pages = cxpr::min<std::size_t>(font.num_pages, max_font_pages);
+    font.num_pages = cxpr::min<std::size_t>(blob.size() / PAGE_SIZE / PAGE_SIZE, max_font_pages);
 
-    // Currently the height is requested by outside code;
-    // FIXME: maybe use the first byte of the glyph sizes blob
-    // to determine what height every single glyph in the font is?
-    const int tex_size = font.glyph_height * UPAGE_SIZE;
+    font.glyph_offsets.resize(font.num_pages);
+    font.glyph_widths.resize(font.num_pages);
+
+    for(std::size_t i = 0; i < font.num_pages; ++i) {
+        font.glyph_offsets[i] = (0x0F & (blob[i] >> 4U));
+        font.glyph_widths[i] = (0x0F & (blob[i] >> 0U)) + 2;
+    }
+
+    // If not specified, use Minecraft's default path
+    // NOTE: the main difference with Minecraft here is that
+    // in Voxelius all the font assets are kept in a single subdirectory
+    const char *page_fmt_cstr = json_object_get_string(json, "unicode_page_fmt");
+    const std::string page_fmt = page_fmt_cstr ? page_fmt_cstr : std::string("fonts/unicode_page_{:02x}.png");
+
+    // This is constant and must not change ever
+    const int tex_size = font.glyph_height * PAGE_SIZE;
 
     if(!font.handle)
         glGenTextures(1, &font.handle);
@@ -44,11 +78,17 @@ bool BitmapFont::load(BitmapFont &font, int height, const std::string &name)
     glTexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, tex_size, tex_size, font.num_pages, 0, GL_RED, GL_UNSIGNED_BYTE, nullptr);
 
     for(std::size_t i = 0; i < font.num_pages; ++i) {
-        const std::string page_path = fmt::format("fonts/{}.page.{:02X}.png", name, i);
+        const std::string page_path = fmt::format(page_fmt, i);
 
         Image page_image = {};
         if(!Image::load_gray(page_image, page_path, true)) {
             spdlog::warn("bitmap_font: {}: {}", page_path, util::physfs_error());
+            continue;
+        }
+
+        if((page_image.width > tex_size) || (page_image.height > tex_size)) {
+            spdlog::warn("bitmap_font: {}: page image size mismatch: {}x{} vs [{}x{}]", page_image.width, page_image.height, tex_size, tex_size);
+            Image::unload(page_image);
             continue;
         }
 
@@ -61,6 +101,8 @@ bool BitmapFont::load(BitmapFont &font, int height, const std::string &name)
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
+    json_value_free(jsonv);
+
     return true;
 }
 
@@ -68,6 +110,7 @@ void BitmapFont::unload(BitmapFont &font)
 {
     if(font.handle)
         glDeleteTextures(1, &font.handle);
+    font.glyph_offsets.clear();
     font.glyph_widths.clear();
     font.glyph_height = 0;
     font.num_pages = 0;

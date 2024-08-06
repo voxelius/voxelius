@@ -104,19 +104,20 @@ void client_game::init(void)
 
 void client_game::init_late(void)
 {
-    BitmapFont::load(font, 16, "unifont");
+    BitmapFont::load(font, "fonts/unifont.json");
 
     TextBuilder builder = {};
     builder.mode = TEXT_MODE_ASCII | TEXT_MODE_VT241 | TEXT_MODE_NOTCH;
     builder.background = Vec4f::transparent();
     builder.foreground = Vec4f::white();
 
-    TextBuilder::append(builder, font, "This tests ASCII capabilities\n\tof the text renderer\n");
-    TextBuilder::append(builder, font, "\n0123456789ABCDEF\n");
-    TextBuilder::append(builder, font, "\033[30mTEST\033[31mTEST\033[32mTEST\033[33mTEST\033[34mTEST\033[35mTEST\033[36mTEST\033[37mTEST\033[38mTEST\033[39mTEST\n\033[40mTEST\033[41mTEST\033[42mTEST\033[43mTEST\033[44mTEST\033[45mTEST\033[46mTEST\033[47mTEST\033[48mTEST\033[49mTEST\n");
-    TextBuilder::append(builder, font, "\u00a7c\u00a7lTEST\u00a7b\u00a7lTEST\u00a7a\u00a7lTEST\u00a7e\u00a7lTEST\u00a7d\u00a7lTEST\u00a7d\u00a7l\u00a7oTEST?\u00a7d\u00a7l\u00a7o\u00a7kABC\n");
-    TextBuilder::append(builder, font, "When the \033[8mimposter\033[m is \033[92;8msus\n");
-    TextBuilder::append(builder, font, "\033[1mBOLD\033[0m \033[4mUNDERLINE\033[0m \033[9mCROSSED\033[0m \033[1;3;4;9mOOPSIE\n");
+    //TextBuilder::append(builder, font, "This tests ASCII capabilities\n\tof the text renderer\n");
+    //TextBuilder::append(builder, font, "\n0123456789ABCDEF\n");
+    //TextBuilder::append(builder, font, "\033[30mTEST\033[31mTEST\033[32mTEST\033[33mTEST\033[34mTEST\033[35mTEST\033[36mTEST\033[37mTEST\033[38mTEST\033[39mTEST\n\033[40mTEST\033[41mTEST\033[42mTEST\033[43mTEST\033[44mTEST\033[45mTEST\033[46mTEST\033[47mTEST\033[48mTEST\033[49mTEST\n");
+    //TextBuilder::append(builder, font, "\u00A7c\u00A7lTEST\u00A7b\u00A7lTEST\u00A7a\u00A7lTEST\u00A7e\u00A7lTEST\u00A7d\u00A7lTEST\u00A7d\u00A7l\u00A7oTEST?\u00A7d\u00A7l\u00A7o\u00A7kABC\n");
+    //TextBuilder::append(builder, font, "When the \033[8mimposter\033[m is \033[92;8msus\n");
+    //TextBuilder::append(builder, font, "\033[1mBOLD\033[0m \033[4mUNDERLINE\033[0m \033[9mCROSSED\033[0m \033[1;3;4;9mOOPSIE\n");
+    TextBuilder::append(builder, font, "\x00A7cSOMETHING");
     TextVBO::create(text, builder);
 }
 

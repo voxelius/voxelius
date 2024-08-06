@@ -9,17 +9,17 @@
 
 class BitmapFont final {
 public:
-    constexpr static int UPAGE_SIZE = 16;
-    constexpr static int UPAGE_AREA = UPAGE_SIZE * UPAGE_SIZE;
+    constexpr static int PAGE_SIZE = 16;
 
 public:
     int glyph_height {};
     std::size_t num_pages {};
+    std::vector<int> glyph_offsets {};
     std::vector<int> glyph_widths {};
     GLuint handle {};
 
 public:
-    static bool load(BitmapFont &font, int height, const std::string &name);
+    static bool load(BitmapFont &font, const std::string &path);
     static void unload(BitmapFont &font);
 };
 
