@@ -113,10 +113,10 @@ void client_game::init_late(void)
 
     TextBuilder::append(builder, font, "This tests ASCII capabilities\n\tof the text renderer\n");
     TextBuilder::append(builder, font, "\n0123456789ABCDEF\n");
-    //TextBuilder::append(builder, font, "\033[30mTEST\033[31mTEST\033[32mTEST\033[33mTEST\033[34mTEST\033[35mTEST\033[36mTEST\033[37mTEST\033[38mTEST\033[39mTEST\n\033[40mTEST\033[41mTEST\033[42mTEST\033[43mTEST\033[44mTEST\033[45mTEST\033[46mTEST\033[47mTEST\033[48mTEST\033[49mTEST\n");
-    //TextBuilder::append(builder, font, "\u00a7c\u00a7lTEST\u00a7b\u00a7lTEST\u00a7a\u00a7lTEST\u00a7e\u00a7lTEST\u00a7d\u00a7lTEST\u00a7d\u00a7l\u00a7oTEST?\u00a7d\u00a7l\u00a7o\u00a7kABC\n");
-    //TextBuilder::append(builder, font, "When the \033[8mimposter\033[m is \033[92;8msus\n");
-    //TextBuilder::append(builder, font, "\033[1mBOLD\033[0m \033[4mUNDERLINE\033[0m \033[9mCROSSED\033[0m \033[1;3;4;9mOOPSIE");
+    TextBuilder::append(builder, font, "\033[30mTEST\033[31mTEST\033[32mTEST\033[33mTEST\033[34mTEST\033[35mTEST\033[36mTEST\033[37mTEST\033[38mTEST\033[39mTEST\n\033[40mTEST\033[41mTEST\033[42mTEST\033[43mTEST\033[44mTEST\033[45mTEST\033[46mTEST\033[47mTEST\033[48mTEST\033[49mTEST\n");
+    TextBuilder::append(builder, font, "\u00a7c\u00a7lTEST\u00a7b\u00a7lTEST\u00a7a\u00a7lTEST\u00a7e\u00a7lTEST\u00a7d\u00a7lTEST\u00a7d\u00a7l\u00a7oTEST?\u00a7d\u00a7l\u00a7o\u00a7kABC\n");
+    TextBuilder::append(builder, font, "When the \033[8mimposter\033[m is \033[92;8msus\n");
+    TextBuilder::append(builder, font, "\033[1mBOLD\033[0m \033[4mUNDERLINE\033[0m \033[9mCROSSED\033[0m \033[1;3;4;9mOOPSIE\n");
     TextVBO::create(text, builder);
 }
 
@@ -201,7 +201,7 @@ void client_game::render(void)
     const int scale = cxpr::min(hs, ws);
 
     text_renderer::prepare();
-    //text_renderer::draw(scale, scale, font, text, scale, true);
+    text_renderer::draw(scale, scale, font, text, scale, true);
     text_renderer::draw(0, 0, font, text, scale, false);
 }
 

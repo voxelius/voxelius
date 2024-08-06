@@ -25,7 +25,8 @@ bool BitmapFont::load(BitmapFont &font, int height, const std::string &name)
     for(std::size_t i = 0; i < widths_blob.size(); ++i) {
         // The Minecraft (pre-1.13) font format requires glyphs to
         // be of uniform height while allowing widths up to the value of height
-        font.glyph_widths[i] = cxpr::min<int>(font.glyph_height, widths_blob[i]);
+        font.glyph_widths[i] = (0x0F & (widths_blob[i] >> 4U)) + (0x0F & (widths_blob[i] >> 0U));
+        // font.glyph_widths[i] = 0x0F & (widths_blob[i] >> 0U); // cxpr::min<int>(font.glyph_height, widths_blob[i]);
     }
 
     GLint max_font_pages;
