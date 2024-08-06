@@ -2,6 +2,8 @@
 // Copyright (C) 2024, Voxelius Contributors
 #version 330 core
 
+#define PAGE_SIZE 16U
+
 #define TEXT_RANDOM         0x0001U
 #define TEXT_BOLD           0x0002U
 #define TEXT_STRIKETHROUGH  0x0004U
@@ -35,9 +37,10 @@ uint hash(uint x)
 
 void main(void)
 {
-    // Figure out unscaled glyph width
-    // [3] ----------------WWWWWWWWWWWWWWWW
-    float glyph_width = float(0x0000FFFFU & (vert_Quad.w >> 0U));
+    // Figure out glyph metrics
+    // [3] ----------------WWWWWWWWOOOOOOOO
+    float glyph_width = float(0x000000FFU & (vert_Quad.w >> 8U));
+    float glyph_offset = float(0x000000FFU & (vert_Quad.w >> 0U));
 
     // Figure out scaled glyph size
     vec2 scaled_glyph;
@@ -46,9 +49,9 @@ void main(void)
 
     // Figure out actual pixel offset
     // [2024-08-05] now it's not relative to the glyph size
-    vec2 glyph_offset;
-    glyph_offset.x = u_Offset.x + u_GlyphSize.y * float(0x0000FFFFU & (vert_Quad.x >> 16U));
-    glyph_offset.y = u_Offset.y + u_GlyphSize.y * float(0x0000FFFFU & (vert_Quad.x >> 0U));
+    vec2 offset;
+    offset.x = u_Offset.x + u_GlyphSize.y * float(0x0000FFFFU & (vert_Quad.x >> 16U));
+    offset.y = u_Offset.y + u_GlyphSize.y * float(0x0000FFFFU & (vert_Quad.x >> 0U));
 
     // Figure out unicode value and attributes
     uint attribs = 0x000000FFU & (vert_Quad.y >> 24U);
@@ -60,8 +63,8 @@ void main(void)
 
     // Randomize the glyph that is drawn
     if((attribs & TEXT_RANDOM) != 0x00U) {
-        unicode = hash(uint(gl_InstanceID) * uint(u_Time * 1000.0));
-        unicode &= 0x000000FFU;
+        unicode_inpage = hash(uint(gl_InstanceID) * uint(u_Time * 1000.0));
+        unicode_inpage &= 0x000000FFU;
     }
 
     // The atlas is sampled twice in the fragment shader;
@@ -83,15 +86,15 @@ void main(void)
     // Distort the glyph diagonally
     if((attribs & TEXT_ITALIC) != 0x00U) {
         if(u_Tint < 1.0)
-            glyph_offset.x -= 0.25 * u_GlyphSize.y;
-        glyph_offset.x -= 0.5 * scaled_glyph.x * vert_Position.y;
+            offset.x -= 0.25 * u_GlyphSize.y;
+        offset.x -= 0.5 * scaled_glyph.x * vert_Position.y;
     }
 
     vs_TexCoord = vert_Position;
 
-    vs_TexCoord_G.x = float(unicode_inpage % 16U);
+    vs_TexCoord_G.x = float(unicode_inpage % PAGE_SIZE);
     vs_TexCoord_G.x += vert_Position.x * (glyph_width / u_GlyphSize.x);
-    //vs_TexCoord_G.x += glyph_woff / u_GlyphSize.x;
+    vs_TexCoord_G.x += glyph_offset / u_GlyphSize.x;
     vs_TexCoord_G.x /= 16.0;
     
     /// vs_TexCoord_G.x = float(unicode_inpage % 16U) / 16.0;
@@ -101,7 +104,7 @@ void main(void)
     // vs_TexCoord_G.x += float(unicode_inpage % 16U);
     // vs_TexCoord_G.x /= 16.0;
 
-    vs_TexCoord_G.y = 1.0 - (vert_Position.y + float(unicode_inpage / 16U)) / 16.0;
+    vs_TexCoord_G.y = 1.0 - (vert_Position.y + float(unicode_inpage / PAGE_SIZE)) / float(PAGE_SIZE);
     vs_TexCoord_G.z = floor(float(unicode_pagenum) + 0.5);
 
     vs_Background.x = float(0x000000FFU & (vert_Quad.z >> 24U)) / 255.0 * u_Tint;
@@ -116,8 +119,8 @@ void main(void)
 
     // The input coordinates are in screen-space coordinate system;
     // To correctly convert the coordinates to NDC, we need to flip Y axis
-    gl_Position.x = 2.0 * (u_ScreenSize.z * (glyph_offset.x + scaled_glyph.x * vert_Position.x)) - 1.0;
-    gl_Position.y = 1.0 - 2.0 * (u_ScreenSize.w * (glyph_offset.y + scaled_glyph.y * vert_Position.y));
+    gl_Position.x = 2.0 * (u_ScreenSize.z * (offset.x + scaled_glyph.x * vert_Position.x)) - 1.0;
+    gl_Position.y = 1.0 - 2.0 * (u_ScreenSize.w * (offset.y + scaled_glyph.y * vert_Position.y));
     gl_Position.z = 0.0;
     gl_Position.w = 1.0;
 }

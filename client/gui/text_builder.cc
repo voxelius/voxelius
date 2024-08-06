@@ -34,10 +34,10 @@ public:
 
 static bool parse_ascii(TextBuilder &builder, ParserData &parser, const BitmapFont &font, char32_t unicode)
 {
-    if(unicode == ASCII_HT) {
-        builder.cursor_x += (4U - (builder.cursor_x % 4U));
-        return true;
-    }
+    //if(unicode == ASCII_HT) {
+    //    builder.cursor_x += (4U - (builder.cursor_x % 4U));
+    //    return true;
+    //}
 
     if(unicode == ASCII_LF) {
         builder.cursor_x = 0U;
@@ -259,7 +259,7 @@ static bool parse_vt241(TextBuilder &builder, ParserData &parser, const BitmapFo
     parser.vt.escape = VT241_NUL;
     return true;
 }
-
+#include <spdlog/spdlog.h>
 static bool parse_notch(TextBuilder &builder, ParserData &parser, const BitmapFont &font, char32_t unicode)
 {
     if(parser.notch_escape && (unicode == NOTCH_ESC)) {
@@ -281,9 +281,11 @@ static bool parse_notch(TextBuilder &builder, ParserData &parser, const BitmapFo
         return false;
     }
 
-        // Similar to ANSI escapes, Minecraft text format
-        // also uses just the first 256 code points in plane zero
+    // Similar to ANSI escapes, Minecraft text format
+    // also uses just the first 256 code points in plane zero
     const char ascii = static_cast<char>(cxpr::min<char32_t>(unicode, char32_t(0xFF)));
+
+    spdlog::trace("ascii {}", ascii);
 
     // 0x72 [ASCII r] - reset formatting
     if(ascii == 0x72) {
@@ -372,6 +374,8 @@ void TextBuilder::append(TextBuilder &builder, const BitmapFont &font, const std
     parser.notch_escape = false;
 
     while(std::size_t count = std::mbrtoc32(&unicode, cstr, endp - cstr, &state)) {
+        spdlog::trace("unicode {} {:04X} {}", (char)unicode, (unsigned int)unicode, count);
+        
         if(count == static_cast<std::size_t>(-1)) break;
         if(count == static_cast<std::size_t>(-2)) break;
 
@@ -401,7 +405,9 @@ void TextBuilder::append(TextBuilder &builder, const BitmapFont &font, const std
             continue;
         }
 
-        builder.quads.push_back(make_text_quad(builder.cursor_x, builder.cursor_y, parser.attributes, unicode, parser.background, parser.foreground, font.glyph_widths[unicode]));
+        const int glyph_width = font.glyph_widths[unicode];
+        const int glyph_offset = font.glyph_offsets[unicode];
+        builder.quads.push_back(make_text_quad(builder.cursor_x, builder.cursor_y, parser.attributes, unicode, parser.background, parser.foreground, glyph_width, glyph_offset));
         builder.cursor_x += font.glyph_widths[unicode];
         cstr += count;
     }
