@@ -89,9 +89,14 @@ void main(void)
 
     vs_TexCoord = vert_Position;
 
-    vs_TexCoord_G.x = float(unicode_inpage % 16U) / 16.0;
-    vs_TexCoord_G.x += vert_Position.x * 0.25 / 16.0;
-    vs_TexCoord_G.x += 0.25 / 16.0;
+    vs_TexCoord_G.x = float(unicode_inpage % 16U);
+    vs_TexCoord_G.x += vert_Position.x * (glyph_width / u_GlyphSize.x);
+    //vs_TexCoord_G.x += glyph_woff / u_GlyphSize.x;
+    vs_TexCoord_G.x /= 16.0;
+    
+    /// vs_TexCoord_G.x = float(unicode_inpage % 16U) / 16.0;
+    /// vs_TexCoord_G.x += vert_Position.x * 0.25 / 16.0;
+    /// vs_TexCoord_G.x += 0.25 / 16.0;
     // vs_TexCoord_G.x *= 0.25; //glyph_width / u_GlyphSize.x;
     // vs_TexCoord_G.x += float(unicode_inpage % 16U);
     // vs_TexCoord_G.x /= 16.0;
