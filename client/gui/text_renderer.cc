@@ -59,7 +59,13 @@ void text_renderer::init(void)
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
+    glEnableVertexAttribArray(1);
+    glEnableVertexAttribArray(2);
+
     glVertexAttribDivisor(0, 0);
+    glVertexAttribDivisor(1, 1);
+    glVertexAttribDivisor(2, 1);
+
     glVertexAttribPointer(0, 2, GL_FLOAT, false, sizeof(Vec2f), nullptr);
 
     u_screen_size = glGetUniformLocation(program, "u_ScreenSize");
@@ -111,10 +117,8 @@ void text_renderer::draw(float xpos, float ypos, const BitmapFont &font, const T
     glUniform1i(u_font, 0); // GL_TEXTURE0
 
     glBindBuffer(GL_ARRAY_BUFFER, text.handle);
-    
-    glEnableVertexAttribArray(1);
-    glVertexAttribDivisor(1, 1);
-    glVertexAttribIPointer(1, 4, GL_UNSIGNED_INT, sizeof(TextQuad), nullptr);
+    glVertexAttribIPointer(1, 4, GL_UNSIGNED_INT, sizeof(TextQuad), reinterpret_cast<void *>(offsetof(TextQuad, data_1)));
+    glVertexAttribIPointer(2, 4, GL_UNSIGNED_INT, sizeof(TextQuad), reinterpret_cast<void *>(offsetof(TextQuad, data_2)));
 
     glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, text.size);
 }

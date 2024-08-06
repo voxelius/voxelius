@@ -11,7 +11,8 @@
 #define TEXT_ITALIC         0x0010U
 
 layout(location = 0) in vec2 vert_Position;
-layout(location = 1) in uvec4 vert_Quad;
+layout(location = 1) in uvec4 vert_QuadData_1;
+layout(location = 2) in uvec4 vert_QuadData_2;
 
 out vec2 vs_TexCoord;       // Normalized UV coordinates
 out vec3 vs_TexCoord_G;     // Atlas UV coordinates for a specific glyph
@@ -38,24 +39,26 @@ uint hash(uint x)
 void main(void)
 {
     // Figure out glyph metrics
-    // [3] ----------------WWWWWWWWOOOOOOOO
-    float glyph_width = float(0x000000FFU & (vert_Quad.w >> 8U));
-    float glyph_offset = float(0x000000FFU & (vert_Quad.w >> 0U));
+    // data_2[0] OOOOOOOOOOOOOOOOWWWWWWWWWWWWWWWW
+    float glyph_offset = float(0x0000FFFFU & (vert_QuadData_2.x >> 0U));
+    float glyph_width = float(0x0000FFFFU & (vert_QuadData_2.x >> 16U));
+
+    // Figure out actual pixel offset
+    // data_1[0] XXXXXXXXXXXXXXXXYYYYYYYYYYYYYYYY
+    // [2024-08-05] now it's not relative to the glyph size
+    vec2 offset;
+    offset.x = u_Offset.x + u_GlyphSize.y * float(0x0000FFFFU & (vert_QuadData_1.x >> 16U));
+    offset.y = u_Offset.y + u_GlyphSize.y * float(0x0000FFFFU & (vert_QuadData_1.x >> 0U));
 
     // Figure out scaled glyph size
     vec2 scaled_glyph;
     scaled_glyph.x = u_GlyphSize.y * glyph_width;
     scaled_glyph.y = u_GlyphSize.y * u_GlyphSize.x;
 
-    // Figure out actual pixel offset
-    // [2024-08-05] now it's not relative to the glyph size
-    vec2 offset;
-    offset.x = u_Offset.x + u_GlyphSize.y * float(0x0000FFFFU & (vert_Quad.x >> 16U));
-    offset.y = u_Offset.y + u_GlyphSize.y * float(0x0000FFFFU & (vert_Quad.x >> 0U));
-
     // Figure out unicode value and attributes
-    uint attribs = 0x000000FFU & (vert_Quad.y >> 24U);
-    uint unicode = 0x00FFFFFFU & (vert_Quad.y >> 0U);
+    // data_1[1] TTTTTTTTUUUUUUUUUUUUUUUUUUUUUUUU
+    uint attribs = 0x000000FFU & (vert_QuadData_1.y >> 24U);
+    uint unicode = 0x00FFFFFFU & (vert_QuadData_1.y >> 0U);
 
     // The in-page coordinates can be randomized with TEXT_RANDOM
     uint unicode_inpage = unicode & 0x000000FFU;
@@ -107,15 +110,17 @@ void main(void)
     vs_TexCoord_G.y = 1.0 - (vert_Position.y + float(unicode_inpage / PAGE_SIZE)) / float(PAGE_SIZE);
     vs_TexCoord_G.z = floor(float(unicode_pagenum) + 0.5);
 
-    vs_Background.x = float(0x000000FFU & (vert_Quad.z >> 24U)) / 255.0 * u_Tint;
-    vs_Background.y = float(0x000000FFU & (vert_Quad.z >> 16U)) / 255.0 * u_Tint;
-    vs_Background.z = float(0x000000FFU & (vert_Quad.z >> 8U))  / 255.0 * u_Tint;
-    vs_Background.w = 0.0;
+    // data_1[2] RRRRRRRRGGGGGGGGBBBBBBBBAAAAAAAA
+    vs_Background.x = float(0x000000FFU & (vert_QuadData_1.z >> 24U)) / 255.0 * u_Tint;
+    vs_Background.y = float(0x000000FFU & (vert_QuadData_1.z >> 16U)) / 255.0 * u_Tint;
+    vs_Background.z = float(0x000000FFU & (vert_QuadData_1.z >> 8U))  / 255.0 * u_Tint;
+    vs_Background.w = float(0x000000FFU & (vert_QuadData_1.z >> 0U))  / 255.0;
 
-    vs_Foreground.x = float(0x000000FFU & (vert_Quad.z >> 0U))  / 255.0 * u_Tint;
-    vs_Foreground.y = float(0x000000FFU & (vert_Quad.w >> 24U)) / 255.0 * u_Tint;
-    vs_Foreground.z = float(0x000000FFU & (vert_Quad.w >> 16U)) / 255.0 * u_Tint;
-    vs_Foreground.w = 1.0;
+    // data_1[3] RRRRRRRRGGGGGGGGBBBBBBBBAAAAAAAA
+    vs_Foreground.x = float(0x000000FFU & (vert_QuadData_1.w >> 24U)) / 255.0 * u_Tint;
+    vs_Foreground.y = float(0x000000FFU & (vert_QuadData_1.w >> 16U)) / 255.0 * u_Tint;
+    vs_Foreground.z = float(0x000000FFU & (vert_QuadData_1.w >> 8U))  / 255.0 * u_Tint;
+    vs_Foreground.w = float(0x000000FFU & (vert_QuadData_1.w >> 0U))  / 255.0;
 
     // The input coordinates are in screen-space coordinate system;
     // To correctly convert the coordinates to NDC, we need to flip Y axis

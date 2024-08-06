@@ -22,7 +22,7 @@ void main(void)
     float glyph = 0.0;
     glyph += texture(u_Font, vs_TexCoord_G).x;
     glyph += texture(u_Font, vs_TexCoord_G - vec3(vs_Attributes.x / (u_GlyphSize.x * float(PAGE_SIZE)), 0.0, 0.0)).x;
-    glyph += vs_Attributes.y * (step(vs_TexCoord.y, 0.5) - step(vs_TexCoord.y, 0.5 - 1.0 / u_GlyphSize.x));
+    glyph += vs_Attributes.y * (step(vs_TexCoord.y, 0.6) - step(vs_TexCoord.y, 0.6 - 1.0 / u_GlyphSize.x));
     glyph += vs_Attributes.z * step(1.0 - vs_TexCoord.y, 1.0 / u_GlyphSize.x);
     
     //glyph += texture(u_Font, vs_GlyphCoord - vec2(vs_Attributes.x / u_GlyphSize.x / u_AtlasSize.x, 0.0)).x;
