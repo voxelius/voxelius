@@ -3,32 +3,32 @@
 #include <client/entity/player_look.hh>
 #include <client/entity/player_move.hh>
 #include <client/event/glfw_framebuffer_size.hh>
-#include <client/gui/bitmap_font.hh>
-#include <client/gui/text_builder.hh>
-#include <client/gui/text_renderer.hh>
-#include <client/gui/text_vbo.hh>
-#include <client/input/keyboard.hh>
-#include <client/input/keynames.hh>
-#include <client/input/mouse.hh>
-#include <client/world/chunk_mesher.hh>
-#include <client/world/chunk_renderer.hh>
-#include <client/world/chunk_visibility.hh>
-#include <client/world/outline_renderer.hh>
-#include <client/world/player_target.hh>
-#include <client/world/voxel_anims.hh>
-#include <client/world/voxel_atlas.hh>
+#include <client/font.hh>
+#include <client/chunk_mesher.hh>
+#include <client/chunk_renderer.hh>
+#include <client/chunk_visibility.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
+#include <client/keyboard.hh>
+#include <client/keynames.hh>
+#include <client/mouse.hh>
+#include <client/outline_renderer.hh>
+#include <client/player_target.hh>
 #include <client/screenshot.hh>
+#include <client/text_builder.hh>
+#include <client/text_renderer.hh>
+#include <client/text_vbo.hh>
 #include <client/view.hh>
+#include <client/voxel_anims.hh>
+#include <client/voxel_atlas.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
 #include <shared/util/physfs.hh>
-#include <shared/world/ray_dda.hh>
-#include <shared/world/world.hh>
+#include <shared/ray_dda.hh>
+#include <shared/world.hh>
 #include <shared/config.hh>
 #include <spdlog/spdlog.h>
 
@@ -37,7 +37,7 @@ bool client_game::menu_background = true;
 std::string client_game::username = "player";
 unsigned int client_game::pixel_size = 4U;
 
-static BitmapFont font = {};
+static Font font = {};
 static TextVBO text = {};
 
 static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
@@ -104,7 +104,7 @@ void client_game::init(void)
 
 void client_game::init_late(void)
 {
-    BitmapFont::load(font, "fonts/unifont.json");
+    Font::load(font, Font::PLANE0, 16, "fonts/unscii-16.ttf");
 
     TextBuilder builder = {};
     builder.mode = TEXT_MODE_ASCII | TEXT_MODE_VT241 | TEXT_MODE_NOTCH;
@@ -117,7 +117,7 @@ void client_game::init_late(void)
     TextBuilder::append(builder, font, "\u00A7c\u00A7lTEST\u00A7b\u00A7lTEST\u00A7a\u00A7lTEST\u00A7e\u00A7lTEST\u00A7d\u00A7lTEST\u00A7d\u00A7l\u00A7oTEST?\u00A7d\u00A7l\u00A7o\u00A7kABC\n");
     TextBuilder::append(builder, font, "When the \033[8mimposter\033[m is \033[92;8msus\n");
     TextBuilder::append(builder, font, "\033[1mBOLD\033[0m \033[4mUNDERLINE\033[0m \033[9mCROSSED\033[0m \033[1;3;4;9mOOPSIE\n");
-    TextBuilder::append(builder, font, "проверка");
+    TextBuilder::append(builder, font, "МОЧА \u00A7bХРАНИТСЯ\033[m В \033[1;3mЯИЧКАХ");
     TextVBO::create(text, builder);
 }
 
@@ -130,7 +130,7 @@ void client_game::deinit(void)
     glDeleteFramebuffers(1, &globals::world_fbo);
 
     TextVBO::destroy(text);
-    BitmapFont::unload(font);
+    Font::unload(font);
 
     text_renderer::deinit();
 
@@ -199,7 +199,7 @@ void client_game::render(void)
 
     const int hs = cxpr::floor<int>(static_cast<float>(globals::height) / 240.0f);
     const int ws = cxpr::floor<int>(static_cast<float>(globals::width) / 320.0f);
-    const int scale = cxpr::min(hs, ws);
+    const float scale = cxpr::min(hs, ws);
 
     text_renderer::prepare();
     text_renderer::draw(scale, scale, font, text, scale, true);
