@@ -4,6 +4,7 @@
 #include <client/gui/text_builder.hh>
 #include <cstdlib>
 #include <cuchar>
+#include <spdlog/spdlog.h>
 
 constexpr static char32_t ASCII_HT = char32_t(0x0009);
 constexpr static char32_t ASCII_LF = char32_t(0x000A);
@@ -259,7 +260,7 @@ static bool parse_vt241(TextBuilder &builder, ParserData &parser, const BitmapFo
     parser.vt.escape = VT241_NUL;
     return true;
 }
-#include <spdlog/spdlog.h>
+
 static bool parse_notch(TextBuilder &builder, ParserData &parser, const BitmapFont &font, char32_t unicode)
 {
     if(parser.notch_escape && (unicode == NOTCH_ESC)) {
@@ -284,8 +285,6 @@ static bool parse_notch(TextBuilder &builder, ParserData &parser, const BitmapFo
     // Similar to ANSI escapes, Minecraft text format
     // also uses just the first 256 code points in plane zero
     const char ascii = static_cast<char>(cxpr::min<char32_t>(unicode, char32_t(0xFF)));
-
-    spdlog::trace("ascii {}", ascii);
 
     // 0x72 [ASCII r] - reset formatting
     if(ascii == 0x72) {
