@@ -1,6 +1,6 @@
 #ifndef SHARED_EVENT_CHUNK_CREATE_HH
 #define SHARED_EVENT_CHUNK_CREATE_HH
-#include <shared/world/chunk.hh>
+#include <shared/chunk.hh>
 
 struct ChunkCreateEvent final {
     ChunkCoord coord {};

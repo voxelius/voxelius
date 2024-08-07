@@ -10,14 +10,14 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/util/epoch.cc"
     "${CMAKE_CURRENT_LIST_DIR}/util/physfs.cc"
     "${CMAKE_CURRENT_LIST_DIR}/util/string.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/world/ray_dda.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/world/vdef.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/world/world.cc"
+    "${CMAKE_CURRENT_LIST_DIR}//ray_dda.cc"
     "${CMAKE_CURRENT_LIST_DIR}/cmdline.cc"
     "${CMAKE_CURRENT_LIST_DIR}/config.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
     "${CMAKE_CURRENT_LIST_DIR}/image.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/splash.cc")
+    "${CMAKE_CURRENT_LIST_DIR}/splash.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/vdef.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/world.cc")
 target_include_directories(shared PUBLIC "${CMAKE_SOURCE_DIR}")
 target_link_libraries(shared PUBLIC emhash entt parson physfs)
 target_link_libraries(shared PUBLIC spdlog FNL stb thread_pool)

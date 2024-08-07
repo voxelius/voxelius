@@ -3,7 +3,7 @@
 #ifndef SHARED_ENTITY_TRANSFORM_HH
 #define SHARED_ENTITY_TRANSFORM_HH
 #include <shared/math/vec3angles.hh>
-#include <shared/world/coord.hh>
+#include <shared/coord.hh>
 
 class TransformComponent final {
 public:

@@ -4,7 +4,7 @@
 #define CLIENT_VIEW_HH
 #include <shared/math/vec3angles.hh>
 #include <shared/math/mat4x4f.hh>
-#include <shared/world/coord.hh>
+#include <shared/coord.hh>
 
 namespace view
 {
