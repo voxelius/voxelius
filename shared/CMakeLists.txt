@@ -34,4 +34,10 @@ if(MSVC)
     target_compile_options(shared PUBLIC /wd4018)
     target_compile_options(shared PUBLIC /wd4244)
     target_compile_options(shared PUBLIC /wd4267)
+
+    # This forces MSVC to use UTF-8 for string literals;
+    # as usual, MSVC is very "special" and all the string
+    # literals (even explicit UTF-32 ones) are invalid when
+    # we're dealing with text rendering via char32_t. Too bad!
+    target_compile_options(shared PUBLIC /utf-8)
 endif()

@@ -104,8 +104,10 @@ void client_game::init(void)
 
 void client_game::init_late(void)
 {
+    //Font::load(font, Font::PLANE0, 16, "fonts/unison.ttf");
     Font::load(font, Font::PLANE0, 16, "fonts/unscii-16.ttf");
     //Font::load(font, Font::PLANE0, 16, "fonts/RobotoSlab-Medium.ttf");
+    //Font::load(font, Font::PLANE0, 16, "fonts/AnonymousPro-Bold.ttf");
 
     TextBuilder builder = {};
     builder.mode = TEXT_MODE_ASCII | TEXT_MODE_VT241 | TEXT_MODE_NOTCH;
@@ -119,7 +121,7 @@ void client_game::init_late(void)
     TextBuilder::append(builder, font, "When the \033[8mimposter\033[m is \033[92;8msus\n");
     TextBuilder::append(builder, font, "\033[1mBOLD\033[0m \033[4mUNDERLINE\033[0m \033[9mCROSSED\033[0m \033[1;3;4;9mOOPSIE\n");
     TextBuilder::append(builder, font, "МОЧА \u00A7bХРАНИТСЯ\033[m В \033[1;3mЯИЧКАХ\n");
-    TextBuilder::append(builder, font, "\033[4mpiss and shit and cum\033[0m");
+    TextBuilder::append(builder, font, "\033[4;9mpiss and shit and cum\033[0m");
     TextVBO::create(text, builder);
 }
 

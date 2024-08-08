@@ -37,7 +37,7 @@ public:
 static bool parse_ascii(TextBuilder &builder, ParserData &parser, const Font &font, char32_t unicode)
 {
     if(unicode == ASCII_HT) {
-        builder.cursor_x += (font.glyph_height >> 1);
+        builder.cursor_x += font.glyph_height;
         //builder.cursor_x += (4U - (builder.cursor_x % 4U));
         return true;
     }
@@ -411,10 +411,13 @@ void TextBuilder::append(TextBuilder &builder, const Font &font, const std::stri
             continue;
         }
 
+        const SFT_LMetrics &lmetrics = font.lmetrics;
         const SFT_GMetrics &gmetrics = font.gmetrics[unicode];
-        builder.quads.push_back(make_text_quad(builder.cursor_x, builder.cursor_y - gmetrics.yOffset, parser.attributes, unicode, parser.background, parser.foreground, gmetrics.advanceWidth));
+        builder.quads.push_back(make_text_quad(builder.cursor_x, builder.cursor_y - gmetrics.yOffset, parser.attributes, unicode, parser.background, parser.foreground, lmetrics, gmetrics));
         builder.cursor_x += gmetrics.advanceWidth;
         cstr += count;
+        
+        spdlog::info("{} {}", lmetrics.ascender, lmetrics.descender);
     }
 }
 
