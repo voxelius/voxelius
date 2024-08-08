@@ -20,6 +20,7 @@ out vec3 vs_TexCoord_G;     // Atlas UV coordinates for a specific glyph
 out vec4 vs_Background;     // Background color
 out vec4 vs_Foreground;     // Foreground color
 out vec3 vs_Attributes;     // Bold, strike-through and underline coefficients
+out vec4 vs_Metrics;        // X - ascender, Y - descender, Z - advance, W - vertical offset
 
 uniform vec4 u_ScreenSize;  // XY - size, ZW - 1.0/size
 uniform vec2 u_Offset;      // Pixel offset in screen coordinates
@@ -39,9 +40,14 @@ uint hash(uint x)
 
 void main(void)
 {
-    // Figure out glyph metrics
-    // data_2[0] ----------------WWWWWWWWWWWWWWWW
-    float glyph_width = float(0x0000FFFFU & (vert_QuadData_2.x >> 0U));
+    // Figure out metrics
+    // [0] aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa (float bits)
+    // [1] dddddddddddddddddddddddddddddddd (float bits)
+    // [2] AAAAAAAAAAAAAAAAOOOOOOOOOOOOOOOO
+    vs_Metrics.x = uintBitsToFloat(vert_QuadData_2.x);
+    vs_Metrics.y = uintBitsToFloat(vert_QuadData_2.y);
+    vs_Metrics.z = float(int(0x0000FFFFU & (vert_QuadData_2.z >> 16U)) - 0x8000);
+    vs_Metrics.w = float(int(0x0000FFFFU & (vert_QuadData_2.z >> 0U)) - 0x8000) - GLYPH_BIAS;
 
     // Figure out actual pixel offset
     // data_1[0] XXXXXXXXXXXXXXXXYYYYYYYYYYYYYYYY
@@ -52,7 +58,7 @@ void main(void)
 
     // Figure out scaled glyph size
     vec2 scaled_glyph;
-    scaled_glyph.x = u_GlyphSize.y * glyph_width;
+    scaled_glyph.x = u_GlyphSize.y * vs_Metrics.z;
     scaled_glyph.y = u_GlyphSize.y * u_GlyphSize.x;
 
     // Figure out unicode value and attributes
@@ -60,15 +66,15 @@ void main(void)
     uint attribs = 0x000000FFU & (vert_QuadData_1.y >> 24U);
     uint unicode = 0x00FFFFFFU & (vert_QuadData_1.y >> 0U);
 
+    // Randomize the glyph that is drawn
+    if((attribs & TEXT_RANDOM) != 0x00U) {
+        unicode = hash(uint(gl_InstanceID) * uint(u_Time * 1000.0)) & 0x7FU;
+        //unicode_inpage &= 0x000000FFU;
+    }
+
     // The in-page coordinates can be randomized with TEXT_RANDOM
     uint unicode_inpage = unicode & 0x000000FFU;
     uint unicode_pagenum = unicode >> 8U;
-
-    // Randomize the glyph that is drawn
-    if((attribs & TEXT_RANDOM) != 0x00U) {
-        unicode_inpage = hash(uint(gl_InstanceID) * uint(u_Time * 1000.0));
-        unicode_inpage &= 0x000000FFU;
-    }
 
     // The atlas is sampled twice in the fragment shader;
     // if the TEXT_BOLD attribute is set, second sample is offset
@@ -95,16 +101,12 @@ void main(void)
 
     vs_TexCoord = vert_Position;
 
+
     vs_TexCoord_G.x = float(unicode_inpage % PAGE_SIZE);
-    vs_TexCoord_G.x += vert_Position.x * (glyph_width / u_GlyphSize.x);
+    vs_TexCoord_G.x += vert_Position.x * (vs_Metrics.z / u_GlyphSize.x);
     vs_TexCoord_G.x /= 16.0;
-    
-    /// vs_TexCoord_G.x = float(unicode_inpage % 16U) / 16.0;
-    /// vs_TexCoord_G.x += vert_Position.x * 0.25 / 16.0;
-    /// vs_TexCoord_G.x += 0.25 / 16.0;
-    // vs_TexCoord_G.x *= 0.25; //glyph_width / u_GlyphSize.x;
-    // vs_TexCoord_G.x += float(unicode_inpage % 16U);
-    // vs_TexCoord_G.x /= 16.0;
+
+//    vs_TexCoord_G.x = float(unicode_inpage % PAGE_SIZE) + vert_Position.x * (vs_Metrics.z / u_GlyphSize.x)) / float(PAGE_SIZE);
 
     vs_TexCoord_G.y = 1.0 - (vert_Position.y + float(unicode_inpage / PAGE_SIZE) + GLYPH_BIAS / u_GlyphSize.x) / float(PAGE_SIZE);
     vs_TexCoord_G.z = floor(float(unicode_pagenum) + 0.5);
