@@ -75,7 +75,7 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
         std::terminate();
     }
 
-    constexpr float width_base = 320.0f;
+    constexpr float width_base = 360.0f;
     constexpr float height_base = 240.0f;
     const float width_float = event.width;
     const float height_float = event.height;
@@ -256,6 +256,11 @@ void client_game::init(void)
 
     debug_session::init();
 
+    globals::sky_color[0] = 0.529f;
+    globals::sky_color[1] = 0.808f;
+    globals::sky_color[2] = 0.922f;
+    globals::sky_color[3] = 1.000f;
+
     globals::gui_keybind_ptr = nullptr;
     globals::gui_scale = 0U;
     globals::gui_screen = GUI_MAIN_MENU;
@@ -329,7 +334,7 @@ void client_game::render(void)
     const int scaled_height = globals::height / cxpr::max(1U, client_game::pixel_size);
 
     glViewport(0, 0, scaled_width, scaled_height);
-    glClearColor(0.529f, 0.808f, 0.922f, 1.000f);
+    glClearColor(globals::sky_color[0], globals::sky_color[1], globals::sky_color[2], globals::sky_color[3]);
     glBindFramebuffer(GL_FRAMEBUFFER, globals::world_fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

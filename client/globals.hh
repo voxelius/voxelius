@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <glad/gl.h>
 #include <entt/entity/entity.hpp>
+#include <shared/math/vec4f.hh>
 #include <shared/globals.hh>
 
 class Config;
@@ -34,6 +35,8 @@ extern entt::entity player;
 extern GLuint world_fbo;
 extern GLuint world_fbo_color;
 extern GLuint world_fbo_depth;
+
+extern Vec4f sky_color;
 
 extern ImFont *font_debug;
 extern ImFont *font_menu_title;

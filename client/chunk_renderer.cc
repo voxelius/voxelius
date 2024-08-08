@@ -20,6 +20,9 @@ struct Pipeline final {
     GLint u_vproj_matrix {};
     GLint u_world_position {};
     GLint u_timings {};
+    GLint u_sky_color {};
+    GLint u_fog_distance {};
+    GLint u_textures {};
 };
 
 static Pipeline quad_pipeline = {};
@@ -52,6 +55,9 @@ static void setup_pipeline(Pipeline &pipeline, const std::string &name)
     pipeline.u_vproj_matrix = glGetUniformLocation(pipeline.program, "u_ViewProjMatrix");
     pipeline.u_world_position = glGetUniformLocation(pipeline.program, "u_WorldPosition");
     pipeline.u_timings = glGetUniformLocation(pipeline.program, "u_Timings");
+    pipeline.u_sky_color = glGetUniformLocation(pipeline.program, "u_SkyColor");
+    pipeline.u_fog_distance = glGetUniformLocation(pipeline.program, "u_FogDistance");
+    pipeline.u_textures = glGetUniformLocation(pipeline.program, "u_Textures");
 }
 
 void chunk_renderer::init(void)
@@ -75,7 +81,6 @@ void chunk_renderer::init(void)
     glEnableVertexAttribArray(0);
     glVertexAttribDivisor(0, 0);
     glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vec3f), nullptr);
-
 }
 
 void chunk_renderer::deinit(void)
@@ -114,7 +119,10 @@ void chunk_renderer::render(void)
         glUseProgram(quad_pipeline.program);
         glUniformMatrix4fv(quad_pipeline.u_vproj_matrix, 1, false, view::matrix.data()->data());
         glUniform3uiv(quad_pipeline.u_timings, 1, timings);
-        
+        glUniform4fv(quad_pipeline.u_sky_color, 1, globals::sky_color.data());
+        glUniform1f(quad_pipeline.u_fog_distance, view::max_distance * CHUNK_SIZE);
+        glUniform1i(quad_pipeline.u_textures, 0); // GL_TEXTURE0
+
         for(const auto [entity, chunk, mesh] : group.each()) {
             if(plane_id >= mesh.quad.size())
                 continue;

@@ -24,6 +24,8 @@ GLuint globals::world_fbo = 0;
 GLuint globals::world_fbo_color = 0;
 GLuint globals::world_fbo_depth = 0;
 
+Vec4f globals::sky_color = Vec4f::transparent();
+
 ImFont *globals::font_debug = nullptr;
 ImFont *globals::font_menu_title = nullptr;
 
