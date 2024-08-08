@@ -2,7 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/entity/player_look.hh>
 #include <client/event/glfw_cursor_pos.hh>
-#include <client/gui/settings.hh>
+#include <client/settings.hh>
 #include <client/mouse.hh>
 #include <client/globals.hh>
 #include <GLFW/glfw3.h>

@@ -1,31 +1,31 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <client/debug/debug_screen.hh>
-#include <client/debug/debug_session.hh>
-#include <client/debug/debug_toggles.hh>
+#include <client/debug_screen.hh>
+#include <client/debug_session.hh>
+#include <client/debug_toggles.hh>
 #include <client/entity/player_look.hh>
 #include <client/entity/player_move.hh>
 #include <client/event/glfw_framebuffer_size.hh>
-#include <client/gui/background.hh>
-#include <client/gui/language.hh>
-#include <client/gui/main_menu.hh>
-#include <client/gui/progress.hh>
-#include <client/gui/screen.hh>
-#include <client/gui/server_list.hh>
-#include <client/gui/settings.hh>
-#include <client/world/chunk_mesher.hh>
-#include <client/world/chunk_renderer.hh>
-#include <client/world/chunk_visibility.hh>
-#include <client/world/player_target.hh>
-#include <client/world/voxel_anims.hh>
-#include <client/world/voxel_atlas.hh>
+#include <client/background.hh>
+#include <client/language.hh>
+#include <client/main_menu.hh>
+#include <client/progress.hh>
+#include <client/screen.hh>
+#include <client/server_list.hh>
+#include <client/settings.hh>
+#include <client/chunk_mesher.hh>
+#include <client/chunk_renderer.hh>
+#include <client/chunk_visibility.hh>
+#include <client/player_target.hh>
+#include <client/voxel_anims.hh>
+#include <client/voxel_atlas.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
 #include <client/keyboard.hh>
 #include <client/keynames.hh>
 #include <client/mouse.hh>
 #include <client/screenshot.hh>
-#include <client/vdraw.hh>
+#include <client/outline_renderer.hh>
 #include <client/view.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
@@ -35,8 +35,8 @@
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
 #include <shared/util/physfs.hh>
-#include <shared/world/ray_dda.hh>
-#include <shared/world/world.hh>
+#include <shared/ray_dda.hh>
+#include <shared/world.hh>
 #include <shared/config.hh>
 #include <spdlog/spdlog.h>
 
@@ -67,7 +67,6 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, globals::world_fbo_color, 0);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, globals::world_fbo_depth);
 
-#if !defined(_WIN32)
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
         spdlog::critical("opengl: world framebuffer is incomplete");
         glDeleteRenderbuffers(1, &globals::world_fbo_depth);
@@ -75,7 +74,6 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
         glDeleteFramebuffers(1, &globals::world_fbo);
         std::terminate();
     }
-#endif
 
     constexpr float width_base = 320.0f;
     constexpr float height_base = 240.0f;
@@ -107,21 +105,18 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
         ImVector<ImWchar> ranges = {};
         builder.BuildRanges(&ranges);
 
-        if(!util::read_bytes("fonts/RobotoSlab-Medium.ttf", fontbin))
+        if(!util::read_bytes("fonts/unscii-16.ttf", fontbin))
             std::terminate();
-        io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 13.0f * scale, &font_config, ranges.Data);
+        io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 16.0f * scale, &font_config, ranges.Data);
 
-        if(!util::read_bytes("fonts/AnonymousPro-Bold.ttf", fontbin))
+        if(!util::read_bytes("fonts/unscii-8.ttf", fontbin))
             std::terminate();
-        globals::font_debug = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 6.0f * scale, &font_config);
+        globals::font_debug = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 4.0f * scale, &font_config);
 
+        // UNDONE: design a logo and draw it as a TEXTURE/SPRITE
         if(!util::read_bytes("fonts/din1451alt.ttf", fontbin))
             std::terminate();
         globals::font_menu_title = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 64.0f * scale, &font_config);
-
-        if(!util::read_bytes("fonts/PTMono-Regular.ttf", fontbin))
-            std::terminate();
-        globals::font_menu_button = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 16.0f * scale, &font_config, ranges.Data);
 
         // This should be here!!! Just calling Build()
         // on the font atlas does not invalidate internal
@@ -169,9 +164,13 @@ void client_game::init(void)
     chunk_mesher::init();
     chunk_renderer::init();
 
-    vdraw::init();
+    outline_renderer::init();
     
     ImGuiStyle &style = ImGui::GetStyle();
+
+    // Black buttons on a dark background
+    // may be harder to read than the text on them
+    style.FrameBorderSize = 1.0;
 
     // Rounding on elements looks cool but I am
     // aiming for a more or less blocky and
@@ -281,7 +280,7 @@ void client_game::deinit(void)
 
     background::deinit();
 
-    vdraw::deinit();
+    outline_renderer::deinit();
 
     chunk_renderer::deinit();
     chunk_mesher::deinit();
@@ -364,7 +363,7 @@ void client_game::layout(void)
         if(globals::registry.valid(globals::player)) {
             const float width_f = static_cast<float>(globals::width);
             const float height_f = static_cast<float>(globals::height);
-            const ImU32 splash = ImGui::GetColorU32(ImVec4(0.000f, 0.000f, 0.000f, 0.900f));
+            const ImU32 splash = ImGui::GetColorU32(ImVec4(0.00f, 0.00f, 0.00f, 0.75f));
             ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(), ImVec2(width_f, height_f), splash);
         }
 

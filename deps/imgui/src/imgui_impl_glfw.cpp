@@ -11,7 +11,7 @@
 //  [X] Platform: Mouse cursor shape and visibility. Disable with 'io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange' (note: the resizing cursors requires GLFW 3.4+).
 
 // You can use unmodified imgui_impl_* files in your project. See examples/ folder for examples of using this.
-// Prefer including the entire imgui/ repository into your project (either as a copy or as a submodule), and only build the backends you need.
+// Prefer including the entire im/ repository into your project (either as a copy or as a submodule), and only build the backends you need.
 // Learn about Dear ImGui:
 // - FAQ                  https://dearimgui.com/faq
 // - Getting Started      https://dearimgui.com/getting-started
@@ -292,7 +292,7 @@ static ImGuiKey ImGui_ImplGlfw_KeyToImGuiKey(int key)
 }
 
 // X11 does not include current pressed/released modifier key in 'mods' flags submitted by GLFW
-// See https://github.com/ocornut/imgui/issues/6034 and https://github.com/glfw/glfw/issues/1630
+// See https://github.com/ocornut/im/issues/6034 and https://github.com/glfw/glfw/issues/1630
 static void ImGui_ImplGlfw_UpdateKeyModifiers(GLFWwindow* window)
 {
     ImGuiIO& io = ImGui::GetIO();
@@ -410,7 +410,7 @@ void ImGui_ImplGlfw_CursorPosCallback(GLFWwindow* window, double x, double y)
 }
 
 // Workaround: X11 seems to send spurious Leave/Enter events which would make us lose our position,
-// so we back it up and restore on Leave/Enter (see https://github.com/ocornut/imgui/issues/4984)
+// so we back it up and restore on Leave/Enter (see https://github.com/ocornut/im/issues/4984)
 void ImGui_ImplGlfw_CursorEnterCallback(GLFWwindow* window, int entered)
 {
     ImGui_ImplGlfw_Data* bd = ImGui_ImplGlfw_GetBackendData();

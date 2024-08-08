@@ -35,8 +35,8 @@
   "settings.value.mouse.sensitivity": "Чувствительность",
 
   "settings.tooltip.view.vertical_fov": "Поле зрения",
-  "settings.tooltip.game.menu_background": "Определяет, использовать ли красивый эффект в главном меню...\nЦветасто!",
-  "settings.tooltip.game.pixel_size": "Рисовать мир в кадр, размером меньшим чем размер окна",
+  "settings.tooltip.game.menu_background": "Определяет, использовать ли красивый эффект в главном\nменю... Цветасто!",
+  "settings.tooltip.game.pixel_size": "Рисовать мир в кадр c размером меньшим чем размер окна",
   "settings.tooltip.mouse.enable_raw_input": "Обработка данных с мыши напрямую без участия операционной системы",
   "settings.tooltip.mouse.sensitivity": "Определяет насколько сильно камера реагирует на перемещение курсора по плоскости экрана"
 }

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <client/gui/settings.hh>
+#include <client/settings.hh>
 #include <client/globals.hh>
 #include <client/view.hh>
 #include <entt/entity/registry.hpp>

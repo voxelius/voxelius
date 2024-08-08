@@ -5,7 +5,7 @@
 // - Read FAQ at http://dearimgui.com/faq
 // - Call and read ImGui::ShowDemoWindow() in imgui_demo.cpp. All applications in examples/ are doing that.
 // - Need help integrating Dear ImGui in your codebase?
-//   - Read Getting Started https://github.com/ocornut/imgui/wiki/Getting-Started
+//   - Read Getting Started https://github.com/ocornut/im/wiki/Getting-Started
 //   - Read 'Programmer guide' in imgui.cpp for notes on how to setup Dear ImGui in your codebase.
 // Read imgui.cpp for more details, documentation and comments.
 // Get the latest version at https://github.com/ocornut/imgui
@@ -1120,8 +1120,8 @@ static void ShowDemoWindowWidgets()
         // - You can use ShowMetricsWindow() to inspect the draw data that are being passed to your renderer,
         //   it will help you debug issues if you are confused about it.
         // - Consider using the lower-level ImDrawList::AddImage() API, via ImGui::GetWindowDrawList()->AddImage().
-        // - Read https://github.com/ocornut/imgui/blob/master/docs/FAQ.md
-        // - Read https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
+        // - Read https://github.com/ocornut/im/blob/master/docs/FAQ.md
+        // - Read https://github.com/ocornut/im/wiki/Image-Loading-and-Displaying-Examples
         ImTextureID my_tex_id = io.Fonts->TexID;
         float my_tex_w = (float)io.Fonts->TexWidth;
         float my_tex_h = (float)io.Fonts->TexHeight;
@@ -1161,7 +1161,7 @@ static void ShowDemoWindowWidgets()
         {
             // UV coordinates are often (0.0f, 0.0f) and (1.0f, 1.0f) to display an entire textures.
             // Here are trying to display only a 32x32 pixels area of the texture, hence the UV computation.
-            // Read about UV coordinates here: https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
+            // Read about UV coordinates here: https://github.com/ocornut/im/wiki/Image-Loading-and-Displaying-Examples
             ImGui::PushID(i);
             if (i > 0)
                 ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(i - 1.0f, i - 1.0f));
@@ -1788,7 +1788,7 @@ static void ShowDemoWindowWidgets()
 
     // Plot/Graph widgets are not very good.
     // Consider using a third-party library such as ImPlot: https://github.com/epezent/implot
-    // (see others https://github.com/ocornut/imgui/wiki/Useful-Extensions)
+    // (see others https://github.com/ocornut/im/wiki/Useful-Extensions)
     IMGUI_DEMO_MARKER("Widgets/Plotting");
     if (ImGui::TreeNode("Plotting"))
     {

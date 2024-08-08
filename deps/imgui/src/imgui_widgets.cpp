@@ -6985,7 +6985,7 @@ bool ImGui::ListBox(const char* label, int* current_item, const char* (*getter)(
 // Plot/Graph widgets are not very good.
 // Consider writing your own, or using a third-party one, see:
 // - ImPlot https://github.com/epezent/implot
-// - others https://github.com/ocornut/imgui/wiki/Useful-Extensions
+// - others https://github.com/ocornut/im/wiki/Useful-Extensions
 //-------------------------------------------------------------------------
 
 int ImGui::PlotEx(ImGuiPlotType plot_type, const char* label, float (*values_getter)(void* data, int idx), void* data, int values_count, int values_offset, const char* overlay_text, float scale_min, float scale_max, const ImVec2& size_arg)

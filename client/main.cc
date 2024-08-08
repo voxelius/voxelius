@@ -59,6 +59,13 @@ static void on_glfw_cursor_pos(GLFWwindow *window, double xpos, double ypos)
 
 static void on_glfw_framebuffer_size(GLFWwindow *window, int width, int height)
 {
+    if(glfwGetWindowAttrib(window, GLFW_ICONIFIED)) {
+        // Don't do anything if the window was just
+        // iconified (minimized); as it turns out minimized
+        // windows on WIN32 seem to be forced into 0x0
+        return;
+    }
+    
     globals::width = width;
     globals::height = height;
     globals::aspect = static_cast<float>(width) / static_cast<float>(height);
@@ -252,37 +259,39 @@ void client::main(void)
 
         client_game::update();
 
-        glDisable(GL_BLEND);
+        if(!glfwGetWindowAttrib(globals::window, GLFW_ICONIFIED)) {
+            glDisable(GL_BLEND);
 
-        glDisable(GL_DEPTH_TEST);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, globals::width, globals::height);
+            glDisable(GL_DEPTH_TEST);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glViewport(0, 0, globals::width, globals::height);
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
 
-        // Make sure there is no stray program object
-        // being bound to the context. Usually third-party
-        // overlay software (such as RivaTuner) injects itself
-        // into the rendering loop and binds internal objects,
-        // which creates an incomprehensible visual mess
-        glUseProgram(0);
+            // Make sure there is no stray program object
+            // being bound to the context. Usually third-party
+            // overlay software (such as RivaTuner) injects itself
+            // into the rendering loop and binds internal objects,
+            // which creates an incomprehensible visual mess
+            glUseProgram(0);
 
-        client_game::render();
+            client_game::render();
 
-        glDisable(GL_DEPTH_TEST);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, globals::width, globals::height);
+            glDisable(GL_DEPTH_TEST);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            glViewport(0, 0, globals::width, globals::height);
 
-        // All the 2D rendering goes through ImGui, and it being
-        // an immediate-mode solution makes it hard to separate
-        // rendering and UI logic updates, so this here function
-        // acts as the definitive UI rendering/logic callback
-        client_game::layout();
+            // All the 2D rendering goes through ImGui, and it being
+            // an immediate-mode solution makes it hard to separate
+            // rendering and UI logic updates, so this here function
+            // acts as the definitive UI rendering/logic callback
+            client_game::layout();
 
-        ImGui::Render();
+            ImGui::Render();
 
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        }
 
         glfwSwapBuffers(globals::window);
 

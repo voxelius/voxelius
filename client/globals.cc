@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <client/gui/screen.hh>
+#include <client/screen.hh>
 #include <client/globals.hh>
 #include <shared/config.hh>
 
@@ -26,7 +26,6 @@ GLuint globals::world_fbo_depth = 0;
 
 ImFont *globals::font_debug = nullptr;
 ImFont *globals::font_menu_title = nullptr;
-ImFont *globals::font_menu_button = nullptr;
 
 int *globals::gui_keybind_ptr = nullptr;
 unsigned int globals::gui_scale = 0U;
