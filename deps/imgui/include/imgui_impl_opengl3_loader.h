@@ -18,16 +18,16 @@
 // WILL NOT BE USING OUR LOADER, AND INSTEAD EXPECT ANOTHER/YOUR LOADER TO BE AVAILABLE IN THE COMPILATION UNIT.
 //
 // Regenerate with:
-//   python gl3w_gen.py --output ../imgui/backends/imgui_impl_opengl3_loader.h --ref ../imgui/backends/imgui_impl_opengl3.cpp ./extra_symbols.txt
+//   python gl3w_gen.py --output ../im/backends/imgui_impl_opengl3_loader.h --ref ../im/backends/imgui_impl_opengl3.cpp ./extra_symbols.txt
 //
 // More info:
-//   https://github.com/dearimgui/gl3w_stripped
-//   https://github.com/ocornut/imgui/issues/4445
+//   https://github.com/dearim/gl3w_stripped
+//   https://github.com/ocornut/im/issues/4445
 //-----------------------------------------------------------------------------
 
 /*
  * This file was generated with gl3w_gen.py, part of imgl3w
- * (hosted at https://github.com/dearimgui/gl3w_stripped)
+ * (hosted at https://github.com/dearim/gl3w_stripped)
  *
  * This is free and unencumbered software released into the public domain.
  *
@@ -666,7 +666,7 @@ static GL3WglProc (*glx_get_proc_address)(const GLubyte *);
 
 static int open_libgl(void)
 {
-    // While most systems use libGL.so.1, NetBSD seems to use that libGL.so.3. See https://github.com/ocornut/imgui/issues/6983
+    // While most systems use libGL.so.1, NetBSD seems to use that libGL.so.3. See https://github.com/ocornut/im/issues/6983
     libgl = dlopen("libGL.so", RTLD_LAZY | RTLD_LOCAL);
     if (!libgl)
         return GL3W_ERROR_LIBRARY_OPEN;

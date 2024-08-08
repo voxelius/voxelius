@@ -13,7 +13,7 @@
                 "${workspaceFolder}/deps/emhash/include",
                 "${workspaceFolder}/deps/entt/include",
                 "${workspaceFolder}/deps/glad/include",
-                "${workspaceFolder}/deps/imgui/include",
+                "${workspaceFolder}/deps/im/include",
                 "${workspaceFolder}/deps/parson/include",
                 "${workspaceFolder}/deps/physfs/include",
                 "${workspaceFolder}/deps/spdlog/include",

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/event/glfw_key.hh>
-#include <client/gui/settings.hh>
+#include <client/settings.hh>
 #include <client/keyboard.hh>
 #include <client/entity/player_move.hh>
 #include <client/globals.hh>

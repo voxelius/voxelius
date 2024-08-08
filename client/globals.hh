@@ -37,7 +37,6 @@ extern GLuint world_fbo_depth;
 
 extern ImFont *font_debug;
 extern ImFont *font_menu_title;
-extern ImFont *font_menu_button;
 
 extern int *gui_keybind_ptr;
 extern unsigned int gui_scale;
