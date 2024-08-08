@@ -2,6 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #version 330 core
 
+#define GLYPH_BIAS 2.0
 #define PAGE_SIZE 16U
 
 #define TEXT_RANDOM         0x0001U
@@ -47,7 +48,7 @@ void main(void)
     // [2024-08-05] now it's not relative to the glyph size
     vec2 offset;
     offset.x = u_Offset.x + u_GlyphSize.y * float(int(0x0000FFFFU & (vert_QuadData_1.x >> 16U)) - 0x8000);
-    offset.y = u_Offset.y + u_GlyphSize.y * float(int(0x0000FFFFU & (vert_QuadData_1.x >> 0U)) - 0x8000);
+    offset.y = u_Offset.y + u_GlyphSize.y * (GLYPH_BIAS + float(int(0x0000FFFFU & (vert_QuadData_1.x >> 0U)) - 0x8000));
 
     // Figure out scaled glyph size
     vec2 scaled_glyph;
@@ -105,7 +106,7 @@ void main(void)
     // vs_TexCoord_G.x += float(unicode_inpage % 16U);
     // vs_TexCoord_G.x /= 16.0;
 
-    vs_TexCoord_G.y = 1.0 - (vert_Position.y + float(unicode_inpage / PAGE_SIZE)) / float(PAGE_SIZE);
+    vs_TexCoord_G.y = 1.0 - (vert_Position.y + float(unicode_inpage / PAGE_SIZE) + GLYPH_BIAS / u_GlyphSize.x) / float(PAGE_SIZE);
     vs_TexCoord_G.z = floor(float(unicode_pagenum) + 0.5);
 
     // data_1[2] RRRRRRRRGGGGGGGGBBBBBBBBAAAAAAAA
