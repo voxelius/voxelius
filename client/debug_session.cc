@@ -158,6 +158,9 @@ void debug_session::run(void)
         //chunk->voxels.fill(v_stone);
     }
 
+    Chunk *chunk = world::find_or_create_chunk({0, 4, 0});
+    chunk->voxels.fill(v_test);
+
     spdlog::info("spawning local player");
     globals::player = globals::registry.create();
     globals::registry.emplace<PlayerComponent>(globals::player);
@@ -165,7 +168,7 @@ void debug_session::run(void)
 
     auto &head = globals::registry.emplace<HeadComponent>(globals::player);
     auto &transform = globals::registry.emplace<TransformComponent>(globals::player);
-    transform.position.local[1] += 24.0;
+    transform.position.local[1] += 32.0;
 
     globals::gui_screen = 0U;
 }
