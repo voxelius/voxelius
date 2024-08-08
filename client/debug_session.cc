@@ -149,10 +149,10 @@ void debug_session::run(void)
     noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
     noise.fractal_type = FNL_FRACTAL_RIDGED;
 
-    constexpr int WSIZE = 16;
+    constexpr int WSIZE = 32;
     for(int x = -WSIZE; x < WSIZE; x += 1)
     for(int z = -WSIZE; z < WSIZE; z += 1)
-    for(int y = 0; y < 1; y += 1) {
+    for(int y = -2; y < 1; y += 1) {
         generate({x, y, z});
         //Chunk *chunk = world::find_or_create_chunk({x, y, z});
         //chunk->voxels.fill(v_stone);

@@ -158,7 +158,7 @@ void client::main(void)
     // The UI is scaled against a spherical monitor in vacuum
     // with the height of 240 pixels. The closest legal (VGA)
     // resolution we can get with that height is the crispy 320x240
-    glfwSetWindowSizeLimits(globals::window, 320, 240, GLFW_DONT_CARE, GLFW_DONT_CARE);
+    glfwSetWindowSizeLimits(globals::window, 360, 240, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
     glfwSetCharCallback(globals::window, &on_glfw_char);
     glfwSetCursorEnterCallback(globals::window, &on_glfw_cursor_enter);
