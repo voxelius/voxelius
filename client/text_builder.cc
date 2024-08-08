@@ -9,6 +9,7 @@
 constexpr static char32_t ASCII_HT = char32_t(0x0009);
 constexpr static char32_t ASCII_LF = char32_t(0x000A);
 constexpr static char32_t ASCII_CR = char32_t(0x000D);
+constexpr static char32_t ASCII_SP = char32_t(0x0020);
 
 constexpr static char32_t VT241_NUL = char32_t(0x0000);
 constexpr static char32_t VT241_ESC = char32_t(0x001B);
@@ -35,10 +36,11 @@ public:
 
 static bool parse_ascii(TextBuilder &builder, ParserData &parser, const Font &font, char32_t unicode)
 {
-    //if(unicode == ASCII_HT) {
-    //    builder.cursor_x += (4U - (builder.cursor_x % 4U));
-    //    return true;
-    //}
+    if(unicode == ASCII_HT) {
+        builder.cursor_x += (font.glyph_height >> 1);
+        //builder.cursor_x += (4U - (builder.cursor_x % 4U));
+        return true;
+    }
 
     if(unicode == ASCII_LF) {
         builder.cursor_x = 0U;
@@ -396,6 +398,12 @@ void TextBuilder::append(TextBuilder &builder, const Font &font, const std::stri
                 cstr += count;
                 continue;
             }
+        }
+
+        if(unicode == ASCII_SP) {
+            builder.cursor_x += (font.glyph_height >> 1);
+            cstr += count;
+            continue;
         }
 
         if(unicode >= font.gmetrics.size()) {
