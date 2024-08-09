@@ -2,6 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/chunk_mesher.hh>
 #include <client/chunk_quad_vertex.hh>
+#include <client/chunk_visibility.hh>
 #include <client/voxel_atlas.hh>
 #include <client/globals.hh>
 #include <entt/entity/registry.hpp>
@@ -224,6 +225,8 @@ static void finalize(WorkerContext *ctx, entt::entity entity)
             glBufferData(GL_ARRAY_BUFFER, sizeof(ChunkQuadVertex) * builder.size(), builder.data(), GL_STATIC_DRAW);
             buffer.size = builder.size();
         }
+        
+        chunk_visibility::update_chunk(entity);
     }
 }
 
