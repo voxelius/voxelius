@@ -44,6 +44,7 @@ bool client_game::vertical_sync = true;
 bool client_game::menu_background = true;
 std::string client_game::username = "player";
 unsigned int client_game::pixel_size = 4U;
+unsigned int client_game::fog_mode = 1U;
 
 static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
 {
@@ -140,11 +141,13 @@ void client_game::init(void)
     Config::add(globals::client_config, "game.menu_background", client_game::menu_background);
     Config::add(globals::client_config, "game.username", client_game::username);
     Config::add(globals::client_config, "game.pixel_size", client_game::pixel_size);
+    Config::add(globals::client_config, "game.fog_mode", client_game::fog_mode);
 
-    settings::add_checkbox(5, settings::VIDEO, "game.vertical_sync", client_game::vertical_sync, false);
+    settings::add_checkbox(4, settings::VIDEO, "game.vertical_sync", client_game::vertical_sync, false);
     settings::add_checkbox(0, settings::VIDEO_GUI, "game.menu_background", client_game::menu_background, true);
     settings::add_input(1, settings::GENERAL, "game.username", client_game::username, false, false);
     settings::add_slider(1, settings::VIDEO, "game.pixel_size", client_game::pixel_size, 1U, 4U, true);
+    settings::add_stepper(3, settings::VIDEO, "game.fog_mode", client_game::fog_mode, 3U, false);
 
     language::init();
 

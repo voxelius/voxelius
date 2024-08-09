@@ -5,6 +5,7 @@
 #include <client/chunk_quad_vertex.hh>
 #include <client/chunk_renderer.hh>
 #include <client/chunk_visibility.hh>
+#include <client/game.hh>
 #include <client/voxel_anims.hh>
 #include <client/voxel_atlas.hh>
 #include <client/globals.hh>
@@ -84,8 +85,8 @@ void chunk_renderer::render(void)
     else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     VariedProgram::variant_vert(quad_program, WORLD_CURVATURE, 0);
-    VariedProgram::variant_vert(quad_program, WORLD_FOG, 1);
-    VariedProgram::variant_frag(quad_program, WORLD_FOG, 1);
+    VariedProgram::variant_vert(quad_program, WORLD_FOG, client_game::fog_mode);
+    VariedProgram::variant_frag(quad_program, WORLD_FOG, client_game::fog_mode);
 
     if(!VariedProgram::update(quad_program)) {
         spdlog::critical("chunk_renderer: quad_program: update failed");
