@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #version 330 core
+#pragma variant[0] WORLD_CURVATURE
+#pragma variant[1] WORLD_FOG
 
 layout(location = 0) in vec3 vert_Position;
 layout(location = 1) in uvec2 vert_Quad;
 
 out vec3 vs_TexCoord;
 out float vs_Shade;
-out float vs_FogCoeff;
+
+#if WORLD_FOG
+out float vs_FogFactor;
+#endif
 
 uniform mat4x4 u_ViewProjMatrix;
 uniform vec3 u_WorldPosition;
 uniform uvec3 u_Timings;
-uniform float u_FogDistance;
-
-float linear_fog(const float dist, const float start, const float end)
-{
-    return 1.0 - clamp((end - dist) / (end - start), 0.0, 1.0);
-}
+uniform float u_ViewDistance;
 
 void main(void)
 {
@@ -37,7 +37,6 @@ void main(void)
     gl_Position.xyz = vert_Position;
     gl_Position.x *= quad_scale.x;
     gl_Position.z *= quad_scale.y;
-
 
     vec3 positions[6]; // FIXME: 16
     positions[0x00U] = vec3(gl_Position.x, 1.0 - gl_Position.z, 1.0);
@@ -71,9 +70,18 @@ void main(void)
     gl_Position.xyz = positions[quad_facing] + quad_offset + u_WorldPosition;
     gl_Position = u_ViewProjMatrix * gl_Position;
 
-    vs_FogCoeff = linear_fog(length(gl_Position.xyz), 0.0, u_FogDistance);
-    //vs_Distance = dot(gl_Position.xyz, gl_Position.xyz);
+#if WORLD_FOG == 1
+    // Use a simple linear fog factor
+    vs_FogFactor = 1.0 - clamp((u_ViewDistance - length(gl_Position.xyz)) / (u_ViewDistance - 16.0), 0.0, 1.0);;
+#elif WORLD_FOG == 2
+    // Use a fancy exponential fog factor
+    // that is totally not yoinked from CaveCube
+    // UNDONE: actually borrow the formula
+    vs_FogFactor = 0.0;
+#endif
 
-    //gl_Position.y += gl_Position.z * gl_Position.z / 384.0;
-    //gl_Position.y += gl_Position.x * gl_Position.x / 384.0;
+#if WORLD_CURVATURE
+    gl_Position.y += gl_Position.z * gl_Position.z / u_ViewDistance;
+    gl_Position.y += gl_Position.x * gl_Position.x / u_ViewDistance;
+#endif
 }

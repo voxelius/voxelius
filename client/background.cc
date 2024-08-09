@@ -2,43 +2,24 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/background.hh>
 #include <client/globals.hh>
-#include <client/util/shader.hh>
-#include <client/util/program.hh>
+#include <client/varied_program.hh>
 #include <GLFW/glfw3.h>
 #include <spdlog/spdlog.h>
 #include <shared/math/vec2f.hh>
 
-static GLint u_time = {};
-static GLuint bg_program = {};
-static GLuint bg_vaobj = {};
-static GLuint bg_vbo = {};
+static VariedProgram program = {};
+static std::size_t u_time = {};
+static GLuint vaobj = {};
+static GLuint vbo = {};
 
 void background::init(void)
 {
-    u_time = 0;
-    bg_program = 0;
-    bg_vaobj = 0;
-    bg_vbo = 0;
-
-    GLuint vert = util::compile_shader("shaders/background.vert", GL_VERTEX_SHADER);
-    GLuint frag = util::compile_shader("shaders/background.frag", GL_FRAGMENT_SHADER);
-
-    if(!vert || !frag) {
-        spdlog::critical("background: shader compile failed");
+    if(!VariedProgram::setup(program, "shaders/background.vert", "shaders/background.frag")) {
+        spdlog::critical("background: program setup failed");
         std::terminate();
     }
-
-    bg_program = util::link_program(vert, frag);
-
-    glDeleteShader(frag);
-    glDeleteShader(vert);
-
-    if(!bg_program) {
-        spdlog::critical("background: program link failed");
-        std::terminate();
-    }
-
-    u_time = glGetUniformLocation(bg_program, "u_Time");
+    
+    u_time = VariedProgram::uniform(program, "u_Time");
 
     const Vec2f vertices[4] = {
         Vec2f(-1.0f,  1.0f),
@@ -47,11 +28,11 @@ void background::init(void)
         Vec2f( 1.0f, -1.0f),
     };
 
-    glGenVertexArrays(1, &bg_vaobj);
-    glBindVertexArray(bg_vaobj);
+    glGenVertexArrays(1, &vaobj);
+    glBindVertexArray(vaobj);
 
-    glGenBuffers(1, &bg_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, bg_vbo);
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
     glEnableVertexAttribArray(0);
@@ -61,22 +42,28 @@ void background::init(void)
 
 void background::deinit(void)
 {
-    glDeleteBuffers(1, &bg_vbo);
-    glDeleteVertexArrays(1, &bg_vaobj);
-    glDeleteProgram(bg_program);
+    glDeleteBuffers(1, &vbo);
+    glDeleteVertexArrays(1, &vaobj);
+    VariedProgram::destroy(program);
 }
 
 void background::render(void)
 {
+    if(!VariedProgram::update(program)) {
+        spdlog::critical("background: program update failed");
+        VariedProgram::destroy(program);
+        std::terminate();
+    }
+    
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     glDisable(GL_DEPTH_TEST);
 
-    glUseProgram(bg_program);
-    glUniform1f(u_time, glfwGetTime());
+    glUseProgram(program.handle);
+    glUniform1f(program.uniforms[u_time].location, glfwGetTime());
 
-    glBindVertexArray(bg_vaobj);
+    glBindVertexArray(vaobj);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
