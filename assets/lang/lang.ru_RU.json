@@ -27,6 +27,7 @@
   "settings.value.game.fog_mode.0": "Выключен",
   "settings.value.game.fog_mode.1": "Линейный",
   "settings.value.game.fog_mode.2": "Красивый",
+  "settings.value.game.world_curvature": "Искривление Мира",
   "settings.value.key.back": "Двигаться назад",
   "settings.value.key.down": "Двигаться вниз",
   "settings.value.key.forward": "Двигаться вперед",
@@ -40,6 +41,7 @@
 
   "settings.tooltip.view.vertical_fov": "Поле зрения",
   "settings.tooltip.game.menu_background": "Определяет, использовать ли красивый эффект в главном\nменю... Цветасто!",
+  "settings.tooltip.game.world_curvature": "Симуляция искривления\nгоризинта Земли",
   "settings.tooltip.game.pixel_size": "Рисовать мир в кадр c размером меньшим чем размер окна",
   "settings.tooltip.mouse.enable_raw_input": "Обработка данных с мыши напрямую без участия операционной системы",
   "settings.tooltip.mouse.sensitivity": "Определяет насколько сильно камера реагирует на перемещение курсора по плоскости экрана"

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/chunk_mesher.hh>
-#include <client/chunk_quad_vertex.hh>
+#include <client/chunk_quad.hh>
 #include <client/chunk_visibility.hh>
 #include <client/voxel_atlas.hh>
 #include <client/globals.hh>
@@ -16,7 +16,7 @@
 #include <spdlog/spdlog.h>
 #include <thread_pool.hpp>
 
-using QuadBuilder = std::vector<ChunkQuadVertex>;
+using QuadBuilder = std::vector<ChunkQuad>;
 
 using CachedChunkCoord = unsigned short;
 constexpr static CachedChunkCoord CPOS_ITSELF = 0x0000;
@@ -222,7 +222,7 @@ static void finalize(WorkerContext *ctx, entt::entity entity)
             if(!buffer.handle)
                 glGenBuffers(1, &buffer.handle);
             glBindBuffer(GL_ARRAY_BUFFER, buffer.handle);
-            glBufferData(GL_ARRAY_BUFFER, sizeof(ChunkQuadVertex) * builder.size(), builder.data(), GL_STATIC_DRAW);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(ChunkQuad) * builder.size(), builder.data(), GL_STATIC_DRAW);
             buffer.size = builder.size();
         }
         
@@ -240,7 +240,7 @@ constexpr static const size_t MESHER_THREADS_COUNT = 1;
 constexpr static const size_t MESHER_TASKS_PER_FRAME = 16;
 #else
 constexpr static const size_t MESHER_THREADS_COUNT = 2;
-constexpr static const size_t MESHER_TASKS_PER_FRAME = 32;
+constexpr static const size_t MESHER_TASKS_PER_FRAME = 64;
 #endif
 
 static thread_pool workers_pool = thread_pool(MESHER_THREADS_COUNT);
