@@ -37,12 +37,12 @@ void chunk_renderer::init(void)
         std::terminate();
     }
 
-    u_quad_vproj_matrix = VariedProgram::uniform(quad_program, "u_ViewProjMatrix");
-    u_quad_world_position = VariedProgram::uniform(quad_program, "u_WorldPosition");
-    u_quad_timings = VariedProgram::uniform(quad_program, "u_Timings");
-    u_quad_sky_color = VariedProgram::uniform(quad_program, "u_SkyColor");
-    u_quad_view_distance = VariedProgram::uniform(quad_program, "u_ViewDistance");
-    u_quad_textures = VariedProgram::uniform(quad_program, "u_Textures");
+    u_quad_vproj_matrix = VariedProgram::add_uniform(quad_program, "u_ViewProjMatrix");
+    u_quad_world_position = VariedProgram::add_uniform(quad_program, "u_WorldPosition");
+    u_quad_timings = VariedProgram::add_uniform(quad_program, "u_Timings");
+    u_quad_sky_color = VariedProgram::add_uniform(quad_program, "u_SkyColor");
+    u_quad_view_distance = VariedProgram::add_uniform(quad_program, "u_ViewDistance");
+    u_quad_textures = VariedProgram::add_uniform(quad_program, "u_Textures");
 
     const Vec3f vertices[4] = {
         Vec3f(1.0f, 0.0f, 1.0f),
@@ -84,9 +84,9 @@ void chunk_renderer::render(void)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    VariedProgram::variant_vert(quad_program, WORLD_CURVATURE, client_game::world_curvature);
-    VariedProgram::variant_vert(quad_program, WORLD_FOG, client_game::fog_mode);
-    VariedProgram::variant_frag(quad_program, WORLD_FOG, client_game::fog_mode);
+    VariedProgram::set_variant_vert(quad_program, WORLD_CURVATURE, client_game::world_curvature);
+    VariedProgram::set_variant_vert(quad_program, WORLD_FOG, client_game::fog_mode);
+    VariedProgram::set_variant_frag(quad_program, WORLD_FOG, client_game::fog_mode);
 
     if(!VariedProgram::update(quad_program)) {
         spdlog::critical("chunk_renderer: quad_program: update failed");

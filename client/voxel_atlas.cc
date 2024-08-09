@@ -68,7 +68,7 @@ static AtlasStrip *plane_new_strip(AtlasPlane &plane, const std::vector<std::str
         Image image = {};
         
         if(!Image::load_rgba(image, paths[i], true)) {
-            spdlog::warn("atlas: {}: {}", paths[i], util::physfs_error());
+            //spdlog::warn("atlas: {}: {}", paths[i], util::physfs_error());
             continue;
         }
         

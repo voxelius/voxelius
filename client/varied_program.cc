@@ -180,7 +180,7 @@ void VariedProgram::destroy(VariedProgram &program)
     program.needs_update = false;
 }
 
-std::size_t VariedProgram::uniform(VariedProgram &program, const std::string &name)
+std::size_t VariedProgram::add_uniform(VariedProgram &program, const std::string &name)
 {
     for(std::size_t i = 0; i < program.uniforms.size(); ++i) {
         if(program.uniforms[i].name.compare(name))
@@ -195,7 +195,7 @@ std::size_t VariedProgram::uniform(VariedProgram &program, const std::string &na
     return index;
 }
 
-void VariedProgram::variant_vert(VariedProgram &program, unsigned int variant, unsigned int value)
+void VariedProgram::set_variant_vert(VariedProgram &program, unsigned int variant, unsigned int value)
 {
     if(variant < program.vert_variants.size()) {
         if(value != program.vert_variants[variant].value) {
@@ -206,7 +206,7 @@ void VariedProgram::variant_vert(VariedProgram &program, unsigned int variant, u
     
 }
 
-void VariedProgram::variant_frag(VariedProgram &program, unsigned int variant, unsigned int value)
+void VariedProgram::set_variant_frag(VariedProgram &program, unsigned int variant, unsigned int value)
 {
     if(variant < program.frag_variants.size()) {
         if(value != program.frag_variants[variant].value) {

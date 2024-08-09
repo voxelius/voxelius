@@ -36,9 +36,9 @@ public:
     static void destroy(VariedProgram &program);
 
 public:
-    static std::size_t uniform(VariedProgram &program, const std::string &name);
-    static void variant_vert(VariedProgram &program, unsigned int variant, unsigned int value);
-    static void variant_frag(VariedProgram &program, unsigned int variant, unsigned int value);
+    static std::size_t add_uniform(VariedProgram &program, const std::string &name);
+    static void set_variant_vert(VariedProgram &program, unsigned int variant, unsigned int value);
+    static void set_variant_frag(VariedProgram &program, unsigned int variant, unsigned int value);
 };
 
 #endif /* CLIENT_VARIED_PROGRAM_HH */
