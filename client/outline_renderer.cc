@@ -34,11 +34,11 @@ void outline_renderer::init(void)
         std::terminate();
     }
     
-    u_vproj_matrix = VariedProgram::uniform(program, "u_ViewProjMatrix");
-    u_world_position = VariedProgram::uniform(program, "u_WorldPosition");
-    u_view_distance = VariedProgram::uniform(program, "u_ViewDistance");
-    u_scale = VariedProgram::uniform(program, "u_Scale");
-    u_color = VariedProgram::uniform(program, "u_Color");
+    u_vproj_matrix = VariedProgram::add_uniform(program, "u_ViewProjMatrix");
+    u_world_position = VariedProgram::add_uniform(program, "u_WorldPosition");
+    u_view_distance = VariedProgram::add_uniform(program, "u_ViewDistance");
+    u_scale = VariedProgram::add_uniform(program, "u_Scale");
+    u_color = VariedProgram::add_uniform(program, "u_Color");
 
     const Vec3f cube_vertices[4] = {
         Vec3f(0.0f, 0.0f, 0.0f),
@@ -76,7 +76,7 @@ void outline_renderer::deinit(void)
 
 void outline_renderer::prepare_depth(void)
 {
-    VariedProgram::variant_vert(program, WORLD_CURVATURE, client_game::world_curvature);
+    VariedProgram::set_variant_vert(program, WORLD_CURVATURE, client_game::world_curvature);
 
     if(!VariedProgram::update(program)) {
         spdlog::critical("outline_renderer: program update failed");
@@ -100,7 +100,7 @@ void outline_renderer::prepare_depth(void)
 
 void outline_renderer::prepare_nodepth(void)
 {
-    VariedProgram::variant_vert(program, WORLD_CURVATURE, client_game::world_curvature);
+    VariedProgram::set_variant_vert(program, WORLD_CURVATURE, client_game::world_curvature);
 
     if(!VariedProgram::update(program)) {
         spdlog::critical("outline_renderer: program update failed");

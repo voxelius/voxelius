@@ -174,7 +174,7 @@ void client::main(void)
     Image image = {};
     GLFWimage icon = {};
 
-    if(Image::load_rgba(image, "textures/32x32.png", false)) {
+    if(Image::load_rgba(image, "textures/gui/window_icon.png", false)) {
         icon.width = image.width;
         icon.height = image.height;
         icon.pixels = reinterpret_cast<unsigned char *>(image.pixels);
