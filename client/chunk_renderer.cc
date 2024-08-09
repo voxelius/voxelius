@@ -133,6 +133,7 @@ void chunk_renderer::render(void)
             
             glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, mesh.quad[plane_id].size);
             
+            globals::num_drawcalls += 1;
             globals::num_triangles += 2 * mesh.quad[plane_id].size;
         }
     }
