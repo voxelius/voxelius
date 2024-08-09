@@ -19,6 +19,7 @@ bool is_whitespace(const std::string &str);
 
 namespace util
 {
+std::string join(const std::vector<std::string> &strings, const std::string &separator);
 std::vector<std::string> split(const std::string &str, const std::string &separator);
 } // namespace util
 

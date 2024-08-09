@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <shared/util/string.hh>
+#include <sstream>
 
 bool util::contains(const std::string &str, char character)
 {
@@ -28,6 +29,14 @@ bool util::is_empty_or_whitespace(const std::string &str)
 bool util::is_whitespace(const std::string &str)
 {
     return std::all_of(str.cbegin(), str.cend(), [](auto c) { return std::isspace(c); });
+}
+
+std::string util::join(const std::vector<std::string> &strings, const std::string &separator)
+{
+    std::ostringstream stream = {};
+    for(const std::string &str : strings)
+        stream << str << separator;
+    return stream.str();
 }
 
 std::vector<std::string> util::split(const std::string &str, const std::string &separator)

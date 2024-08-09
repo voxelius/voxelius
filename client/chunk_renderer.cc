@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/debug_toggles.hh>
-#include <client/util/shader.hh>
-#include <client/util/program.hh>
 #include <client/chunk_mesher.hh>
 #include <client/chunk_quad_vertex.hh>
 #include <client/chunk_renderer.hh>
@@ -10,59 +8,40 @@
 #include <client/voxel_anims.hh>
 #include <client/voxel_atlas.hh>
 #include <client/globals.hh>
+#include <client/varied_program.hh>
 #include <client/view.hh>
 #include <entt/entity/registry.hpp>
 #include <shared/chunk.hh>
 #include <spdlog/spdlog.h>
 
-struct Pipeline final {
-    GLuint program {};
-    GLint u_vproj_matrix {};
-    GLint u_world_position {};
-    GLint u_timings {};
-    GLint u_sky_color {};
-    GLint u_fog_distance {};
-    GLint u_textures {};
-};
+// ONLY TOUCH THESE IF THE RESPECTIVE SHADER
+// VARIANT MACRO DECLARATIONS LAYOUT CHANGED AS WELL
+constexpr static unsigned int WORLD_CURVATURE = 0U;
+constexpr static unsigned int WORLD_FOG = 1U;
 
-static Pipeline quad_pipeline = {};
+static VariedProgram quad_program = {};
+static std::size_t u_quad_vproj_matrix = {};
+static std::size_t u_quad_world_position = {};
+static std::size_t u_quad_timings = {};
+static std::size_t u_quad_sky_color = {};
+static std::size_t u_quad_view_distance = {};
+static std::size_t u_quad_textures = {};
 static GLuint quad_vaobj = {};
 static GLuint quad_vbo = {};
 
-static void setup_pipeline(Pipeline &pipeline, const std::string &name)
-{
-    const std::string vert_path = fmt::format("shaders/{}.vert", name);
-    const std::string frag_path = fmt::format("shaders/{}.frag", name);
-
-    GLuint vert = util::compile_shader(vert_path, GL_VERTEX_SHADER);
-    GLuint frag = util::compile_shader(frag_path, GL_FRAGMENT_SHADER);
-
-    if(!vert || !frag) {
-        spdlog::critical("chunk_renderer: {}: shader compile failed", name);
-        std::terminate();
-    }
-
-    pipeline.program = util::link_program(vert, frag);
-
-    glDeleteShader(frag);
-    glDeleteShader(vert);
-
-    if(!pipeline.program) {
-        spdlog::critical("chunk_renderer: {}: program link failed", name);
-        std::terminate();
-    }
-
-    pipeline.u_vproj_matrix = glGetUniformLocation(pipeline.program, "u_ViewProjMatrix");
-    pipeline.u_world_position = glGetUniformLocation(pipeline.program, "u_WorldPosition");
-    pipeline.u_timings = glGetUniformLocation(pipeline.program, "u_Timings");
-    pipeline.u_sky_color = glGetUniformLocation(pipeline.program, "u_SkyColor");
-    pipeline.u_fog_distance = glGetUniformLocation(pipeline.program, "u_FogDistance");
-    pipeline.u_textures = glGetUniformLocation(pipeline.program, "u_Textures");
-}
-
 void chunk_renderer::init(void)
 {
-    setup_pipeline(quad_pipeline, "chunk_quad");
+    if(!VariedProgram::setup(quad_program, "shaders/chunk_quad.vert", "shaders/chunk_quad.frag")) {
+        spdlog::critical("chunk_renderer: quad_program: setup failed");
+        std::terminate();
+    }
+
+    u_quad_vproj_matrix = VariedProgram::uniform(quad_program, "u_ViewProjMatrix");
+    u_quad_world_position = VariedProgram::uniform(quad_program, "u_WorldPosition");
+    u_quad_timings = VariedProgram::uniform(quad_program, "u_Timings");
+    u_quad_sky_color = VariedProgram::uniform(quad_program, "u_SkyColor");
+    u_quad_view_distance = VariedProgram::uniform(quad_program, "u_ViewDistance");
+    u_quad_textures = VariedProgram::uniform(quad_program, "u_Textures");
 
     const Vec3f vertices[4] = {
         Vec3f(1.0f, 0.0f, 1.0f),
@@ -87,7 +66,7 @@ void chunk_renderer::deinit(void)
 {
     glDeleteBuffers(1, &quad_vbo);
     glDeleteVertexArrays(1, &quad_vaobj);
-    glDeleteProgram(quad_pipeline.program);
+    VariedProgram::destroy(quad_program);
 }
 
 void chunk_renderer::render(void)
@@ -104,6 +83,16 @@ void chunk_renderer::render(void)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
+    VariedProgram::variant_vert(quad_program, WORLD_CURVATURE, 0);
+    VariedProgram::variant_vert(quad_program, WORLD_FOG, 1);
+    VariedProgram::variant_frag(quad_program, WORLD_FOG, 1);
+
+    if(!VariedProgram::update(quad_program)) {
+        spdlog::critical("chunk_renderer: quad_program: update failed");
+        VariedProgram::destroy(quad_program);
+        std::terminate();
+    }
+
     GLuint timings[3] = {};
     timings[0] = globals::frametime;
     timings[1] = globals::frametime_avg;
@@ -116,12 +105,13 @@ void chunk_renderer::render(void)
         glActiveTexture(GL_TEXTURE0);
 
         glBindVertexArray(quad_vaobj);
-        glUseProgram(quad_pipeline.program);
-        glUniformMatrix4fv(quad_pipeline.u_vproj_matrix, 1, false, view::matrix.data()->data());
-        glUniform3uiv(quad_pipeline.u_timings, 1, timings);
-        glUniform4fv(quad_pipeline.u_sky_color, 1, globals::sky_color.data());
-        glUniform1f(quad_pipeline.u_fog_distance, view::max_distance * CHUNK_SIZE);
-        glUniform1i(quad_pipeline.u_textures, 0); // GL_TEXTURE0
+
+        glUseProgram(quad_program.handle);
+        glUniformMatrix4fv(quad_program.uniforms[u_quad_vproj_matrix].location, 1, false, view::matrix.data()->data());
+        glUniform3uiv(quad_program.uniforms[u_quad_timings].location, 1, timings);
+        glUniform4fv(quad_program.uniforms[u_quad_sky_color].location, 1, globals::sky_color.data());
+        glUniform1f(quad_program.uniforms[u_quad_view_distance].location, view::max_distance * CHUNK_SIZE);
+        glUniform1i(quad_program.uniforms[u_quad_textures].location, 0); // GL_TEXTURE0
 
         for(const auto [entity, chunk, mesh] : group.each()) {
             if(plane_id >= mesh.quad.size())
@@ -132,7 +122,7 @@ void chunk_renderer::render(void)
                 continue;
 
             const Vec3f wpos = ChunkCoord::to_vec3f(chunk.coord - view::position.chunk);
-            glUniform3fv(quad_pipeline.u_world_position, 1, wpos.data());
+            glUniform3fv(quad_program.uniforms[u_quad_world_position].location, 1, wpos.data());
 
             glBindBuffer(GL_ARRAY_BUFFER, mesh.quad[plane_id].handle);
 
