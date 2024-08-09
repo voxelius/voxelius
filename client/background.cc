@@ -4,6 +4,7 @@
 #include <client/globals.hh>
 #include <client/varied_program.hh>
 #include <GLFW/glfw3.h>
+#include <shared/math/constexpr.hh>
 #include <shared/math/vec2f.hh>
 #include <shared/util/physfs.hh>
 #include <shared/image.hh>
@@ -91,8 +92,8 @@ void background::render(void)
 
     glDisable(GL_DEPTH_TEST);
 
-    const float scaled_width = static_cast<float>(globals::width / globals::gui_scale);
-    const float scaled_height = static_cast<float>(globals::height / globals::gui_scale);
+    const float scaled_width = 0.75f * static_cast<float>(globals::width / globals::gui_scale);
+    const float scaled_height = 0.75f * static_cast<float>(globals::height / globals::gui_scale);
     const float scale_x = scaled_width / static_cast<float>(texture_width);
     const float scale_y = scaled_height / static_cast<float>(texture_height);
 
