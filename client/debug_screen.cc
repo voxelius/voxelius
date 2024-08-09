@@ -38,6 +38,7 @@ void debug_screen::layout(void)
             ImGui::Text("%.02f FPS [%.02f ms] [VSYNC]", ui_framerate, ui_frametime);
         else ImGui::Text("%.02f FPS [%.02f ms]", ui_framerate, ui_frametime);
 
+        ImGui::Text("World drawcalls: %zu", globals::num_drawcalls);
         ImGui::Text("World triangles: %zu", globals::num_triangles);
         ImGui::Text("GL_VERSION: %s", gl_version.c_str());
         ImGui::Text("GL_RENDERER: %s", gl_renderer.c_str());
