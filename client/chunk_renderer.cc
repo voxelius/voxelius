@@ -2,7 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/debug_toggles.hh>
 #include <client/chunk_mesher.hh>
-#include <client/chunk_quad_vertex.hh>
+#include <client/chunk_quad.hh>
 #include <client/chunk_renderer.hh>
 #include <client/chunk_visibility.hh>
 #include <client/game.hh>
@@ -84,7 +84,7 @@ void chunk_renderer::render(void)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    VariedProgram::variant_vert(quad_program, WORLD_CURVATURE, 0);
+    VariedProgram::variant_vert(quad_program, WORLD_CURVATURE, client_game::world_curvature);
     VariedProgram::variant_vert(quad_program, WORLD_FOG, client_game::fog_mode);
     VariedProgram::variant_frag(quad_program, WORLD_FOG, client_game::fog_mode);
 
@@ -129,7 +129,7 @@ void chunk_renderer::render(void)
 
             glEnableVertexAttribArray(1);
             glVertexAttribDivisor(1, 1);
-            glVertexAttribIPointer(1, 2, GL_UNSIGNED_INT, sizeof(ChunkQuadVertex), nullptr);
+            glVertexAttribIPointer(1, 2, GL_UNSIGNED_INT, sizeof(ChunkQuad), nullptr);
             
             glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, mesh.quad[plane_id].size);
             

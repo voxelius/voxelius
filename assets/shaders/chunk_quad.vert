@@ -70,19 +70,17 @@ void main(void)
     gl_Position.xyz = positions[quad_facing] + quad_offset + u_WorldPosition;
     gl_Position = u_ViewProjMatrix * gl_Position;
 
+#if WORLD_CURVATURE
+    gl_Position.y -= gl_Position.z * gl_Position.z / u_ViewDistance * 0.0625;
+    gl_Position.y -= gl_Position.x * gl_Position.x / u_ViewDistance * 0.0625;
+#endif
+
 #if WORLD_FOG == 1
     // Use a simple linear fog factor
     vs_FogFactor = 1.0 - clamp((u_ViewDistance - length(gl_Position.xyz)) / (u_ViewDistance - 16.0), 0.0, 1.0);;
 #elif WORLD_FOG == 2
     // Use a fancy exponential fog factor
-    // that is totally not yoinked from CaveCube
-    // UNDONE: for now it's just a boring exponential fog
     float fogd = 2.0 / u_ViewDistance * length(gl_Position.xyz);
     vs_FogFactor = 1.0 - clamp(exp2(fogd * fogd * -1.442695), 0.0, 1.0);
-#endif
-
-#if WORLD_CURVATURE
-    gl_Position.y += gl_Position.z * gl_Position.z / u_ViewDistance;
-    gl_Position.y += gl_Position.x * gl_Position.x / u_ViewDistance;
 #endif
 }

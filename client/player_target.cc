@@ -52,7 +52,7 @@ void player_target::update(void)
 void player_target::render(void)
 {
     if(player_target::voxel != NULL_VOXEL) {
-        outline_renderer::begin_depth();
+        outline_renderer::prepare_depth();
         outline_renderer::cube(VoxelCoord::to_world(player_target::vvec), Vec3f(1.0f), 2.0f, Vec4f::black());
     }
 }

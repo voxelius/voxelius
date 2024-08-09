@@ -8,6 +8,7 @@ namespace client_game
 {
 extern bool vertical_sync;
 extern bool menu_background;
+extern bool world_curvature;
 extern std::string username;
 extern unsigned int pixel_size;
 extern unsigned int fog_mode;

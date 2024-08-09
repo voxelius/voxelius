@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
+#include <client/game.hh>
 #include <client/outline_renderer.hh>
 #include <client/varied_program.hh>
 #include <client/view.hh>
@@ -12,6 +13,7 @@ constexpr static unsigned int WORLD_CURVATURE = 0U;
 static VariedProgram program = {};
 static std::size_t u_world_position = {};
 static std::size_t u_vproj_matrix = {};
+static std::size_t u_view_distance = {};
 static std::size_t u_scale = {};
 static std::size_t u_color = {};
 
@@ -34,6 +36,7 @@ void outline_renderer::init(void)
     
     u_vproj_matrix = VariedProgram::uniform(program, "u_ViewProjMatrix");
     u_world_position = VariedProgram::uniform(program, "u_WorldPosition");
+    u_view_distance = VariedProgram::uniform(program, "u_ViewDistance");
     u_scale = VariedProgram::uniform(program, "u_Scale");
     u_color = VariedProgram::uniform(program, "u_Color");
 
@@ -71,31 +74,9 @@ void outline_renderer::deinit(void)
     VariedProgram::destroy(program);
 }
 
-void outline_renderer::begin(void)
+void outline_renderer::prepare_depth(void)
 {
-    VariedProgram::variant_vert(program, WORLD_CURVATURE, 0);
-
-    if(!VariedProgram::update(program)) {
-        spdlog::critical("outline_renderer: program update failed");
-        VariedProgram::destroy(program);
-        std::terminate();
-    }
-
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_CULL_FACE);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-    glUseProgram(program.handle);
-    glUniformMatrix4fv(program.uniforms[u_vproj_matrix].location, 1, false, view::matrix.data()->data());
-
-    glBindVertexArray(vaobj);
-    glEnableVertexAttribArray(0);
-
-}
-
-void outline_renderer::begin_depth(void)
-{
-    VariedProgram::variant_vert(program, WORLD_CURVATURE, 0);
+    VariedProgram::variant_vert(program, WORLD_CURVATURE, client_game::world_curvature);
 
     if(!VariedProgram::update(program)) {
         spdlog::critical("outline_renderer: program update failed");
@@ -111,9 +92,33 @@ void outline_renderer::begin_depth(void)
 
     glUseProgram(program.handle);
     glUniformMatrix4fv(program.uniforms[u_vproj_matrix].location, 1, false, view::matrix.data()->data());
+    glUniform1f(program.uniforms[u_view_distance].location, view::max_distance * CHUNK_SIZE);
 
     glBindVertexArray(vaobj);
     glEnableVertexAttribArray(0);
+}
+
+void outline_renderer::prepare_nodepth(void)
+{
+    VariedProgram::variant_vert(program, WORLD_CURVATURE, client_game::world_curvature);
+
+    if(!VariedProgram::update(program)) {
+        spdlog::critical("outline_renderer: program update failed");
+        VariedProgram::destroy(program);
+        std::terminate();
+    }
+
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_CULL_FACE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    glUseProgram(program.handle);
+    glUniformMatrix4fv(program.uniforms[u_vproj_matrix].location, 1, false, view::matrix.data()->data());
+    glUniform1f(program.uniforms[u_view_distance].location, view::max_distance * CHUNK_SIZE);
+
+    glBindVertexArray(vaobj);
+    glEnableVertexAttribArray(0);
+
 }
 
 void outline_renderer::cube(const WorldCoord &start, const Vec3f &scale, float width, const Vec4f &color)
