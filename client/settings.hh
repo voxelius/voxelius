@@ -37,6 +37,7 @@ void add_language_select(int priority, std::size_t location, const std::string &
 void add_slider(int priority, std::size_t location, const std::string &name, float &vref, float min, float max, bool tooltip, const char *format = nullptr);
 void add_slider(int priority, std::size_t location, const std::string &name, int &vref, int min, int max, bool tooltip);
 void add_slider(int priority, std::size_t location, const std::string &name, unsigned int &vref, unsigned int min, unsigned int max, bool tooltip);
+void add_stepper(int priority, std::size_t location, const std::string &name, unsigned int &vref, unsigned int count, bool tooltip);
 } // namespace settings
 
 #endif /* CLIENT_SETTINGS_HH */

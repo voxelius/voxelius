@@ -27,7 +27,8 @@ enum class SettingValueType {
     TextInput       = 0x0005,
     UintInput       = 0x0006,
     UintSlider      = 0x0007,
-    KeyBind         = 0x0008,
+    UintStepper     = 0x0008,
+    KeyBind         = 0x0009,
 };
 
 struct SettingValue {
@@ -102,6 +103,15 @@ struct SettingValue_UintSlider final : public SettingValueWID {
     virtual ~SettingValue_UintSlider(void) = default;
     unsigned int *value_ptr {};
     unsigned int value_min {};
+    unsigned int value_max {};
+};
+
+struct SettingValue_UintStepper final : public SettingValue {
+    static void refresh_wids(SettingValue_UintStepper *value);
+    static void layout(const SettingValue_UintStepper *value);
+    virtual ~SettingValue_UintStepper(void) = default;
+    std::vector<std::string> wids {};
+    unsigned int *value_ptr {};
     unsigned int value_max {};
 };
 
@@ -225,6 +235,23 @@ void SettingValue_UintSlider::layout(const SettingValue_UintSlider *value)
     SettingValue::layout_tooltip(value);
 }
 
+void SettingValue_UintStepper::refresh_wids(SettingValue_UintStepper *value)
+{
+    for(unsigned int i = 0; i < value->wids.size(); ++i) {
+        const std::string key = fmt::format("settings.value.{}.{}", value->name, i);
+        value->wids[i] = fmt::format("{}###{}", language::resolve(key), static_cast<void *>(value));
+    }
+}
+
+void SettingValue_UintStepper::layout(const SettingValue_UintStepper *value)
+{
+    if(ImGui::Button(value->wids[value->value_ptr[0] % value->value_max].c_str(), ImVec2(ImGui::CalcItemWidth(), 0.0f)))
+        value->value_ptr[0] += 1U;
+    value->value_ptr[0] %= value->value_max;
+    SettingValue::layout_label(value);
+    SettingValue::layout_tooltip(value);
+}
+
 void SettingValue_KeyBind::layout(const SettingValue_KeyBind *value)
 {
     const bool is_active = (globals::gui_keybind_ptr == value->value_ptr);
@@ -292,6 +319,8 @@ static void on_language_set(const LanguageSetEvent &event)
     for(SettingValue *value : values_all) {
         if(value->value_type == SettingValueType::Checkbox)
             SettingValue_Checkbox::refresh_wids(static_cast<SettingValue_Checkbox *>(value));
+        if(value->value_type == SettingValueType::UintStepper)
+            SettingValue_UintStepper::refresh_wids(static_cast<SettingValue_UintStepper *>(value));
         value->str_title = language::resolve(fmt::format("settings.value.{}", value->name));
         value->str_tooltip = language::resolve(fmt::format("settings.tooltip.{}", value->name));
     }
@@ -326,6 +355,9 @@ static void layout_values(std::size_t location)
                 break;
             case SettingValueType::UintSlider:
                 SettingValue_UintSlider::layout(static_cast<const SettingValue_UintSlider *>(value));
+                break;
+            case SettingValueType::UintStepper:
+                SettingValue_UintStepper::layout(static_cast<const SettingValue_UintStepper *>(value));
                 break;
             case SettingValueType::KeyBind:
                 SettingValue_KeyBind::layout(static_cast<const SettingValue_KeyBind *>(value));
@@ -604,6 +636,22 @@ void settings::add_slider(int priority, std::size_t location, const std::string 
     value->name = name;
 
     value->wid = fmt::format("###{}", static_cast<void *>(value));
+
+    values[location].push_back(value);
+    values_all.push_back(value);
+}
+
+void settings::add_stepper(int priority, std::size_t location, const std::string &name, unsigned int &vref, unsigned int count, bool tooltip)
+{
+    SettingValue_UintStepper *value = new SettingValue_UintStepper();
+    value->value_type = SettingValueType::UintStepper;
+    value->sorting_priority = priority;
+    value->has_tooltip = tooltip;
+    value->value_ptr = &vref;
+    value->value_max = count;
+    value->name = name;
+
+    value->wids.resize(count);
 
     values[location].push_back(value);
     values_all.push_back(value);

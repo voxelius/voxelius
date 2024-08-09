@@ -76,8 +76,9 @@ void main(void)
 #elif WORLD_FOG == 2
     // Use a fancy exponential fog factor
     // that is totally not yoinked from CaveCube
-    // UNDONE: actually borrow the formula
-    vs_FogFactor = 0.0;
+    // UNDONE: for now it's just a boring exponential fog
+    float fogd = 2.0 / u_ViewDistance * length(gl_Position.xyz);
+    vs_FogFactor = 1.0 - clamp(exp2(fogd * fogd * -1.442695), 0.0, 1.0);
 #endif
 
 #if WORLD_CURVATURE
