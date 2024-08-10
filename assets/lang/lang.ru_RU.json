@@ -19,7 +19,7 @@
 
   "settings.value.view.vertical_fov": "FOV",
   "settings.value.view.max_distance": "Отрисовка",
-  "settings.value.game.menu_background": "Фон в меню",
+  "settings.value.background.panorama": "Панорама",
   "settings.value.game.pixel_size": "Размер пикселя",
   "settings.value.game.username": "Имя пользователя",
   "settings.value.game.vertical_sync": "Верт. синхронизация",
@@ -40,7 +40,7 @@
   "settings.value.mouse.sensitivity": "Чувствительность",
 
   "settings.tooltip.view.vertical_fov": "Поле зрения",
-  "settings.tooltip.game.menu_background": "Определяет, использовать ли красивый эффект в главном\nменю... Цветасто!",
+  "settings.tooltip.background.panorama": "В разработке",
   "settings.tooltip.game.world_curvature": "Симуляция искривления\nгоризинта Земли",
   "settings.tooltip.game.pixel_size": "Рисовать мир в кадр c размером меньшим чем размер окна",
   "settings.tooltip.mouse.enable_raw_input": "Обработка данных с мыши напрямую без участия операционной системы",
