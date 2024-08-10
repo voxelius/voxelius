@@ -77,7 +77,7 @@ void main(void)
 
 #if WORLD_FOG == 1
     // Use a simple linear fog factor
-    vs_FogFactor = 1.0 - clamp((u_ViewDistance - length(gl_Position.xyz)) / (u_ViewDistance - 16.0), 0.0, 1.0);;
+    vs_FogFactor = 1.0 - clamp((u_ViewDistance - length(gl_Position.xyz)) / (u_ViewDistance - 16.0), 0.0, 1.0);
 #elif WORLD_FOG == 2
     // Use a fancy exponential fog factor
     float fogd = 2.0 / u_ViewDistance * length(gl_Position.xyz);
