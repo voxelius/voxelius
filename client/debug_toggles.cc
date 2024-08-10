@@ -10,9 +10,14 @@
 bool debug_toggles::is_sequence_await = false;
 
 bool debug_toggles::draw_chunk_borders = false;
-bool debug_toggles::draw_debug_screen = false;
 bool debug_toggles::render_fullbright = false;
 bool debug_toggles::render_wireframe = false;
+
+#if defined(NDEBUG)
+bool debug_toggles::draw_debug_screen = false;
+#else
+bool debug_toggles::draw_debug_screen = true;
+#endif
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
