@@ -50,7 +50,7 @@ void message_box::layout(void)
             ImGui::TextUnformatted(str_subtitle.c_str());
         }
 
-        ImGui::Dummy(ImVec2(0.0f, 48.0f * globals::gui_scale));
+        ImGui::Dummy(ImVec2(0.0f, 32.0f * globals::gui_scale));
 
         for(const Button &button : buttons) {
             const float button_width = 0.8f * ImGui::CalcItemWidth();
