@@ -18,7 +18,7 @@
 
   "settings.value.view.vertical_fov": "FOV",
   "settings.value.view.max_distance": "View distance",
-  "settings.value.game.menu_background": "Menu background",
+  "settings.value.background.panorama": "Enable panorama",
   "settings.value.game.pixel_size": "Pixel size",
   "settings.value.game.username": "Username",
   "settings.value.game.vertical_sync": "Vertical sync",
@@ -39,7 +39,7 @@
   "settings.value.mouse.sensitivity": "Sensitivity",
 
   "settings.tooltip.view.vertical_fov": "Field Of View",
-  "settings.tooltip.game.menu_background": "Use a fancy shader-based menu background... Colorful!",
+  "settings.tooltip.background.panorama": "WIP",
   "settings.tooltip.game.world_curvature": "Simulate Earth's\nhorizon warping",
   "settings.tooltip.game.pixel_size": "Draw the world into a fraction of the window's frame size",
   "settings.tooltip.mouse.enable_raw_input": "Bypass Operating System's mouse handling and instead deal with cursor movement internally",
