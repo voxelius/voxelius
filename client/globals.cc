@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <client/screen.hh>
+#include <client/gui_screen.hh>
 #include <client/globals.hh>
 #include <shared/config.hh>
 

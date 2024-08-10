@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/entity/player_move.hh>
-#include <client/screen.hh>
+#include <client/gui_screen.hh>
 #include <client/globals.hh>
 #include <entt/entity/registry.hpp>
 #include <shared/entity/head.hh>
