@@ -37,13 +37,14 @@ void progress_bar::layout(void)
         ImGui::SetCursorPosX(0.5f * (window_size.x - title_width));
         ImGui::TextUnformatted(str_title.c_str());
 
-        const float bar_width = 0.8f * ImGui::CalcItemWidth();
         ImGui::Dummy(ImVec2(0.0f, 8.0f * globals::gui_scale));
+
+        const float bar_width = 0.8f * ImGui::CalcItemWidth();
         ImGui::SetCursorPosX(0.5f * (window_size.x - bar_width));
         ImGui::ProgressBar(progress_value, ImVec2(bar_width, 0.0f), "");
 
         if(!str_button.empty()) {
-            ImGui::Dummy(ImVec2(0.0f, 48.0f * globals::gui_scale));
+            ImGui::Dummy(ImVec2(0.0f, 32.0f * globals::gui_scale));
 
             const float button_width = 0.8f * ImGui::CalcItemWidth();
             ImGui::SetCursorPosX(0.5f * (window_size.x - button_width));
