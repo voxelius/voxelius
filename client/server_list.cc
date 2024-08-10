@@ -2,7 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/event/glfw_key.hh>
 #include <client/globals.hh>
-#include <client/screen.hh>
+#include <client/gui_screen.hh>
 #include <client/server_list.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <imgui.h>

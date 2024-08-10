@@ -7,26 +7,27 @@
 #include <client/entity/player_move.hh>
 #include <client/event/glfw_framebuffer_size.hh>
 #include <client/background.hh>
-#include <client/language.hh>
-#include <client/main_menu.hh>
-#include <client/progress.hh>
-#include <client/screen.hh>
-#include <client/server_list.hh>
-#include <client/settings.hh>
 #include <client/chunk_mesher.hh>
 #include <client/chunk_renderer.hh>
 #include <client/chunk_visibility.hh>
-#include <client/player_target.hh>
-#include <client/voxel_anims.hh>
-#include <client/voxel_atlas.hh>
 #include <client/game.hh>
 #include <client/globals.hh>
+#include <client/gui_screen.hh>
 #include <client/keyboard.hh>
 #include <client/keynames.hh>
+#include <client/language.hh>
+#include <client/main_menu.hh>
+#include <client/message_box.hh>
 #include <client/mouse.hh>
-#include <client/screenshot.hh>
 #include <client/outline_renderer.hh>
+#include <client/player_target.hh>
+#include <client/progress_bar.hh>
+#include <client/screenshot.hh>
+#include <client/server_list.hh>
+#include <client/settings.hh>
 #include <client/view.hh>
+#include <client/voxel_anims.hh>
+#include <client/voxel_atlas.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <GLFW/glfw3.h>
@@ -207,7 +208,7 @@ void client_game::init(void)
     style.Colors[ImGuiCol_CheckMark]                = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     style.Colors[ImGuiCol_SliderGrab]               = ImVec4(0.81f, 0.81f, 0.81f, 0.75f);
     style.Colors[ImGuiCol_SliderGrabActive]         = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
-    style.Colors[ImGuiCol_Button]                   = ImVec4(0.00f, 0.00f, 0.00f, 0.75f);
+    style.Colors[ImGuiCol_Button]                   = ImVec4(0.00f, 0.00f, 0.00f, 0.95f);
     style.Colors[ImGuiCol_ButtonHovered]            = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
     style.Colors[ImGuiCol_ButtonActive]             = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);
     style.Colors[ImGuiCol_Header]                   = ImVec4(0.00f, 0.00f, 0.00f, 0.75f);
@@ -226,7 +227,7 @@ void client_game::init(void)
     style.Colors[ImGuiCol_TabUnfocusedActive]       = ImVec4(0.44f, 0.44f, 0.44f, 1.00f);
     style.Colors[ImGuiCol_PlotLines]                = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
     style.Colors[ImGuiCol_PlotLinesHovered]         = ImVec4(1.00f, 0.43f, 0.35f, 1.00f);
-    style.Colors[ImGuiCol_PlotHistogram]            = ImVec4(0.90f, 0.70f, 0.00f, 1.00f);
+    style.Colors[ImGuiCol_PlotHistogram]            = ImVec4(0.00f, 1.00f, 0.20f, 1.00f);
     style.Colors[ImGuiCol_PlotHistogramHovered]     = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
     style.Colors[ImGuiCol_TableHeaderBg]            = ImVec4(0.19f, 0.19f, 0.20f, 1.00f);
     style.Colors[ImGuiCol_TableBorderStrong]        = ImVec4(0.31f, 0.31f, 0.35f, 1.00f);
@@ -253,9 +254,10 @@ void client_game::init(void)
     background::init();
 
     main_menu::init();
-    progress::init();
     server_list::init();
     settings::init();
+    progress_bar::init();
+    message_box::init();
 
     debug_session::init();
 
@@ -379,8 +381,11 @@ void client_game::layout(void)
             case GUI_SETTINGS:
                 settings::layout();
                 break;
-            case GUI_PROGRESS:
-                progress::layout();
+            case GUI_PROGRESS_BAR:
+                progress_bar::layout();
+                break;
+            case GUI_MESSAGE_BOX:
+                message_box::layout();
                 break;
         }
     }

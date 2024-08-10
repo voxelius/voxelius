@@ -2,7 +2,10 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/debug_session.hh>
 #include <client/event/glfw_mouse_button.hh>
+#include <client/gui_screen.hh>
+#include <client/message_box.hh>
 #include <client/player_target.hh>
+#include <client/progress_bar.hh>
 #include <client/voxel_atlas.hh>
 #include <client/globals.hh>
 #include <client/view.hh>
@@ -99,7 +102,7 @@ void debug_session::init(void)
 
 void debug_session::update(void)
 {
-
+    progress_bar::set_progress(0.5f + 0.5f * std::sin(glfwGetTime()));
 }
 
 void debug_session::run(void)
@@ -149,7 +152,7 @@ void debug_session::run(void)
     noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
     noise.fractal_type = FNL_FRACTAL_RIDGED;
 
-    constexpr int WSIZE = 32;
+    constexpr int WSIZE = 8;
     for(int x = -WSIZE; x < WSIZE; x += 1)
     for(int z = -WSIZE; z < WSIZE; z += 1)
     for(int y = -2; y < 1; y += 1) {
@@ -175,5 +178,25 @@ void debug_session::run(void)
     auto &transform = globals::registry.emplace<TransformComponent>(globals::player);
     transform.position.local[1] += 32.0;
 
-    globals::gui_screen = 0U;
+    progress_bar::reset();
+    progress_bar::set_title("Doing something");
+    progress_bar::set_button("Stop doing something", [](void) {
+        message_box::reset();
+        message_box::set_title("Debug");
+        message_box::set_subtitle("The debug session is now in progress!");
+
+        message_box::add_button("OK", [](void) {
+            // Close the message box and go into the game
+            globals::gui_screen = GUI_SCREEN_NONE;
+        });
+
+        message_box::add_button("Also OK", [](void) {
+            // Close the message box and go into the game
+            globals::gui_screen = GUI_SCREEN_NONE;
+        });
+
+        globals::gui_screen = GUI_MESSAGE_BOX;
+    });
+
+    globals::gui_screen = GUI_PROGRESS_BAR;
 }

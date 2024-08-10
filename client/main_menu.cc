@@ -4,7 +4,7 @@
 #include <client/event/glfw_key.hh>
 #include <client/event/language_set.hh>
 #include <client/main_menu.hh>
-#include <client/screen.hh>
+#include <client/gui_screen.hh>
 #include <client/globals.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>

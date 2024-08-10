@@ -4,7 +4,7 @@
 #include <client/event/glfw_key.hh>
 #include <client/event/language_set.hh>
 #include <client/language.hh>
-#include <client/screen.hh>
+#include <client/gui_screen.hh>
 #include <client/settings.hh>
 #include <client/globals.hh>
 #include <client/keynames.hh>
