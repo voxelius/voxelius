@@ -6,6 +6,7 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/math/vec3angles.cc"
     "${CMAKE_CURRENT_LIST_DIR}/math/vec3f.cc"
     "${CMAKE_CURRENT_LIST_DIR}/math/vec4f.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/net/packet.cc"
     "${CMAKE_CURRENT_LIST_DIR}/util/crc64.cc"
     "${CMAKE_CURRENT_LIST_DIR}/util/epoch.cc"
     "${CMAKE_CURRENT_LIST_DIR}/util/physfs.cc"
@@ -19,7 +20,7 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/image.cc"
     "${CMAKE_CURRENT_LIST_DIR}/splash.cc")
 target_include_directories(shared PUBLIC "${CMAKE_SOURCE_DIR}")
-target_link_libraries(shared PUBLIC emhash entt parson physfs)
+target_link_libraries(shared PUBLIC emhash enet entt parson physfs)
 target_link_libraries(shared PUBLIC spdlog FNL stb thread_pool)
 
 configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake.hh.in" "${CMAKE_CURRENT_LIST_DIR}/cmake.hh")
