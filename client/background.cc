@@ -7,7 +7,7 @@
 #include <GLFW/glfw3.h>
 #include <shared/math/constexpr.hh>
 #include <shared/math/vec2f.hh>
-#include <shared/util/physfs.hh>
+#include <shared/fstools.hh>
 #include <shared/config.hh>
 #include <shared/image.hh>
 #include <spdlog/spdlog.h>
@@ -35,7 +35,7 @@ void background::init(void)
     Image image = {};
 
     if(!Image::load_rgba(image, path, true)) {
-        //spdlog::critical("background: {}: {}", path, util::physfs_error());
+        //spdlog::critical("background: {}: {}", path, fstools::error());
         std::terminate();
     }
 

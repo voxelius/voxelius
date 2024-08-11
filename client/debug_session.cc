@@ -17,7 +17,7 @@
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
-#include <shared/net/packet.hh>
+#include <shared/packet.hh>
 #include <shared/ray_dda.hh>
 #include <shared/vdef.hh>
 #include <shared/world.hh>

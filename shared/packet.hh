@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#ifndef SHARED_NET_PACKET_HH
-#define SHARED_NET_PACKET_HH
+#ifndef SHARED_PACKET_HH
+#define SHARED_PACKET_HH
 #include <cstdint>
 #include <enet/enet.h>
 #include <string>
@@ -42,4 +42,4 @@ public:
     static std::string read_string(Packet &packet);
 };
 
-#endif /* SHARED_NET_PACKET_HH */
+#endif /* SHARED_PACKET_HH */

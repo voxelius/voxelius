@@ -1,31 +1,31 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#ifndef SHARED_UTIL_STRING_HH
-#define SHARED_UTIL_STRING_HH
+#ifndef SHARED_STRTOOLS_HH
+#define SHARED_STRTOOLS_HH
 #include <string>
 #include <vector>
 
-namespace util
+namespace strtools
 {
 bool contains(const std::string &str, char character);
 bool contains(const std::string &str, const std::string &substr);
-} // namespace util
+} // namespace strtools
 
-namespace util
+namespace strtools
 {
 bool is_empty_or_whitespace(const std::string &str);
 bool is_whitespace(const std::string &str);
-} // namespace util
+} // namespace strtools
 
-namespace util
+namespace strtools
 {
 std::string join(const std::vector<std::string> &strings, const std::string &separator);
 std::vector<std::string> split(const std::string &str, const std::string &separator);
-} // namespace util
+} // namespace strtools
 
-namespace util
+namespace strtools
 {
 std::string trim_whitespace(const std::string &str);
-} // namespace util
+} // namespace strtools
 
-#endif /* SHARED_UTIL_STRING_HH */
+#endif /* SHARED_STRTOOLS_HH */

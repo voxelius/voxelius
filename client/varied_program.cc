@@ -2,8 +2,8 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <cstdio>
 #include <client/varied_program.hh>
-#include <shared/util/physfs.hh>
-#include <shared/util/string.hh>
+#include <shared/fstools.hh>
+#include <shared/strtools.hh>
 #include <spdlog/spdlog.h>
 #include <sstream>
 
@@ -78,13 +78,13 @@ bool VariedProgram::setup(VariedProgram &program, const std::string &vert_path, 
     program.vert_path = vert_path;
     program.frag_path = frag_path;
 
-    if(!util::read_string(program.vert_path, vert_source)) {
-        spdlog::warn("varied_program: {}: {}", program.vert_path, util::physfs_error());
+    if(!fstools::read_string(program.vert_path, vert_source)) {
+        spdlog::warn("varied_program: {}: {}", program.vert_path, fstools::error());
         return false;
     }
 
-    if(!util::read_string(program.frag_path, frag_source)) {
-        spdlog::warn("varied_program: {}: {}", program.frag_path, util::physfs_error());
+    if(!fstools::read_string(program.frag_path, frag_source)) {
+        spdlog::warn("varied_program: {}: {}", program.frag_path, fstools::error());
         return false;
     }
 
@@ -110,8 +110,8 @@ bool VariedProgram::update(VariedProgram &program)
     for(const VariedMacro &macro : program.frag_variants)
         program.frag_source[macro.line] = fmt::format("#define {} {}", macro.name, macro.value);
 
-    const std::string vert_source = util::join(program.vert_source, "\r\n");
-    const std::string frag_source = util::join(program.frag_source, "\r\n");
+    const std::string vert_source = strtools::join(program.vert_source, "\r\n");
+    const std::string frag_source = strtools::join(program.frag_source, "\r\n");
 
     GLuint vert = compile_shader(program.vert_path, vert_source, GL_VERTEX_SHADER);
     GLuint frag = compile_shader(program.frag_path, frag_source, GL_FRAGMENT_SHADER);
