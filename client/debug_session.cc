@@ -17,6 +17,7 @@
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
+#include <shared/net/packet.hh>
 #include <shared/ray_dda.hh>
 #include <shared/vdef.hh>
 #include <shared/world.hh>
@@ -181,9 +182,17 @@ void debug_session::run(void)
     progress_bar::reset();
     progress_bar::set_title("Doing something");
     progress_bar::set_button("Stop doing something", [](void) {
+
+        Packet pkt = {};
+        Packet::write_string(pkt, "Test packet");
+        Packet::write_UI32(pkt, 42);
+
+        const auto a = Packet::read_string(pkt);
+        const auto b = Packet::read_UI32(pkt);
+
         message_box::reset();
         message_box::set_title("Debug");
-        message_box::set_subtitle("The debug session is now in progress!");
+        message_box::set_subtitle(fmt::format("\"{}\" ({}) {}", a, a.size(), b));
 
         message_box::add_button("OK", [](void) {
             // Close the message box and go into the game

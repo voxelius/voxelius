@@ -49,6 +49,7 @@ endif()
 
 add_subdirectory(deps/FastNoiseLite)
 add_subdirectory(deps/emhash)
+add_subdirectory(deps/enet)
 add_subdirectory(deps/entt)
 add_subdirectory(deps/glad)
 add_subdirectory(deps/imgui)

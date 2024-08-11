@@ -11,6 +11,7 @@
             "includePath": [
                 "${workspaceFolder}/deps/FastNoiseLite/include",
                 "${workspaceFolder}/deps/emhash/include",
+                "${workspaceFolder}/deps/enet/include",
                 "${workspaceFolder}/deps/entt/include",
                 "${workspaceFolder}/deps/glad/include",
                 "${workspaceFolder}/deps/imgui/include",
