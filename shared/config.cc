@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <shared/util/string.hh>
-#include <shared/util/physfs.hh>
+#include <shared/strtools.hh>
+#include <shared/fstools.hh>
 #include <shared/config.hh>
 #include <spdlog/fmt/fmt.h>
 #include <sstream>
@@ -54,7 +54,7 @@ void Config::clear(Config &config)
 bool Config::load(Config &config, const std::string &path)
 {
     std::string source = {};
-    if(!util::read_string(path, source))
+    if(!fstools::read_string(path, source))
         return false;
 
     std::string line;
@@ -68,8 +68,8 @@ bool Config::load(Config &config, const std::string &path)
             continue;
         }
 
-        const auto name = util::trim_whitespace(line.substr(0, dpos));
-        const auto value = util::trim_whitespace(line.substr(dpos + 1));
+        const auto name = strtools::trim_whitespace(line.substr(0, dpos));
+        const auto value = strtools::trim_whitespace(line.substr(dpos + 1));
 
         const auto it = config.vmap.find(name);
         if(it == config.vmap.cend())
@@ -149,5 +149,5 @@ bool Config::save(const Config &config, const std::string &path)
         }
     }
 
-    return util::write_string(path, stream.str());
+    return fstools::write_string(path, stream.str());
 }

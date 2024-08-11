@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <shared/util/physfs.hh>
+#include <shared/fstools.hh>
 
-const char *util::physfs_error(void)
+const char *fstools::error(void)
 {
     return PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode());
 }
 
-bool util::read_bytes(const std::string &path, std::vector<std::uint8_t> &buffer)
+bool fstools::read_bytes(const std::string &path, std::vector<std::uint8_t> &buffer)
 {
     PHYSFS_File *file = PHYSFS_openRead(path.c_str());
 
@@ -22,7 +22,7 @@ bool util::read_bytes(const std::string &path, std::vector<std::uint8_t> &buffer
     return false;
 }
 
-bool util::read_string(const std::string &path, std::string &buffer)
+bool fstools::read_string(const std::string &path, std::string &buffer)
 {
     PHYSFS_File *file = PHYSFS_openRead(path.c_str());
 
@@ -37,7 +37,7 @@ bool util::read_string(const std::string &path, std::string &buffer)
     return false;
 }
 
-bool util::write_bytes(const std::string &path, const std::vector<std::uint8_t> &buffer)
+bool fstools::write_bytes(const std::string &path, const std::vector<std::uint8_t> &buffer)
 {
     PHYSFS_File *file = PHYSFS_openWrite(path.c_str());
 
@@ -50,7 +50,7 @@ bool util::write_bytes(const std::string &path, const std::vector<std::uint8_t> 
     return false;
 }
 
-bool util::write_string(const std::string &path, const std::string &buffer)
+bool fstools::write_string(const std::string &path, const std::string &buffer)
 {
     PHYSFS_File *file = PHYSFS_openWrite(path.c_str());
 
@@ -63,7 +63,7 @@ bool util::write_string(const std::string &path, const std::string &buffer)
     return false;
 }
 
-bool util::read_line(PHYSFS_File *file, std::string &line)
+bool fstools::read_line(PHYSFS_File *file, std::string &line)
 {
     if((file == nullptr) || PHYSFS_eof(file)) {
         // Nothing else to read

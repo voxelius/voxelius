@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <random>
-#include <shared/util/physfs.hh>
+#include <shared/fstools.hh>
 #include <shared/splash.hh>
 #include <spdlog/spdlog.h>
 #include <sstream>
@@ -16,8 +16,8 @@ void splash::init(void)
 
     std::string source = {};
 
-    if(!util::read_string(path, source)) {
-        spdlog::warn("splash: {}: {}", path, util::physfs_error());
+    if(!fstools::read_string(path, source)) {
+        spdlog::warn("splash: {}: {}", path, fstools::error());
         titles.push_back("splash::get returned this");
     }
     else {

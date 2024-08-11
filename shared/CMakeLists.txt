@@ -6,19 +6,19 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/math/vec3angles.cc"
     "${CMAKE_CURRENT_LIST_DIR}/math/vec3f.cc"
     "${CMAKE_CURRENT_LIST_DIR}/math/vec4f.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/net/packet.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/util/crc64.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/util/epoch.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/util/physfs.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/util/string.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/ray_dda.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/vdef.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/world.cc"
     "${CMAKE_CURRENT_LIST_DIR}/cmdline.cc"
     "${CMAKE_CURRENT_LIST_DIR}/config.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/crc64.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/epoch.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/fstools.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
     "${CMAKE_CURRENT_LIST_DIR}/image.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/splash.cc")
+    "${CMAKE_CURRENT_LIST_DIR}/packet.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/ray_dda.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/splash.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/strtools.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/vdef.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/world.cc")
 target_include_directories(shared PUBLIC "${CMAKE_SOURCE_DIR}")
 target_link_libraries(shared PUBLIC emhash enet entt parson physfs)
 target_link_libraries(shared PUBLIC spdlog FNL stb thread_pool)

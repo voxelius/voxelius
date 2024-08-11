@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <shared/util/physfs.hh>
+#include <shared/fstools.hh>
 #include <shared/image.hh>
 #include <spdlog/spdlog.h>
 #include <stb_image.h>
@@ -11,8 +11,8 @@ bool Image::load_gray(Image &image, const std::string &path, bool flip)
 
     std::vector<std::uint8_t> buffer = {};
 
-    if(!util::read_bytes(path, buffer)) {
-        spdlog::error("image: {}: {}", path, util::physfs_error());
+    if(!fstools::read_bytes(path, buffer)) {
+        spdlog::error("image: {}: {}", path, fstools::error());
         return false;
     }
 
@@ -32,8 +32,8 @@ bool Image::load_rgba(Image &image, const std::string &path, bool flip)
 
     std::vector<std::uint8_t> buffer = {};
 
-    if(!util::read_bytes(path, buffer)) {
-        spdlog::error("image: {}: {}", path, util::physfs_error());
+    if(!fstools::read_bytes(path, buffer)) {
+        spdlog::error("image: {}: {}", path, fstools::error());
         return false;
     }
 

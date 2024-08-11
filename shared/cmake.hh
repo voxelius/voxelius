@@ -13,5 +13,6 @@
 #define CMAKE_CXX_STANDARD 17
 
 #define GAME_VERSION_STRING "Alpha 0.0.1"
+#define GAME_VERSION_PROTOCOL 1
 
 #endif /* SHARED_CMAKE_HH_IN */

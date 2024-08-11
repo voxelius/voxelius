@@ -6,7 +6,7 @@
 #include <client/globals.hh>
 #include <entt/signal/dispatcher.hpp>
 #include <parson.h>
-#include <shared/util/physfs.hh>
+#include <shared/fstools.hh>
 #include <shared/config.hh>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
@@ -41,8 +41,8 @@ void language::init(void)
 
     std::string source = {};
 
-    if(!util::read_string(manifest_path, source)) {
-        spdlog::critical("language: {}: {}", manifest_path, util::physfs_error());
+    if(!fstools::read_string(manifest_path, source)) {
+        spdlog::critical("language: {}: {}", manifest_path, fstools::error());
         std::terminate();
     }
 
@@ -110,8 +110,8 @@ void language::set(LangIterator iter)
 
         std::string source = {};
 
-        if(!util::read_string(path, source)) {
-            spdlog::warn("lang: {}: {}", path, util::physfs_error());
+        if(!fstools::read_string(path, source)) {
+            spdlog::warn("lang: {}: {}", path, fstools::error());
             send_event(iter);
             return;
         }

@@ -2,36 +2,36 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <algorithm>
 #include <cctype>
-#include <shared/util/string.hh>
+#include <shared/strtools.hh>
 #include <sstream>
 
-bool util::contains(const std::string &str, char character)
+bool strtools::contains(const std::string &str, char character)
 {
     if(str.find(character) == std::string::npos)
         return false;
     return true;
 }
 
-bool util::contains(const std::string &str, const std::string &substr)
+bool strtools::contains(const std::string &str, const std::string &substr)
 {
     if(str.find(substr) == std::string::npos)
         return false;
     return true;
 }
 
-bool util::is_empty_or_whitespace(const std::string &str)
+bool strtools::is_empty_or_whitespace(const std::string &str)
 {
     if(str.empty())
         return true;
     return std::all_of(str.cbegin(), str.cend(), [](auto c) { return std::isspace(c); });
 }
 
-bool util::is_whitespace(const std::string &str)
+bool strtools::is_whitespace(const std::string &str)
 {
     return std::all_of(str.cbegin(), str.cend(), [](auto c) { return std::isspace(c); });
 }
 
-std::string util::join(const std::vector<std::string> &strings, const std::string &separator)
+std::string strtools::join(const std::vector<std::string> &strings, const std::string &separator)
 {
     std::ostringstream stream = {};
     for(const std::string &str : strings)
@@ -39,7 +39,7 @@ std::string util::join(const std::vector<std::string> &strings, const std::strin
     return stream.str();
 }
 
-std::vector<std::string> util::split(const std::string &str, const std::string &separator)
+std::vector<std::string> strtools::split(const std::string &str, const std::string &separator)
 {
     std::size_t pos = 0;
     std::size_t prev = 0;
@@ -55,7 +55,7 @@ std::vector<std::string> util::split(const std::string &str, const std::string &
     return result;
 }
 
-std::string util::trim_whitespace(const std::string &str)
+std::string strtools::trim_whitespace(const std::string &str)
 {
     const auto su = str.find_first_not_of(" \t\r\n");
     const auto sv = str.find_last_not_of(" \t\r\n");

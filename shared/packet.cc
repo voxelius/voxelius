@@ -2,7 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <shared/math/constexpr.hh>
 #include <shared/math/floathacks.hh>
-#include <shared/net/packet.hh>
+#include <shared/packet.hh>
 
 void Packet::setup(Packet &packet)
 {

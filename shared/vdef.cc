@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <parson.h>
-#include <shared/util/physfs.hh>
+#include <shared/fstools.hh>
 #include <shared/vdef.hh>
 #include <spdlog/spdlog.h>
 
@@ -83,8 +83,8 @@ Voxel VDefBuilder::build(void) const
 
     std::string json_source = {};
 
-    if(!util::read_string(json_path, json_source)) {
-        spdlog::warn("vdef: {}: {}", json_path, util::physfs_error());
+    if(!fstools::read_string(json_path, json_source)) {
+        spdlog::warn("vdef: {}: {}", json_path, fstools::error());
         return NULL_VOXEL;
     }
 

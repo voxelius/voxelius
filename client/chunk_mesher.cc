@@ -10,7 +10,7 @@
 #include <shared/event/chunk_create.hh>
 #include <shared/event/chunk_remove.hh>
 #include <shared/event/voxel_set.hh>
-#include <shared/util/crc64.hh>
+#include <shared/crc64.hh>
 #include <shared/vdef.hh>
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
@@ -193,7 +193,7 @@ static void process(WorkerContext *ctx)
 
         const VoxelCoord vpos = ChunkCoord::to_voxel(ctx->coord, lpos);
         const VoxelCoord::value_type entropy_src = vpos[0] * vpos[1] * vpos[2];
-        const auto entropy = util::crc64(&entropy_src, sizeof(entropy_src));
+        const auto entropy = crc64::get(&entropy_src, sizeof(entropy_src));
 
         // FIXME: handle different voxel types
         make_cube(ctx, voxel, info, lpos, vis, entropy);

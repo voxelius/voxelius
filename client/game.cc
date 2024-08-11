@@ -35,7 +35,7 @@
 #include <imgui.h>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
-#include <shared/util/physfs.hh>
+#include <shared/fstools.hh>
 #include <shared/ray_dda.hh>
 #include <shared/world.hh>
 #include <shared/config.hh>
@@ -107,16 +107,16 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
         ImVector<ImWchar> ranges = {};
         builder.BuildRanges(&ranges);
 
-        if(!util::read_bytes("fonts/unscii-16.ttf", fontbin))
+        if(!fstools::read_bytes("fonts/unscii-16.ttf", fontbin))
             std::terminate();
         io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 16.0f * scale, &font_config, ranges.Data);
 
-        if(!util::read_bytes("fonts/unscii-8.ttf", fontbin))
+        if(!fstools::read_bytes("fonts/unscii-8.ttf", fontbin))
             std::terminate();
         globals::font_debug = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 4.0f * scale, &font_config);
 
         // UNDONE: design a logo and draw it as a TEXTURE/SPRITE
-        if(!util::read_bytes("fonts/din1451alt.ttf", fontbin))
+        if(!fstools::read_bytes("fonts/din1451alt.ttf", fontbin))
             std::terminate();
         globals::font_menu_title = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 64.0f * scale, &font_config);
 
