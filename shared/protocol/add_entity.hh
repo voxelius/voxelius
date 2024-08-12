@@ -1,7 +1,7 @@
 #ifndef SHARED_PROTOCOL_ADD_ENTITY_HH
 #define SHARED_PROTOCOL_ADD_ENTITY_HH
-#include <shared/protocol/protocol.hh>
 #include <entt/entity/entity.hpp>
+#include <shared/protocol/protocol.hh>
 
 struct protocol::AddEntity final : public protocol::BasePacket<0x0005> {
     entt::entity entity {};
