@@ -8,7 +8,9 @@
 
 namespace protocol
 {
-constexpr static std::uint32_t VERSION = 0x00000002;
+constexpr static std::uint32_t VERSION = 0x00000001;
+constexpr static std::uint16_t DEFAULT_PORT = 43103;
+constexpr static float DEFAULT_TICKRATE = 30.0f
 }
 
 namespace protocol
