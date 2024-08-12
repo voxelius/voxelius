@@ -6,7 +6,6 @@
 #include <shared/coord.hh>
 #include <shared/voxel.hh>
 
-using LightStorage = std::array<short, CHUNK_VOLUME>;
 using VoxelStorage = std::array<Voxel, CHUNK_VOLUME>;
 
 struct Chunk final {

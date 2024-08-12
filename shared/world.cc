@@ -11,15 +11,13 @@
 
 static emhash8::HashMap<ChunkCoord, Chunk *> chunks = {};
 
-Chunk *world::find_or_create_chunk(const ChunkCoord &cpos)
+// WARNING: this does ZERO checks for entity validity
+// and does ZERO checks for chunk presence; instead, it just
+// force-creates a chunk and links an EXISTING entity to it;
+Chunk *world::create_chunk(const ChunkCoord &cpos, entt::entity entity)
 {
-    const auto it = chunks.find(cpos);
-    if(it != chunks.cend())
-        return it->second;
-
-
     Chunk *chunk = new Chunk();
-    chunk->entity = globals::registry.create();
+    chunk->entity = entity;
     chunk->voxels.fill(NULL_VOXEL);
 
     auto &component = globals::registry.emplace<ChunkComponent>(chunk->entity);
@@ -35,6 +33,14 @@ Chunk *world::find_or_create_chunk(const ChunkCoord &cpos)
     globals::dispatcher.trigger(event);
 
     return chunk;
+}
+
+Chunk *world::find_or_create_chunk(const ChunkCoord &cpos)
+{
+    const auto it = chunks.find(cpos);
+    if(it != chunks.cend())
+        return it->second;
+    return world::create_chunk(cpos, globals::registry.create());
 }
 
 Chunk *world::find_chunk(const ChunkCoord &cpos)
