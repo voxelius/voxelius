@@ -17,7 +17,7 @@
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
-#include <shared/packet.hh>
+#include <shared/net/buffer.hh>
 #include <shared/ray_dda.hh>
 #include <shared/vdef.hh>
 #include <shared/world.hh>
@@ -153,7 +153,7 @@ void debug_session::run(void)
     noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
     noise.fractal_type = FNL_FRACTAL_RIDGED;
 
-    constexpr int WSIZE = 8;
+    constexpr int WSIZE = 32;
     for(int x = -WSIZE; x < WSIZE; x += 1)
     for(int z = -WSIZE; z < WSIZE; z += 1)
     for(int y = -2; y < 1; y += 1) {
@@ -183,12 +183,12 @@ void debug_session::run(void)
     progress_bar::set_title("Doing something");
     progress_bar::set_button("Stop doing something", [](void) {
 
-        Packet pkt = {};
-        Packet::write_string(pkt, "Test packet");
-        Packet::write_UI32(pkt, 42);
+        net::Buffer buffer = {};
+        net::Buffer::write_string(buffer, "Test packet");
+        net::Buffer::write_UI32(buffer, 42);
 
-        const auto a = Packet::read_string(pkt);
-        const auto b = Packet::read_UI32(pkt);
+        const auto a = net::Buffer::read_string(buffer);
+        const auto b = net::Buffer::read_UI32(buffer);
 
         message_box::reset();
         message_box::set_title("Debug");
