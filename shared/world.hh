@@ -6,6 +6,11 @@
 
 namespace world
 {
+Chunk *create_chunk(const ChunkCoord &cpos, entt::entity entity);
+} // namespace world
+
+namespace world
+{
 Chunk *find_or_create_chunk(const ChunkCoord &cpos);
 Chunk *find_chunk(const ChunkCoord &cpos);
 void remove_chunk(const ChunkCoord &cpos);
