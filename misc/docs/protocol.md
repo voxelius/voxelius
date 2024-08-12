@@ -1,5 +1,5 @@
 # Voxelius protocol
-**NOTE:** up-to-date packet specification is availabe as a read-only Google Spreadsheets document: [voxelius protocol](https://docs.google.com/spreadsheets/d/1rcui4Fh1t7LsoWwYqY5ICiZtVHuL3cHBzrcfqZfXPIk/edit?usp=sharing)  
+**NOTE:** up-to-date packet specification is available as a read-only Google Spreadsheets document: [voxelius protocol](https://docs.google.com/spreadsheets/d/1rcui4Fh1t7LsoWwYqY5ICiZtVHuL3cHBzrcfqZfXPIk/edit?usp=sharing)  
 
 # Server info ping
 So far the idea is this:  
