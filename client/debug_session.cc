@@ -17,7 +17,8 @@
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
-#include <shared/net/buffer.hh>
+#include <shared/packet_reader.hh>
+#include <shared/packet_writer.hh>
 #include <shared/ray_dda.hh>
 #include <shared/vdef.hh>
 #include <shared/world.hh>
@@ -183,16 +184,21 @@ void debug_session::run(void)
     progress_bar::set_title("Doing something");
     progress_bar::set_button("Stop doing something", [](void) {
 
-        net::Buffer buffer = {};
-        net::Buffer::write_string(buffer, "Test packet");
-        net::Buffer::write_UI32(buffer, 42);
+        PacketWriter writer = {};
+        PacketWriter::string(writer, "Test packet");
+        PacketWriter::FP32(writer, 1337.1337f);
+        PacketWriter::UI32(writer, 42);
 
-        const auto a = net::Buffer::read_string(buffer);
-        const auto b = net::Buffer::read_UI32(buffer);
+        PacketReader reader = {};
+        PacketReader::setup(reader, writer);
+        
+        const auto x = PacketReader::string(reader);
+        const auto y = PacketReader::FP32(reader);
+        const auto z = PacketReader::UI32(reader);
 
         message_box::reset();
         message_box::set_title("Debug");
-        message_box::set_subtitle(fmt::format("\"{}\" ({}) {}", a, a.size(), b));
+        message_box::set_subtitle(fmt::format("\"{}\" ({}) {} {}", x, x.size(), y, z));
 
         message_box::add_button("OK", [](void) {
             // Close the message box and go into the game
