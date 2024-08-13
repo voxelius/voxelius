@@ -19,6 +19,7 @@
 #include <client/main_menu.hh>
 #include <client/message_box.hh>
 #include <client/mouse.hh>
+#include <client/network.hh>
 #include <client/outline_renderer.hh>
 #include <client/player_target.hh>
 #include <client/progress_bar.hh>
@@ -151,6 +152,8 @@ void client_game::init(void)
     settings::add_stepper(3, settings::VIDEO, "game.fog_mode", client_game::fog_mode, 3U, false);
 
     language::init();
+
+    network::init();
 
     player_move::init();
     player_target::init();
@@ -303,6 +306,8 @@ void client_game::deinit(void)
     // because it is the last time we're able
     // to safely deallocate anything OpenGL
     globals::registry.clear();
+    
+    network::deinit();
 }
 
 void client_game::update(void)
@@ -322,6 +327,8 @@ void client_game::update(void)
     chunk_mesher::update();
 
     chunk_visibility::update();
+    
+    network::update();
 }
 
 void client_game::update_late(void)

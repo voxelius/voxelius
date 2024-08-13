@@ -26,8 +26,7 @@
 
 #include <random>
 
-#include <shared/protocol/packets/handshake.hh>
-#include <shared/protocol/packets/server_info.hh>
+#include <client/network.hh>
 
 static Voxel v_slate = {};
 static Voxel v_stone = {};
@@ -112,6 +111,14 @@ void debug_session::update(void)
 
 void debug_session::run(void)
 {
+    if(globals::peer) {
+        // Ain't gonna run this twice
+        return;
+    }
+
+    client_network::connect("localhost");
+
+/*
     if(globals::registry.valid(globals::player)) {
         // Ain't gonna run this twice
         return;
@@ -237,4 +244,5 @@ void debug_session::run(void)
     });
 
     globals::gui_screen = GUI_PROGRESS_BAR;
+*/
 }

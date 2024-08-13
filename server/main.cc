@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <entt/signal/dispatcher.hpp>
+#include <shared/math/constexpr.hh>
 #include <shared/protocol/protocol.hh>
 #include <shared/cmake.hh>
 #include <shared/config.hh>
@@ -11,9 +12,6 @@
 #include <server/globals.hh>
 #include <spdlog/spdlog.h>
 #include <thread>
-
-constexpr static std::uint64_t TICK_DT = static_cast<std::uint64_t>(1000000.0f / static_cast<float>(protocol::TICKRATE));
-
 
 void server::main(void)
 {
@@ -28,7 +26,11 @@ void server::main(void)
 
     server_game::init();
 
+    Config::add(globals::server_config, "tickrate", globals::tickrate);
     Config::load(globals::server_config, "server.conf");
+
+    globals::tickrate = cxpr::clamp(globals::tickrate, 10U, 300U);
+    globals::tickrate_dt = static_cast<std::uint64_t>(1000000.0f / static_cast<float>(globals::tickrate));
 
     server_game::init_late();
 
@@ -43,20 +45,19 @@ void server::main(void)
         last_curtime = globals::curtime;
         
         server_game::update();
-        
-        std::this_thread::sleep_for(std::chrono::microseconds(TICK_DT));
-        
         server_game::update_late();
-        
+
         globals::dispatcher.update();
         
         globals::framecount += 1;
+        
+        std::this_thread::sleep_for(std::chrono::microseconds(globals::tickrate_dt));
     }
-    
+
     spdlog::info("server: shutdown after {} frames", globals::framecount);
-    spdlog::info("server: average framerate: {:.03f} FPS", 1.0f / globals::frametime_avg);
-    spdlog::info("server: average frametime: {:.03f} ms", 1000.0f * globals::frametime_avg);
-    
+    spdlog::info("server: average framerate: {:.03f} TPS", 1.0f / globals::frametime_avg);
+    spdlog::info("server: average frametime: {:.03f} MSPT", 1000.0f * globals::frametime_avg);
+
     server_game::deinit();
     
     Config::save(globals::server_config, "server.conf");

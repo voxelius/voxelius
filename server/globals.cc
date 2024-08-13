@@ -6,3 +6,5 @@
 Config globals::server_config = {};
 
 bool globals::is_running = false;
+unsigned int globals::tickrate = 30U;
+std::uint64_t globals::tickrate_dt = 0;
