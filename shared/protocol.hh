@@ -75,7 +75,7 @@ struct protocol::LoginRequest final : public protocol::Base<0x0002> {
     std::uint32_t version {};
     std::uint64_t password_hash {};
     std::uint64_t vdef_checksum {};
-    std::uint64_t player_userid {};
+    std::uint64_t player_uid {};
     std::string username {};
 };
 
