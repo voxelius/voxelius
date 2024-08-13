@@ -2,6 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_GLOBALS_HH
 #define CLIENT_GLOBALS_HH
+#include <client/state.hh>
 #include <cstddef>
 #include <cstdint>
 #include <glad/gl.h>
@@ -27,7 +28,10 @@ extern float aspect;
 extern std::size_t num_drawcalls;
 extern std::size_t num_triangles;
 
+extern ENetPeer *peer;
+extern ClientState state;
 extern entt::entity player;
+extern std::uint16_t session_id;
 
 extern GLuint world_fbo;
 extern GLuint world_fbo_color;
