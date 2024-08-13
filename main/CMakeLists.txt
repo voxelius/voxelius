@@ -1,5 +1,5 @@
 option(BUILD_CLIENT "Build client" ON)
-option(BUILD_SERVER "Build server" OFF)
+option(BUILD_SERVER "Build server" ON)
 
 if(BUILD_CLIENT)
     add_executable(vgame "${CMAKE_CURRENT_LIST_DIR}/main.cc")

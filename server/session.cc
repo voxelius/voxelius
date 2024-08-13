@@ -25,7 +25,7 @@ void Session::init_late(void)
 
     for(std::size_t i = 0; i < sessions_vector.size(); ++i) {
         sessions_vector[i].peer = nullptr;
-        sessions_vector[i].session_id = SIZE_MAX;
+        sessions_vector[i].session_id = UINT16_MAX;
         sessions_vector[i].player_uid = UINT64_MAX;
         sessions_vector[i].player_entity = entt::null;
         sessions_vector[i].state = SessionState::Disconnected;
@@ -47,7 +47,11 @@ Session *Session::create(ENetPeer *peer, std::uint64_t player_uid)
             sessions_vector[i].player_uid = player_uid;
             sessions_vector[i].player_entity = entt::null;
             sessions_vector[i].state = SessionState::LoadingWorld;
+
             sessions_map[player_uid] = &sessions_vector[i];
+
+            peer->data = &sessions_vector[i];
+
             return &sessions_vector[i];
         }
     }
@@ -79,8 +83,10 @@ void Session::destroy(Session *session)
     if(session) {
         sessions_map.erase(session->player_uid);
 
+        session->peer->data = nullptr;
+
         session->peer = nullptr;
-        session->session_id = SIZE_MAX;
+        session->session_id = UINT16_MAX;
         session->player_uid = UINT64_MAX;
         session->player_entity = entt::null;
         session->state = SessionState::Disconnected;

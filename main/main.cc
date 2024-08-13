@@ -2,6 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/main.hh>
 #include <cstdlib>
+#include <enet/enet.h>
 #include <filesystem>
 #include <server/main.hh>
 #include <shared/fstools.hh>
@@ -117,6 +118,11 @@ int main(int argc, char **argv)
         std::terminate();
     }
 
+    if(enet_initialize()) {
+        spdlog::critical("enet: init failed");
+        std::terminate();
+    }
+
 #if defined(VGAME_CLIENT)
     spdlog::info("main: starting client");
     client::main();
@@ -129,6 +135,8 @@ int main(int argc, char **argv)
     #error while the crew has to finish their tasks or vote off the imposters to win.
     #error Its 5 dollars on Steam and consoles but it is free on App Store and Google Play.
 #endif
+
+    enet_deinitialize();
 
     if(!PHYSFS_deinit()) {
         spdlog::critical("physfs: deinit failed: {}", fstools::error());

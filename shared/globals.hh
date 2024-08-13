@@ -3,6 +3,7 @@
 #ifndef SHARED_GLOBALS_HH
 #define SHARED_GLOBALS_HH
 #include <cstdint>
+#include <enet/enet.h>
 #include <entt/entity/fwd.hpp>
 #include <entt/signal/fwd.hpp>
 
@@ -15,6 +16,8 @@ extern std::uint64_t framecount;
 
 extern entt::dispatcher dispatcher;
 extern entt::registry registry;
+
+extern ENetHost *host;
 } // namespace globals
 
 #endif /* SHARED_GLOBALS_HH */

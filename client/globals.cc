@@ -15,7 +15,10 @@ float globals::aspect = 0.0f;
 std::size_t globals::num_drawcalls = 0;
 std::size_t globals::num_triangles = 0;
 
-entt::entity globals::player = entt::null;
+ENetPeer *globlas::peer = nullptr;
+ClientState globlas::state = ClientState::Disconnected;
+entt::entity globlas::player = entt::null;
+std::uint16_t globlas::session_id = UINT16_MAX;
 
 GLuint globals::world_fbo = 0;
 GLuint globals::world_fbo_color = 0;

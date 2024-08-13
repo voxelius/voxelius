@@ -26,6 +26,9 @@
 
 #include <random>
 
+#include <shared/protocol/packets/handshake.hh>
+#include <shared/protocol/packets/server_info.hh>
+
 static Voxel v_slate = {};
 static Voxel v_stone = {};
 static Voxel v_grass = {};
@@ -154,7 +157,7 @@ void debug_session::run(void)
     noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
     noise.fractal_type = FNL_FRACTAL_RIDGED;
 
-    constexpr int WSIZE = 32;
+    constexpr int WSIZE = 8;
     for(int x = -WSIZE; x < WSIZE; x += 1)
     for(int z = -WSIZE; z < WSIZE; z += 1)
     for(int y = -2; y < 1; y += 1) {
@@ -170,6 +173,26 @@ void debug_session::run(void)
 
     Chunk *chunk = world::find_or_create_chunk({0, 4, 0});
     chunk->voxels.fill(v_test);
+
+    ENetHost *hp = enet_host_create(nullptr, 1, 1, 0, 0);
+    
+    if(!hp) {
+        spdlog::critical("no can create host");
+        std::terminate();
+    }
+
+    ENetAddress address = {};
+    address.port = protocol::DEFAULT_PORT;
+    enet_address_set_host(&address, "localhost");
+
+    ENetPeer *peer = enet_host_connect(hp, &address, 1, 0);
+
+    if(!peer) {
+        spdlog::critical("no can connect");
+        std::terminate();
+    }
+    
+    spdlog::warn("connected");
 
     spdlog::info("spawning local player");
     globals::player = globals::registry.create();

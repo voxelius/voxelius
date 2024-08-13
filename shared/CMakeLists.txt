@@ -29,6 +29,7 @@ configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake.hh.in" "${CMAKE_CURRENT_LIST_DIR
 if(WIN32)
     # https://github.com/voxelius/voxelius/issues/2#issuecomment-1757782477
     target_compile_definitions(shared PUBLIC _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(shared PUBLIC NOMINMAX)
 endif()
 
 if(MSVC)

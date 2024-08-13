@@ -4,4 +4,5 @@
 #include <shared/config.hh>
 
 Config globals::server_config = {};
-ENetHost *globals::host = nullptr;
+
+bool globals::is_running = false;
