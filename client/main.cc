@@ -229,6 +229,7 @@ void client::main(void)
 
     globals::frametime = 0.0f;
     globals::frametime_avg = 0.0f;
+    globals::frametime_us = 0;
     globals::curtime = epoch::microseconds();
     globals::framecount = 0;
 
@@ -246,7 +247,8 @@ void client::main(void)
 
     while(!glfwWindowShouldClose(globals::window)) {
         globals::curtime = epoch::microseconds();
-        globals::frametime = static_cast<float>(globals::curtime - last_curtime) / 1000000.0f;
+        globals::frametime_us = globals::curtime - last_curtime;
+        globals::frametime = static_cast<float>(globals::frametime_us) / 1000000.0f;
         globals::frametime_avg += globals::frametime;
         globals::frametime_avg *= 0.5f;
 

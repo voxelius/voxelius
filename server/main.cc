@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
+#include <csignal>
 #include <entt/signal/dispatcher.hpp>
 #include <shared/math/constexpr.hh>
-#include <shared/protocol/protocol.hh>
 #include <shared/cmake.hh>
 #include <shared/config.hh>
 #include <shared/epoch.hh>
@@ -13,20 +13,29 @@
 #include <spdlog/spdlog.h>
 #include <thread>
 
+static void on_sigint(int)
+{
+    spdlog::warn("server: received SIGINT");
+    globals::is_running = false;
+}
+
 void server::main(void)
 {
     spdlog::info("server: game version: {}", GAME_VERSION_STRING);
     
     globals::frametime = 0.0f;
     globals::frametime_avg = 0.0f;
+    globals::frametime_us = 0;
     globals::curtime = epoch::microseconds();
     globals::framecount = 0;
 
     globals::is_running = true;
 
+    std::signal(SIGINT, &on_sigint);
+
     server_game::init();
 
-    Config::add(globals::server_config, "tickrate", globals::tickrate);
+    Config::add(globals::server_config, "server.tickrate", globals::tickrate);
     Config::load(globals::server_config, "server.conf");
 
     globals::tickrate = cxpr::clamp(globals::tickrate, 10U, 300U);
@@ -38,7 +47,8 @@ void server::main(void)
     
     while(globals::is_running) {
         globals::curtime = epoch::microseconds();
-        globals::frametime = static_cast<float>(globals::curtime - last_curtime) / 1000000.0f;
+        globals::frametime_us = globals::curtime - last_curtime;
+        globals::frametime = static_cast<float>(globals::frametime_us) / 1000000.0f;
         globals::frametime_avg += globals::frametime;
         globals::frametime_avg *= 0.5f;
         
@@ -50,7 +60,7 @@ void server::main(void)
         globals::dispatcher.update();
         
         globals::framecount += 1;
-        
+
         std::this_thread::sleep_for(std::chrono::microseconds(globals::tickrate_dt));
     }
 

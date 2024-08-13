@@ -2,6 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef SHARED_CONFIG_HH
 #define SHARED_CONFIG_HH
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 
@@ -11,6 +12,7 @@ constexpr static ConfigVarType CONFIG_BOOLEAN       = 0x0001;
 constexpr static ConfigVarType CONFIG_FLOAT         = 0x0002;
 constexpr static ConfigVarType CONFIG_STD_STRING    = 0x0003;
 constexpr static ConfigVarType CONFIG_UNSIGNED_INT  = 0x0004;
+constexpr static ConfigVarType CONFIG_UINT64        = 0x0005;
 
 struct ConfigVariable final {
     ConfigVarType type {};
@@ -27,6 +29,7 @@ public:
     static void add(Config &config, const std::string &name, float &vref);
     static void add(Config &config, const std::string &name, std::string &vref);
     static void add(Config &config, const std::string &name, unsigned int &vref);
+    static void add(Config &config, const std::string &name, std::uint64_t &vref);
 
 public:
     static void clear(Config &config);
