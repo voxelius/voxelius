@@ -24,11 +24,6 @@ extern int width;
 extern int height;
 extern float aspect;
 
-extern float frametime;
-extern float frametime_avg;
-extern std::uint64_t curtime;
-extern std::uint64_t framecount;
-
 extern std::size_t num_drawcalls;
 extern std::size_t num_triangles;
 

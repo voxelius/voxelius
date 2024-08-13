@@ -12,11 +12,6 @@ int globals::width = 0;
 int globals::height = 0;
 float globals::aspect = 0.0f;
 
-float globals::frametime = 0.0f;
-float globals::frametime_avg = 0.0f;
-std::uint64_t globals::curtime = 0;
-std::uint64_t globals::framecount = 0;
-
 std::size_t globals::num_drawcalls = 0;
 std::size_t globals::num_triangles = 0;
 

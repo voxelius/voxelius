@@ -10,7 +10,7 @@ namespace protocol
 {
 constexpr static std::uint32_t VERSION = 0x00000001;
 constexpr static std::uint16_t DEFAULT_PORT = 43103;
-constexpr static float DEFAULT_TICKRATE = 30.0f
+constexpr static float DEFAULT_TICKRATE = 30.0f;
 }
 
 namespace protocol
@@ -38,14 +38,16 @@ struct EntityVelocity;
 struct RemoveEntity;
 struct RemoveChunk;
 struct SpawnPlayer;
+struct EntityTransform;
+struct EntityHead;
 } // namespace protocol
 
 namespace protocol
 {
 template<typename packet_type>
-void decode_packet(PacketReader &reader, packet_type &packet);
+static void decode_packet(PacketReader &reader, packet_type &packet);
 template<typename packet_type>
-void encode_packet(PacketWriter &writer, const packet_type &packet);
+static void encode_packet(PacketWriter &writer, const packet_type &packet);
 } // namespace protocol
 
 #endif /* SHARED_PROTOCOL_PROTOCOL_HH */

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#ifndef SHARED_PROTOCOL_SERVER_INFO_HH
-#define SHARED_PROTOCOL_SERVER_INFO_HH
+#ifndef SHARED_PROTOCOL_PACKETS_SERVER_INFO_HH
+#define SHARED_PROTOCOL_PACKETS_SERVER_INFO_HH
 #include <shared/protocol/protocol.hh>
 
 struct protocol::ServerInfo final : public protocol::BasePacket<0x0001> {
@@ -15,7 +15,7 @@ public:
 };
 
 template<>
-static inline void protocol::decode_packet<protocol::ServerInfo>(PacketReader &reader, protocol::ServerInfo &packet)
+inline void protocol::decode_packet<protocol::ServerInfo>(PacketReader &reader, protocol::ServerInfo &packet)
 {
     packet.version = PacketReader::UI32(reader);
     packet.max_players = PacketReader::UI16(reader);
@@ -24,7 +24,7 @@ static inline void protocol::decode_packet<protocol::ServerInfo>(PacketReader &r
 }
 
 template<>
-static inline void protocol::encode_packet<protocol::ServerInfo>(PacketWriter &writer, const protocol::ServerInfo &packet)
+inline void protocol::encode_packet<protocol::ServerInfo>(PacketWriter &writer, const protocol::ServerInfo &packet)
 {
     PacketWriter::UI32(writer, packet.version);
     PacketWriter::UI16(writer, packet.max_players);
@@ -32,4 +32,4 @@ static inline void protocol::encode_packet<protocol::ServerInfo>(PacketWriter &w
     PacketWriter::UI32(writer, packet.flags);
 }
 
-#endif /* SHARED_PROTOCOL_SERVER_INFO_HH */
+#endif /* SHARED_PROTOCOL_PACKETS_SERVER_INFO_HH */
