@@ -13,7 +13,7 @@ public:
     // Updates entities TransformComponent values
     // according to velocities multiplied by frametime.
     // This system was previously called inertial
-    static void update(float frametime);
+    static void update(void);
 };
 
 #endif /* SHARED_ENTITY_VELOCITY_HH */

@@ -8,14 +8,13 @@
 namespace client_network
 {
 void init(void);
-void init_late(void);
 void deinit(void);
 void update(void);
 } // namespace client_network
 
 namespace client_network
 {
-void connect(const std::string &address, std::uint16_t port = protocol::DEFAULT_PORT);
+void connect(const std::string &host, std::uint16_t port = protocol::DEFAULT_PORT);
 void disconnect(const std::string &reason);
 } // namespace client_network
 

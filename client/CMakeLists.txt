@@ -17,6 +17,7 @@ add_library(client STATIC
     "${CMAKE_CURRENT_LIST_DIR}/main.cc"
     "${CMAKE_CURRENT_LIST_DIR}/message_box.cc"
     "${CMAKE_CURRENT_LIST_DIR}/mouse.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/network.cc"
     "${CMAKE_CURRENT_LIST_DIR}/outline_renderer.cc"
     "${CMAKE_CURRENT_LIST_DIR}/player_target.cc"
     "${CMAKE_CURRENT_LIST_DIR}/progress_bar.cc"
