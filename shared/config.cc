@@ -46,6 +46,14 @@ void Config::add(Config &config, const std::string &name, unsigned int &vref)
     config.vmap.insert_or_assign(name, std::move(variable));
 }
 
+void Config::add(Config &config, const std::string &name, std::uint64_t &vref)
+{
+    ConfigVariable variable = {};
+    variable.type = CONFIG_UINT64;
+    variable.value_ptr = &vref;
+    config.vmap.insert_or_assign(name, std::move(variable));
+}
+
 void Config::clear(Config &config)
 {
     config.vmap.clear();
@@ -103,6 +111,12 @@ bool Config::load(Config &config, const std::string &path)
                 static_cast<unsigned int>(std::strtoul(value.c_str(), nullptr, 10));
             continue;
         }
+
+        if(it->second.type == CONFIG_UINT64) {
+            reinterpret_cast<std::uint64_t *>(it->second.value_ptr)[0] =
+                static_cast<std::uint64_t>(std::strtoull(value.c_str(), nullptr, 10));
+            continue;
+        }
     }
 
     return true;
@@ -144,6 +158,13 @@ bool Config::save(const Config &config, const std::string &path)
         if(it.second.type == CONFIG_UNSIGNED_INT) {
             stream << fmt::format("{} = {}", it.first,
                 reinterpret_cast<unsigned int *>(it.second.value_ptr)[0]);
+            stream << std::endl;
+            continue;
+        }
+
+        if(it.second.type == CONFIG_UINT64) {
+            stream << fmt::format("{} = {}", it.first,
+                reinterpret_cast<std::uint64_t *>(it.second.value_ptr)[0]);
             stream << std::endl;
             continue;
         }

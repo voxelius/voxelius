@@ -19,12 +19,12 @@
 #include <client/main_menu.hh>
 #include <client/message_box.hh>
 #include <client/mouse.hh>
-#include <client/network.hh>
 #include <client/outline_renderer.hh>
 #include <client/player_target.hh>
 #include <client/progress_bar.hh>
 #include <client/screenshot.hh>
 #include <client/server_list.hh>
+#include <client/session.hh>
 #include <client/settings.hh>
 #include <client/view.hh>
 #include <client/voxel_anims.hh>
@@ -151,9 +151,16 @@ void client_game::init(void)
     settings::add_slider(1, settings::VIDEO, "game.pixel_size", client_game::pixel_size, 1U, 4U, true);
     settings::add_stepper(3, settings::VIDEO, "game.fog_mode", client_game::fog_mode, 3U, false);
 
+    globals::host = enet_host_create(nullptr, 1, 1, 0, 0);
+
+    if(!globals::host) {
+        spdlog::critical("game: unable to setup an ENet host");
+        std::terminate();
+    }
+
     language::init();
 
-    network::init();
+    session::init();
 
     player_move::init();
     player_target::init();
@@ -285,6 +292,8 @@ void client_game::init_late(void)
 
 void client_game::deinit(void)
 {
+    session::disconnect("Client shutdown");
+
     voxel_atlas::destroy();
 
     glDeleteRenderbuffers(1, &globals::world_fbo_depth);
@@ -306,8 +315,8 @@ void client_game::deinit(void)
     // because it is the last time we're able
     // to safely deallocate anything OpenGL
     globals::registry.clear();
-    
-    network::deinit();
+
+    enet_host_destroy(globals::host);
 }
 
 void client_game::update(void)
@@ -317,7 +326,7 @@ void client_game::update(void)
     player_move::update();
     player_target::update();
 
-    VelocityComponent::update(globals::frametime);
+    VelocityComponent::update();
     TransformComponent::update();
 
     view::update();
@@ -327,8 +336,6 @@ void client_game::update(void)
     chunk_mesher::update();
 
     chunk_visibility::update();
-    
-    network::update();
 }
 
 void client_game::update_late(void)
@@ -338,6 +345,40 @@ void client_game::update_late(void)
     if(client_game::vertical_sync)
         glfwSwapInterval(1);
     else glfwSwapInterval(0);
+
+    ENetEvent event = {};
+
+    while(enet_host_service(globals::host, &event, 0) > 0) {
+        if(event.type == ENET_EVENT_TYPE_CONNECT) {
+            protocol::LoginRequest request = {};
+            request.version = protocol::VERSION;
+            request.password_hash = UINT64_MAX; // FIXME
+            request.vdef_checksum = UINT64_MAX; // FIXME
+            request.player_uid = globals::player_uid;
+
+            protocol::send_packet(event.peer, request);
+
+            progress_bar::set_title("Logging in");
+            progress_bar::set_progress(0.25f);
+            globals::gui_screen = GUI_PROGRESS_BAR;
+
+            continue;
+        }
+
+        if(event.type == ENET_EVENT_TYPE_DISCONNECT) {
+            session::session_id = UINT16_MAX;
+            session::tick_time = UINT64_MAX;
+            session::username = std::string();
+            session::peer = nullptr;
+            continue;
+        }
+
+        if(event.type == ENET_EVENT_TYPE_RECEIVE) {
+            protocol::handle_packet(event.packet, event.peer);
+            enet_packet_destroy(event.packet);
+            continue;
+        }
+    }
 }
 
 void client_game::render(void)

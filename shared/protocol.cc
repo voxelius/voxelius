@@ -13,6 +13,7 @@ static RWBuffer write_buffer = {};
 void protocol::send_packet(ENetPeer *peer, const protocol::StatusRequest &packet)
 {
     RWBuffer::setup(write_buffer);
+    RWBuffer::write_UI16(write_buffer, protocol::StatusRequest::ID);
     RWBuffer::write_UI32(write_buffer, packet.version);
     enet_peer_send(peer, 0, RWBuffer::submit(write_buffer, ENET_PACKET_FLAG_RELIABLE));
 }
@@ -20,6 +21,7 @@ void protocol::send_packet(ENetPeer *peer, const protocol::StatusRequest &packet
 void protocol::send_packet(ENetPeer *peer, const protocol::StatusResponse &packet)
 {
     RWBuffer::setup(write_buffer);
+    RWBuffer::write_UI16(write_buffer, protocol::StatusResponse::ID);
     RWBuffer::write_UI32(write_buffer, packet.version);
     RWBuffer::write_UI16(write_buffer, packet.max_players);
     RWBuffer::write_UI16(write_buffer, packet.num_players);
@@ -29,6 +31,7 @@ void protocol::send_packet(ENetPeer *peer, const protocol::StatusResponse &packe
 void protocol::send_packet(ENetPeer *peer, const protocol::LoginRequest &packet)
 {
     RWBuffer::setup(write_buffer);
+    RWBuffer::write_UI16(write_buffer, protocol::LoginRequest::ID);
     RWBuffer::write_UI32(write_buffer, packet.version);
     RWBuffer::write_UI64(write_buffer, packet.password_hash);
     RWBuffer::write_UI64(write_buffer, packet.vdef_checksum);
@@ -40,6 +43,7 @@ void protocol::send_packet(ENetPeer *peer, const protocol::LoginRequest &packet)
 void protocol::send_packet(ENetPeer *peer, const protocol::LoginResponse &packet)
 {
     RWBuffer::setup(write_buffer);
+    RWBuffer::write_UI16(write_buffer, protocol::LoginResponse::ID);
     RWBuffer::write_UI16(write_buffer, packet.session_id);
     RWBuffer::write_UI16(write_buffer, packet.tickrate);
     RWBuffer::write_string(write_buffer, packet.username);
@@ -49,6 +53,7 @@ void protocol::send_packet(ENetPeer *peer, const protocol::LoginResponse &packet
 void protocol::send_packet(ENetPeer *peer, const protocol::Disconnect &packet)
 {
     RWBuffer::setup(write_buffer);
+    RWBuffer::write_UI16(write_buffer, protocol::Disconnect::ID);
     RWBuffer::write_string(write_buffer, packet.reason);
     enet_peer_send(peer, 0, RWBuffer::submit(write_buffer, ENET_PACKET_FLAG_RELIABLE));
 }
@@ -56,6 +61,7 @@ void protocol::send_packet(ENetPeer *peer, const protocol::Disconnect &packet)
 void protocol::send_packet(ENetPeer *peer, const protocol::CreateEntity &packet)
 {
     RWBuffer::setup(write_buffer);
+    RWBuffer::write_UI16(write_buffer, protocol::CreateEntity::ID);
     RWBuffer::write_UI64(write_buffer, static_cast<std::uint64_t>(packet.entity));
     RWBuffer::write_UI32(write_buffer, packet.type);
     enet_peer_send(peer, 0, RWBuffer::submit(write_buffer, ENET_PACKET_FLAG_RELIABLE));
@@ -64,6 +70,7 @@ void protocol::send_packet(ENetPeer *peer, const protocol::CreateEntity &packet)
 void protocol::send_packet(ENetPeer *peer, const protocol::ChunkVoxels &packet)
 {
     RWBuffer::setup(write_buffer);
+    RWBuffer::write_UI16(write_buffer, protocol::ChunkVoxels::ID);
     RWBuffer::write_UI64(write_buffer, static_cast<std::uint64_t>(packet.entity));
     RWBuffer::write_I32(write_buffer, packet.chunk[0]);
     RWBuffer::write_I32(write_buffer, packet.chunk[1]);
@@ -75,6 +82,7 @@ void protocol::send_packet(ENetPeer *peer, const protocol::ChunkVoxels &packet)
 void protocol::send_packet(ENetPeer *peer, const protocol::EntityTransform &packet)
 {
     RWBuffer::setup(write_buffer);
+    RWBuffer::write_UI16(write_buffer, protocol::EntityTransform::ID);
     RWBuffer::write_UI64(write_buffer, static_cast<std::uint64_t>(packet.entity));
     RWBuffer::write_I32(write_buffer, packet.coord.chunk[0]);
     RWBuffer::write_I32(write_buffer, packet.coord.chunk[1]);
@@ -91,6 +99,7 @@ void protocol::send_packet(ENetPeer *peer, const protocol::EntityTransform &pack
 void protocol::send_packet(ENetPeer *peer, const protocol::EntityHead &packet)
 {
     RWBuffer::setup(write_buffer);
+    RWBuffer::write_UI16(write_buffer, protocol::EntityHead::ID);
     RWBuffer::write_UI64(write_buffer, static_cast<std::uint64_t>(packet.entity));
     RWBuffer::write_FP32(write_buffer, packet.angles[0]);
     RWBuffer::write_FP32(write_buffer, packet.angles[1]);
@@ -101,6 +110,7 @@ void protocol::send_packet(ENetPeer *peer, const protocol::EntityHead &packet)
 void protocol::send_packet(ENetPeer *peer, const protocol::EntityVelocity &packet)
 {
     RWBuffer::setup(write_buffer);
+    RWBuffer::write_UI16(write_buffer, protocol::EntityVelocity::ID);
     RWBuffer::write_UI64(write_buffer, static_cast<std::uint64_t>(packet.entity));
     RWBuffer::write_FP32(write_buffer, packet.value[0]);
     RWBuffer::write_FP32(write_buffer, packet.value[1]);
@@ -111,6 +121,7 @@ void protocol::send_packet(ENetPeer *peer, const protocol::EntityVelocity &packe
 void protocol::send_packet(ENetPeer *peer, const protocol::SpawnPlayer &packet)
 {
     RWBuffer::setup(write_buffer);
+    RWBuffer::write_UI16(write_buffer, protocol::SpawnPlayer::ID);
     RWBuffer::write_UI64(write_buffer, static_cast<std::uint64_t>(packet.entity));    
     enet_peer_send(peer, 0, RWBuffer::submit(write_buffer, ENET_PACKET_FLAG_RELIABLE));
 }
@@ -118,6 +129,7 @@ void protocol::send_packet(ENetPeer *peer, const protocol::SpawnPlayer &packet)
 void protocol::send_packet(ENetPeer *peer, const protocol::ChatMessage &packet)
 {
     RWBuffer::setup(write_buffer);
+    RWBuffer::write_UI16(write_buffer, protocol::ChatMessage::ID);
     RWBuffer::write_UI16(write_buffer, packet.type);
     RWBuffer::write_string(write_buffer, packet.message);
     enet_peer_send(peer, 0, RWBuffer::submit(write_buffer, ENET_PACKET_FLAG_RELIABLE));
@@ -126,6 +138,7 @@ void protocol::send_packet(ENetPeer *peer, const protocol::ChatMessage &packet)
 void protocol::send_packet(ENetPeer *peer, const protocol::SetVoxel &packet)
 {
     RWBuffer::setup(write_buffer);
+    RWBuffer::write_UI16(write_buffer, protocol::SetVoxel::ID);
     RWBuffer::write_I64(write_buffer, packet.coord[0]);
     RWBuffer::write_I64(write_buffer, packet.coord[1]);
     RWBuffer::write_I64(write_buffer, packet.coord[2]);

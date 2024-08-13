@@ -6,6 +6,7 @@
 #include <client/message_box.hh>
 #include <client/player_target.hh>
 #include <client/progress_bar.hh>
+#include <client/session.hh>
 #include <client/voxel_atlas.hh>
 #include <client/globals.hh>
 #include <client/view.hh>
@@ -17,16 +18,12 @@
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
-#include <shared/packet_reader.hh>
-#include <shared/packet_writer.hh>
 #include <shared/ray_dda.hh>
 #include <shared/vdef.hh>
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
 
 #include <random>
-
-#include <client/network.hh>
 
 static Voxel v_slate = {};
 static Voxel v_stone = {};
@@ -106,17 +103,17 @@ void debug_session::init(void)
 
 void debug_session::update(void)
 {
-    progress_bar::set_progress(0.5f + 0.5f * std::sin(glfwGetTime()));
+    //progress_bar::set_progress(0.5f + 0.5f * std::sin(glfwGetTime()));
 }
 
 void debug_session::run(void)
 {
-    if(globals::peer) {
+    if(session::peer) {
         // Ain't gonna run this twice
         return;
     }
 
-    client_network::connect("localhost");
+    session::connect("localhost", protocol::PORT, "generic");
 
 /*
     if(globals::registry.valid(globals::player)) {
