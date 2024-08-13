@@ -32,7 +32,7 @@ void protocol::send_packet(ENetPeer *peer, const protocol::LoginRequest &packet)
     RWBuffer::write_UI32(write_buffer, packet.version);
     RWBuffer::write_UI64(write_buffer, packet.password_hash);
     RWBuffer::write_UI64(write_buffer, packet.vdef_checksum);
-    RWBuffer::write_UI64(write_buffer, packet.player_userid);
+    RWBuffer::write_UI64(write_buffer, packet.player_uid);
     RWBuffer::write_string(write_buffer, packet.username);
     enet_peer_send(peer, 0, RWBuffer::submit(write_buffer, ENET_PACKET_FLAG_RELIABLE));
 }
@@ -170,7 +170,7 @@ void protocol::handle_packet(const ENetPacket *packet, ENetPeer *peer)
             login_request.version = RWBuffer::read_UI32(read_buffer);
             login_request.password_hash = RWBuffer::read_UI64(read_buffer);
             login_request.vdef_checksum = RWBuffer::read_UI64(read_buffer);
-            login_request.player_userid = RWBuffer::read_UI64(read_buffer);
+            login_request.player_uid = RWBuffer::read_UI64(read_buffer);
             login_request.username = RWBuffer::read_string(read_buffer);
             globals::dispatcher.trigger(login_request);
             break;
