@@ -49,7 +49,7 @@ static void on_login_request(const protocol::LoginRequest &packet)
 
     protocol::send_packet(packet.peer, response);
 
-    spdlog::info("sent response");
+    spdlog::info("sent response to [{}] ({})", session->username, packet.username);
 }
 
 static std::string make_unique_username(const std::string &username)
@@ -142,6 +142,8 @@ Session *sessions::find(ENetPeer *peer)
 void sessions::destroy(Session *session)
 {
     if(session) {
+        session->peer->data = nullptr;
+        
         sessions_map.erase(session->player_uid);
 
         session->session_id = UINT16_MAX;

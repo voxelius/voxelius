@@ -83,6 +83,16 @@ void session::connect(const std::string &host, std::uint16_t port, const std::st
 
     progress::reset();
     progress::set_title("Connecting");
+    progress::set_button("Cancel", [](void) {
+        enet_peer_disconnect(session::peer, 0);
+
+        session::peer = nullptr;
+        session::session_id = UINT16_MAX;
+        session::tick_time = UINT64_MAX;
+        session::username = std::string();
+
+        globals::gui_screen = GUI_MAIN_MENU;
+    });
 
     globals::gui_screen = GUI_PROGRESS;
 }
