@@ -128,36 +128,6 @@ void debug_session::run(void)
     v_dirt = vdef::create("dirt", VoxelType::Cube).add_default_state().build();
     v_test = vdef::create("vtest", VoxelType::Cube).add_default_state().build();
 
-    // Figure out the total texture count
-    // NOTE: this is debug, early and a very
-    // conservative limit choice. There must be a way
-    // to make it less shit if we talk about memory conservation
-    std::size_t max_texture_count = 0;
-
-    for(const VoxelInfo &info : vdef::voxels) {
-        for(const VoxelTexture &vtex : info.textures) {
-            max_texture_count += vtex.paths.size();
-        }
-    }
-
-    voxel_atlas::create(16, 16, max_texture_count);
-
-    // Add cached strip values to the VoxelTexture objects
-    for(VoxelInfo &info : vdef::voxels) {
-        for(VoxelTexture &vtex : info.textures) {
-            if(AtlasStrip *strip = voxel_atlas::find_or_load(vtex.paths)) {
-                vtex.cached_offset = strip->offset;
-                vtex.cached_plane = strip->plane;
-                continue;
-            }
-            
-            spdlog::critical("debug_session: {}: failed to load atlas strips", info.name);
-            std::terminate();
-        }
-    }
-
-    voxel_atlas::generate_mipmaps();
-
     noise = fnlCreateState();
     noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
     noise.fractal_type = FNL_FRACTAL_RIDGED;

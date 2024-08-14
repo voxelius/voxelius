@@ -2,6 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <shared/math/constexpr.hh>
 #include <shared/config.hh>
+#include <shared/game_voxels.hh>
 #include <shared/protocol.hh>
 #include <server/game.hh>
 #include <server/globals.hh>
@@ -42,6 +43,8 @@ void server_game::init_late(void)
 
     spdlog::info("game: host: {} player + {} status peers", sessions::max_players, status_peers);
     spdlog::info("game: host: listening on UDP port {}", address.port);
+
+    game_voxels::populate();
 }
 
 void server_game::deinit(void)
