@@ -5,7 +5,7 @@
 #include <client/gui_screen.hh>
 #include <client/message_box.hh>
 #include <client/player_target.hh>
-#include <client/progress_bar.hh>
+#include <client/progress.hh>
 #include <client/session.hh>
 #include <client/voxel_atlas.hh>
 #include <client/globals.hh>

@@ -4,7 +4,7 @@
 #include <client/globals.hh>
 #include <client/gui_screen.hh>
 #include <client/message_box.hh>
-#include <client/progress_bar.hh>
+#include <client/progress.hh>
 #include <client/session.hh>
 #include <shared/protocol.hh>
 #include <spdlog/spdlog.h>
@@ -24,8 +24,7 @@ static void on_login_response(const protocol::LoginResponse &packet)
     session::tick_time = static_cast<std::uint64_t>(1000000.0f / static_cast<float>(cxpr::max<std::uint16_t>(10, packet.tickrate)));
     session::username = packet.username;
 
-    progress_bar::set_title("Loading world");
-    progress_bar::set_progress(0.50f);
+    progress::set_title("Loading world");
 }
 
 static void on_disconnect(const protocol::Disconnect &packet)
@@ -82,11 +81,10 @@ void session::connect(const std::string &host, std::uint16_t port, const std::st
 
     session::username = username;
 
-    progress_bar::reset();
-    progress_bar::set_title("Connecting");
-    progress_bar::set_progress(0.05f);
+    progress::reset();
+    progress::set_title("Connecting");
 
-    globals::gui_screen = GUI_PROGRESS_BAR;
+    globals::gui_screen = GUI_PROGRESS;
 }
 
 void session::disconnect(const std::string &reason)

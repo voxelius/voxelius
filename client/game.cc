@@ -21,7 +21,7 @@
 #include <client/mouse.hh>
 #include <client/outline_renderer.hh>
 #include <client/player_target.hh>
-#include <client/progress_bar.hh>
+#include <client/progress.hh>
 #include <client/screenshot.hh>
 #include <client/server_list.hh>
 #include <client/session.hh>
@@ -266,7 +266,7 @@ void client_game::init(void)
     main_menu::init();
     server_list::init();
     settings::init();
-    progress_bar::init();
+    progress::init();
     message_box::init();
 
     debug_session::init();
@@ -358,9 +358,8 @@ void client_game::update_late(void)
 
             protocol::send_packet(event.peer, request);
 
-            progress_bar::set_title("Logging in");
-            progress_bar::set_progress(0.25f);
-            globals::gui_screen = GUI_PROGRESS_BAR;
+            progress::set_title("Logging in");
+            globals::gui_screen = GUI_PROGRESS;
 
             continue;
         }
@@ -429,8 +428,8 @@ void client_game::layout(void)
             case GUI_SETTINGS:
                 settings::layout();
                 break;
-            case GUI_PROGRESS_BAR:
-                progress_bar::layout();
+            case GUI_PROGRESS:
+                progress::layout();
                 break;
             case GUI_MESSAGE_BOX:
                 message_box::layout();

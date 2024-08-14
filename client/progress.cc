@@ -2,7 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <client/globals.hh>
 #include <client/language.hh>
-#include <client/progress_bar.hh>
+#include <client/progress.hh>
 #include <imgui.h>
 #include <spdlog/fmt/fmt.h>
 
@@ -11,17 +11,15 @@ constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground | I
 static std::string str_title = {};
 static std::string str_button = {};
 static ProgressBarAction button_action = {};
-static float progress_value = {};
 
-void progress_bar::init(void)
+void progress::init(void)
 {
     str_title = "Loading";
     str_button = std::string();
     button_action = nullptr;
-    progress_value = 0.0f;
 }
 
-void progress_bar::layout(void)
+void progress::layout(void)
 {
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
     const ImVec2 window_start = ImVec2(0.0f, viewport->Size.y * 0.30f);
@@ -39,9 +37,7 @@ void progress_bar::layout(void)
 
         ImGui::Dummy(ImVec2(0.0f, 8.0f * globals::gui_scale));
 
-        const float bar_width = 0.8f * ImGui::CalcItemWidth();
-        ImGui::SetCursorPosX(0.5f * (window_size.x - bar_width));
-        ImGui::ProgressBar(progress_value, ImVec2(bar_width, 0.0f), "");
+        // TODO: spinner
 
         if(!str_button.empty()) {
             ImGui::Dummy(ImVec2(0.0f, 32.0f * globals::gui_scale));
@@ -62,26 +58,20 @@ void progress_bar::layout(void)
     ImGui::End();
 }
 
-void progress_bar::reset(void)
+void progress::reset(void)
 {
     str_title.clear();
     str_button.clear();
     button_action = nullptr;
-    progress_value = 0.0f;
 }
 
-void progress_bar::set_title(const std::string &title)
+void progress::set_title(const std::string &title)
 {
     str_title = language::resolve(title);
 }
 
-void progress_bar::set_button(const std::string &text, const ProgressBarAction &action)
+void progress::set_button(const std::string &text, const ProgressBarAction &action)
 {
     str_button = fmt::format("{}###ProgressBar_Button", language::resolve(text));
     button_action = action;
-}
-
-void progress_bar::set_progress(float value)
-{
-    progress_value = value;
 }
