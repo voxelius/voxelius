@@ -42,14 +42,11 @@ void progress::layout(void)
         const ImVec2 cursor = ImGui::GetCursorPos();
 
         const std::size_t num_bars = 32;
-        const float spinner_width = ImGui::CalcItemWidth();
+        const float spinner_width = 0.8f * ImGui::CalcItemWidth();
         const float bar_width = spinner_width / static_cast<float>(num_bars);
-        const float bar_height = 0.25f * ImGui::GetFrameHeight();
+        const float bar_height = 0.5f * ImGui::GetFrameHeight();
         
-        const float bar_fill = 1.0f;
-        const float bar_width_f = bar_fill * bar_width;
-
-        const float base_xpos = window_start.x + 0.5f * (window_size.x - spinner_width) + 0.5f * (1.0f - bar_fill) * bar_width;
+        const float base_xpos = window_start.x + 0.5f * (window_size.x - spinner_width) + 0.5f;
         const float base_ypos = window_start.y + cursor.y;
         const float phase = 2.0f * ImGui::GetTime();
 
@@ -58,7 +55,7 @@ void progress::layout(void)
 
         for(std::size_t i = 0; i < num_bars; ++i) {
             const float sinval = std::sin(M_PI * static_cast<float>(i) / static_cast<float>(num_bars) - phase);
-            const float modifier = std::exp(-25.0f * (0.5f + 0.5f * sinval));
+            const float modifier = std::exp(-8.0f * (0.5f + 0.5f * sinval));
 
             ImVec4 color = {};
             color.x = cxpr::lerp(background.x, foreground.x, modifier);
@@ -67,7 +64,7 @@ void progress::layout(void)
             color.w = cxpr::lerp(background.w, foreground.w, modifier);
             
             const ImVec2 start = ImVec2(base_xpos + bar_width * i, base_ypos);
-            const ImVec2 end = ImVec2(start.x + bar_width_f, start.y + bar_height);
+            const ImVec2 end = ImVec2(start.x + bar_width, start.y + bar_height);
             ImGui::GetWindowDrawList()->AddRectFilled(start, end, ImGui::GetColorU32(color));
         }
 
