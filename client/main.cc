@@ -20,6 +20,7 @@
 #include <shared/image.hh>
 #include <shared/splash.hh>
 #include <spdlog/spdlog.h>
+#include <thread>
 
 #if defined(_WIN32)
 extern "C" __declspec(dllexport) unsigned long NvOptimusEnablement = 0x00000001;

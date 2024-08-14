@@ -6,6 +6,7 @@
 #include <shared/protocol.hh>
 #include <server/globals.hh>
 #include <server/sessions.hh>
+#include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
 #include <unordered_map>
 #include <vector>
@@ -15,42 +16,6 @@ unsigned int sessions::num_players = 0U;
 
 static std::unordered_map<std::uint64_t, Session *> sessions_map = {};
 static std::vector<Session> sessions_vector = {};
-
-static void on_login_request(const protocol::LoginRequest &packet)
-{
-    if(packet.version != protocol::VERSION) {
-        protocol::Disconnect disconnect = {};
-        disconnect.reason = "Protocol version mismatch";
-
-        protocol::send_packet(packet.peer, disconnect);
-        enet_host_flush(globals::host);
-        enet_peer_disconnect(packet.peer, 0);
-
-        return;
-    }
-
-    Session *session = sessions::create(packet.peer, packet.player_uid, packet.username);
-
-    if(!session) {
-        protocol::Disconnect disconnect = {};
-        disconnect.reason = "Too much players";
-
-        protocol::send_packet(packet.peer, disconnect);
-        enet_host_flush(globals::host);
-        enet_peer_disconnect(packet.peer, 0);
-
-        return;
-    }
-
-    protocol::LoginResponse response = {};
-    response.session_id = session->session_id;
-    response.tickrate = globals::tickrate;
-    response.username = session->username;
-
-    protocol::send_packet(packet.peer, response);
-
-    spdlog::info("sent response to [{}] ({})", session->username, packet.username);
-}
 
 static std::string make_unique_username(const std::string &username)
 {
@@ -63,6 +28,42 @@ static std::string make_unique_username(const std::string &username)
     }
 
     return username;
+}
+
+static void on_login_request(const protocol::LoginRequest &packet)
+{
+    
+    if(packet.version > protocol::VERSION) {
+        protocol::Disconnect response = {};
+        response.reason = "Outdated server";
+        protocol::send_packet(packet.peer, response);
+        return;
+    }
+    
+    if(packet.version < protocol::VERSION) {
+        protocol::Disconnect response = {};
+        response.reason = "Outdated client";
+        protocol::send_packet(packet.peer, response);
+        return;
+    }
+    
+    if(Session *session = sessions::create(packet.peer, packet.player_uid, packet.username)) {
+        protocol::LoginResponse response = {};
+        response.session_id = session->session_id;
+        response.tickrate = globals::tickrate;
+        response.username = session->username;
+        protocol::send_packet(packet.peer, response);
+
+        spdlog::info("sessions: {} [{}] logged in with session_id={}", session->username, session->player_uid, session->session_id);
+
+        // UNDONE: send all the world entity information here
+
+        return;
+    }
+    
+    protocol::Disconnect response = {};
+    response.reason = "Too much players";
+    protocol::send_packet(packet.peer, response);
 }
 
 void sessions::init(void)
@@ -106,6 +107,8 @@ Session *sessions::create(ENetPeer *peer, std::uint64_t player_uid, const std::s
 
             sessions_map[player_uid] = &sessions_vector[i];
 
+            peer->data = &sessions_vector[i];
+
             sessions::num_players += 1U;
 
             return &sessions_vector[i];
@@ -136,13 +139,16 @@ Session *sessions::find(std::uint64_t player_uid)
 
 Session *sessions::find(ENetPeer *peer)
 {
-    return reinterpret_cast<Session *>(peer);
+    return reinterpret_cast<Session *>(peer->data);
 }
 
 void sessions::destroy(Session *session)
 {
     if(session) {
-        session->peer->data = nullptr;
+        if(session->peer) {
+            // Make sure we don't leave a mark
+            session->peer->data = nullptr;
+        }
         
         sessions_map.erase(session->player_uid);
 

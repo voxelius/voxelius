@@ -4,10 +4,12 @@
 #define CLIENT_GLOBALS_HH
 #include <cstddef>
 #include <cstdint>
+#include <enet/enet.h>
 #include <glad/gl.h>
 #include <entt/entity/entity.hpp>
 #include <shared/math/vec4f.hh>
 #include <shared/globals.hh>
+#include <string>
 
 class Config;
 
@@ -27,8 +29,14 @@ extern float aspect;
 extern std::size_t num_drawcalls;
 extern std::size_t num_triangles;
 
+extern ENetHost *client_host;
+
+extern ENetPeer *session_peer;
+extern std::uint16_t session_id;
+extern std::uint64_t session_tick_dt;
+extern std::string session_username;
+
 extern entt::entity player;
-extern std::uint64_t player_uid;
 
 extern GLuint world_fbo;
 extern GLuint world_fbo_color;
