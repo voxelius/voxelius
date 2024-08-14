@@ -22,6 +22,7 @@
 #include <client/outline_renderer.hh>
 #include <client/player_target.hh>
 #include <client/progress.hh>
+#include <client/recv.hh>
 #include <client/screenshot.hh>
 #include <client/server_list.hh>
 #include <client/session.hh>
@@ -330,6 +331,8 @@ void client_game::init_late(void)
     }
 
     voxel_atlas::generate_mipmaps();
+
+    client_recv::init();
 }
 
 void client_game::deinit(void)
@@ -406,6 +409,13 @@ void client_game::update_late(void)
             enet_packet_destroy(event.packet);
             continue;
         }
+    }
+
+    if(globals::session_peer && (globals::curtime >= globals::session_send_time)) {
+        globals::session_send_time = globals::curtime + globals::session_tick_dt;
+
+        // Send stuff here
+
     }
 }
 

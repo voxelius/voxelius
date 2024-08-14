@@ -18,6 +18,7 @@ static void on_login_response(const protocol::LoginResponse &packet)
     
     globals::session_id = packet.session_id;
     globals::session_tick_dt = static_cast<std::uint64_t>(1000000.0f / static_cast<float>(cxpr::max<std::uint16_t>(10, packet.tickrate)));
+    globals::session_send_time = 0;
     globals::session_username = packet.username;
     
     progress::set_title("Loading world");    
@@ -32,6 +33,7 @@ static void on_disconnect(const protocol::Disconnect &packet)
     globals::session_peer = nullptr;
     globals::session_id = UINT16_MAX;
     globals::session_tick_dt = UINT64_MAX;
+    globals::session_send_time = UINT64_MAX;
     globals::session_username = std::string();
 
     message_box::reset();
@@ -49,6 +51,7 @@ void session::init(void)
     globals::session_peer = nullptr;
     globals::session_id = UINT16_MAX;
     globals::session_tick_dt = UINT64_MAX;
+    globals::session_send_time = UINT64_MAX;
     globals::session_username = std::string();
     
     globals::dispatcher.sink<protocol::LoginResponse>().connect<&on_login_response>();
@@ -62,6 +65,7 @@ void session::deinit(void)
     globals::session_peer = nullptr;
     globals::session_id = UINT16_MAX;
     globals::session_tick_dt = UINT64_MAX;
+    globals::session_send_time = UINT64_MAX;
     globals::session_username = std::string();
 }
 
@@ -74,6 +78,7 @@ void session::connect(const std::string &host, std::uint16_t port)
     globals::session_peer = enet_host_connect(globals::client_host, &address, 1, 0);
     globals::session_id = UINT16_MAX;
     globals::session_tick_dt = UINT64_MAX;
+    globals::session_send_time = UINT64_MAX;
     globals::session_username = std::string();
     
     if(!globals::session_peer) {
@@ -154,5 +159,6 @@ void session::invalidate(void)
     globals::session_peer = nullptr;
     globals::session_id = UINT16_MAX;
     globals::session_tick_dt = UINT64_MAX;
+    globals::session_send_time = UINT64_MAX;
     globals::session_username = std::string();
 }
