@@ -1,23 +1,22 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#ifndef CLIENT_PROGRESS_BAR_HH
-#define CLIENT_PROGRESS_BAR_HH
+#ifndef CLIENT_PROGRESS_HH
+#define CLIENT_PROGRESS_HH
 #include <string>
 
 using ProgressBarAction = void(*)(void);
 
-namespace progress_bar
+namespace progress
 {
 void init(void);
 void layout(void);
-} // progress_bar
+} // progress
 
-namespace progress_bar
+namespace progress
 {
 void reset(void);
 void set_title(const std::string &title);
 void set_button(const std::string &text, const ProgressBarAction &action);
-void set_progress(float value);
-} // namespace progress_bar
+} // namespace progress
 
-#endif /* CLIENT_PROGRESS_BAR_HH */
+#endif /* CLIENT_PROGRESS_HH */
