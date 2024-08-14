@@ -32,3 +32,9 @@ target_compile_definitions(client PUBLIC GLFW_INCLUDE_NONE)
 target_include_directories(client PUBLIC "${CMAKE_SOURCE_DIR}")
 target_link_libraries(client PUBLIC glad glfw imgui imgui_glfw imgui_opengl3)
 target_link_libraries(client PUBLIC shared)
+
+if(WIN32 AND MSVC)
+    # GLFW defines APIENTRY and ENet includes
+    # Windows API headers which also define APIENTRY
+    target_compile_options(client PRIVATE /wd4005)
+endif()

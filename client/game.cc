@@ -218,7 +218,7 @@ void client_game::init(void)
     style.Colors[ImGuiCol_CheckMark]                = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     style.Colors[ImGuiCol_SliderGrab]               = ImVec4(0.81f, 0.81f, 0.81f, 0.75f);
     style.Colors[ImGuiCol_SliderGrabActive]         = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
-    style.Colors[ImGuiCol_Button]                   = ImVec4(0.00f, 0.00f, 0.00f, 0.95f);
+    style.Colors[ImGuiCol_Button]                   = ImVec4(0.00f, 0.00f, 0.00f, 1.00f);
     style.Colors[ImGuiCol_ButtonHovered]            = ImVec4(0.12f, 0.12f, 0.12f, 1.00f);
     style.Colors[ImGuiCol_ButtonActive]             = ImVec4(0.25f, 0.25f, 0.25f, 1.00f);
     style.Colors[ImGuiCol_Header]                   = ImVec4(0.00f, 0.00f, 0.00f, 0.75f);
@@ -355,6 +355,7 @@ void client_game::update_late(void)
             request.password_hash = UINT64_MAX; // FIXME
             request.vdef_checksum = UINT64_MAX; // FIXME
             request.player_uid = globals::player_uid;
+            request.username = session::username;
 
             protocol::send_packet(event.peer, request);
 
@@ -365,10 +366,22 @@ void client_game::update_late(void)
         }
 
         if(event.type == ENET_EVENT_TYPE_DISCONNECT) {
+            if(session::peer) {
+                message_box::reset();
+                message_box::set_title("Connection failed");
+                message_box::set_subtitle("ENet peer timed out");
+                message_box::add_button("Back to Menu", [](void) {
+                    globals::gui_screen = GUI_MAIN_MENU;
+                });
+                
+                globals::gui_screen = GUI_MESSAGE_BOX;
+            }
+            
             session::session_id = UINT16_MAX;
             session::tick_time = UINT64_MAX;
             session::username = std::string();
             session::peer = nullptr;
+
             continue;
         }
 
