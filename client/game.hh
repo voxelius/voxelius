@@ -2,16 +2,23 @@
 // Copyright (C) 2024, Voxelius Contributors
 #ifndef CLIENT_GAME_HH
 #define CLIENT_GAME_HH
+#include <cstdint>
 #include <string>
 
 namespace client_game
 {
 extern bool vertical_sync;
 extern bool world_curvature;
-extern std::string username;
 extern unsigned int pixel_size;
 extern unsigned int fog_mode;
 } // namespace client_game
+
+namespace client_game
+{
+extern std::string username;
+extern std::uint64_t player_uid;
+} // namespace client_game
+
 
 namespace client_game
 {

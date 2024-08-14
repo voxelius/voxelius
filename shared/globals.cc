@@ -12,5 +12,3 @@ std::uint64_t globals::framecount = 0;
 
 entt::dispatcher globals::dispatcher = {};
 entt::registry globals::registry = {};
-
-ENetHost *globals::host = nullptr;

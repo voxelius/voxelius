@@ -22,6 +22,7 @@
 #include <shared/vdef.hh>
 #include <shared/world.hh>
 #include <spdlog/spdlog.h>
+#include <shared/protocol.hh>
 
 #include <random>
 
@@ -108,12 +109,12 @@ void debug_session::update(void)
 
 void debug_session::run(void)
 {
-    if(session::peer) {
+    if(globals::session_peer) {
         // Ain't gonna run this twice
         return;
     }
 
-    session::connect("localhost", protocol::PORT, "generic");
+    session::connect("localhost", protocol::PORT);
 
 /*
     if(globals::registry.valid(globals::player)) {

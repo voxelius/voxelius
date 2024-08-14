@@ -36,7 +36,9 @@
 #include <imgui.h>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
+#include <shared/epoch.hh>
 #include <shared/fstools.hh>
+#include <shared/protocol.hh>
 #include <shared/ray_dda.hh>
 #include <shared/world.hh>
 #include <shared/config.hh>
@@ -44,9 +46,11 @@
 
 bool client_game::vertical_sync = true;
 bool client_game::world_curvature = true;
-std::string client_game::username = "player";
 unsigned int client_game::pixel_size = 4U;
 unsigned int client_game::fog_mode = 1U;
+
+std::string client_game::username = "player";
+std::uint64_t client_game::player_uid = UINT64_MAX;
 
 static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
 {
@@ -139,11 +143,15 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
 
 void client_game::init(void)
 {
+    client_game::player_uid = epoch::microseconds();
+    
     Config::add(globals::client_config, "game.vertical_sync", client_game::vertical_sync);
     Config::add(globals::client_config, "game.world_curvature", client_game::world_curvature);
-    Config::add(globals::client_config, "game.username", client_game::username);
     Config::add(globals::client_config, "game.pixel_size", client_game::pixel_size);
     Config::add(globals::client_config, "game.fog_mode", client_game::fog_mode);
+
+    Config::add(globals::client_config, "game.username", client_game::username);
+    Config::add(globals::client_config, "game.player_uid", client_game::player_uid);
 
     settings::add_checkbox(5, settings::VIDEO, "game.vertical_sync", client_game::vertical_sync, false);
     settings::add_checkbox(4, settings::VIDEO, "game.world_curvature", client_game::world_curvature, true);
@@ -151,9 +159,9 @@ void client_game::init(void)
     settings::add_slider(1, settings::VIDEO, "game.pixel_size", client_game::pixel_size, 1U, 4U, true);
     settings::add_stepper(3, settings::VIDEO, "game.fog_mode", client_game::fog_mode, 3U, false);
 
-    globals::host = enet_host_create(nullptr, 1, 1, 0, 0);
+    globals::client_host = enet_host_create(nullptr, 1, 1, 0, 0);
 
-    if(!globals::host) {
+    if(!globals::client_host) {
         spdlog::critical("game: unable to setup an ENet host");
         std::terminate();
     }
@@ -292,7 +300,7 @@ void client_game::init_late(void)
 
 void client_game::deinit(void)
 {
-    session::disconnect("Client shutdown");
+    session::disconnect("disconnect.client_shutdown");
 
     voxel_atlas::destroy();
 
@@ -316,7 +324,7 @@ void client_game::deinit(void)
     // to safely deallocate anything OpenGL
     globals::registry.clear();
 
-    enet_host_destroy(globals::host);
+    enet_host_destroy(globals::client_host);
 }
 
 void client_game::update(void)
@@ -348,40 +356,14 @@ void client_game::update_late(void)
 
     ENetEvent event = {};
 
-    while(enet_host_service(globals::host, &event, 0) > 0) {
+    while(enet_host_service(globals::client_host, &event, 0) > 0) {
         if(event.type == ENET_EVENT_TYPE_CONNECT) {
-            protocol::LoginRequest request = {};
-            request.version = protocol::VERSION;
-            request.password_hash = UINT64_MAX; // FIXME
-            request.vdef_checksum = UINT64_MAX; // FIXME
-            request.player_uid = globals::player_uid;
-            request.username = session::username;
-
-            protocol::send_packet(event.peer, request);
-
-            progress::set_title("Logging in");
-            globals::gui_screen = GUI_PROGRESS;
-
+            session::send_login_request();
             continue;
         }
 
         if(event.type == ENET_EVENT_TYPE_DISCONNECT) {
-            if(session::peer) {
-                message_box::reset();
-                message_box::set_title("Connection failed");
-                message_box::set_subtitle("ENet peer timed out");
-                message_box::add_button("Back to Menu", [](void) {
-                    globals::gui_screen = GUI_MAIN_MENU;
-                });
-                
-                globals::gui_screen = GUI_MESSAGE_BOX;
-            }
-            
-            session::session_id = UINT16_MAX;
-            session::tick_time = UINT64_MAX;
-            session::username = std::string();
-            session::peer = nullptr;
-
+            session::invalidate();
             continue;
         }
 

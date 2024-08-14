@@ -15,8 +15,14 @@ float globals::aspect = 0.0f;
 std::size_t globals::num_drawcalls = 0;
 std::size_t globals::num_triangles = 0;
 
+ENetHost *globals::client_host = nullptr;
+
+ENetPeer *globals::session_peer = nullptr;
+std::uint16_t globals::session_id = UINT16_MAX;
+std::uint64_t globals::session_tick_dt = UINT64_MAX;
+std::string globals::session_username = std::string();
+
 entt::entity globals::player = entt::null;
-std::uint64_t globals::player_uid = 0U;
 
 GLuint globals::world_fbo = 0;
 GLuint globals::world_fbo_color = 0;

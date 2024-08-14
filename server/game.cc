@@ -33,9 +33,9 @@ void server_game::init_late(void)
     address.host = ENET_HOST_ANY;
     address.port = listen_port;
 
-    globals::host = enet_host_create(&address, sessions::max_players + status_peers, 1, 0, 0);
+    globals::server_host = enet_host_create(&address, sessions::max_players + status_peers, 1, 0, 0);
 
-    if(!globals::host) {
+    if(!globals::server_host) {
         spdlog::critical("game: unable to setup an ENet host");
         std::terminate();
     }
@@ -48,7 +48,7 @@ void server_game::deinit(void)
 {
     sessions::deinit();
 
-    enet_host_destroy(globals::host);
+    enet_host_destroy(globals::server_host);
 }
 
 void server_game::update(void)
@@ -60,7 +60,7 @@ void server_game::update_late(void)
 {    
     ENetEvent event = {};
 
-    while(enet_host_service(globals::host, &event, 0) > 0) {
+    while(enet_host_service(globals::server_host, &event, 0) > 0) {
         if(event.type == ENET_EVENT_TYPE_DISCONNECT) {
             sessions::destroy(sessions::find(event.peer));
             continue;
