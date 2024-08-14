@@ -42,6 +42,7 @@
   "settings.tooltip.background.panorama": "WIP",
   "settings.tooltip.game.world_curvature": "Simulate Earth's\nhorizon warping",
   "settings.tooltip.game.pixel_size": "Draw the world into a fraction of the window's frame size",
+  "settings.tooltip.game.username": "Username changes apply only upon reconnecting",
   "settings.tooltip.mouse.enable_raw_input": "Bypass Operating System's mouse handling and instead deal with cursor movement internally",
   "settings.tooltip.mouse.sensitivity": "Specifies the rate at which cursor movement on 2D screen is reflected by the camera"
 }

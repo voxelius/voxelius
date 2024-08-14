@@ -11,6 +11,7 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/crc64.cc"
     "${CMAKE_CURRENT_LIST_DIR}/epoch.cc"
     "${CMAKE_CURRENT_LIST_DIR}/fstools.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/game_voxels.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
     "${CMAKE_CURRENT_LIST_DIR}/image.cc"
     "${CMAKE_CURRENT_LIST_DIR}/protocol.cc"

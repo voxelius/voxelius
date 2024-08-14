@@ -38,6 +38,7 @@
 #include <shared/entity/velocity.hh>
 #include <shared/epoch.hh>
 #include <shared/fstools.hh>
+#include <shared/game_voxels.hh>
 #include <shared/protocol.hh>
 #include <shared/ray_dda.hh>
 #include <shared/world.hh>
@@ -155,9 +156,10 @@ void client_game::init(void)
 
     settings::add_checkbox(5, settings::VIDEO, "game.vertical_sync", client_game::vertical_sync, false);
     settings::add_checkbox(4, settings::VIDEO, "game.world_curvature", client_game::world_curvature, true);
-    settings::add_input(1, settings::GENERAL, "game.username", client_game::username, false, false);
     settings::add_slider(1, settings::VIDEO, "game.pixel_size", client_game::pixel_size, 1U, 4U, true);
     settings::add_stepper(3, settings::VIDEO, "game.fog_mode", client_game::fog_mode, 3U, false);
+
+    settings::add_input(1, settings::GENERAL, "game.username", client_game::username, true, false);
 
     globals::client_host = enet_host_create(nullptr, 1, 1, 0, 0);
 
@@ -296,6 +298,38 @@ void client_game::init_late(void)
     language::init_late();
 
     settings::init_late();
+
+    game_voxels::populate();
+
+    std::size_t max_texture_count = 0;
+
+    // Figure out the total texture count
+    // NOTE: this is very debug, early and a quite
+    // conservative limit choice; there must be a better
+    // way to make this limit way smaller than it currently is
+    for(const VoxelInfo &info : vdef::voxels) {
+        for(const VoxelTexture &vtex : info.textures) {
+            max_texture_count += vtex.paths.size();
+        }
+    }
+
+    // UNDONE: asset packs for non-16x16 stuff
+    voxel_atlas::create(16, 16, max_texture_count);
+
+    for(VoxelInfo &info : vdef::voxels) {
+        for(VoxelTexture &vtex : info.textures) {
+            if(AtlasStrip *strip = voxel_atlas::find_or_load(vtex.paths)) {
+                vtex.cached_offset = strip->offset;
+                vtex.cached_plane = strip->plane;
+                continue;
+            }
+            
+            spdlog::critical("debug_session: {}: failed to load atlas strips", info.name);
+            std::terminate();
+        }
+    }
+
+    voxel_atlas::generate_mipmaps();
 }
 
 void client_game::deinit(void)
