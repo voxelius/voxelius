@@ -1,15 +1,23 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
+#include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <shared/math/constexpr.hh>
 #include <shared/config.hh>
 #include <shared/protocol.hh>
 #include <server/globals.hh>
+#include <server/send.hh>
 #include <server/sessions.hh>
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/spdlog.h>
 #include <unordered_map>
 #include <vector>
+
+// This is not a good idea
+#include <shared/entity/head.hh>
+#include <shared/entity/player.hh>
+#include <shared/entity/transform.hh>
+#include <shared/entity/velocity.hh>
 
 unsigned int sessions::max_players = 16U;
 unsigned int sessions::num_players = 0U;
@@ -56,7 +64,23 @@ static void on_login_request(const protocol::LoginRequest &packet)
 
         spdlog::info("sessions: {} [{}] logged in with session_id={}", session->username, session->player_uid, session->session_id);
 
-        // UNDONE: send all the world entity information here
+        session->player = globals::registry.create();
+        globals::registry.emplace<HeadComponent>(session->player, HeadComponent());
+        globals::registry.emplace<PlayerComponent>(session->player, PlayerComponent());
+        globals::registry.emplace<TransformComponent>(session->player, TransformComponent());
+        globals::registry.emplace<VelocityComponent>(session->player, VelocityComponent());
+
+        // FIXME: this is not a good idea
+        globals::registry.each([session](const entt::entity entity) {
+            server_send::chunk(session, entity);
+            server_send::head(session, entity);
+            server_send::transform(session, entity);
+            server_send::velocity(session, entity);
+        });
+
+        protocol::SpawnPlayer result = {};
+        result.entity = session->player;
+        protocol::send_packet(session->peer, result);
 
         return;
     }

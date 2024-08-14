@@ -20,6 +20,7 @@ ENetHost *globals::client_host = nullptr;
 ENetPeer *globals::session_peer = nullptr;
 std::uint16_t globals::session_id = UINT16_MAX;
 std::uint64_t globals::session_tick_dt = UINT64_MAX;
+std::uint64_t globals::session_send_time = UINT64_MAX;
 std::string globals::session_username = std::string();
 
 entt::entity globals::player = entt::null;

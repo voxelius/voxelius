@@ -29,7 +29,6 @@ struct StatusResponse;
 struct LoginRequest;
 struct LoginResponse;
 struct Disconnect;
-struct CreateEntity;
 struct ChunkVoxels;
 struct EntityTransform;
 struct EntityHead;
@@ -46,7 +45,6 @@ void send_packet(ENetPeer *peer, const StatusResponse &packet);
 void send_packet(ENetPeer *peer, const LoginRequest &packet);
 void send_packet(ENetPeer *peer, const LoginResponse &packet);
 void send_packet(ENetPeer *peer, const Disconnect &packet);
-void send_packet(ENetPeer *peer, const CreateEntity &packet);
 void send_packet(ENetPeer *peer, const ChunkVoxels &packet);
 void send_packet(ENetPeer *peer, const EntityTransform &packet);
 void send_packet(ENetPeer *peer, const EntityHead &packet);
@@ -89,43 +87,39 @@ struct protocol::Disconnect final : public protocol::Base<0x0004> {
     std::string reason {};
 };
 
-struct protocol::CreateEntity final : public protocol::Base<0x0005> {
-    entt::entity entity {};
-    std::uint32_t type {};
-};
-
-struct protocol::ChunkVoxels final : public protocol::Base<0x0006> {
+struct protocol::ChunkVoxels final : public protocol::Base<0x0005> {
     entt::entity entity {};
     ChunkCoord chunk {};
     VoxelStorage voxels {};
 };
 
-struct protocol::EntityTransform final : public protocol::Base<0x0007> {
+struct protocol::EntityTransform final : public protocol::Base<0x0006> {
     entt::entity entity {};
     WorldCoord coord {};
     Vec3angles angles {};
 };
 
-struct protocol::EntityHead final : public protocol::Base<0x0008> {
+struct protocol::EntityHead final : public protocol::Base<0x0007> {
     entt::entity entity {};
     Vec3angles angles {};
 };
 
-struct protocol::EntityVelocity final : public protocol::Base<0x0009> {
+struct protocol::EntityVelocity final : public protocol::Base<0x0008> {
     entt::entity entity {};
-    Vec3f value {};
+    Vec3angles angular {};
+    Vec3f linear {};
 };
 
-struct protocol::SpawnPlayer final : public protocol::Base<0x000A> {
+struct protocol::SpawnPlayer final : public protocol::Base<0x0009> {
     entt::entity entity {};
 };
 
-struct protocol::ChatMessage final : public protocol::Base<0x000B> {
+struct protocol::ChatMessage final : public protocol::Base<0x000A> {
     std::uint16_t type {};
     std::string message {};
 };
 
-struct protocol::SetVoxel final : public protocol::Base<0x000C> {
+struct protocol::SetVoxel final : public protocol::Base<0x000B> {
     VoxelCoord coord {};
     Voxel voxel {};
     std::uint16_t flags {};

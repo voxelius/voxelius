@@ -34,6 +34,7 @@ extern ENetHost *client_host;
 extern ENetPeer *session_peer;
 extern std::uint16_t session_id;
 extern std::uint64_t session_tick_dt;
+extern std::uint64_t session_send_time;
 extern std::string session_username;
 
 extern entt::entity player;

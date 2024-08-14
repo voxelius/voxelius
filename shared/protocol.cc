@@ -58,15 +58,6 @@ void protocol::send_packet(ENetPeer *peer, const protocol::Disconnect &packet)
     enet_peer_send(peer, 0, RWBuffer::submit(write_buffer, ENET_PACKET_FLAG_RELIABLE));
 }
 
-void protocol::send_packet(ENetPeer *peer, const protocol::CreateEntity &packet)
-{
-    RWBuffer::setup(write_buffer);
-    RWBuffer::write_UI16(write_buffer, protocol::CreateEntity::ID);
-    RWBuffer::write_UI64(write_buffer, static_cast<std::uint64_t>(packet.entity));
-    RWBuffer::write_UI32(write_buffer, packet.type);
-    enet_peer_send(peer, 0, RWBuffer::submit(write_buffer, ENET_PACKET_FLAG_RELIABLE));
-}
-
 void protocol::send_packet(ENetPeer *peer, const protocol::ChunkVoxels &packet)
 {
     RWBuffer::setup(write_buffer);
@@ -112,9 +103,12 @@ void protocol::send_packet(ENetPeer *peer, const protocol::EntityVelocity &packe
     RWBuffer::setup(write_buffer);
     RWBuffer::write_UI16(write_buffer, protocol::EntityVelocity::ID);
     RWBuffer::write_UI64(write_buffer, static_cast<std::uint64_t>(packet.entity));
-    RWBuffer::write_FP32(write_buffer, packet.value[0]);
-    RWBuffer::write_FP32(write_buffer, packet.value[1]);
-    RWBuffer::write_FP32(write_buffer, packet.value[2]);
+    RWBuffer::write_FP32(write_buffer, packet.angular[0]);
+    RWBuffer::write_FP32(write_buffer, packet.angular[1]);
+    RWBuffer::write_FP32(write_buffer, packet.angular[2]);
+    RWBuffer::write_FP32(write_buffer, packet.linear[0]);
+    RWBuffer::write_FP32(write_buffer, packet.linear[1]);
+    RWBuffer::write_FP32(write_buffer, packet.linear[2]);
     enet_peer_send(peer, 0, RWBuffer::submit(write_buffer, ENET_PACKET_FLAG_RELIABLE));
 }
 
@@ -156,7 +150,6 @@ void protocol::handle_packet(const ENetPacket *packet, ENetPeer *peer)
     protocol::LoginRequest login_request = {};
     protocol::LoginResponse login_response = {};
     protocol::Disconnect disconnect = {};
-    protocol::CreateEntity create_entity = {};
     protocol::ChunkVoxels chunk_voxels = {};
     protocol::EntityTransform entity_transform = {};
     protocol::EntityHead entity_head = {};
@@ -199,12 +192,6 @@ void protocol::handle_packet(const ENetPacket *packet, ENetPeer *peer)
             disconnect.reason = RWBuffer::read_string(read_buffer);
             globals::dispatcher.trigger(disconnect);
             break;
-        case protocol::CreateEntity::ID:
-            create_entity.peer = peer;
-            create_entity.entity = static_cast<entt::entity>(RWBuffer::read_UI64(read_buffer));
-            create_entity.type = RWBuffer::read_UI32(read_buffer);
-            globals::dispatcher.trigger(create_entity);
-            break;
         case protocol::ChunkVoxels::ID:
             chunk_voxels.peer = peer;
             chunk_voxels.entity = static_cast<entt::entity>(RWBuffer::read_UI64(read_buffer));
@@ -239,9 +226,12 @@ void protocol::handle_packet(const ENetPacket *packet, ENetPeer *peer)
         case protocol::EntityVelocity::ID:
             entity_velocity.peer = peer;
             entity_velocity.entity = static_cast<entt::entity>(RWBuffer::read_UI64(read_buffer));
-            entity_velocity.value[0] = RWBuffer::read_FP32(read_buffer);
-            entity_velocity.value[1] = RWBuffer::read_FP32(read_buffer);
-            entity_velocity.value[2] = RWBuffer::read_FP32(read_buffer);
+            entity_velocity.angular[0] = RWBuffer::read_FP32(read_buffer);
+            entity_velocity.angular[1] = RWBuffer::read_FP32(read_buffer);
+            entity_velocity.angular[2] = RWBuffer::read_FP32(read_buffer);
+            entity_velocity.linear[0] = RWBuffer::read_FP32(read_buffer);
+            entity_velocity.linear[1] = RWBuffer::read_FP32(read_buffer);
+            entity_velocity.linear[2] = RWBuffer::read_FP32(read_buffer);
             globals::dispatcher.trigger(entity_velocity);
             break;
         case protocol::SpawnPlayer::ID:
