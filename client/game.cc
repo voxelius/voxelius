@@ -35,6 +35,7 @@
 #include <GLFW/glfw3.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui.h>
+#include <shared/entity/head.hh>
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
 #include <shared/epoch.hh>
@@ -337,7 +338,10 @@ void client_game::init_late(void)
 
 void client_game::deinit(void)
 {
-    session::disconnect("disconnect.client_shutdown");
+    if(globals::session_peer) {
+        session::disconnect("Client shutdown");
+        while(enet_host_service(globals::client_host, nullptr, 10));
+    }
 
     voxel_atlas::destroy();
 
@@ -414,8 +418,29 @@ void client_game::update_late(void)
     if(globals::session_peer && (globals::curtime >= globals::session_send_time)) {
         globals::session_send_time = globals::curtime + globals::session_tick_dt;
 
-        // Send stuff here
+        if(globals::registry.valid(globals::player)) {
+            const auto &tform = globals::registry.get<TransformComponent>(globals::player);
+            const auto &velocity = globals::registry.get<VelocityComponent>(globals::player);
+            const auto &head = globals::registry.get<HeadComponent>(globals::player);
 
+            protocol::EntityTransform tform_packet = {};
+            tform_packet.entity = entt::null;
+            tform_packet.angles = tform.angles;
+            tform_packet.coord = tform.position;
+
+            protocol::EntityVelocity velocity_packet = {};
+            velocity_packet.entity = entt::null;
+            velocity_packet.angular = velocity.angular;
+            velocity_packet.linear = velocity.linear;
+
+            protocol::EntityHead head_packet = {};
+            head_packet.entity = entt::null;
+            head_packet.angles = head.angles;
+
+            protocol::send_packet(globals::session_peer, tform_packet);
+            protocol::send_packet(globals::session_peer, velocity_packet);
+            protocol::send_packet(globals::session_peer, head_packet);
+        }
     }
 }
 

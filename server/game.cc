@@ -1,5 +1,10 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
+#include <entt/entity/registry.hpp>
+#include <shared/entity/head.hh>
+#include <shared/entity/player.hh>
+#include <shared/entity/transform.hh>
+#include <shared/entity/velocity.hh>
 #include <shared/math/constexpr.hh>
 #include <shared/config.hh>
 #include <shared/game_voxels.hh>
@@ -7,6 +12,7 @@
 #include <server/game.hh>
 #include <server/globals.hh>
 #include <server/sessions.hh>
+#include <server/recv.hh>
 #include <server/status.hh>
 #include <spdlog/spdlog.h>
 
@@ -21,6 +27,8 @@ void server_game::init(void)
     sessions::init();
 
     status::init();
+
+    server_recv::init();
 }
 
 void server_game::init_late(void)
@@ -56,7 +64,13 @@ void server_game::deinit(void)
 
 void server_game::update(void)
 {
-    
+    const auto group = globals::registry.group<PlayerComponent, HeadComponent, TransformComponent, VelocityComponent>();
+
+    for(const auto [entity, head, transform, velocity] : group.each()) {
+        spdlog::info("player: {} {} {} / {} {} {}",
+            transform.position.chunk[0], transform.position.chunk[1], transform.position.chunk[2],
+            transform.position.local[0], transform.position.local[1], transform.position.local[2]);
+    }
 }
 
 void server_game::update_late(void)
