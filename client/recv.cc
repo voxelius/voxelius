@@ -10,6 +10,21 @@
 #include <shared/entity/transform.hh>
 #include <shared/entity/velocity.hh>
 #include <shared/protocol.hh>
+#include <shared/world.hh>
+
+static void on_chunk_voxels(const protocol::ChunkVoxels &packet)
+{
+    if(!globals::registry.valid(packet.entity)) {
+        Chunk *chunk = world::create_chunk(packet.chunk, packet.entity);
+        chunk->voxels = packet.voxels;
+        return;
+    }
+
+    if(Chunk *chunk = world::find_chunk(packet.chunk)) {
+        chunk->voxels = packet.voxels;
+        return;
+    }
+}
 
 static void on_entity_head(const protocol::EntityHead &packet)
 {
@@ -48,6 +63,7 @@ static void on_spawn_player(const protocol::SpawnPlayer &packet)
 
 void client_recv::init(void)
 {
+    globals::dispatcher.sink<protocol::ChunkVoxels>().connect<&on_chunk_voxels>();
     globals::dispatcher.sink<protocol::EntityHead>().connect<&on_entity_head>();
     globals::dispatcher.sink<protocol::EntityTransform>().connect<&on_entity_transform>();
     globals::dispatcher.sink<protocol::EntityVelocity>().connect<&on_entity_velocity>();

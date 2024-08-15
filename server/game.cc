@@ -16,8 +16,62 @@
 #include <server/status.hh>
 #include <spdlog/spdlog.h>
 
+// Debug includes
+#include <FastNoiseLite.h>
+#include <shared/world.hh>
+#include <random>
+
 static unsigned int listen_port = protocol::PORT;
 static unsigned int status_peers = 4U;
+
+// Surface level for world generation
+constexpr static const int64_t SURFACE = 0;
+
+static fnl_state noise = {};
+
+// This is VERY SLOW
+// UNDONE/TODO: move this into server worldgen code
+static Voxel voxel_at(const VoxelCoord &vpos)
+{
+    static std::uniform_int_distribution intdist = std::uniform_int_distribution(-2, +2);
+    static std::mt19937_64 twister = std::mt19937_64(std::random_device()());
+    int64_t surf = SURFACE + 16.0f * fnlGetNoise2D(&noise, vpos[0] / 2.0f, vpos[2] / 2.0f);
+    if(vpos[1] <= surf - 32 + intdist(twister))
+        return game_voxels::slate;
+    if(vpos[1] <= surf - 8 + intdist(twister))
+        return game_voxels::stone;
+    if(vpos[1] <= surf - 1)
+        return game_voxels::dirt;
+    if(vpos[1] <= surf)
+        return game_voxels::grass;
+    return NULL_VOXEL;
+}
+
+static void generate(const ChunkCoord &cpos)
+{
+    spdlog::trace("generating {} {} {}", cpos[0], cpos[1], cpos[2]);
+
+    VoxelStorage voxels = {};
+    bool voxels_dirty = false;
+    
+    for(std::size_t i = 0; i < CHUNK_VOLUME; ++i) {
+
+        const auto lpos = LocalCoord::from_index(i);
+        const auto vpos = ChunkCoord::to_voxel(cpos, lpos);
+        const auto voxel = voxel_at(vpos);
+
+        if(voxel != NULL_VOXEL) {
+            voxels_dirty = true;
+            voxels[i] = voxel;
+            continue;
+        }
+    }
+
+    if(voxels_dirty) {
+        Chunk *chunk = world::find_or_create_chunk(cpos);
+        chunk->voxels = voxels;
+    }
+}
 
 void server_game::init(void)
 {
@@ -53,6 +107,29 @@ void server_game::init_late(void)
     spdlog::info("game: host: listening on UDP port {}", address.port);
 
     game_voxels::populate();
+
+    // Debug
+
+    noise = fnlCreateState();
+    noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
+    noise.fractal_type = FNL_FRACTAL_RIDGED;
+
+    constexpr int WSIZE = 8;
+    for(int x = -WSIZE; x < WSIZE; x += 1)
+    for(int z = -WSIZE; z < WSIZE; z += 1)
+    for(int y = -2; y < 1; y += 1) {
+        generate({x, y, z});
+    }
+
+    constexpr int DWSIZE = 2 * WSIZE;
+    for(int x = -DWSIZE; x < DWSIZE; ++x)
+    for(int z = -DWSIZE; z < DWSIZE; ++z) {
+        Chunk *chunk = world::find_or_create_chunk({x, -3, z});
+        chunk->voxels.fill(game_voxels::stone);
+    }
+
+    Chunk *chunk = world::find_or_create_chunk({0, 4, 0});
+    chunk->voxels.fill(game_voxels::vtest);
 }
 
 void server_game::deinit(void)
