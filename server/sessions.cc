@@ -90,11 +90,22 @@ static void on_login_request(const protocol::LoginRequest &packet)
     protocol::send_packet(packet.peer, response);
 }
 
+static void on_disconnect(const protocol::Disconnect &packet)
+{
+    if(Session *session = sessions::find(packet.peer)) {
+        spdlog::info("sessions: {} disconnected: {}", session->username, packet.reason);
+        if(globals::registry.valid(session->player))
+            globals::registry.destroy(session->player);
+        sessions::destroy(session);
+    }
+}
+
 void sessions::init(void)
 {
     Config::add(globals::server_config, "sessions.max_players", sessions::max_players);
 
     globals::dispatcher.sink<protocol::LoginRequest>().connect<&on_login_request>();
+    globals::dispatcher.sink<protocol::Disconnect>().connect<&on_disconnect>();
 }
 
 void sessions::init_late(void)
