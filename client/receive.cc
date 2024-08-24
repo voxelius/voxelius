@@ -4,7 +4,7 @@
 #include <entt/signal/dispatcher.hpp>
 #include <client/globals.hh>
 #include <client/gui_screen.hh>
-#include <client/recv.hh>
+#include <client/receive.hh>
 #include <shared/entity/head.hh>
 #include <shared/entity/player.hh>
 #include <shared/entity/transform.hh>
@@ -61,7 +61,7 @@ static void on_spawn_player(const protocol::SpawnPlayer &packet)
     globals::gui_screen = GUI_SCREEN_NONE;
 }
 
-void client_recv::init(void)
+void client_receive::init(void)
 {
     globals::dispatcher.sink<protocol::ChunkVoxels>().connect<&on_chunk_voxels>();
     globals::dispatcher.sink<protocol::EntityHead>().connect<&on_entity_head>();

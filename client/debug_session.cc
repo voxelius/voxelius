@@ -66,7 +66,7 @@ void debug_session::run(void)
         return;
     }
 
-    session::connect("localhost", protocol::PORT);
+    session::connect("untode.su", protocol::PORT);
 
 /*
     if(globals::registry.valid(globals::player)) {
