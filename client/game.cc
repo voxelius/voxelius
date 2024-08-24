@@ -22,7 +22,7 @@
 #include <client/outline_renderer.hh>
 #include <client/player_target.hh>
 #include <client/progress.hh>
-#include <client/recv.hh>
+#include <client/receive.hh>
 #include <client/screenshot.hh>
 #include <client/server_list.hh>
 #include <client/session.hh>
@@ -333,7 +333,7 @@ void client_game::init_late(void)
 
     voxel_atlas::generate_mipmaps();
 
-    client_recv::init();
+    client_receive::init();
 }
 
 void client_game::deinit(void)

@@ -12,7 +12,7 @@
 #include <server/game.hh>
 #include <server/globals.hh>
 #include <server/sessions.hh>
-#include <server/recv.hh>
+#include <server/receive.hh>
 #include <server/status.hh>
 #include <spdlog/spdlog.h>
 
@@ -82,7 +82,7 @@ void server_game::init(void)
 
     status::init();
 
-    server_recv::init();
+    server_recieve::init();
 }
 
 void server_game::init_late(void)

@@ -7,7 +7,7 @@
 #include <shared/entity/velocity.hh>
 #include <shared/protocol.hh>
 #include <server/globals.hh>
-#include <server/recv.hh>
+#include <server/receive.hh>
 #include <server/sessions.hh>
 
 static void on_entity_transform(const protocol::EntityTransform &packet)
@@ -42,7 +42,7 @@ static void on_entity_head(const protocol::EntityHead &packet)
     }
 }
 
-void server_recv::init(void)
+void server_recieve::init(void)
 {
     globals::dispatcher.sink<protocol::EntityTransform>().connect<&on_entity_transform>();
     globals::dispatcher.sink<protocol::EntityVelocity>().connect<&on_entity_velocity>();
