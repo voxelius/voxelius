@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
+#include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <game/client/game.hh>
 #include <game/client/globals.hh>
@@ -27,7 +28,7 @@ static void on_login_response(const protocol::LoginResponse &packet)
 static void on_disconnect(const protocol::Disconnect &packet)
 {
     enet_peer_disconnect(globals::session_peer, 0);
-    
+
     spdlog::info("session: disconnected: {}", packet.reason);
 
     globals::session_peer = nullptr;
@@ -35,6 +36,9 @@ static void on_disconnect(const protocol::Disconnect &packet)
     globals::session_tick_dt = UINT64_MAX;
     globals::session_send_time = UINT64_MAX;
     globals::session_username = std::string();
+
+    globals::player = entt::null;
+    globals::registry.clear();
 
     message_box::reset();
     message_box::set_title("Disconnected");

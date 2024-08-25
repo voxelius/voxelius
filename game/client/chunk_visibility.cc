@@ -31,7 +31,7 @@ void chunk_visibility::update_chunk(entt::entity entity)
 
 void chunk_visibility::update_chunk(const ChunkCoord &cvec)
 {
-    if(const Chunk *chunk = world::find_chunk(cvec)) {
+    if(const Chunk *chunk = world::find(cvec)) {
         if(is_visible(cvec))
             globals::registry.emplace_or_replace<ChunkVisibleComponent>(chunk->entity);
         else globals::registry.remove<ChunkVisibleComponent>(chunk->entity);

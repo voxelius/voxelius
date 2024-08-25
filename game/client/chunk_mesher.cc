@@ -148,7 +148,7 @@ static void make_cube(WorkerContext *ctx, Voxel voxel, const VoxelInfo *info, co
 static void cache_chunk(WorkerContext *ctx, const ChunkCoord &cpos)
 {
     const auto index = get_cached_cpos(ctx->coord, cpos);
-    if(const Chunk *chunk = world::find_chunk(cpos)) {
+    if(const Chunk *chunk = world::find(cpos)) {
         ctx->cache[index] = chunk->voxels;
         return;
     }
@@ -263,7 +263,7 @@ static void on_chunk_create(const ChunkCreateEvent &event)
     globals::registry.emplace_or_replace<NeedsMeshingComponent>(event.chunk->entity);
 
     for(const ChunkCoord &cpos : neighbours) {
-        if(const Chunk *chunk = world::find_chunk(cpos)) {
+        if(const Chunk *chunk = world::find(cpos)) {
             globals::registry.emplace_or_replace<NeedsMeshingComponent>(chunk->entity);
             continue;
         }
@@ -300,7 +300,7 @@ static void on_voxel_set(const VoxelSetEvent &event)
     }
 
     for(const ChunkCoord &cpos : neighbours) {
-        if(const Chunk *chunk = world::find_chunk(cpos)) {
+        if(const Chunk *chunk = world::find(cpos)) {
             globals::registry.emplace_or_replace<NeedsMeshingComponent>(chunk->entity);
             continue;
         }
@@ -344,7 +344,7 @@ void chunk_mesher::update(void)
             continue;
         }
 
-        if(const Chunk *chunk = world::find_chunk(worker->second->coord)) {
+        if(const Chunk *chunk = world::find(worker->second->coord)) {
             if(globals::registry.any_of<NeedsMeshingComponent>(chunk->entity)) {
                 worker = workers.erase(worker);
                 continue;

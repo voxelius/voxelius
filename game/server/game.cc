@@ -68,7 +68,7 @@ static void generate(const ChunkCoord &cpos)
     }
 
     if(voxels_dirty) {
-        Chunk *chunk = world::find_or_create_chunk(cpos);
+        Chunk *chunk = world::assign(cpos, globals::registry.create());
         chunk->voxels = voxels;
     }
 }
@@ -83,6 +83,8 @@ void server_game::init(void)
     status::init();
 
     server_recieve::init();
+
+    world::init();
 }
 
 void server_game::init_late(void)
@@ -124,11 +126,17 @@ void server_game::init_late(void)
     constexpr int DWSIZE = 2 * WSIZE;
     for(int x = -DWSIZE; x < DWSIZE; ++x)
     for(int z = -DWSIZE; z < DWSIZE; ++z) {
-        Chunk *chunk = world::find_or_create_chunk({x, -3, z});
+        const auto pos = ChunkCoord(x, -3, z);
+        Chunk *chunk = world::find(pos);
+        if(!chunk)
+            chunk = world::assign(pos, globals::registry.create());
         chunk->voxels.fill(game_voxels::stone);
     }
 
-    Chunk *chunk = world::find_or_create_chunk({0, 4, 0});
+    const auto pos = ChunkCoord(0, 4, 0);
+    Chunk *chunk = world::find(pos);
+    if(!chunk)
+        chunk = world::assign(pos, globals::registry.create());
     chunk->voxels.fill(game_voxels::vtest);
 }
 

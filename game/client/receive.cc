@@ -5,25 +5,30 @@
 #include <game/client/globals.hh>
 #include <game/client/gui_screen.hh>
 #include <game/client/receive.hh>
+#include <game/client/session.hh>
 #include <game/shared/entity/head.hh>
 #include <game/shared/entity/player.hh>
 #include <game/shared/entity/transform.hh>
 #include <game/shared/entity/velocity.hh>
 #include <game/shared/protocol.hh>
 #include <game/shared/world.hh>
+#include <spdlog/spdlog.h>
 
 static void on_chunk_voxels(const protocol::ChunkVoxels &packet)
 {
     if(!globals::registry.valid(packet.entity)) {
-        Chunk *chunk = world::create_chunk(packet.chunk, packet.entity);
-        chunk->voxels = packet.voxels;
-        return;
+        entt::entity created = globals::registry.create(packet.entity);
+
+        if(created != packet.entity) {
+            globals::registry.destroy(created);
+            session::disconnect("chunk entity mismatch");
+            spdlog::critical("receive: chunk entity mismatch");
+            return;
+        }
     }
 
-    if(Chunk *chunk = world::find_chunk(packet.chunk)) {
-        chunk->voxels = packet.voxels;
-        return;
-    }
+    Chunk *chunk = world::assign(packet.chunk, packet.entity);
+    chunk->voxels = packet.voxels;
 }
 
 static void on_entity_head(const protocol::EntityHead &packet)

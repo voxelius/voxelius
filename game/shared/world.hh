@@ -5,25 +5,20 @@
 
 namespace world
 {
-Chunk *create_chunk(const ChunkCoord &cpos, entt::entity entity);
+void init(void);
 } // namespace world
 
 namespace world
 {
-Chunk *find_or_create_chunk(const ChunkCoord &cpos);
-Chunk *find_chunk(const ChunkCoord &cpos);
-void remove_chunk(const ChunkCoord &cpos);
-void purge_chunks(void);
+Chunk *assign(const ChunkCoord &cpos, entt::entity entity);
+Chunk *find(const ChunkCoord &cpos);
+Chunk *find(entt::entity entity);
 } // namespace world
 
 namespace world
 {
 Voxel get_voxel(const VoxelCoord &vpos);
 Voxel get_voxel(const ChunkCoord &cpos, const LocalCoord &lpos);
-} // namespace world
-
-namespace world
-{
-void set_voxel(Voxel voxel, const VoxelCoord &vpos);
-void set_voxel(Voxel voxel, const ChunkCoord &cpos, const LocalCoord &lpos);
+bool set_voxel(Voxel voxel, const VoxelCoord &vpos);
+bool set_voxel(Voxel voxel, const ChunkCoord &cpos, const LocalCoord &lpos);
 } // namespace world
