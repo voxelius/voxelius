@@ -192,6 +192,8 @@ void client_game::init(void)
 
     outline_renderer::init();
     
+    world::init();
+
     ImGuiStyle &style = ImGui::GetStyle();
 
     // Black buttons on a dark background
@@ -356,13 +358,6 @@ void client_game::deinit(void)
     chunk_renderer::deinit();
     chunk_mesher::deinit();
 
-    world::purge_chunks();
-
-    // This makes sure there are no
-    // objects present that might have
-    // an OpenGL object attached to them
-    // because it is the last time we're able
-    // to safely deallocate anything OpenGL
     globals::registry.clear();
 
     enet_host_destroy(globals::client_host);

@@ -11,79 +11,50 @@
 
 static emhash8::HashMap<ChunkCoord, Chunk *> chunks = {};
 
-// WARNING: this does ZERO checks for entity validity
-// and does ZERO checks for chunk presence; instead, it just
-// force-creates a chunk and links an EXISTING entity to it;
-Chunk *world::create_chunk(const ChunkCoord &cpos, entt::entity entity)
+static void on_destroy_chunk(entt::registry &registry, entt::entity entity)
 {
-    Chunk *chunk = new Chunk();
-    chunk->entity = entity;
-    chunk->voxels.fill(NULL_VOXEL);
+    ChunkComponent &component = registry.get<ChunkComponent>(entity);
+    chunks.erase(component.coord);
+    delete component.chunk;
+}
 
-    auto &component = globals::registry.emplace<ChunkComponent>(chunk->entity);
-    component.chunk = chunk;
+void world::init(void)
+{
+    globals::registry.on_destroy<ChunkComponent>().connect<&on_destroy_chunk>();
+}
+
+Chunk *world::assign(const ChunkCoord &cpos, entt::entity entity)
+{
+    ChunkComponent &component = globals::registry.get_or_emplace<ChunkComponent>(entity);
+    component.chunk = new Chunk();
+    component.chunk->entity = entity;
+    component.chunk->voxels.fill(NULL_VOXEL);
     component.coord = cpos;
 
-    chunks.emplace(cpos, chunk);
+    chunks.emplace(component.coord, component.chunk);
 
     ChunkCreateEvent event = {};
-    event.chunk = chunk;
-    event.coord = cpos;
+    event.chunk = component.chunk;
+    event.coord = component.coord;
 
     globals::dispatcher.trigger(event);
 
-    return chunk;
+    return component.chunk;
 }
 
-Chunk *world::find_or_create_chunk(const ChunkCoord &cpos)
+Chunk *world::find(const ChunkCoord &cpos)
 {
     const auto it = chunks.find(cpos);
-    if(it != chunks.cend())
-        return it->second;
-    return world::create_chunk(cpos, globals::registry.create());
-}
-
-Chunk *world::find_chunk(const ChunkCoord &cpos)
-{
-    const auto it = chunks.find(cpos);
-
     if(it != chunks.cend())
         return it->second;
     return nullptr;
 }
 
-void world::remove_chunk(const ChunkCoord &cpos)
+Chunk *world::find(entt::entity entity)
 {
-    const auto it = chunks.find(cpos);
-
-    if(it != chunks.cend()) {
-        ChunkRemoveEvent event = {};
-        event.chunk = it->second;
-        event.coord = it->first;
-
-        globals::dispatcher.trigger(event);
-
-        globals::registry.destroy(it->second->entity);
-
-        delete it->second;
-
-        chunks.erase(it);
-    }
-}
-
-void world::purge_chunks(void)
-{
-    for(auto it = chunks.begin(); it != chunks.end(); it = chunks.erase(it)) {
-        ChunkRemoveEvent event = {};
-        event.chunk = it->second;
-        event.coord = it->first;
-
-        globals::dispatcher.trigger(event);
-
-        globals::registry.destroy(it->second->entity);
-
-        delete it->second;
-    }
+    if(ChunkComponent *component = globals::registry.try_get<ChunkComponent>(entity))
+        return component->chunk;
+    return nullptr;
 }
 
 Voxel world::get_voxel(const VoxelCoord &vpos)
@@ -101,37 +72,40 @@ Voxel world::get_voxel(const ChunkCoord &cpos, const LocalCoord &lpos)
     const auto index = LocalCoord::to_index(rlpos);
 
     const auto it = chunks.find(rcpos);
-
     if(it != chunks.cend())
         return it->second->voxels[index];
     return NULL_VOXEL;
 }
 
-void world::set_voxel(Voxel voxel, const VoxelCoord &vpos)
+bool world::set_voxel(Voxel voxel, const VoxelCoord &vpos)
 {
     const auto cpos = VoxelCoord::to_chunk(vpos);
     const auto lpos = VoxelCoord::to_local(vpos);
-    world::set_voxel(voxel, cpos, lpos);
+    return world::set_voxel(voxel, cpos, lpos);
 }
 
-void world::set_voxel(Voxel voxel, const ChunkCoord &cpos, const LocalCoord &lpos)
+bool world::set_voxel(Voxel voxel, const ChunkCoord &cpos, const LocalCoord &lpos)
 {
     const auto rvpos = ChunkCoord::to_voxel(cpos, lpos);
     const auto rcpos = VoxelCoord::to_chunk(rvpos);
     const auto rlpos = VoxelCoord::to_local(rvpos);
     const auto index = LocalCoord::to_index(rlpos);
 
-    Chunk *chunk = world::find_or_create_chunk(rcpos);
+    if(Chunk *chunk = world::find(rcpos)) {
+        chunk->voxels[index] = voxel;
 
-    chunk->voxels[index] = voxel;
+        VoxelSetEvent event = {};
+        event.cpos = rcpos;
+        event.lpos = rlpos;
+        event.vpos = rvpos;
+        event.index = index;
+        event.chunk = chunk;
+        event.voxel = voxel;
 
-    VoxelSetEvent event = {};
-    event.cpos = rcpos;
-    event.lpos = rlpos;
-    event.vpos = rvpos;
-    event.index = index;
-    event.chunk = chunk;
-    event.voxel = voxel;
+        globals::dispatcher.trigger(event);
 
-    globals::dispatcher.trigger(event);
+        return true;
+    }
+
+    return false;
 }
