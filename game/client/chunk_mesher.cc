@@ -10,6 +10,7 @@
 #include <game/client/voxel_atlas.hh>
 #include <game/shared/event/chunk_create.hh>
 #include <game/shared/event/chunk_remove.hh>
+#include <game/shared/event/chunk_update.hh>
 #include <game/shared/event/voxel_set.hh>
 #include <game/shared/vdef.hh>
 #include <game/shared/world.hh>
@@ -278,6 +279,27 @@ static void on_chunk_remove(const ChunkRemoveEvent &event)
     it->second->is_cancelled = true;
 }
 
+static void on_chunk_update(const ChunkUpdateEvent &event)
+{
+    const std::array<ChunkCoord, 6> neighbours = {
+        event.coord + ChunkCoord::dir_north(),
+        event.coord + ChunkCoord::dir_south(),
+        event.coord + ChunkCoord::dir_east(),
+        event.coord + ChunkCoord::dir_west(),
+        event.coord + ChunkCoord::dir_up(),
+        event.coord + ChunkCoord::dir_down(),
+    };
+
+    globals::registry.emplace_or_replace<NeedsMeshingComponent>(event.chunk->entity);
+
+    for(const ChunkCoord &cpos : neighbours) {
+        if(const Chunk *chunk = world::find(cpos)) {
+            globals::registry.emplace_or_replace<NeedsMeshingComponent>(chunk->entity);
+            continue;
+        }
+    }
+}
+
 static void on_voxel_set(const VoxelSetEvent &event)
 {
     globals::registry.emplace_or_replace<NeedsMeshingComponent>(event.chunk->entity);
@@ -311,6 +333,7 @@ void chunk_mesher::init(void)
 {
     globals::dispatcher.sink<ChunkCreateEvent>().connect<&on_chunk_create>();
     globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
+    globals::dispatcher.sink<ChunkUpdateEvent>().connect<&on_chunk_update>();
     globals::dispatcher.sink<VoxelSetEvent>().connect<&on_voxel_set>();
 }
 

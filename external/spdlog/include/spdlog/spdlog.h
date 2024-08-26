@@ -111,7 +111,7 @@ SPDLOG_API void shutdown();
 SPDLOG_API void set_automatic_registration(bool automatic_registration);
 
 // API for using default logger (stdout_color_mt),
-// e.g: spdlog::info("Message {}", 1);
+// e.g: spdlog::info("PacketBuffer {}", 1);
 //
 // The default logger object can be accessed using the spdlog::default_logger():
 // For example, to add another sink to it:

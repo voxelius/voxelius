@@ -432,9 +432,9 @@ void client_game::update_late(void)
             head_packet.entity = entt::null;
             head_packet.angles = head.angles;
 
-            protocol::send_packet(globals::session_peer, tform_packet);
-            protocol::send_packet(globals::session_peer, velocity_packet);
-            protocol::send_packet(globals::session_peer, head_packet);
+            enet_peer_send(globals::session_peer, 0, protocol::make_packet(tform_packet));
+            enet_peer_send(globals::session_peer, 0, protocol::make_packet(velocity_packet));
+            enet_peer_send(globals::session_peer, 0, protocol::make_packet(head_packet));
         }
     }
 }

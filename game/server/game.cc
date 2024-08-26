@@ -116,13 +116,14 @@ void server_game::init_late(void)
     noise.noise_type = FNL_NOISE_OPENSIMPLEX2;
     noise.fractal_type = FNL_FRACTAL_RIDGED;
 
-    constexpr int WSIZE = 8;
+    constexpr int WSIZE = 4;
     for(int x = -WSIZE; x < WSIZE; x += 1)
     for(int z = -WSIZE; z < WSIZE; z += 1)
     for(int y = -2; y < 1; y += 1) {
         generate({x, y, z});
     }
 
+#if 0
     constexpr int DWSIZE = 2 * WSIZE;
     for(int x = -DWSIZE; x < DWSIZE; ++x)
     for(int z = -DWSIZE; z < DWSIZE; ++z) {
@@ -132,6 +133,7 @@ void server_game::init_late(void)
             chunk = world::assign(pos, globals::registry.create());
         chunk->voxels.fill(game_voxels::stone);
     }
+#endif
 
     const auto pos = ChunkCoord(0, 4, 0);
     Chunk *chunk = world::find(pos);
@@ -142,8 +144,11 @@ void server_game::init_late(void)
 
 void server_game::deinit(void)
 {
+    sessions::send_disconnect(nullptr, "disconnected.server_closed");
     sessions::deinit();
 
+    enet_host_flush(globals::server_host);
+    enet_host_service(globals::server_host, nullptr, 1000);
     enet_host_destroy(globals::server_host);
 }
 
