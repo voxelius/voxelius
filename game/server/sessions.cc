@@ -41,12 +41,12 @@ static void on_login_request_packet(const protocol::LoginRequest &packet)
 {
     
     if(packet.version > protocol::VERSION) {
-        sessions::send_disconnect(packet.peer, "disconnected.outdated_client");
+        sessions::send_disconnect(packet.peer, "protocol.outdated_client");
         return;
     }
     
     if(packet.version < protocol::VERSION) {
-        sessions::send_disconnect(packet.peer, "disconnected.outdated_client");
+        sessions::send_disconnect(packet.peer, "protocol.outdated_client");
         return;
     }
     
@@ -82,14 +82,14 @@ static void on_login_request_packet(const protocol::LoginRequest &packet)
 
         return;
     }
-    
-    sessions::send_disconnect(packet.peer, "disconnected.max_players");
+
+    sessions::send_disconnect(packet.peer, "protocol.max_players");
 }
 
 static void on_disconnect_packet(const protocol::Disconnect &packet)
 {
     if(Session *session = sessions::find(packet.peer)) {
-        spdlog::info("{} disconnected: {}", session->username, packet.reason);
+        spdlog::info("{} disconnected ({})", session->username, packet.reason);
         sessions::destroy(session);
     }
 }

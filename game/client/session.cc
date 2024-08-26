@@ -26,7 +26,7 @@ static void on_login_response_packet(const protocol::LoginResponse &packet)
     globals::session_send_time = 0;
     globals::session_username = packet.username;
     
-    progress::set_title("Loading world");    
+    progress::set_title("connecting.loading_world");    
 }
 
 static void on_disconnect_packet(const protocol::Disconnect &packet)
@@ -45,12 +45,12 @@ static void on_disconnect_packet(const protocol::Disconnect &packet)
     globals::registry.clear();
 
     message_box::reset();
-    message_box::set_title("Disconnected");
-    message_box::set_title(packet.reason);
-    message_box::add_button("Back to Menu", [](void) {
+    message_box::set_title("disconnected.disconnected");
+    message_box::set_subtitle(packet.reason);
+    message_box::add_button("disconnected.back_to_menu", [](void) {
         globals::gui_screen = GUI_MAIN_MENU;
     });
-    
+
     globals::gui_screen = GUI_MESSAGE_BOX;
 }
 
@@ -108,7 +108,7 @@ void session::init(void)
 
 void session::deinit(void)
 {
-    session::disconnect("disconnect.client_shutdown");
+    session::disconnect("protocol.client_shutdown");
     globals::session_send_time = UINT64_MAX;
 }
 
@@ -126,9 +126,9 @@ void session::connect(const std::string &host, std::uint16_t port)
     
     if(!globals::session_peer) {
         message_box::reset();
-        message_box::set_title("Connection failed");
-        message_box::set_title("Cannot create ENetPeer");
-        message_box::add_button("Back to Menu", [](void) {
+        message_box::set_title("disconnected.disconnected");
+        message_box::set_subtitle("enet.peer_connection_failed");
+        message_box::add_button("disconnected.back_to_menu", [](void) {
             globals::gui_screen = GUI_MAIN_MENU;
         });
 
@@ -138,8 +138,8 @@ void session::connect(const std::string &host, std::uint16_t port)
     }
 
     progress::reset();
-    progress::set_title("Connecting");
-    progress::set_button("Cancel", [](void) {
+    progress::set_title("connecting.connecting");
+    progress::set_button("connecting.cancel_button", [](void) {
         enet_peer_disconnect(globals::session_peer, 0);
 
         globals::session_peer = nullptr;
@@ -184,7 +184,7 @@ void session::send_login_request(void)
     
     enet_peer_send(globals::session_peer, 0, protocol::make_packet(packet));
     
-    progress::set_title("Logging in");
+    progress::set_title("connecting.logging_in");
     globals::gui_screen = GUI_PROGRESS;
 }
 
@@ -194,9 +194,9 @@ void session::invalidate(void)
         enet_peer_reset(globals::session_peer);
         
         message_box::reset();
-        message_box::set_title("Disconnected");
-        message_box::set_subtitle("Connection terminated");
-        message_box::add_button("Back to Menu", [](void) {
+        message_box::set_title("disconnected.disconnected");
+        message_box::set_subtitle("enet.peer_connection_timeout");
+        message_box::add_button("disconnected.back_to_menu", [](void) {
             globals::gui_screen = GUI_MAIN_MENU;
         });
 

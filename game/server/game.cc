@@ -144,7 +144,7 @@ void server_game::init_late(void)
 
 void server_game::deinit(void)
 {
-    sessions::send_disconnect(nullptr, "disconnected.server_closed");
+    sessions::send_disconnect(nullptr, "protocol.server_shutdown");
     sessions::deinit();
 
     enet_host_flush(globals::server_host);

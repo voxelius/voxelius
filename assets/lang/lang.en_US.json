@@ -44,5 +44,24 @@
   "settings.tooltip.game.pixel_size": "Draw the world into a fraction of the window's frame size",
   "settings.tooltip.game.username": "Username changes apply only upon reconnecting",
   "settings.tooltip.mouse.enable_raw_input": "Bypass Operating System's mouse handling and instead deal with cursor movement internally",
-  "settings.tooltip.mouse.sensitivity": "Specifies the rate at which cursor movement on 2D screen is reflected by the camera"
+  "settings.tooltip.mouse.sensitivity": "Specifies the rate at which cursor movement on 2D screen is reflected by the camera",
+
+  "protocol.outdated_client": "Outdated client",
+  "protocol.outdated_server": "Outdated server",
+  "protocol.max_players": "No available player slot found",
+  "protocol.chunk_entity_mismatch": "Chunk entity desync detected",
+  "protocol.client_disconnect": "Client disconnect",
+  "protocol.client_shutdown": "Client shutdown",
+  "protocol.server_shutdown": "Server shutdown",
+
+  "connecting.connecting": "Connecting",
+  "connecting.logging_in": "Logging in",
+  "connecting.loading_world": "Loading world",
+  "connecting.cancel_button": "Cancel",
+
+  "disconnected.disconnected": "Disconnected",
+  "disconnected.back_to_menu": "Back to Menu",
+
+  "enet.peer_connection_failed": "Peer connection failed",
+  "enet.peer_connection_timeout": "Peer connection timed out"
 }

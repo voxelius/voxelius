@@ -44,5 +44,24 @@
   "settings.tooltip.game.world_curvature": "Симуляция искривления\nгоризинта Земли",
   "settings.tooltip.game.pixel_size": "Рисовать мир в кадр c размером меньшим чем размер окна",
   "settings.tooltip.mouse.enable_raw_input": "Обработка данных с мыши напрямую без участия операционной системы",
-  "settings.tooltip.mouse.sensitivity": "Определяет насколько сильно камера реагирует на перемещение курсора по плоскости экрана"
+  "settings.tooltip.mouse.sensitivity": "Определяет насколько сильно камера реагирует на перемещение курсора по плоскости экрана",
+
+  "protocol.outdated_client": "Устаревший клиент",
+  "protocol.outdated_server": "Устаревший сервер",
+  "protocol.max_players": "Нет свободного слота для игрока",
+  "protocol.chunk_entity_mismatch": "Рассинхрон чанковых сущностей",
+  "protocol.client_disconnect": "Клиент отключился",
+  "protocol.client_shutdown": "Клиент завершает работу",
+  "protocol.server_shutdown": "Сервер завершает работу",
+
+  "connecting.connecting": "Подключение",
+  "connecting.logging_in": "Аутентификация",
+  "connecting.loading_world": "Загрузка мира",
+  "connecting.cancel_button": "Отмена",
+
+  "disconnected.disconnected": "Соединение разорвано",
+  "disconnected.back_to_menu": "Назад в Меню",
+
+  "enet.peer_connection_failed": "Соединение невозможно",
+  "enet.peer_connection_timeout": "Соединение утеряно"
 }
