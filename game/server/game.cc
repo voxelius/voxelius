@@ -149,7 +149,7 @@ void server_game::deinit(void)
     sessions::deinit();
 
     enet_host_flush(globals::server_host);
-    while(enet_host_service(globals::server_host, nullptr, 50));
+    enet_host_service(globals::server_host, nullptr, 500);
     enet_host_destroy(globals::server_host);
 }
 
