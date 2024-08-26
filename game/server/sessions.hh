@@ -35,22 +35,3 @@ Session *find(std::uint64_t player_uid);
 Session *find(ENetPeer *peer);
 void destroy(Session *session);
 } // namespace sessions
-
-namespace sessions
-{
-void send_disconnect(ENetPeer *peer, const std::string &reason);
-void send_chat_message(ENetPeer *peer, const std::string &message);
-} // namespace sessions
-
-namespace sessions
-{
-void send_chunk_voxels(ENetPeer *peer, entt::entity entity);
-void send_entity_head(ENetPeer *peer, entt::entity entity);
-void send_entity_transform(ENetPeer *peer, entt::entity entity);
-void send_entity_velocity(ENetPeer *peer, entt::entity entity);
-} // namespace sessions
-
-namespace sessions
-{
-void send_spawn_player(ENetPeer *peer, entt::entity entity);
-} // namespace sessions

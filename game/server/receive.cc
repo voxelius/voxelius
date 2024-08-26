@@ -15,10 +15,15 @@
 static void on_entity_transform_packet(const protocol::EntityTransform &packet)
 {
     if(Session *session = sessions::find(packet.peer)) {
-        if(globals::registry.valid(session->player) && (packet.entity == entt::null)) {
+        if(globals::registry.valid(session->player)) {
             auto &transform = globals::registry.get_or_emplace<TransformComponent>(session->player);
             transform.angles = packet.angles;
             transform.position = packet.coord;
+
+            // Propagate changes to the rest of the world
+            // except the peer that has sent the packet in the first place
+            // UNDONE: pass nullptr instead of packet.peer when we want to correct the client
+            protocol::send_entity_transform(packet.peer, globals::server_host, session->player);
         }
     }
 }
@@ -26,10 +31,15 @@ static void on_entity_transform_packet(const protocol::EntityTransform &packet)
 static void on_entity_velocity_packet(const protocol::EntityVelocity &packet)
 {
     if(Session *session = sessions::find(packet.peer)) {
-        if(globals::registry.valid(session->player) && (packet.entity == entt::null)) {
+        if(globals::registry.valid(session->player)) {
             auto &velocity = globals::registry.get_or_emplace<VelocityComponent>(session->player);
             velocity.angular = packet.angular;
             velocity.linear = packet.linear;
+
+            // Propagate changes to the rest of the world
+            // except the peer that has sent the packet in the first place
+            // UNDONE: pass nullptr instead of packet.peer when we want to correct the client
+            protocol::send_entity_velocity(packet.peer, globals::server_host, session->player);
         }
     }
 }
@@ -37,9 +47,14 @@ static void on_entity_velocity_packet(const protocol::EntityVelocity &packet)
 static void on_entity_head_packet(const protocol::EntityHead &packet)
 {
     if(Session *session = sessions::find(packet.peer)) {
-        if(globals::registry.valid(session->player) && (packet.entity == entt::null)) {
+        if(globals::registry.valid(session->player)) {
             auto &transform = globals::registry.get_or_emplace<HeadComponent>(session->player);
             transform.angles = packet.angles;
+
+            // Propagate changes to the rest of the world
+            // except the peer that has sent the packet in the first place
+            // UNDONE: pass nullptr instead of packet.peer when we want to correct the client
+            protocol::send_entity_head(packet.peer, globals::server_host, session->player);
         }
     }
 }
@@ -55,7 +70,7 @@ static void on_set_voxel_packet(const protocol::SetVoxel &packet)
         chunk->voxels[index] = packet.voxel;
         
         // Broadcast the newly created chunk to peers
-        sessions::send_chunk_voxels(nullptr, chunk->entity);
+        protocol::send_chunk_voxels(nullptr, globals::server_host, chunk->entity);
     }
 }
 

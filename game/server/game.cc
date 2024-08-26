@@ -144,11 +144,12 @@ void server_game::init_late(void)
 
 void server_game::deinit(void)
 {
-    sessions::send_disconnect(nullptr, "protocol.server_shutdown");
+    protocol::send_disconnect(nullptr, globals::server_host, "protocol.server_shutdown");
+
     sessions::deinit();
 
     enet_host_flush(globals::server_host);
-    enet_host_service(globals::server_host, nullptr, 1000);
+    while(enet_host_service(globals::server_host, nullptr, 50));
     enet_host_destroy(globals::server_host);
 }
 
@@ -174,7 +175,7 @@ void server_game::update_late(void)
         }
 
         if(event.type == ENET_EVENT_TYPE_RECEIVE) {
-            protocol::handle_packet(event.packet, event.peer);
+            protocol::receive(event.packet, event.peer);
             enet_packet_destroy(event.packet);
             continue;
         }

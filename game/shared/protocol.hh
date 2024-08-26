@@ -39,23 +39,43 @@ struct SetVoxel;
 
 namespace protocol
 {
-ENetPacket *make_packet(const StatusRequest &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
-ENetPacket *make_packet(const StatusResponse &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
-ENetPacket *make_packet(const LoginRequest &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
-ENetPacket *make_packet(const LoginResponse &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
-ENetPacket *make_packet(const Disconnect &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
-ENetPacket *make_packet(const ChunkVoxels &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
-ENetPacket *make_packet(const EntityTransform &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
-ENetPacket *make_packet(const EntityHead &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
-ENetPacket *make_packet(const EntityVelocity &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
-ENetPacket *make_packet(const SpawnPlayer &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
-ENetPacket *make_packet(const ChatMessage &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
-ENetPacket *make_packet(const SetVoxel &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
+void send(ENetPeer *peer, ENetHost *host, const StatusRequest &packet);
+void send(ENetPeer *peer, ENetHost *host, const StatusResponse &packet);
+void send(ENetPeer *peer, ENetHost *host, const LoginRequest &packet);
+void send(ENetPeer *peer, ENetHost *host, const LoginResponse &packet);
+void send(ENetPeer *peer, ENetHost *host, const Disconnect &packet);
+void send(ENetPeer *peer, ENetHost *host, const ChunkVoxels &packet);
+void send(ENetPeer *peer, ENetHost *host, const EntityTransform &packet);
+void send(ENetPeer *peer, ENetHost *host, const EntityHead &packet);
+void send(ENetPeer *peer, ENetHost *host, const EntityVelocity &packet);
+void send(ENetPeer *peer, ENetHost *host, const SpawnPlayer &packet);
+void send(ENetPeer *peer, ENetHost *host, const ChatMessage &packet);
+void send(ENetPeer *peer, ENetHost *host, const SetVoxel &packet);
 } // namespace protocol
 
 namespace protocol
 {
-void handle_packet(const ENetPacket *packet, ENetPeer *peer);
+void receive(const ENetPacket *packet, ENetPeer *peer);
+} // namespace protocol
+
+namespace protocol
+{
+void send_disconnect(ENetPeer *peer, ENetHost *host, const std::string &reason);
+void send_chat_message(ENetPeer *peer, ENetHost *host, const std::string &message);
+} // namespace protocol
+
+namespace protocol
+{
+void send_chunk_voxels(ENetPeer *peer, ENetHost *host, entt::entity entity);
+void send_entity_head(ENetPeer *peer, ENetHost *host, entt::entity entity);
+void send_entity_transform(ENetPeer *peer, ENetHost *host, entt::entity entity);
+void send_entity_velocity(ENetPeer *peer, ENetHost *host, entt::entity entity);
+void send_spawn_player(ENetPeer *peer, ENetHost *host, entt::entity entity);
+} // namespace protocol
+
+namespace protocol
+{
+void send_set_voxel(ENetPeer *peer, ENetHost *host, const VoxelCoord &vpos, Voxel voxel);
 } // namespace protocol
 
 struct protocol::StatusRequest final : public protocol::Base<0x0000> {

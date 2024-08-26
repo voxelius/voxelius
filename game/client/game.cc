@@ -342,7 +342,7 @@ void client_game::deinit(void)
 {
     if(globals::session_peer) {
         session::disconnect("protocol.client_shutdown");
-        while(enet_host_service(globals::client_host, nullptr, 500));
+        while(enet_host_service(globals::client_host, nullptr, 50));
     }
 
     voxel_atlas::destroy();
@@ -404,7 +404,7 @@ void client_game::update_late(void)
         }
 
         if(event.type == ENET_EVENT_TYPE_RECEIVE) {
-            protocol::handle_packet(event.packet, event.peer);
+            protocol::receive(event.packet, event.peer);
             enet_packet_destroy(event.packet);
             continue;
         }
@@ -414,27 +414,9 @@ void client_game::update_late(void)
         globals::session_send_time = globals::curtime + globals::session_tick_dt;
 
         if(globals::registry.valid(globals::player)) {
-            const auto &tform = globals::registry.get<TransformComponent>(globals::player);
-            const auto &velocity = globals::registry.get<VelocityComponent>(globals::player);
-            const auto &head = globals::registry.get<HeadComponent>(globals::player);
-
-            protocol::EntityTransform tform_packet = {};
-            tform_packet.entity = entt::null;
-            tform_packet.angles = tform.angles;
-            tform_packet.coord = tform.position;
-
-            protocol::EntityVelocity velocity_packet = {};
-            velocity_packet.entity = entt::null;
-            velocity_packet.angular = velocity.angular;
-            velocity_packet.linear = velocity.linear;
-
-            protocol::EntityHead head_packet = {};
-            head_packet.entity = entt::null;
-            head_packet.angles = head.angles;
-
-            enet_peer_send(globals::session_peer, 0, protocol::make_packet(tform_packet));
-            enet_peer_send(globals::session_peer, 0, protocol::make_packet(velocity_packet));
-            enet_peer_send(globals::session_peer, 0, protocol::make_packet(head_packet));
+            protocol::send_entity_head(globals::session_peer, nullptr, globals::player);
+            protocol::send_entity_transform(globals::session_peer, nullptr, globals::player);
+            protocol::send_entity_velocity(globals::session_peer, nullptr, globals::player);
         }
     }
 }

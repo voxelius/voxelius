@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <common/packet_buffer.hh>
+#include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
+#include <game/shared/entity/head.hh>
+#include <game/shared/entity/transform.hh>
+#include <game/shared/entity/velocity.hh>
 #include <game/shared/globals.hh>
 #include <game/shared/protocol.hh>
 #include <mathlib/floathacks.hh>
@@ -9,25 +13,50 @@
 static PacketBuffer read_buffer = {};
 static PacketBuffer write_buffer = {};
 
-ENetPacket *protocol::make_packet(const protocol::StatusRequest &packet, std::uint32_t flags)
+// [peer], [NULL] - send to one specific peer
+// [NULL], [host] - broadcast to all the host peers
+// [peer], [host] - broadcast to all the peers except one
+static void basic_send(ENetPeer *peer, ENetHost *host, ENetPacket *packet)
+{
+    if(host) {
+        for(std::size_t i = 0; i < host->peerCount; ++i) {
+            if(host->peers[i].state == ENET_PEER_STATE_CONNECTED) {
+                if(&host->peers[i] == peer)
+                    continue;
+                enet_peer_send(&host->peers[i], 0, packet);
+            }
+        }
+
+        if(packet->referenceCount == 0) {
+            // ENet seems to do that as well
+            enet_packet_destroy(packet);
+        }
+    }
+    else if(peer) {
+        // Send to just one peer
+        enet_peer_send(peer, 0, packet);
+    }
+}
+
+void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::StatusRequest &packet)
 {
     PacketBuffer::setup(write_buffer);
     PacketBuffer::write_UI16(write_buffer, protocol::StatusRequest::ID);
     PacketBuffer::write_UI32(write_buffer, packet.version);
-    return enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), flags);
+    basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
-ENetPacket *protocol::make_packet(const protocol::StatusResponse &packet, std::uint32_t flags)
+void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::StatusResponse &packet)
 {
     PacketBuffer::setup(write_buffer);
     PacketBuffer::write_UI16(write_buffer, protocol::StatusResponse::ID);
     PacketBuffer::write_UI32(write_buffer, packet.version);
     PacketBuffer::write_UI16(write_buffer, packet.max_players);
     PacketBuffer::write_UI16(write_buffer, packet.num_players);
-    return enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), flags);
+    basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
-ENetPacket *protocol::make_packet(const protocol::LoginRequest &packet, std::uint32_t flags)
+void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::LoginRequest &packet)
 {
     PacketBuffer::setup(write_buffer);
     PacketBuffer::write_UI16(write_buffer, protocol::LoginRequest::ID);
@@ -36,28 +65,28 @@ ENetPacket *protocol::make_packet(const protocol::LoginRequest &packet, std::uin
     PacketBuffer::write_UI64(write_buffer, packet.vdef_checksum);
     PacketBuffer::write_UI64(write_buffer, packet.player_uid);
     PacketBuffer::write_string(write_buffer, packet.username);
-    return enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), flags);
+    basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
-ENetPacket *protocol::make_packet(const protocol::LoginResponse &packet, std::uint32_t flags)
+void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::LoginResponse &packet)
 {
     PacketBuffer::setup(write_buffer);
     PacketBuffer::write_UI16(write_buffer, protocol::LoginResponse::ID);
     PacketBuffer::write_UI16(write_buffer, packet.session_id);
     PacketBuffer::write_UI16(write_buffer, packet.tickrate);
     PacketBuffer::write_string(write_buffer, packet.username);
-    return enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), flags);
+    basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
-ENetPacket *protocol::make_packet(const protocol::Disconnect &packet, std::uint32_t flags)
+void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::Disconnect &packet)
 {
     PacketBuffer::setup(write_buffer);
     PacketBuffer::write_UI16(write_buffer, protocol::Disconnect::ID);
     PacketBuffer::write_string(write_buffer, packet.reason);
-    return enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), flags);
+    basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
-ENetPacket *protocol::make_packet(const protocol::ChunkVoxels &packet, std::uint32_t flags)
+void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::ChunkVoxels &packet)
 {
     PacketBuffer::setup(write_buffer);
     PacketBuffer::write_UI16(write_buffer, protocol::ChunkVoxels::ID);
@@ -66,10 +95,10 @@ ENetPacket *protocol::make_packet(const protocol::ChunkVoxels &packet, std::uint
     PacketBuffer::write_I32(write_buffer, packet.chunk[1]);
     PacketBuffer::write_I32(write_buffer, packet.chunk[2]);
     for(std::size_t i = 0; i < CHUNK_VOLUME; PacketBuffer::write_UI16(write_buffer, packet.voxels[i++]));
-    return enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), flags);
+    basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
-ENetPacket *protocol::make_packet(const protocol::EntityTransform &packet, std::uint32_t flags)
+void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::EntityTransform &packet)
 {
     PacketBuffer::setup(write_buffer);
     PacketBuffer::write_UI16(write_buffer, protocol::EntityTransform::ID);
@@ -83,10 +112,10 @@ ENetPacket *protocol::make_packet(const protocol::EntityTransform &packet, std::
     PacketBuffer::write_FP32(write_buffer, packet.angles[0]);
     PacketBuffer::write_FP32(write_buffer, packet.angles[1]);
     PacketBuffer::write_FP32(write_buffer, packet.angles[2]);
-    return enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), flags);
+    basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
-ENetPacket *protocol::make_packet(const protocol::EntityHead &packet, std::uint32_t flags)
+void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::EntityHead &packet)
 {
     PacketBuffer::setup(write_buffer);
     PacketBuffer::write_UI16(write_buffer, protocol::EntityHead::ID);
@@ -94,10 +123,10 @@ ENetPacket *protocol::make_packet(const protocol::EntityHead &packet, std::uint3
     PacketBuffer::write_FP32(write_buffer, packet.angles[0]);
     PacketBuffer::write_FP32(write_buffer, packet.angles[1]);
     PacketBuffer::write_FP32(write_buffer, packet.angles[2]);
-    return enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), flags);
+    basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
-ENetPacket *protocol::make_packet(const protocol::EntityVelocity &packet, std::uint32_t flags)
+void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::EntityVelocity &packet)
 {
     PacketBuffer::setup(write_buffer);
     PacketBuffer::write_UI16(write_buffer, protocol::EntityVelocity::ID);
@@ -108,27 +137,27 @@ ENetPacket *protocol::make_packet(const protocol::EntityVelocity &packet, std::u
     PacketBuffer::write_FP32(write_buffer, packet.linear[0]);
     PacketBuffer::write_FP32(write_buffer, packet.linear[1]);
     PacketBuffer::write_FP32(write_buffer, packet.linear[2]);
-    return enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), flags);
+    basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
-ENetPacket *protocol::make_packet(const protocol::SpawnPlayer &packet, std::uint32_t flags)
+void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::SpawnPlayer &packet)
 {
     PacketBuffer::setup(write_buffer);
     PacketBuffer::write_UI16(write_buffer, protocol::SpawnPlayer::ID);
     PacketBuffer::write_UI64(write_buffer, static_cast<std::uint64_t>(packet.entity));    
-    return enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), flags);
+    basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
-ENetPacket *protocol::make_packet(const protocol::ChatMessage &packet, std::uint32_t flags)
+void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::ChatMessage &packet)
 {
     PacketBuffer::setup(write_buffer);
     PacketBuffer::write_UI16(write_buffer, protocol::ChatMessage::ID);
     PacketBuffer::write_UI16(write_buffer, packet.type);
     PacketBuffer::write_string(write_buffer, packet.message);
-    return enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), flags);
+    basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
-ENetPacket *protocol::make_packet(const protocol::SetVoxel &packet, std::uint32_t flags)
+void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::SetVoxel &packet)
 {
     PacketBuffer::setup(write_buffer);
     PacketBuffer::write_UI16(write_buffer, protocol::SetVoxel::ID);
@@ -137,10 +166,10 @@ ENetPacket *protocol::make_packet(const protocol::SetVoxel &packet, std::uint32_
     PacketBuffer::write_I64(write_buffer, packet.coord[2]);
     PacketBuffer::write_UI16(write_buffer, packet.voxel);
     PacketBuffer::write_UI16(write_buffer, packet.flags);
-    return enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), flags);
+    basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
-void protocol::handle_packet(const ENetPacket *packet, ENetPeer *peer)
+void protocol::receive(const ENetPacket *packet, ENetPeer *peer)
 {
     PacketBuffer::setup(read_buffer, packet->data, packet->dataLength);
 
@@ -254,4 +283,78 @@ void protocol::handle_packet(const ENetPacket *packet, ENetPeer *peer)
             globals::dispatcher.trigger(set_voxel);
             break;
     }
+}
+
+void protocol::send_disconnect(ENetPeer *peer, ENetHost *host, const std::string &reason)
+{
+    protocol::Disconnect packet = {};
+    packet.reason = reason;
+    protocol::send(peer, host, packet);
+}
+
+void protocol::send_chat_message(ENetPeer *peer, ENetHost *host, const std::string &message)
+{
+    protocol::ChatMessage packet = {};
+    packet.type = UINT16_C(0x0000); // UNDONE
+    packet.message = message;
+    protocol::send(peer, host, packet);
+}
+
+void protocol::send_chunk_voxels(ENetPeer *peer, ENetHost *host, entt::entity entity)
+{
+    if(const ChunkComponent *component = globals::registry.try_get<ChunkComponent>(entity)) {
+        protocol::ChunkVoxels packet = {};
+        packet.entity = entity;
+        packet.chunk = component->coord;
+        packet.voxels = component->chunk->voxels;
+        protocol::send(peer, host, packet);
+    }
+}
+
+void protocol::send_entity_head(ENetPeer *peer, ENetHost *host, entt::entity entity)
+{
+    if(const HeadComponent *component = globals::registry.try_get<HeadComponent>(entity)) {
+        protocol::EntityHead packet = {};
+        packet.entity = entity;
+        packet.angles = component->angles;
+        protocol::send(peer, host, packet);
+    }
+}
+
+void protocol::send_entity_transform(ENetPeer *peer, ENetHost *host, entt::entity entity)
+{
+    if(const TransformComponent *component = globals::registry.try_get<TransformComponent>(entity)) {
+        protocol::EntityTransform packet = {};
+        packet.entity = entity;
+        packet.coord = component->position;
+        packet.angles = component->angles;
+        protocol::send(peer, host, packet);
+    }
+}
+
+void protocol::send_entity_velocity(ENetPeer *peer, ENetHost *host, entt::entity entity)
+{
+    if(const VelocityComponent *component = globals::registry.try_get<VelocityComponent>(entity)) {
+        protocol::EntityVelocity packet = {};
+        packet.entity = entity;
+        packet.angular = component->angular;
+        packet.linear = component->linear;
+        protocol::send(peer, host, packet);
+    }
+}
+
+void protocol::send_spawn_player(ENetPeer *peer, ENetHost *host, entt::entity entity)
+{
+    protocol::SpawnPlayer packet = {};
+    packet.entity = entity;
+    protocol::send(peer, host, packet);
+}
+
+void protocol::send_set_voxel(ENetPeer *peer, ENetHost *host, const VoxelCoord &vpos, Voxel voxel)
+{
+    protocol::SetVoxel packet = {};
+    packet.coord = vpos;
+    packet.voxel = voxel;
+    packet.flags = UINT16_C(0x0000); // UNDONE
+    protocol::send(peer, host, packet);
 }
