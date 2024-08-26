@@ -12,7 +12,7 @@
 #include <game/shared/protocol.hh>
 #include <game/shared/world.hh>
 
-static void on_entity_transform(const protocol::EntityTransform &packet)
+static void on_entity_transform_packet(const protocol::EntityTransform &packet)
 {
     if(Session *session = sessions::find(packet.peer)) {
         if(globals::registry.valid(session->player) && (packet.entity == entt::null)) {
@@ -23,7 +23,7 @@ static void on_entity_transform(const protocol::EntityTransform &packet)
     }
 }
 
-static void on_entity_velocity(const protocol::EntityVelocity &packet)
+static void on_entity_velocity_packet(const protocol::EntityVelocity &packet)
 {
     if(Session *session = sessions::find(packet.peer)) {
         if(globals::registry.valid(session->player) && (packet.entity == entt::null)) {
@@ -34,7 +34,7 @@ static void on_entity_velocity(const protocol::EntityVelocity &packet)
     }
 }
 
-static void on_entity_head(const protocol::EntityHead &packet)
+static void on_entity_head_packet(const protocol::EntityHead &packet)
 {
     if(Session *session = sessions::find(packet.peer)) {
         if(globals::registry.valid(session->player) && (packet.entity == entt::null)) {
@@ -44,13 +44,13 @@ static void on_entity_head(const protocol::EntityHead &packet)
     }
 }
 
-static void on_set_voxel(const protocol::SetVoxel &packet)
+static void on_set_voxel_packet(const protocol::SetVoxel &packet)
 {
     if(!world::set_voxel(packet.voxel, packet.coord)) {
         const auto cpos = VoxelCoord::to_chunk(packet.coord);
         const auto lpos = VoxelCoord::to_local(packet.coord);
         const auto index = LocalCoord::to_index(lpos);
-        
+
         Chunk *chunk = world::assign(cpos, globals::registry.create());
         chunk->voxels[index] = packet.voxel;
         
@@ -61,8 +61,8 @@ static void on_set_voxel(const protocol::SetVoxel &packet)
 
 void server_recieve::init(void)
 {
-    globals::dispatcher.sink<protocol::EntityTransform>().connect<&on_entity_transform>();
-    globals::dispatcher.sink<protocol::EntityVelocity>().connect<&on_entity_velocity>();
-    globals::dispatcher.sink<protocol::EntityHead>().connect<&on_entity_head>();
-    globals::dispatcher.sink<protocol::SetVoxel>().connect<&on_set_voxel>();
+    globals::dispatcher.sink<protocol::EntityTransform>().connect<&on_entity_transform_packet>();
+    globals::dispatcher.sink<protocol::EntityVelocity>().connect<&on_entity_velocity_packet>();
+    globals::dispatcher.sink<protocol::EntityHead>().connect<&on_entity_head_packet>();
+    globals::dispatcher.sink<protocol::SetVoxel>().connect<&on_set_voxel_packet>();
 }
