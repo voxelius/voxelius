@@ -22,7 +22,7 @@ static void on_chunk_voxels_packet(const protocol::ChunkVoxels &packet)
 
             if(created != packet.entity) {
                 globals::registry.destroy(created);
-                session::disconnect("chunk entity mismatch");
+                session::disconnect("protocol.chunk_entity_mismatch");
                 spdlog::critical("receive: chunk entity mismatch");
                 return;
             }

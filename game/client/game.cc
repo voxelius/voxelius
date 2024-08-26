@@ -341,8 +341,8 @@ void client_game::init_late(void)
 void client_game::deinit(void)
 {
     if(globals::session_peer) {
-        session::disconnect("Client shutdown");
-        while(enet_host_service(globals::client_host, nullptr, 10));
+        session::disconnect("protocol.client_shutdown");
+        while(enet_host_service(globals::client_host, nullptr, 500));
     }
 
     voxel_atlas::destroy();
