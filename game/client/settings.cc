@@ -18,7 +18,7 @@
 
 constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
 
-enum class SettingValueType {
+enum class SettingValueType : unsigned int {
     Checkbox        = 0x0000,
     FloatSlider     = 0x0001,
     IntInput        = 0x0002,

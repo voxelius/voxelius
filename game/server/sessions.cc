@@ -41,12 +41,12 @@ static void on_login_request_packet(const protocol::LoginRequest &packet)
 {
     
     if(packet.version > protocol::VERSION) {
-        sessions::send_disconnect(packet.peer, "protocol.outdated_client");
+        protocol::send_disconnect(packet.peer, nullptr, "protocol.outdated_client");
         return;
     }
     
     if(packet.version < protocol::VERSION) {
-        sessions::send_disconnect(packet.peer, "protocol.outdated_client");
+        protocol::send_disconnect(packet.peer, nullptr, "protocol.outdated_client");
         return;
     }
     
@@ -55,16 +55,16 @@ static void on_login_request_packet(const protocol::LoginRequest &packet)
         response.session_id = session->session_id;
         response.tickrate = globals::tickrate;
         response.username = session->username;
-        enet_peer_send(packet.peer, 0, protocol::make_packet(response));
+        protocol::send(packet.peer, nullptr, response);
 
         spdlog::info("sessions: {} [{}] logged in with session_id={}", session->username, session->player_uid, session->session_id);
 
         // FIXME: this is not a good idea
         globals::registry.each([session](const entt::entity entity) {
-            sessions::send_chunk_voxels(session->peer, entity);
-            sessions::send_entity_head(session->peer, entity);
-            sessions::send_entity_transform(session->peer, entity);
-            sessions::send_entity_velocity(session->peer, entity);
+            protocol::send_chunk_voxels(session->peer, nullptr, entity);
+            protocol::send_entity_head(session->peer, nullptr, entity);
+            protocol::send_entity_transform(session->peer, nullptr, entity);
+            protocol::send_entity_velocity(session->peer, nullptr, entity);
         });
 
         session->player = globals::registry.create();
@@ -75,15 +75,15 @@ static void on_login_request_packet(const protocol::LoginRequest &packet)
 
         // The player entity is to be spawned in the world the last;
         // We don't want to interact with the still not-loaded world!
-        sessions::send_entity_head(session->peer, session->player);
-        sessions::send_entity_transform(session->peer, session->player);
-        sessions::send_entity_velocity(session->peer, session->player);
-        sessions::send_spawn_player(session->peer, session->player);
+        protocol::send_entity_head(nullptr, globals::server_host, session->player);
+        protocol::send_entity_transform(nullptr, globals::server_host, session->player);
+        protocol::send_entity_velocity(nullptr, globals::server_host, session->player);
+        protocol::send_spawn_player(session->peer, nullptr, session->player);
 
         return;
     }
 
-    sessions::send_disconnect(packet.peer, "protocol.max_players");
+    protocol::send_disconnect(packet.peer, nullptr, "protocol.max_players");
 }
 
 static void on_disconnect_packet(const protocol::Disconnect &packet)
@@ -99,11 +99,7 @@ static void on_disconnect_packet(const protocol::Disconnect &packet)
 // everything else network related that is not player movement
 static void on_voxel_set(const VoxelSetEvent &event)
 {
-    protocol::SetVoxel packet = {};
-    packet.coord = event.vpos;
-    packet.voxel = event.voxel;
-    packet.flags = UINT16_C(0x0000); // UNDONE
-    enet_host_broadcast(globals::server_host, 0, protocol::make_packet(packet));
+    protocol::send_set_voxel(nullptr, globals::server_host, event.vpos, event.voxel);
 }
 
 void sessions::init(void)
@@ -206,90 +202,4 @@ void sessions::destroy(Session *session)
 
         sessions::num_players -= 1U;
     }
-}
-
-void sessions::send_disconnect(ENetPeer *peer, const std::string &reason)
-{
-    protocol::Disconnect packet = {};
-    packet.reason = reason;
-
-    if(peer)
-        enet_peer_send(peer, 0, protocol::make_packet(packet));
-    else enet_host_broadcast(globals::server_host, 0, protocol::make_packet(packet));
-}
-
-void sessions::send_chat_message(ENetPeer *peer, const std::string &message)
-{
-    protocol::ChatMessage packet = {};
-    packet.type = UINT16_C(0x0000); // UNDONE
-    packet.message = message;
-
-    if(peer)
-        enet_peer_send(peer, 0, protocol::make_packet(packet));
-    else enet_host_broadcast(globals::server_host, 0, protocol::make_packet(packet));
-}
-
-void sessions::send_chunk_voxels(ENetPeer *peer, entt::entity entity)
-{
-    if(const ChunkComponent *component = globals::registry.try_get<ChunkComponent>(entity)) {
-        protocol::ChunkVoxels packet = {};
-        packet.entity = entity;
-        packet.chunk = component->coord;
-        packet.voxels = component->chunk->voxels;
-        
-        if(peer)
-            enet_peer_send(peer, 0, protocol::make_packet(packet));
-        else enet_host_broadcast(globals::server_host, 0, protocol::make_packet(packet));
-    }
-}
-
-void sessions::send_entity_head(ENetPeer *peer, entt::entity entity)
-{
-    if(const HeadComponent *component = globals::registry.try_get<HeadComponent>(entity)) {
-        protocol::EntityHead packet = {};
-        packet.entity = entity;
-        packet.angles = component->angles;
-        
-        if(peer)
-            enet_peer_send(peer, 0, protocol::make_packet(packet));
-        else enet_host_broadcast(globals::server_host, 0, protocol::make_packet(packet));
-    }
-}
-
-void sessions::send_entity_transform(ENetPeer *peer, entt::entity entity)
-{
-    if(const TransformComponent *component = globals::registry.try_get<TransformComponent>(entity)) {
-        protocol::EntityTransform packet = {};
-        packet.entity = entity;
-        packet.coord = component->position;
-        packet.angles = component->angles;
-        
-        if(peer)
-            enet_peer_send(peer, 0, protocol::make_packet(packet));
-        else enet_host_broadcast(globals::server_host, 0, protocol::make_packet(packet));
-    }
-}
-
-void sessions::send_entity_velocity(ENetPeer *peer, entt::entity entity)
-{
-    if(const VelocityComponent *component = globals::registry.try_get<VelocityComponent>(entity)) {
-        protocol::EntityVelocity packet = {};
-        packet.entity = entity;
-        packet.angular = component->angular;
-        packet.linear = component->linear;
-        
-        if(peer)
-            enet_peer_send(peer, 0, protocol::make_packet(packet));
-        else enet_host_broadcast(globals::server_host, 0, protocol::make_packet(packet));
-    }
-}
-
-void sessions::send_spawn_player(ENetPeer *peer, entt::entity entity)
-{
-    protocol::SpawnPlayer packet = {};
-    packet.entity = entity;
-    
-    if(peer)
-        enet_peer_send(peer, 0, protocol::make_packet(packet));
-    else enet_host_broadcast(globals::server_host, 0, protocol::make_packet(packet));
 }

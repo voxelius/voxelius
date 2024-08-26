@@ -83,11 +83,8 @@ static void on_set_voxel_packet(const protocol::SetVoxel &packet)
 static void on_voxel_set(const VoxelSetEvent &event)
 {
     if(globals::session_peer) {
-        protocol::SetVoxel packet = {};
-        packet.coord = event.vpos;
-        packet.voxel = event.voxel;
-        packet.flags = UINT16_C(0x0000); // UNDONE
-        enet_peer_send(globals::session_peer, 0, protocol::make_packet(packet));
+        // Propagate changes to the server
+        protocol::send_set_voxel(globals::session_peer, nullptr, event.vpos, event.voxel);
     }
 }
 
@@ -157,10 +154,8 @@ void session::connect(const std::string &host, std::uint16_t port)
 void session::disconnect(const std::string &reason)
 {
     if(globals::session_peer) {
-        protocol::Disconnect packet = {};
-        packet.reason = reason;
+        protocol::send_disconnect(globals::session_peer, nullptr, reason);
 
-        enet_peer_send(globals::session_peer, 0, protocol::make_packet(packet));
         enet_host_flush(globals::client_host);
 
         globals::session_peer = nullptr;
@@ -181,8 +176,7 @@ void session::send_login_request(void)
     packet.vdef_checksum = UINT64_MAX; // FIXME
     packet.player_uid = client_game::player_uid;
     packet.username = client_game::username;
-    
-    enet_peer_send(globals::session_peer, 0, protocol::make_packet(packet));
+    protocol::send(globals::session_peer, nullptr, packet);
     
     progress::set_title("connecting.logging_in");
     globals::gui_screen = GUI_PROGRESS;

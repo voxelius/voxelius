@@ -12,8 +12,7 @@ static void on_status_request_packet(const protocol::StatusRequest &packet)
     response.version = protocol::VERSION;
     response.max_players = sessions::max_players;
     response.num_players = sessions::num_players;
-
-    enet_peer_send(packet.peer, 0, protocol::make_packet(response));
+    protocol::send(packet.peer, nullptr, response);
 }
 
 void status::init(void)
