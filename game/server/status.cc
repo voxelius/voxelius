@@ -13,7 +13,7 @@ static void on_status_request(const protocol::StatusRequest &packet)
     response.max_players = sessions::max_players;
     response.num_players = sessions::num_players;
 
-    protocol::send_packet(packet.peer, response);
+    enet_peer_send(packet.peer, 0, protocol::make_packet(response));
 }
 
 void status::init(void)

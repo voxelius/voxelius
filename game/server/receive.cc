@@ -8,7 +8,9 @@
 #include <game/shared/entity/head.hh>
 #include <game/shared/entity/transform.hh>
 #include <game/shared/entity/velocity.hh>
+#include <game/shared/coord.hh>
 #include <game/shared/protocol.hh>
+#include <game/shared/world.hh>
 
 static void on_entity_transform(const protocol::EntityTransform &packet)
 {
@@ -42,9 +44,25 @@ static void on_entity_head(const protocol::EntityHead &packet)
     }
 }
 
+static void on_set_voxel(const protocol::SetVoxel &packet)
+{
+    if(!world::set_voxel(packet.voxel, packet.coord)) {
+        const auto cpos = VoxelCoord::to_chunk(packet.coord);
+        const auto lpos = VoxelCoord::to_local(packet.coord);
+        const auto index = LocalCoord::to_index(lpos);
+        
+        Chunk *chunk = world::assign(cpos, globals::registry.create());
+        chunk->voxels[index] = packet.voxel;
+        
+        // Broadcast the newly created chunk to peers
+        sessions::send_chunk_voxels(nullptr, chunk->entity);
+    }
+}
+
 void server_recieve::init(void)
 {
     globals::dispatcher.sink<protocol::EntityTransform>().connect<&on_entity_transform>();
     globals::dispatcher.sink<protocol::EntityVelocity>().connect<&on_entity_velocity>();
     globals::dispatcher.sink<protocol::EntityHead>().connect<&on_entity_head>();
+    globals::dispatcher.sink<protocol::SetVoxel>().connect<&on_set_voxel>();
 }

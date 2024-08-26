@@ -16,6 +16,8 @@
 
 static void on_chunk_voxels(const protocol::ChunkVoxels &packet)
 {
+    if(!globals::session_peer) return;
+
     if(!globals::registry.valid(packet.entity)) {
         entt::entity created = globals::registry.create(packet.entity);
 
@@ -33,6 +35,8 @@ static void on_chunk_voxels(const protocol::ChunkVoxels &packet)
 
 static void on_entity_head(const protocol::EntityHead &packet)
 {
+    if(!globals::session_peer) return;
+
     if(!globals::registry.valid(packet.entity))
         static_cast<void>(globals::registry.create(packet.entity));
     auto &component = globals::registry.get_or_emplace<HeadComponent>(packet.entity);
@@ -41,6 +45,8 @@ static void on_entity_head(const protocol::EntityHead &packet)
 
 static void on_entity_transform(const protocol::EntityTransform &packet)
 {
+    if(!globals::session_peer) return;
+
     if(!globals::registry.valid(packet.entity))
         static_cast<void>(globals::registry.create(packet.entity));
     auto &component = globals::registry.get_or_emplace<TransformComponent>(packet.entity);
@@ -50,6 +56,8 @@ static void on_entity_transform(const protocol::EntityTransform &packet)
 
 static void on_entity_velocity(const protocol::EntityVelocity &packet)
 {
+    if(!globals::session_peer) return;
+
     if(!globals::registry.valid(packet.entity))
         static_cast<void>(globals::registry.create(packet.entity));
     auto &component = globals::registry.get_or_emplace<VelocityComponent>(packet.entity);
@@ -59,6 +67,8 @@ static void on_entity_velocity(const protocol::EntityVelocity &packet)
 
 static void on_spawn_player(const protocol::SpawnPlayer &packet)
 {
+    if(!globals::session_peer) return;
+
     if(!globals::registry.valid(packet.entity))
         static_cast<void>(globals::registry.create(packet.entity));
     globals::registry.get_or_emplace<PlayerComponent>(packet.entity);

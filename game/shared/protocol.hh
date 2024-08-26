@@ -39,18 +39,18 @@ struct SetVoxel;
 
 namespace protocol
 {
-void send_packet(ENetPeer *peer, const StatusRequest &packet);
-void send_packet(ENetPeer *peer, const StatusResponse &packet);
-void send_packet(ENetPeer *peer, const LoginRequest &packet);
-void send_packet(ENetPeer *peer, const LoginResponse &packet);
-void send_packet(ENetPeer *peer, const Disconnect &packet);
-void send_packet(ENetPeer *peer, const ChunkVoxels &packet);
-void send_packet(ENetPeer *peer, const EntityTransform &packet);
-void send_packet(ENetPeer *peer, const EntityHead &packet);
-void send_packet(ENetPeer *peer, const EntityVelocity &packet);
-void send_packet(ENetPeer *peer, const SpawnPlayer &packet);
-void send_packet(ENetPeer *peer, const ChatMessage &packet);
-void send_packet(ENetPeer *peer, const SetVoxel &packet);
+ENetPacket *make_packet(const StatusRequest &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
+ENetPacket *make_packet(const StatusResponse &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
+ENetPacket *make_packet(const LoginRequest &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
+ENetPacket *make_packet(const LoginResponse &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
+ENetPacket *make_packet(const Disconnect &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
+ENetPacket *make_packet(const ChunkVoxels &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
+ENetPacket *make_packet(const EntityTransform &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
+ENetPacket *make_packet(const EntityHead &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
+ENetPacket *make_packet(const EntityVelocity &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
+ENetPacket *make_packet(const SpawnPlayer &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
+ENetPacket *make_packet(const ChatMessage &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
+ENetPacket *make_packet(const SetVoxel &packet, std::uint32_t flags = ENET_PACKET_FLAG_RELIABLE);
 } // namespace protocol
 
 namespace protocol
