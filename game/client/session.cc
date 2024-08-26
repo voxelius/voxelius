@@ -15,7 +15,7 @@
 #include <game/shared/world.hh>
 #include <spdlog/spdlog.h>
 
-static void on_login_response(const protocol::LoginResponse &packet)
+static void on_login_response_packet(const protocol::LoginResponse &packet)
 {
     spdlog::info("session: assigned session_id={}", packet.session_id);
     spdlog::info("session: assigned username: {}", packet.username);
@@ -29,7 +29,7 @@ static void on_login_response(const protocol::LoginResponse &packet)
     progress::set_title("Loading world");    
 }
 
-static void on_disconnect(const protocol::Disconnect &packet)
+static void on_disconnect_packet(const protocol::Disconnect &packet)
 {
     enet_peer_disconnect(globals::session_peer, 0);
 
@@ -54,7 +54,7 @@ static void on_disconnect(const protocol::Disconnect &packet)
     globals::gui_screen = GUI_MESSAGE_BOX;
 }
 
-static void on_set_voxel(const protocol::SetVoxel &packet)
+static void on_set_voxel_packet(const protocol::SetVoxel &packet)
 {
     const auto cpos = VoxelCoord::to_chunk(packet.coord);
     const auto lpos = VoxelCoord::to_local(packet.coord);
@@ -77,6 +77,9 @@ static void on_set_voxel(const protocol::SetVoxel &packet)
     }
 }
 
+// NOTE: [session] is a good place for this since [receive]
+// handles entity data sent by the server and [session] handles
+// everything else network related that is not player movement
 static void on_voxel_set(const VoxelSetEvent &event)
 {
     if(globals::session_peer) {
@@ -96,9 +99,9 @@ void session::init(void)
     globals::session_send_time = UINT64_MAX;
     globals::session_username = std::string();
     
-    globals::dispatcher.sink<protocol::LoginResponse>().connect<&on_login_response>();
-    globals::dispatcher.sink<protocol::Disconnect>().connect<&on_disconnect>();
-    globals::dispatcher.sink<protocol::SetVoxel>().connect<&on_set_voxel>();
+    globals::dispatcher.sink<protocol::LoginResponse>().connect<&on_login_response_packet>();
+    globals::dispatcher.sink<protocol::Disconnect>().connect<&on_disconnect_packet>();
+    globals::dispatcher.sink<protocol::SetVoxel>().connect<&on_set_voxel_packet>();
 
     globals::dispatcher.sink<VoxelSetEvent>().connect<&on_voxel_set>();
 }

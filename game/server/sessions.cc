@@ -37,7 +37,7 @@ static std::string make_unique_username(const std::string &username)
     return username;
 }
 
-static void on_login_request(const protocol::LoginRequest &packet)
+static void on_login_request_packet(const protocol::LoginRequest &packet)
 {
     
     if(packet.version > protocol::VERSION) {
@@ -86,7 +86,7 @@ static void on_login_request(const protocol::LoginRequest &packet)
     sessions::send_disconnect(packet.peer, "disconnected.max_players");
 }
 
-static void on_disconnect(const protocol::Disconnect &packet)
+static void on_disconnect_packet(const protocol::Disconnect &packet)
 {
     if(Session *session = sessions::find(packet.peer)) {
         spdlog::info("{} disconnected: {}", session->username, packet.reason);
@@ -94,13 +94,15 @@ static void on_disconnect(const protocol::Disconnect &packet)
     }
 }
 
+// NOTE: [sessions] is a good place for this since [receive]
+// handles entity data sent by players and [sessions] handles
+// everything else network related that is not player movement
 static void on_voxel_set(const VoxelSetEvent &event)
 {
     protocol::SetVoxel packet = {};
     packet.coord = event.vpos;
     packet.voxel = event.voxel;
     packet.flags = UINT16_C(0x0000); // UNDONE
-    
     enet_host_broadcast(globals::server_host, 0, protocol::make_packet(packet));
 }
 
@@ -108,8 +110,8 @@ void sessions::init(void)
 {
     Config::add(globals::server_config, "sessions.max_players", sessions::max_players);
 
-    globals::dispatcher.sink<protocol::LoginRequest>().connect<&on_login_request>();
-    globals::dispatcher.sink<protocol::Disconnect>().connect<&on_disconnect>();
+    globals::dispatcher.sink<protocol::LoginRequest>().connect<&on_login_request_packet>();
+    globals::dispatcher.sink<protocol::Disconnect>().connect<&on_disconnect_packet>();
 
     globals::dispatcher.sink<VoxelSetEvent>().connect<&on_voxel_set>();
 }

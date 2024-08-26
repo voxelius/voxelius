@@ -6,7 +6,7 @@
 #include <game/server/status.hh>
 #include <game/shared/protocol.hh>
 
-static void on_status_request(const protocol::StatusRequest &packet)
+static void on_status_request_packet(const protocol::StatusRequest &packet)
 {
     protocol::StatusResponse response = {};
     response.version = protocol::VERSION;
@@ -18,5 +18,5 @@ static void on_status_request(const protocol::StatusRequest &packet)
 
 void status::init(void)
 {
-    globals::dispatcher.sink<protocol::StatusRequest>().connect<&on_status_request>();
+    globals::dispatcher.sink<protocol::StatusRequest>().connect<&on_status_request_packet>();
 }
