@@ -189,8 +189,10 @@ void sessions::destroy(Session *session)
             session->peer->data = nullptr;
         }
         
-        // Nuke the entity so it doesn't hang around
-        globals::registry.destroy(session->player);
+        if(globals::registry.valid(session->player)) {
+            globals::registry.destroy(session->player);
+            protocol::send_remove_entity(nullptr, globals::server_host, session->player);
+        }
 
         sessions_map.erase(session->player_uid);
 

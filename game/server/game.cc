@@ -155,6 +155,7 @@ void server_game::deinit(void)
 
 void server_game::update(void)
 {
+#if 0
     const auto group = globals::registry.group<PlayerComponent, HeadComponent, TransformComponent, VelocityComponent>();
 
     for(const auto [entity, head, transform, velocity] : group.each()) {
@@ -162,6 +163,7 @@ void server_game::update(void)
             transform.position.chunk[0], transform.position.chunk[1], transform.position.chunk[2],
             transform.position.local[0], transform.position.local[1], transform.position.local[2]);
     }
+#endif
 }
 
 void server_game::update_late(void)

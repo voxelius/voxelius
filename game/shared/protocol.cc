@@ -169,6 +169,14 @@ void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::SetVoxel &pa
     basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
+void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::RemoveEntity &packet)
+{
+    PacketBuffer::setup(write_buffer);
+    PacketBuffer::write_UI16(write_buffer, protocol::RemoveEntity::ID);
+    PacketBuffer::write_UI64(write_buffer, static_cast<std::uint64_t>(packet.entity));
+    basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
+}
+
 void protocol::receive(const ENetPacket *packet, ENetPeer *peer)
 {
     PacketBuffer::setup(read_buffer, packet->data, packet->dataLength);
@@ -185,6 +193,7 @@ void protocol::receive(const ENetPacket *packet, ENetPeer *peer)
     protocol::SpawnPlayer spawn_player = {};
     protocol::ChatMessage chat_message = {};
     protocol::SetVoxel set_voxel = {};
+    protocol::RemoveEntity remove_entity = {};
     
     switch(PacketBuffer::read_UI16(read_buffer)) {
         case protocol::StatusRequest::ID:
@@ -282,6 +291,10 @@ void protocol::receive(const ENetPacket *packet, ENetPeer *peer)
             set_voxel.flags = PacketBuffer::read_UI16(read_buffer);
             globals::dispatcher.trigger(set_voxel);
             break;
+        case protocol::RemoveEntity::ID:
+            remove_entity.entity = static_cast<entt::entity>(PacketBuffer::read_UI64(read_buffer));
+            globals::dispatcher.trigger(remove_entity);
+            break;
     }
 }
 
@@ -346,6 +359,13 @@ void protocol::send_entity_velocity(ENetPeer *peer, ENetHost *host, entt::entity
 void protocol::send_spawn_player(ENetPeer *peer, ENetHost *host, entt::entity entity)
 {
     protocol::SpawnPlayer packet = {};
+    packet.entity = entity;
+    protocol::send(peer, host, packet);
+}
+
+void protocol::send_remove_entity(ENetPeer *peer, ENetHost *host, entt::entity entity)
+{
+    protocol::RemoveEntity packet = {};
     packet.entity = entity;
     protocol::send(peer, host, packet);
 }
