@@ -7,6 +7,7 @@
 #include <game/client/server_list.hh>
 #include <imgui.h>
 #include <imgui_stdlib.h>
+#include <spdlog/fmt/fmt.h>
 
 constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
 
@@ -52,17 +53,16 @@ void server_list::layout(void)
             ImGui::EndTabBar();
         }
 
-        if(ImGui::BeginChild("###server_list.child")) {
-            ImGui::ShowStyleEditor();
+        if(ImGui::BeginTable("###server_list.table", 1)) {
+            for(int i = 0; i < 10; ++i) {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+            }
         }
 
+        ImGui::EndTable();
+
         ImGui::EndChild();
-        ImGui::Separator();
-
-        ImGui::Button("A"); ImGui::SameLine();
-        ImGui::Button("B"); ImGui::SameLine();
-        ImGui::Button("C");
-
         ImGui::PopStyleVar();
     }
 
