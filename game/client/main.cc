@@ -292,7 +292,6 @@ void client::main(void)
             // rendering and UI logic updates, so this here function
             // acts as the definitive UI rendering/logic callback
             client_game::layout();
-
         }
 
         ImGui::Render();

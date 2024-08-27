@@ -199,6 +199,7 @@ void client_game::init(void)
     // Black buttons on a dark background
     // may be harder to read than the text on them
     style.FrameBorderSize = 1.0;
+    style.TabBorderSize = 1.0;
 
     // Rounding on elements looks cool but I am
     // aiming for a more or less blocky and
