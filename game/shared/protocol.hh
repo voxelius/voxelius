@@ -35,6 +35,7 @@ struct EntityVelocity;
 struct SpawnPlayer;
 struct ChatMessage;
 struct SetVoxel;
+struct RemoveEntity;
 } // namespace protocol
 
 namespace protocol
@@ -51,6 +52,7 @@ void send(ENetPeer *peer, ENetHost *host, const EntityVelocity &packet);
 void send(ENetPeer *peer, ENetHost *host, const SpawnPlayer &packet);
 void send(ENetPeer *peer, ENetHost *host, const ChatMessage &packet);
 void send(ENetPeer *peer, ENetHost *host, const SetVoxel &packet);
+void send(ENetPeer *peer, ENetHost *host, const RemoveEntity &packet);
 } // namespace protocol
 
 namespace protocol
@@ -71,6 +73,7 @@ void send_entity_head(ENetPeer *peer, ENetHost *host, entt::entity entity);
 void send_entity_transform(ENetPeer *peer, ENetHost *host, entt::entity entity);
 void send_entity_velocity(ENetPeer *peer, ENetHost *host, entt::entity entity);
 void send_spawn_player(ENetPeer *peer, ENetHost *host, entt::entity entity);
+void send_remove_entity(ENetPeer *peer, ENetHost *host, entt::entity entity);
 } // namespace protocol
 
 namespace protocol
@@ -142,4 +145,8 @@ struct protocol::SetVoxel final : public protocol::Base<0x000B> {
     VoxelCoord coord {};
     Voxel voxel {};
     std::uint16_t flags {};
+};
+
+struct protocol::RemoveEntity final : public protocol::Base<0x000C> {
+    entt::entity entity {};
 };

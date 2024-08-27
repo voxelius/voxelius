@@ -293,10 +293,11 @@ void client::main(void)
             // acts as the definitive UI rendering/logic callback
             client_game::layout();
 
-            ImGui::Render();
-
-            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
         }
+
+        ImGui::Render();
+
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(globals::window);
 

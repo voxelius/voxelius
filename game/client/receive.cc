@@ -14,6 +14,21 @@
 #include <game/shared/world.hh>
 #include <spdlog/spdlog.h>
 
+static bool make_entity(entt::entity entity)
+{
+    if(!globals::registry.valid(entity)) {
+        entt::entity created = globals::registry.create(entity);
+
+        if(created != entity) {
+            session::disconnect("protocol.chunk_entity_mismatch");
+            spdlog::critical("receive: chunk entity mismatch");
+            return false;
+        }
+    }
+
+    return true;
+}
+
 static void on_chunk_voxels_packet(const protocol::ChunkVoxels &packet)
 {
     if(globals::session_peer) {
@@ -36,8 +51,8 @@ static void on_chunk_voxels_packet(const protocol::ChunkVoxels &packet)
 static void on_entity_head_packet(const protocol::EntityHead &packet)
 {
     if(globals::session_peer) {
-        if(!globals::registry.valid(packet.entity))
-            static_cast<void>(globals::registry.create(packet.entity));
+        if(!make_entity(packet.entity))
+            return;
         auto &component = globals::registry.get_or_emplace<HeadComponent>(packet.entity);
         component.angles = packet.angles;
     }
@@ -76,6 +91,14 @@ static void on_spawn_player_packet(const protocol::SpawnPlayer &packet)
     }
 }
 
+static void on_remove_entity_packet(const protocol::RemoveEntity &packet)
+{
+    if(packet.entity == globals::player)
+        globals::player = entt::null;
+    globals::registry.destroy(packet.entity);
+    spdlog::info("REMOVING {}", static_cast<std::uint64_t>(packet.entity));
+}
+
 void client_receive::init(void)
 {
     globals::dispatcher.sink<protocol::ChunkVoxels>().connect<&on_chunk_voxels_packet>();
@@ -83,4 +106,5 @@ void client_receive::init(void)
     globals::dispatcher.sink<protocol::EntityTransform>().connect<&on_entity_transform_packet>();
     globals::dispatcher.sink<protocol::EntityVelocity>().connect<&on_entity_velocity_packet>();
     globals::dispatcher.sink<protocol::SpawnPlayer>().connect<&on_spawn_player_packet>();
+    globals::dispatcher.sink<protocol::RemoveEntity>().connect<&on_remove_entity_packet>();
 }
