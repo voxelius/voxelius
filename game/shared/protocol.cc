@@ -363,13 +363,6 @@ void protocol::send_spawn_player(ENetPeer *peer, ENetHost *host, entt::entity en
     protocol::send(peer, host, packet);
 }
 
-void protocol::send_remove_entity(ENetPeer *peer, ENetHost *host, entt::entity entity)
-{
-    protocol::RemoveEntity packet = {};
-    packet.entity = entity;
-    protocol::send(peer, host, packet);
-}
-
 void protocol::send_set_voxel(ENetPeer *peer, ENetHost *host, const VoxelCoord &vpos, Voxel voxel)
 {
     protocol::SetVoxel packet = {};

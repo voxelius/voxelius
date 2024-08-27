@@ -8,6 +8,7 @@
 #include "../config/config.h"
 #include "../container/dense_map.hpp"
 #include "../core/attribute.h"
+#include "../core/bit.hpp"
 #include "../core/enum.hpp"
 #include "../core/fwd.hpp"
 #include "../core/type_info.hpp"
@@ -22,11 +23,7 @@ class meta_any;
 class meta_type;
 struct meta_handle;
 
-/**
- * @cond TURN_OFF_DOXYGEN
- * Internal details not to be documented.
- */
-
+/*! @cond TURN_OFF_DOXYGEN */
 namespace internal {
 
 enum class meta_traits : std::uint32_t {
@@ -39,13 +36,36 @@ enum class meta_traits : std::uint32_t {
     is_array = 0x0020,
     is_enum = 0x0040,
     is_class = 0x0080,
-    is_meta_pointer_like = 0x0100,
-    is_meta_sequence_container = 0x0200,
-    is_meta_associative_container = 0x0400,
-    _entt_enum_as_bitmask
+    is_pointer = 0x0100,
+    is_meta_pointer_like = 0x0200,
+    is_meta_sequence_container = 0x0400,
+    is_meta_associative_container = 0x0800,
+    _user_defined_traits = 0xFFFF,
+    _entt_enum_as_bitmask = 0xFFFF
 };
 
+template<typename Type>
+[[nodiscard]] auto meta_to_user_traits(const meta_traits traits) noexcept {
+    static_assert(std::is_enum_v<Type>, "Invalid enum type");
+    constexpr auto shift = popcount(static_cast<std::underlying_type_t<meta_traits>>(meta_traits::_user_defined_traits));
+    return Type{static_cast<std::underlying_type_t<Type>>(static_cast<std::underlying_type_t<meta_traits>>(traits) >> shift)};
+}
+
+template<typename Type>
+[[nodiscard]] auto user_to_meta_traits(const Type value) noexcept {
+    static_assert(std::is_enum_v<Type>, "Invalid enum type");
+    constexpr auto shift = popcount(static_cast<std::underlying_type_t<meta_traits>>(meta_traits::_user_defined_traits));
+    const auto traits = static_cast<std::underlying_type_t<internal::meta_traits>>(static_cast<std::underlying_type_t<Type>>(value));
+    ENTT_ASSERT(traits < ((~static_cast<std::underlying_type_t<meta_traits>>(meta_traits::_user_defined_traits)) >> shift), "Invalid traits");
+    return meta_traits{traits << shift};
+}
+
 struct meta_type_node;
+
+struct meta_custom_node {
+    id_type type{};
+    std::shared_ptr<void> value{};
+};
 
 struct meta_prop_node {
     meta_type_node (*type)(const meta_context &) noexcept {};
@@ -82,6 +102,7 @@ struct meta_data_node {
     meta_type (*arg)(const meta_ctx &, const size_type) noexcept {};
     bool (*set)(meta_handle, meta_any){};
     meta_any (*get)(const meta_ctx &, meta_handle){};
+    meta_custom_node custom{};
     dense_map<id_type, meta_prop_node, identity> prop{};
 };
 
@@ -94,6 +115,7 @@ struct meta_func_node {
     meta_type (*arg)(const meta_ctx &, const size_type) noexcept {};
     meta_any (*invoke)(const meta_ctx &, meta_handle, meta_any *const){};
     std::shared_ptr<meta_func_node> next{};
+    meta_custom_node custom{};
     dense_map<id_type, meta_prop_node, identity> prop{};
 };
 
@@ -128,8 +150,26 @@ struct meta_type_node {
     meta_any (*from_void)(const meta_ctx &, void *, const void *){};
     meta_template_node templ{};
     meta_dtor_node dtor{};
+    meta_custom_node custom{};
     std::shared_ptr<meta_type_descriptor> details{};
 };
+
+template<auto Member>
+auto *look_for(const meta_context &context, const meta_type_node &node, const id_type id) {
+    if(node.details) {
+        if(const auto it = (node.details.get()->*Member).find(id); it != (node.details.get()->*Member).cend()) {
+            return &it->second;
+        }
+
+        for(auto &&curr: node.details->base) {
+            if(auto *elem = look_for<Member>(context, curr.second.type(context), id); elem) {
+                return elem;
+            }
+        }
+    }
+
+    return static_cast<typename std::remove_reference_t<decltype(node.details.get()->*Member)>::mapped_type *>(nullptr);
+}
 
 template<typename Type>
 meta_type_node resolve(const meta_context &) noexcept;
@@ -159,6 +199,31 @@ template<typename... Args>
     return nullptr;
 }
 
+template<typename Func>
+[[nodiscard]] inline auto try_convert(const meta_context &context, const meta_type_node &from, const type_info &to, const bool arithmetic_or_enum, const void *instance, Func func) {
+    if(from.info && *from.info == to) {
+        return func(instance, from);
+    }
+
+    if(from.details) {
+        if(auto it = from.details->conv.find(to.hash()); it != from.details->conv.cend()) {
+            return func(instance, it->second);
+        }
+
+        for(auto &&curr: from.details->base) {
+            if(auto other = try_convert(context, curr.second.type(context), to, arithmetic_or_enum, curr.second.cast(instance), func); other) {
+                return other;
+            }
+        }
+    }
+
+    if(from.conversion_helper && arithmetic_or_enum) {
+        return func(instance, from.conversion_helper);
+    }
+
+    return func(instance);
+}
+
 [[nodiscard]] inline const meta_type_node *try_resolve(const meta_context &context, const type_info &info) noexcept {
     const auto it = context.value.find(info.hash());
     return it != context.value.end() ? &it->second : nullptr;
@@ -181,6 +246,7 @@ template<typename Type>
             | (std::is_array_v<Type> ? meta_traits::is_array : meta_traits::is_none)
             | (std::is_enum_v<Type> ? meta_traits::is_enum : meta_traits::is_none)
             | (std::is_class_v<Type> ? meta_traits::is_class : meta_traits::is_none)
+            | (std::is_pointer_v<Type> ? meta_traits::is_pointer : meta_traits::is_none)
             | (is_meta_pointer_like_v<Type> ? meta_traits::is_meta_pointer_like : meta_traits::is_none)
             | (is_complete_v<meta_sequence_container_traits<Type>> ? meta_traits::is_meta_sequence_container : meta_traits::is_none)
             | (is_complete_v<meta_associative_container_traits<Type>> ? meta_traits::is_meta_associative_container : meta_traits::is_none),
@@ -195,22 +261,22 @@ template<typename Type>
     }
 
     if constexpr(std::is_arithmetic_v<Type>) {
-        node.conversion_helper = +[](void *bin, const void *value) {
-            return bin ? static_cast<double>(*static_cast<Type *>(bin) = static_cast<Type>(*static_cast<const double *>(value))) : static_cast<double>(*static_cast<const Type *>(value));
+        node.conversion_helper = +[](void *lhs, const void *rhs) {
+            return lhs ? static_cast<double>(*static_cast<Type *>(lhs) = static_cast<Type>(*static_cast<const double *>(rhs))) : static_cast<double>(*static_cast<const Type *>(rhs));
         };
     } else if constexpr(std::is_enum_v<Type>) {
-        node.conversion_helper = +[](void *bin, const void *value) {
-            return bin ? static_cast<double>(*static_cast<Type *>(bin) = static_cast<Type>(static_cast<std::underlying_type_t<Type>>(*static_cast<const double *>(value)))) : static_cast<double>(*static_cast<const Type *>(value));
+        node.conversion_helper = +[](void *lhs, const void *rhs) {
+            return lhs ? static_cast<double>(*static_cast<Type *>(lhs) = static_cast<Type>(static_cast<std::underlying_type_t<Type>>(*static_cast<const double *>(rhs)))) : static_cast<double>(*static_cast<const Type *>(rhs));
         };
     }
 
-    if constexpr(!std::is_same_v<Type, void> && !std::is_function_v<Type>) {
-        node.from_void = +[](const meta_ctx &ctx, void *element, const void *as_const) {
-            if(element) {
-                return meta_any{ctx, std::in_place_type<std::decay_t<Type> &>, *static_cast<std::decay_t<Type> *>(element)};
+    if constexpr(!std::is_void_v<Type> && !std::is_function_v<Type>) {
+        node.from_void = +[](const meta_ctx &ctx, void *elem, const void *celem) {
+            if(elem) {
+                return meta_any{ctx, std::in_place_type<std::decay_t<Type> &>, *static_cast<std::decay_t<Type> *>(elem)};
             }
 
-            return meta_any{ctx, std::in_place_type<const std::decay_t<Type> &>, *static_cast<const std::decay_t<Type> *>(as_const)};
+            return meta_any{ctx, std::in_place_type<const std::decay_t<Type> &>, *static_cast<const std::decay_t<Type> *>(celem)};
         };
     }
 
@@ -225,11 +291,7 @@ template<typename Type>
 }
 
 } // namespace internal
-
-/**
- * Internal details not to be documented.
- * @endcond
- */
+/*! @endcond */
 
 } // namespace entt
 

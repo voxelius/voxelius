@@ -73,7 +73,6 @@ void send_entity_head(ENetPeer *peer, ENetHost *host, entt::entity entity);
 void send_entity_transform(ENetPeer *peer, ENetHost *host, entt::entity entity);
 void send_entity_velocity(ENetPeer *peer, ENetHost *host, entt::entity entity);
 void send_spawn_player(ENetPeer *peer, ENetHost *host, entt::entity entity);
-void send_remove_entity(ENetPeer *peer, ENetHost *host, entt::entity entity);
 } // namespace protocol
 
 namespace protocol

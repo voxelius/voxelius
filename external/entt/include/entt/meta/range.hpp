@@ -10,34 +10,31 @@
 
 namespace entt {
 
-/**
- * @cond TURN_OFF_DOXYGEN
- * Internal details not to be documented.
- */
-
+/*! @cond TURN_OFF_DOXYGEN */
 namespace internal {
 
 template<typename Type, typename It>
 struct meta_range_iterator final {
-    using difference_type = std::ptrdiff_t;
     using value_type = std::pair<id_type, Type>;
     using pointer = input_iterator_pointer<value_type>;
     using reference = value_type;
+    using difference_type = std::ptrdiff_t;
     using iterator_category = std::input_iterator_tag;
+    using iterator_concept = std::random_access_iterator_tag;
 
-    meta_range_iterator() noexcept
+    constexpr meta_range_iterator() noexcept
         : it{},
           ctx{} {}
 
-    meta_range_iterator(const meta_ctx &area, const It iter) noexcept
+    constexpr meta_range_iterator(const meta_ctx &area, const It iter) noexcept
         : it{iter},
           ctx{&area} {}
 
-    meta_range_iterator &operator++() noexcept {
+    constexpr meta_range_iterator &operator++() noexcept {
         return ++it, *this;
     }
 
-    meta_range_iterator operator++(int) noexcept {
+    constexpr meta_range_iterator operator++(int) noexcept {
         meta_range_iterator orig = *this;
         return ++(*this), orig;
     }
@@ -78,7 +75,7 @@ struct meta_range_iterator final {
     }
 
     [[nodiscard]] constexpr reference operator*() const noexcept {
-        return {it->first, Type{*ctx, it->second}};
+        return operator[](0);
     }
 
     template<typename... Args>
@@ -131,11 +128,7 @@ template<typename... Args>
 }
 
 } // namespace internal
-
-/**
- * Internal details not to be documented.
- * @endcond
- */
+/*! @endcond */
 
 /**
  * @brief Iterable range to use to iterate all types of meta objects.

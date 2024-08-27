@@ -60,12 +60,12 @@ static void on_login_request_packet(const protocol::LoginRequest &packet)
         spdlog::info("sessions: {} [{}] logged in with session_id={}", session->username, session->player_uid, session->session_id);
 
         // FIXME: this is not a good idea
-        globals::registry.each([session](const entt::entity entity) {
+        for(auto entity : globals::registry.view<entt::entity>()) {
             protocol::send_chunk_voxels(session->peer, nullptr, entity);
             protocol::send_entity_head(session->peer, nullptr, entity);
             protocol::send_entity_transform(session->peer, nullptr, entity);
             protocol::send_entity_velocity(session->peer, nullptr, entity);
-        });
+        }
 
         session->player = globals::registry.create();
         globals::registry.emplace<HeadComponent>(session->player, HeadComponent());
@@ -102,6 +102,13 @@ static void on_voxel_set(const VoxelSetEvent &event)
     protocol::send_set_voxel(nullptr, globals::server_host, event.vpos, event.voxel);
 }
 
+static void on_destroy_entity(const entt::registry &registry, entt::entity entity)
+{
+    protocol::RemoveEntity packet = {};
+    packet.entity = entity;
+    protocol::send(nullptr, globals::server_host, packet);
+}
+
 void sessions::init(void)
 {
     Config::add(globals::server_config, "sessions.max_players", sessions::max_players);
@@ -110,6 +117,8 @@ void sessions::init(void)
     globals::dispatcher.sink<protocol::Disconnect>().connect<&on_disconnect_packet>();
 
     globals::dispatcher.sink<VoxelSetEvent>().connect<&on_voxel_set>();
+
+    globals::registry.on_destroy<entt::entity>().connect<&on_destroy_entity>();
 }
 
 void sessions::init_late(void)
@@ -189,10 +198,7 @@ void sessions::destroy(Session *session)
             session->peer->data = nullptr;
         }
         
-        if(globals::registry.valid(session->player)) {
-            globals::registry.destroy(session->player);
-            protocol::send_remove_entity(nullptr, globals::server_host, session->player);
-        }
+        globals::registry.destroy(session->player);
 
         sessions_map.erase(session->player_uid);
 
