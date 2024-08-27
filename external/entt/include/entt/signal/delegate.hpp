@@ -12,11 +12,7 @@
 
 namespace entt {
 
-/**
- * @cond TURN_OFF_DOXYGEN
- * Internal details not to be documented.
- */
-
+/*! @cond TURN_OFF_DOXYGEN */
 namespace internal {
 
 template<typename Ret, typename... Args>
@@ -43,11 +39,7 @@ template<typename... Class, typename Ret, typename... Args>
 }
 
 } // namespace internal
-
-/**
- * Internal details not to be documented.
- * @endcond
- */
+/*! @endcond */
 
 /**
  * @brief Basic delegate implementation.
@@ -76,25 +68,28 @@ class delegate<Ret(Args...)> {
     [[nodiscard]] auto wrap(std::index_sequence<Index...>) noexcept {
         return [](const void *, Args... args) -> Ret {
             [[maybe_unused]] const auto arguments = std::forward_as_tuple(std::forward<Args>(args)...);
-            return static_cast<Ret>(std::invoke(Candidate, std::forward<type_list_element_t<Index, type_list<Args...>>>(std::get<Index>(arguments))...));
+            [[maybe_unused]] constexpr auto offset = !std::is_invocable_r_v<Ret, decltype(Candidate), type_list_element_t<Index, type_list<Args...>>...> * (sizeof...(Args) - sizeof...(Index));
+            return static_cast<Ret>(std::invoke(Candidate, std::forward<type_list_element_t<Index + offset, type_list<Args...>>>(std::get<Index + offset>(arguments))...));
         };
     }
 
     template<auto Candidate, typename Type, std::size_t... Index>
     [[nodiscard]] auto wrap(Type &, std::index_sequence<Index...>) noexcept {
         return [](const void *payload, Args... args) -> Ret {
-            [[maybe_unused]] const auto arguments = std::forward_as_tuple(std::forward<Args>(args)...);
             Type *curr = static_cast<Type *>(const_cast<constness_as_t<void, Type> *>(payload));
-            return static_cast<Ret>(std::invoke(Candidate, *curr, std::forward<type_list_element_t<Index, type_list<Args...>>>(std::get<Index>(arguments))...));
+            [[maybe_unused]] const auto arguments = std::forward_as_tuple(std::forward<Args>(args)...);
+            [[maybe_unused]] constexpr auto offset = !std::is_invocable_r_v<Ret, decltype(Candidate), Type &, type_list_element_t<Index, type_list<Args...>>...> * (sizeof...(Args) - sizeof...(Index));
+            return static_cast<Ret>(std::invoke(Candidate, *curr, std::forward<type_list_element_t<Index + offset, type_list<Args...>>>(std::get<Index + offset>(arguments))...));
         };
     }
 
     template<auto Candidate, typename Type, std::size_t... Index>
     [[nodiscard]] auto wrap(Type *, std::index_sequence<Index...>) noexcept {
         return [](const void *payload, Args... args) -> Ret {
-            [[maybe_unused]] const auto arguments = std::forward_as_tuple(std::forward<Args>(args)...);
             Type *curr = static_cast<Type *>(const_cast<constness_as_t<void, Type> *>(payload));
-            return static_cast<Ret>(std::invoke(Candidate, curr, std::forward<type_list_element_t<Index, type_list<Args...>>>(std::get<Index>(arguments))...));
+            [[maybe_unused]] const auto arguments = std::forward_as_tuple(std::forward<Args>(args)...);
+            [[maybe_unused]] constexpr auto offset = !std::is_invocable_r_v<Ret, decltype(Candidate), Type *, type_list_element_t<Index, type_list<Args...>>...> * (sizeof...(Args) - sizeof...(Index));
+            return static_cast<Ret>(std::invoke(Candidate, curr, std::forward<type_list_element_t<Index + offset, type_list<Args...>>>(std::get<Index + offset>(arguments))...));
         };
     }
 
@@ -107,9 +102,7 @@ public:
     using result_type = Ret;
 
     /*! @brief Default constructor. */
-    delegate() noexcept
-        : instance{nullptr},
-          fn{nullptr} {}
+    delegate() noexcept = default;
 
     /**
      * @brief Constructs a delegate with a given object or payload, if any.
@@ -234,6 +227,14 @@ public:
     }
 
     /**
+     * @brief Returns a pointer to the stored callable function target, if any.
+     * @return An opaque pointer to the stored callable function target.
+     */
+    [[nodiscard]] function_type *target() const noexcept {
+        return fn;
+    }
+
+    /**
      * @brief Returns the instance or the payload linked to a delegate, if any.
      * @return An opaque pointer to the underlying data.
      */
@@ -277,8 +278,8 @@ public:
     }
 
 private:
-    const void *instance;
-    function_type *fn;
+    const void *instance{};
+    function_type *fn{};
 };
 
 /**

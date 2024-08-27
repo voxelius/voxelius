@@ -96,7 +96,6 @@ static void on_remove_entity_packet(const protocol::RemoveEntity &packet)
     if(packet.entity == globals::player)
         globals::player = entt::null;
     globals::registry.destroy(packet.entity);
-    spdlog::info("REMOVING {}", static_cast<std::uint64_t>(packet.entity));
 }
 
 void client_receive::init(void)
