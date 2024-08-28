@@ -2,8 +2,8 @@
 // Copyright (C) 2024, Voxelius Contributors
 #pragma once
 
-namespace server_list
+namespace play_menu
 {
 void init(void);
 void layout(void);
-} // namespace server_list
+} // namespace play_menu

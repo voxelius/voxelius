@@ -29,7 +29,7 @@
 #include <game/client/progress.hh>
 #include <game/client/receive.hh>
 #include <game/client/screenshot.hh>
-#include <game/client/server_list.hh>
+#include <game/client/play_menu.hh>
 #include <game/client/session.hh>
 #include <game/client/settings.hh>
 #include <game/client/view.hh>
@@ -279,7 +279,7 @@ void client_game::init(void)
     background::init();
 
     main_menu::init();
-    server_list::init();
+    play_menu::init();
     settings::init();
     progress::init();
     message_box::init();
@@ -464,8 +464,8 @@ void client_game::layout(void)
             case GUI_MAIN_MENU:
                 main_menu::layout();
                 break;
-            case GUI_SERVER_LIST:
-                server_list::layout();
+            case GUI_PLAY_MENU:
+                play_menu::layout();
                 break;
             case GUI_SETTINGS:
                 settings::layout();

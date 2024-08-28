@@ -47,8 +47,8 @@ static void on_disconnect_packet(const protocol::Disconnect &packet)
     message_box::reset();
     message_box::set_title("disconnected.disconnected");
     message_box::set_subtitle(packet.reason);
-    message_box::add_button("disconnected.back_to_menu", [](void) {
-        globals::gui_screen = GUI_MAIN_MENU;
+    message_box::add_button("disconnected.back", [](void) {
+        globals::gui_screen = GUI_PLAY_MENU;
     });
 
     globals::gui_screen = GUI_MESSAGE_BOX;
@@ -125,8 +125,8 @@ void session::connect(const std::string &host, std::uint16_t port)
         message_box::reset();
         message_box::set_title("disconnected.disconnected");
         message_box::set_subtitle("enet.peer_connection_failed");
-        message_box::add_button("disconnected.back_to_menu", [](void) {
-            globals::gui_screen = GUI_MAIN_MENU;
+        message_box::add_button("disconnected.back", [](void) {
+            globals::gui_screen = GUI_PLAY_MENU;
         });
 
         globals::gui_screen = GUI_MESSAGE_BOX;
@@ -190,8 +190,8 @@ void session::invalidate(void)
         message_box::reset();
         message_box::set_title("disconnected.disconnected");
         message_box::set_subtitle("enet.peer_connection_timeout");
-        message_box::add_button("disconnected.back_to_menu", [](void) {
-            globals::gui_screen = GUI_MAIN_MENU;
+        message_box::add_button("disconnected.back", [](void) {
+            globals::gui_screen = GUI_PLAY_MENU;
         });
 
         globals::gui_screen = GUI_MESSAGE_BOX;

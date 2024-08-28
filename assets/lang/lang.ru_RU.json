@@ -1,8 +1,12 @@
 {
-  "main_menu.debug_session": "Отладочная Сессия",
-  "main_menu.quit": "Выйти из Игры",
-  "main_menu.server_list": "Присоединиться к Серверу",
+  "main_menu.play": "Начать Игру",
+  "main_menu.resume": "Продолжить Игру",
   "main_menu.settings": "Настройки",
+  "main_menu.leave": "Выйти из Мира",
+  "main_menu.quit": "Выйти из Игры",
+
+  "play_menu.worlds": "Миры",
+  "play_menu.servers": "Серверы",
 
   "settings.checkbox.false": "ВЫКЛ",
   "settings.checkbox.true": "ВКЛ",
