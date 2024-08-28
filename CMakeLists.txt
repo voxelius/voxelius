@@ -49,7 +49,10 @@ add_subdirectory(common)
 add_subdirectory(config)
 add_subdirectory(mathlib)
 
-add_subdirectory(game/client)
+if(BUILD_CLIENT)
+    add_subdirectory(game/client)
+endif()
+
 add_subdirectory(game/server)
 add_subdirectory(game/shared)
 add_subdirectory(launch)
