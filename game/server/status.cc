@@ -5,6 +5,7 @@
 #include <game/server/sessions.hh>
 #include <game/server/status.hh>
 #include <game/shared/protocol.hh>
+#include <game/shared/splash.hh>
 
 static void on_status_request_packet(const protocol::StatusRequest &packet)
 {
@@ -12,6 +13,7 @@ static void on_status_request_packet(const protocol::StatusRequest &packet)
     response.version = protocol::VERSION;
     response.max_players = sessions::max_players;
     response.num_players = sessions::num_players;
+    response.motd = splash::get();
     protocol::send(packet.peer, nullptr, response);
 }
 

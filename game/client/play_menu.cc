@@ -6,8 +6,8 @@
 #include <deque>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
-#include <game/client/event/language_set.hh>
 #include <game/client/event/glfw_key.hh>
+#include <game/client/event/language_set.hh>
 #include <game/client/globals.hh>
 #include <game/client/gui_screen.hh>
 #include <game/client/play_menu.hh>
@@ -28,6 +28,13 @@ constexpr static ServerStatus STATUS_PING = 0x0001;
 constexpr static ServerStatus STATUS_FAIL = 0x0002;
 constexpr static ServerStatus STATUS_MOTD = 0x0003;
 
+// Maximum amount of peers used for bothering
+constexpr static std::size_t BOTHER_PEERS = 4;
+
+// Default name for a server
+// Mind you this is not translated
+constexpr static const char *DEFAULT_SERVER_NAME = "Voxelius Server";
+
 struct ServerStatusItem final {
     std::string peer_host {};
     std::uint16_t peer_port {};
@@ -35,6 +42,7 @@ struct ServerStatusItem final {
     std::uint16_t num_players {};
     std::string server_motd {};
     ServerStatus status {};
+    std::string name {};
 };
 
 static std::string str_worlds_tab = {};
@@ -50,7 +58,9 @@ static std::string str_server_init = {};
 static std::string str_server_ping = {};
 static std::string str_server_fail = {};
 
+static std::string input_itemname = {};
 static std::string input_hostname = {};
+
 static std::deque<ServerStatusItem *> servers_deque = {};
 static ServerStatusItem *selected_server = nullptr;
 static bool editing_server = false;
@@ -90,13 +100,16 @@ static void on_language_set(const LanguageSetEvent &event)
     str_server_fail = language::resolve("play_menu.server.fail");
 }
 
+// NOTE: client-side networking doesn't attach
+// anything to the peer's data field so we are free
+// to assume anything with non-null data is a bother peer
 static void on_status_response_packet(const protocol::StatusResponse &packet)
 {
     if(packet.peer->data) {
         ServerStatusItem *item = reinterpret_cast<ServerStatusItem *>(packet.peer->data);
         item->max_players = packet.max_players;
         item->num_players = packet.num_players;
-        item->server_motd = fmt::format("Protocol version: {}", packet.version);
+        item->server_motd = packet.motd;
         item->status = STATUS_MOTD;
 
         enet_peer_disconnect(packet.peer, 0);
@@ -118,28 +131,60 @@ static void submit_server_item(ServerStatusItem *item, const std::string &hostna
 
 static void layout_server_item(ServerStatusItem *item)
 {
+    // Preserve the cursor at which we draw stuff
+    const ImVec2 &cursor = ImGui::GetCursorScreenPos();
+    const ImVec2 &padding = ImGui::GetStyle().FramePadding;
+
+    const float item_width = ImGui::GetContentRegionAvail().x;
+    const float line_height = ImGui::GetTextLineHeightWithSpacing();
     const std::string sid = fmt::format("###play_menu.servers.{}", static_cast<void *>(item));
-    
-    if(ImGui::Selectable(sid.c_str(), (item == selected_server))) {
+    if(ImGui::Selectable(sid.c_str(), (item == selected_server), 0, ImVec2(0.0, 2.0f * (line_height + padding.y)))) {
         selected_server = item;
         editing_server = false;
     }
 
-    ImGui::SameLine();
+    ImDrawList *draw_list = ImGui::GetWindowDrawList();
 
-    switch(item->status) {
-        case STATUS_INIT: ImGui::TextDisabled(str_server_init.c_str()); break;
-        case STATUS_PING: ImGui::TextDisabled(str_server_ping.c_str()); break;
-        case STATUS_FAIL: ImGui::TextDisabled(str_server_fail.c_str()); break;
-        case STATUS_MOTD: ImGui::TextUnformatted(item->server_motd.c_str()); break;
+    if(item == selected_server) {
+        const ImVec2 start = ImVec2(cursor.x, cursor.y);
+        const ImVec2 end = ImVec2(start.x + item_width, start.y + 2.0f * (line_height + padding.y));
+        draw_list->AddRect(start, end, ImGui::GetColorU32(ImGuiCol_Text), 0.0f, 0, globals::gui_scale);
     }
+
+    const ImVec2 name_pos = ImVec2(cursor.x + padding.x, cursor.y + padding.y);
+    draw_list->AddText(name_pos, ImGui::GetColorU32(ImGuiCol_Text), item->name.c_str(), item->name.cend().base());
 
     if(item->status == STATUS_MOTD) {
-        ImGui::SameLine();
-        const auto str = fmt::format("{}/{}", item->num_players, item->max_players);
-        ImGui::SetCursorPosX(ImGui::GetWindowSize().x - ImGui::CalcTextSize(str.c_str()).x - 2.0f * ImGui::GetStyle().FramePadding.x);
-        ImGui::TextDisabled(str.c_str());
+        const std::string stats = fmt::format("{}/{}", item->num_players, item->max_players);
+        const float stats_width = ImGui::CalcTextSize(stats.c_str(), stats.cend().base()).x;
+        const ImVec2 stats_pos = ImVec2(cursor.x + item_width - stats_width - padding.x, cursor.y + padding.y);
+        draw_list->AddText(stats_pos, ImGui::GetColorU32(ImGuiCol_TextDisabled), stats.c_str(), stats.cend().base());
     }
+
+    ImU32 motd_color = {};
+    const std::string *motd_text;
+
+    switch(item->status) {
+        case STATUS_INIT:
+            motd_color = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+            motd_text = &str_server_init;
+            break;
+        case STATUS_PING:
+            motd_color = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+            motd_text = &str_server_ping;
+            break;
+        case STATUS_MOTD:
+            motd_color = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+            motd_text = &item->server_motd;
+            break;
+        default:
+            motd_color = ImGui::GetColorU32(ImGuiCol_PlotLinesHovered);
+            motd_text = &str_server_fail;
+            break;
+    }
+
+    const ImVec2 motd_pos = ImVec2(cursor.x + padding.x, cursor.y + padding.y + line_height);
+    draw_list->AddText(motd_pos, motd_color, motd_text->c_str(), motd_text->cend().base());
 }
 
 static void layout_server_edit(ServerStatusItem *item)
@@ -150,15 +195,32 @@ static void layout_server_edit(ServerStatusItem *item)
     }
 
     ImGui::SetNextItemWidth(-0.25f * ImGui::GetContentRegionAvail().x);
-    ImGui::InputText("###play_menu.servers.edit_input", &input_hostname, ImGuiInputTextFlags_CharsNoBlank);
+    ImGui::InputText("###play_menu.servers.edit_itemname", &input_itemname);
     ImGui::SameLine();
-    
-    if(ImGui::Button("OK###play_menu.servers.submit_input", ImVec2(-1.0f, 0.0f)) || ImGui::IsKeyPressed(ImGuiKey_Enter)) {
+
+    const bool ignore_input = (strtools::is_empty_or_whitespace(input_itemname) || input_hostname.empty());
+    ImGui::BeginDisabled(ignore_input);
+
+    if(ImGui::Button("OK###play_menu.servers.submit_input", ImVec2(-1.0f, 0.0f)) || (!ignore_input && ImGui::IsKeyPressed(ImGuiKey_Enter))) {
         submit_server_item(item, input_hostname);
+        item->name = input_itemname;
         item->status = STATUS_INIT;
         editing_server = false;
+        input_itemname.clear();
         input_hostname.clear();
+
+        for(std::size_t i = 0; i < bother_host->peerCount; ++i) {
+            if(bother_host->peers[i].data == static_cast<void *>(selected_server)) {
+                enet_peer_reset(&bother_host->peers[i]);
+                break;
+            }
+        }
     }
+
+    ImGui::EndDisabled();
+
+    ImGui::SetNextItemWidth(-0.25f * ImGui::GetContentRegionAvail().x);
+    ImGui::InputText("###play_menu.servers.edit_hostname", &input_hostname, ImGuiInputTextFlags_CharsNoBlank);
 }
 
 static void add_new_server(void)
@@ -171,6 +233,8 @@ static void add_new_server(void)
     item->server_motd = std::string();
     item->status = STATUS_FAIL;
 
+    input_itemname = DEFAULT_SERVER_NAME;
+
     servers_deque.push_back(item);
     selected_server = item;
     editing_server = true;
@@ -179,6 +243,7 @@ static void add_new_server(void)
 
 static void edit_selected_server(void)
 {
+    input_itemname = selected_server->name;
     if(selected_server->peer_port != protocol::PORT)
         input_hostname = fmt::format("{}:{}", selected_server->peer_host, selected_server->peer_port);
     else input_hostname = selected_server->peer_host;
@@ -188,6 +253,13 @@ static void edit_selected_server(void)
 
 static void remove_selected_server(void)
 {
+    for(std::size_t i = 0; i < bother_host->peerCount; ++i) {
+        if(bother_host->peers[i].data == static_cast<void *>(selected_server)) {
+            enet_peer_reset(&bother_host->peers[i]);
+            break;
+        }
+    }
+
     for(auto it = servers_deque.cbegin(); it != servers_deque.cend(); ++it) {
         if(selected_server == (*it)) {
             delete selected_server;
@@ -207,6 +279,7 @@ static void join_selected_server(void)
 
 static void layout_worlds(void)
 {
+    ImGui::ShowStyleEditor();
 }
 
 static void layout_servers(void)
@@ -284,17 +357,21 @@ void play_menu::init(void)
         std::string line;
         
         while(std::getline(stream, line)) {
+            const auto parts = strtools::split(line, "%");
             ServerStatusItem *item = new ServerStatusItem();
             item->max_players = UINT16_MAX;
             item->num_players = UINT16_MAX;
             item->server_motd = std::string();
             item->status = STATUS_INIT;
-            submit_server_item(item, line);
+            if(parts.size() >= 2)
+                item->name = parts[1];
+            else item->name = DEFAULT_SERVER_NAME;
+            submit_server_item(item, parts[0]);
             servers_deque.push_back(item);
         }
     }
 
-    bother_host = enet_host_create(nullptr, 4, 1, 0, 0);
+    bother_host = enet_host_create(nullptr, BOTHER_PEERS, 1, 0, 0);
 
     if(!bother_host) {
         spdlog::warn("play_menu: cannot create a bother ENetHost");
@@ -310,7 +387,7 @@ void play_menu::deinit(void)
 {
     std::ostringstream stream = {};
     for(ServerStatusItem *item : servers_deque)
-        stream << fmt::format("{}:{}", item->peer_host, item->peer_port) << std::endl;
+        stream << fmt::format("{}:{}%{}", item->peer_host, item->peer_port, item->name) << std::endl;
     fstools::write_string("servers.txt", stream.str());
 
     for(ServerStatusItem *item : servers_deque)
@@ -366,41 +443,49 @@ void play_menu::layout(void)
 void play_menu::update_late(void)
 {
     ENetEvent event = {};
+    std::size_t num_free_peers = 0;
 
-    while(enet_host_service(bother_host, &event, 0) > 0) {
+    for(std::size_t i = 0; i < bother_host->peerCount; ++i) {
+        if(bother_host->peers[i].state != ENET_PEER_STATE_DISCONNECTED)
+            continue;
+        num_free_peers += 1;
+    }
+
+    spdlog::info(num_free_peers);
+
+    for(ServerStatusItem *item : servers_deque) {
+        if(num_free_peers && (item->status == STATUS_INIT)) {
+            ENetAddress address = {};
+            enet_address_set_host(&address, item->peer_host.c_str());
+            address.port = item->peer_port;
+
+            if(ENetPeer *peer = enet_host_connect(bother_host, &address, 1, 0)) {
+                item->status = STATUS_PING;
+                peer->data = item;
+                break;
+            }
+        }
+    }
+
+    if(enet_host_service(bother_host, &event, 0) > 0) {
         if(event.type == ENET_EVENT_TYPE_CONNECT) {
             protocol::StatusRequest request = {};
             request.version = protocol::VERSION;
             protocol::send(event.peer, nullptr, request);
-            continue;
+            return;
         }
 
         if(event.type == ENET_EVENT_TYPE_DISCONNECT) {
             ServerStatusItem *item = reinterpret_cast<ServerStatusItem *>(event.peer->data);
             if(item->status != STATUS_MOTD)
                 item->status = STATUS_FAIL;
-            continue;
+            return;
         }
 
         if(event.type == ENET_EVENT_TYPE_RECEIVE) {
             protocol::receive(event.packet, event.peer);
             enet_packet_destroy(event.packet);
-            continue;
-        }
-    }
-
-    for(ServerStatusItem *item : servers_deque) {
-        if(item->status == STATUS_INIT) {
-            ENetAddress address = {};
-            enet_address_set_host(&address, item->peer_host.c_str());
-            address.port = item->peer_port;
-
-            // This will fail whenever there's not enough free peer slots
-            if(ENetPeer *peer = enet_host_connect(bother_host, &address, 1, 0)) {
-                item->status = STATUS_PING;
-                peer->data = item;
-                continue;
-            }
+            return;
         }
     }
 }

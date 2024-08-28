@@ -53,6 +53,7 @@ void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::StatusRespon
     PacketBuffer::write_UI32(write_buffer, packet.version);
     PacketBuffer::write_UI16(write_buffer, packet.max_players);
     PacketBuffer::write_UI16(write_buffer, packet.num_players);
+    PacketBuffer::write_string(write_buffer, packet.motd);
     basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
@@ -206,6 +207,7 @@ void protocol::receive(const ENetPacket *packet, ENetPeer *peer)
             status_response.version = PacketBuffer::read_UI32(read_buffer);
             status_response.max_players = PacketBuffer::read_UI16(read_buffer);
             status_response.num_players = PacketBuffer::read_UI16(read_buffer);
+            status_response.motd = PacketBuffer::read_string(read_buffer);
             globals::dispatcher.trigger(status_response);
             break;
         case protocol::LoginRequest::ID:
