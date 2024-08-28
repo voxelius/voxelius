@@ -64,19 +64,93 @@ static std::string input_hostname = {};
 static std::deque<ServerStatusItem *> servers_deque = {};
 static ServerStatusItem *selected_server = nullptr;
 static bool editing_server = false;
+static bool adding_server = false;
 static bool needs_focus = false;
 
 static ENetHost *bother_host = nullptr;
+
+static void parse_hostname(ServerStatusItem *item, const std::string &hostname)
+{
+    const std::vector<std::string> parts = strtools::split(hostname, ":");
+
+    if(!parts[0].empty())
+        item->peer_host = parts[0];
+    else item->peer_host = std::string("localhost");
+    
+    if(parts.size() >= 2)
+        item->peer_port = cxpr::clamp<std::uint16_t>(strtoul(parts[1].c_str(), nullptr, 10), 0x0000, UINT16_MAX);
+    else item->peer_port = protocol::PORT;
+}
+
+static void add_new_server(void)
+{
+    ServerStatusItem *item = new ServerStatusItem();
+    item->peer_port = protocol::PORT;
+    item->max_players = UINT16_MAX;
+    item->num_players = UINT16_MAX;
+    item->server_motd = std::string();
+    item->status = STATUS_FAIL;
+
+    input_itemname = DEFAULT_SERVER_NAME;
+    input_hostname = std::string();
+
+    servers_deque.push_back(item);
+    selected_server = item;
+    editing_server = true;
+    adding_server = true;
+    needs_focus = true;
+}
+
+static void edit_selected_server(void)
+{
+    input_itemname = selected_server->name;
+    if(selected_server->peer_port != protocol::PORT)
+        input_hostname = fmt::format("{}:{}", selected_server->peer_host, selected_server->peer_port);
+    else input_hostname = selected_server->peer_host;
+    editing_server = true;
+    needs_focus = true;
+}
+
+static void remove_selected_server(void)
+{
+    for(std::size_t i = 0; i < bother_host->peerCount; ++i) {
+        if(bother_host->peers[i].data == static_cast<void *>(selected_server)) {
+            enet_peer_reset(&bother_host->peers[i]);
+            break;
+        }
+    }
+
+    for(auto it = servers_deque.cbegin(); it != servers_deque.cend(); ++it) {
+        if(selected_server == (*it)) {
+            delete selected_server;
+            selected_server = nullptr;
+            servers_deque.erase(it);
+            return;
+        }
+    }
+}
+
+static void join_selected_server(void)
+{
+    if(globals::session_peer)
+        return;
+    session::connect(selected_server->peer_host, selected_server->peer_port);
+}
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
     if((event.key == GLFW_KEY_ESCAPE) && (event.action == GLFW_PRESS)) {
         if(globals::gui_screen == GUI_PLAY_MENU) {
             if(editing_server) {
+                if(adding_server)
+                    remove_selected_server();
+                input_itemname.clear();
+                input_hostname.clear();
                 editing_server = false;
+                adding_server = false;
                 return;
             }
-            
+
             globals::gui_screen = GUI_MAIN_MENU;
             selected_server = nullptr;
             return;
@@ -116,19 +190,6 @@ static void on_status_response_packet(const protocol::StatusResponse &packet)
     }
 }
 
-static void submit_server_item(ServerStatusItem *item, const std::string &hostname)
-{
-    const std::vector<std::string> parts = strtools::split(hostname, ":");
-
-    if(!parts[0].empty())
-        item->peer_host = parts[0];
-    else item->peer_host = std::string("localhost");
-    
-    if(parts.size() >= 2)
-        item->peer_port = cxpr::clamp<std::uint16_t>(strtoul(parts[1].c_str(), nullptr, 10), 0x0000, UINT16_MAX);
-    else item->peer_port = protocol::PORT;
-}
-
 static void layout_server_item(ServerStatusItem *item)
 {
     // Preserve the cursor at which we draw stuff
@@ -141,6 +202,11 @@ static void layout_server_item(ServerStatusItem *item)
     if(ImGui::Selectable(sid.c_str(), (item == selected_server), 0, ImVec2(0.0, 2.0f * (line_height + padding.y)))) {
         selected_server = item;
         editing_server = false;
+    }
+
+    if(ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+        // Double clicked - join the selected server
+        join_selected_server();
     }
 
     ImDrawList *draw_list = ImGui::GetWindowDrawList();
@@ -202,10 +268,12 @@ static void layout_server_edit(ServerStatusItem *item)
     ImGui::BeginDisabled(ignore_input);
 
     if(ImGui::Button("OK###play_menu.servers.submit_input", ImVec2(-1.0f, 0.0f)) || (!ignore_input && ImGui::IsKeyPressed(ImGuiKey_Enter))) {
-        submit_server_item(item, input_hostname);
+        parse_hostname(item, input_hostname);
         item->name = input_itemname;
         item->status = STATUS_INIT;
         editing_server = false;
+        adding_server = false;
+
         input_itemname.clear();
         input_hostname.clear();
 
@@ -221,60 +289,6 @@ static void layout_server_edit(ServerStatusItem *item)
 
     ImGui::SetNextItemWidth(-0.25f * ImGui::GetContentRegionAvail().x);
     ImGui::InputText("###play_menu.servers.edit_hostname", &input_hostname, ImGuiInputTextFlags_CharsNoBlank);
-}
-
-static void add_new_server(void)
-{
-    ServerStatusItem *item = new ServerStatusItem();
-    item->peer_host = std::string("localhost");
-    item->peer_port = protocol::PORT;
-    item->max_players = UINT16_MAX;
-    item->num_players = UINT16_MAX;
-    item->server_motd = std::string();
-    item->status = STATUS_FAIL;
-
-    input_itemname = DEFAULT_SERVER_NAME;
-
-    servers_deque.push_back(item);
-    selected_server = item;
-    editing_server = true;
-    needs_focus = true;
-}
-
-static void edit_selected_server(void)
-{
-    input_itemname = selected_server->name;
-    if(selected_server->peer_port != protocol::PORT)
-        input_hostname = fmt::format("{}:{}", selected_server->peer_host, selected_server->peer_port);
-    else input_hostname = selected_server->peer_host;
-    editing_server = true;
-    needs_focus = true;
-}
-
-static void remove_selected_server(void)
-{
-    for(std::size_t i = 0; i < bother_host->peerCount; ++i) {
-        if(bother_host->peers[i].data == static_cast<void *>(selected_server)) {
-            enet_peer_reset(&bother_host->peers[i]);
-            break;
-        }
-    }
-
-    for(auto it = servers_deque.cbegin(); it != servers_deque.cend(); ++it) {
-        if(selected_server == (*it)) {
-            delete selected_server;
-            selected_server = nullptr;
-            servers_deque.erase(it);
-            return;
-        }
-    }
-}
-
-static void join_selected_server(void)
-{
-    if(globals::session_peer)
-        return;
-    session::connect(selected_server->peer_host, selected_server->peer_port);
 }
 
 static void layout_worlds(void)
@@ -366,7 +380,7 @@ void play_menu::init(void)
             if(parts.size() >= 2)
                 item->name = parts[1];
             else item->name = DEFAULT_SERVER_NAME;
-            submit_server_item(item, parts[0]);
+            parse_hostname(item, parts[0]);
             servers_deque.push_back(item);
         }
     }
@@ -450,8 +464,6 @@ void play_menu::update_late(void)
             continue;
         num_free_peers += 1;
     }
-
-    spdlog::info(num_free_peers);
 
     for(ServerStatusItem *item : servers_deque) {
         if(num_free_peers && (item->status == STATUS_INIT)) {
