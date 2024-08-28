@@ -1,8 +1,17 @@
 {
-  "main_menu.debug_session": "Debug Session",
-  "main_menu.quit": "Quit Game",
-  "main_menu.server_list": "Connect to a Server",
+  "main_menu.play": "Play Game",
+  "main_menu.resume": "Resume Game",
   "main_menu.settings": "Settings",
+  "main_menu.leave": "Leave World",
+  "main_menu.quit": "Quit Game",
+
+  "play_menu.worlds": "Worlds",
+  "play_menu.servers": "Servers",
+  "play_menu.servers.add": "Add",
+  "play_menu.servers.edit": "Edit",
+  "play_menu.servers.remove": "Remove",
+  "play_menu.servers.join": "Join",
+  "play_menu.connect": "Connect",
 
   "settings.checkbox.false": "OFF",
   "settings.checkbox.true": "ON",
@@ -60,7 +69,7 @@
   "connecting.cancel_button": "Cancel",
 
   "disconnected.disconnected": "Disconnected",
-  "disconnected.back_to_menu": "Back to Menu",
+  "disconnected.back": "Back",
 
   "enet.peer_connection_failed": "Peer connection failed",
   "enet.peer_connection_timeout": "Peer connection timed out"
