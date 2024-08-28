@@ -9,7 +9,7 @@
 #include <imgui_stdlib.h>
 #include <spdlog/fmt/fmt.h>
 
-constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
+constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize;
 
 static std::string str_title = "Server list";
 
@@ -50,19 +50,29 @@ void server_list::layout(void)
             ImGui::SetCursorPosX(0.5f * (window_size.x - ImGui::CalcTextSize(str_title.c_str()).x));
             ImGui::TextUnformatted(str_title.c_str());
             
+            if(ImGui::BeginChild("###server_list.child")) {
+                if(ImGui::BeginTable("###server_list.table", 2)) {
+                    ImGui::TableSetupColumn("###AAA", ImGuiTableColumnFlags_WidthStretch);
+                    ImGui::TableSetupColumn("###BBB", ImGuiTableColumnFlags_WidthFixed);
+
+                    for(int i = 0; i < 10; ++i) {
+                        ImGui::TableNextRow();
+                        ImGui::Selectable(fmt::format("###ITEM{}", i).c_str(), false, ImGuiSelectableFlags_SpanAllColumns);
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::SetNextItemWidth(-1);
+                        ImGui::Text("Something\nthat spans multiple lines");
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::TextDisabled("4/16");
+                    }
+
+                    ImGui::EndTable();
+                }
+            }
+
+            ImGui::EndChild();
             ImGui::EndTabBar();
         }
 
-        if(ImGui::BeginTable("###server_list.table", 1)) {
-            for(int i = 0; i < 10; ++i) {
-                ImGui::TableNextRow();
-                ImGui::TableSetColumnIndex(0);
-            }
-        }
-
-        ImGui::EndTable();
-
-        ImGui::EndChild();
         ImGui::PopStyleVar();
     }
 
