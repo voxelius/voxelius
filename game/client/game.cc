@@ -346,6 +346,8 @@ void client_game::deinit(void)
         while(enet_host_service(globals::client_host, nullptr, 50));
     }
 
+    play_menu::deinit();
+
     voxel_atlas::destroy();
 
     glDeleteRenderbuffers(1, &globals::world_fbo_depth);
@@ -420,6 +422,8 @@ void client_game::update_late(void)
             protocol::send_entity_velocity(globals::session_peer, nullptr, globals::player);
         }
     }
+
+    play_menu::update_late();
 }
 
 void client_game::render(void)

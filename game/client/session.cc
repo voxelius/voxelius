@@ -157,6 +157,8 @@ void session::disconnect(const std::string &reason)
         protocol::send_disconnect(globals::session_peer, nullptr, reason);
 
         enet_host_flush(globals::client_host);
+        enet_host_service(globals::client_host, nullptr, 50);
+        enet_peer_reset(globals::session_peer);
 
         globals::session_peer = nullptr;
         globals::session_id = UINT16_MAX;
