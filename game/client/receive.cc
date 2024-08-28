@@ -93,9 +93,11 @@ static void on_spawn_player_packet(const protocol::SpawnPlayer &packet)
 
 static void on_remove_entity_packet(const protocol::RemoveEntity &packet)
 {
-    if(packet.entity == globals::player)
-        globals::player = entt::null;
-    globals::registry.destroy(packet.entity);
+    if(globals::registry.valid(packet.entity)) {
+        if(packet.entity == globals::player)
+            globals::player = entt::null;
+        globals::registry.destroy(packet.entity);
+    }
 }
 
 void client_receive::init(void)

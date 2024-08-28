@@ -7,11 +7,16 @@
 
   "play_menu.worlds": "Worlds",
   "play_menu.servers": "Servers",
+  "play_menu.servers.join": "Join",
+  "play_menu.servers.connect": "Connect directly",
   "play_menu.servers.add": "Add",
   "play_menu.servers.edit": "Edit",
   "play_menu.servers.remove": "Remove",
-  "play_menu.servers.join": "Join",
-  "play_menu.connect": "Connect",
+  "play_menu.servers.refresh": "Refresh",
+
+  "play_menu.server.init": "Unknown",
+  "play_menu.server.ping": "Pinging",
+  "play_menu.server.fail": "Unreachable",
 
   "settings.checkbox.false": "OFF",
   "settings.checkbox.true": "ON",

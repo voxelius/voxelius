@@ -7,6 +7,15 @@
 
   "play_menu.worlds": "Миры",
   "play_menu.servers": "Серверы",
+  "play_menu.servers.add": "Добавить",
+  "play_menu.servers.edit": "Редак-ть",
+  "play_menu.servers.remove": "Удалить",
+  "play_menu.servers.join": "Подкл-ся",
+  "play_menu.connect": "Подключиться",
+
+  "play_menu.server.init": "Неизвестен",
+  "play_menu.server.ping": "Опрашивается",
+  "play_menu.server.fail": "Недоступен",
 
   "settings.checkbox.false": "ВЫКЛ",
   "settings.checkbox.true": "ВКЛ",
