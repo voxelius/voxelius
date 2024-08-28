@@ -13,6 +13,7 @@
 #include <game/shared/entity/velocity.hh>
 #include <game/shared/game_voxels.hh>
 #include <game/shared/protocol.hh>
+#include <game/shared/splash.hh>
 #include <mathlib/constexpr.hh>
 #include <spdlog/spdlog.h>
 
@@ -80,6 +81,7 @@ void server_game::init(void)
 
     sessions::init();
 
+    splash::init();
     status::init();
 
     server_recieve::init();

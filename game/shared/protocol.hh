@@ -88,6 +88,7 @@ struct protocol::StatusResponse final : public protocol::Base<0x0001> {
     std::uint32_t version {};
     std::uint16_t max_players {};
     std::uint16_t num_players {};
+    std::string motd {};
 };
 
 struct protocol::LoginRequest final : public protocol::Base<0x0002> {
