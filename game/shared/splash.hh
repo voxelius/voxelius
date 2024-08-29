@@ -5,10 +5,6 @@
 
 namespace splash
 {
-void init(void);
-} // namespace splash
-
-namespace splash
-{
+void init(const std::string &path);
 const std::string &get(void);
 } // namespace splash

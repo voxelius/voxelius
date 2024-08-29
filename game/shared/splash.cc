@@ -10,10 +10,8 @@
 static std::mt19937_64 twister = {};
 static std::vector<std::string> titles = {};
 
-void splash::init(void)
+void splash::init(const std::string &path)
 {
-    const std::string path = std::string("texts/splashes.txt");
-
     std::string source = {};
 
     if(!fstools::read_string(path, source)) {

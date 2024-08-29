@@ -81,7 +81,7 @@ void server_game::init(void)
 
     sessions::init();
 
-    splash::init();
+    splash::init("texts/motds.txt");
     status::init();
 
     server_recieve::init();

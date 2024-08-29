@@ -1,0 +1,2 @@
+I am a server MOTD
+I am a server MOTD but cooler
