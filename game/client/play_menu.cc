@@ -195,11 +195,12 @@ static void layout_server_item(ServerStatusItem *item)
     // Preserve the cursor at which we draw stuff
     const ImVec2 &cursor = ImGui::GetCursorScreenPos();
     const ImVec2 &padding = ImGui::GetStyle().FramePadding;
+    const ImVec2 &spacing = ImGui::GetStyle().ItemSpacing;
 
     const float item_width = ImGui::GetContentRegionAvail().x;
     const float line_height = ImGui::GetTextLineHeightWithSpacing();
     const std::string sid = fmt::format("###play_menu.servers.{}", static_cast<void *>(item));
-    if(ImGui::Selectable(sid.c_str(), (item == selected_server), 0, ImVec2(0.0, 2.0f * (line_height + padding.y)))) {
+    if(ImGui::Selectable(sid.c_str(), (item == selected_server), 0, ImVec2(0.0, 2.0f * (line_height + padding.y + spacing.y)))) {
         selected_server = item;
         editing_server = false;
     }
@@ -213,11 +214,11 @@ static void layout_server_item(ServerStatusItem *item)
 
     if(item == selected_server) {
         const ImVec2 start = ImVec2(cursor.x, cursor.y);
-        const ImVec2 end = ImVec2(start.x + item_width, start.y + 2.0f * (line_height + padding.y));
+        const ImVec2 end = ImVec2(start.x + item_width, start.y + 2.0f * (line_height + padding.y + spacing.y));
         draw_list->AddRect(start, end, ImGui::GetColorU32(ImGuiCol_Text), 0.0f, 0, globals::gui_scale);
     }
 
-    const ImVec2 name_pos = ImVec2(cursor.x + padding.x, cursor.y + padding.y);
+    const ImVec2 name_pos = ImVec2(cursor.x + padding.x + 0.5f * spacing.x, cursor.y + padding.y);
     draw_list->AddText(name_pos, ImGui::GetColorU32(ImGuiCol_Text), item->name.c_str(), item->name.cend().base());
 
     if(item->status == STATUS_MOTD) {
@@ -249,7 +250,7 @@ static void layout_server_item(ServerStatusItem *item)
             break;
     }
 
-    const ImVec2 motd_pos = ImVec2(cursor.x + padding.x, cursor.y + padding.y + line_height);
+    const ImVec2 motd_pos = ImVec2(cursor.x + padding.x + 0.5f * spacing.x, cursor.y + padding.y + line_height);
     draw_list->AddText(motd_pos, motd_color, motd_text->c_str(), motd_text->cend().base());
 }
 

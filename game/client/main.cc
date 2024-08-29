@@ -211,7 +211,7 @@ void client::main(void)
     spdlog::info("opengl: version: {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
     spdlog::info("opengl: renderer: {}", reinterpret_cast<const char *>(glGetString(GL_RENDERER)));
 
-    splash::init();
+    splash::init("texts/splash.txt");
 
     const std::string title = fmt::format("Voxelius: {}", splash::get());
     glfwSetWindowTitle(globals::window, title.c_str());

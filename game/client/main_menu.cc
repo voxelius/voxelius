@@ -72,15 +72,6 @@ void main_menu::layout(void)
         ImGui::TextUnformatted(title_str);
         ImGui::PopFont();
 
-        //ImGui::PushFont(globals::font_menu_button);
-        constexpr static const char *subtitle_str = GAME_VERSION_STRING;
-        const float subtitle_width = ImGui::CalcTextSize(subtitle_str).x;
-        const float subtitle_xpos = 0.5f * (window_size.x - subtitle_width);
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 10.0f * globals::gui_scale);
-        ImGui::SetCursorPosX(subtitle_xpos);
-        ImGui::TextUnformatted(subtitle_str);
-        //ImGui::PopFont();
-
         ImGui::Dummy(ImVec2(0.0f, 10.0f * globals::gui_scale));
 
         const float button_width = 240.0f * globals::gui_scale;
@@ -121,7 +112,6 @@ void main_menu::layout(void)
         }
 
         ImGui::PopStyleVar();
-        ImGui::SameLine();
     }
 
     ImGui::End();
