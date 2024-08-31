@@ -144,9 +144,9 @@ void outline_renderer::line(const WorldCoord &start, const Vec3f &scale, float w
 
     glLineWidth(width);
     
-    glUniform3fv(u_world_position, 1, WorldCoord::to_vec3f(patch).data());
-    glUniform3fv(u_scale, 1, scale.data());
-    glUniform4fv(u_color, 1, color.data());
+    glUniform3fv(program.uniforms[u_world_position].location, 1, WorldCoord::to_vec3f(patch).data());
+    glUniform3fv(program.uniforms[u_scale].location, 1, scale.data());
+    glUniform4fv(program.uniforms[u_color].location, 1, color.data());
 
     glBindBuffer(GL_ARRAY_BUFFER, line_vbo);
     glVertexAttribPointer(0, 3, GL_FLOAT, false, sizeof(Vec3f), nullptr);

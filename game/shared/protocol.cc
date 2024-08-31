@@ -214,6 +214,14 @@ void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::RemoveEntity
     basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
+void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::EntityPlayer &packet)
+{
+    PacketBuffer::setup(write_buffer);
+    PacketBuffer::write_UI16(write_buffer, protocol::EntityPlayer::ID);
+    PacketBuffer::write_UI64(write_buffer, static_cast<std::uint64_t>(packet.entity));
+    basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
+}
+
 void protocol::receive(const ENetPacket *packet, ENetPeer *peer)
 {
     PacketBuffer::setup(read_buffer, packet->data, packet->dataLength);
@@ -231,6 +239,7 @@ void protocol::receive(const ENetPacket *packet, ENetPeer *peer)
     protocol::ChatMessage chat_message = {};
     protocol::SetVoxel set_voxel = {};
     protocol::RemoveEntity remove_entity = {};
+    protocol::EntityPlayer entity_player = {};
     
     switch(PacketBuffer::read_UI16(read_buffer)) {
         case protocol::StatusRequest::ID:
@@ -333,6 +342,10 @@ void protocol::receive(const ENetPacket *packet, ENetPeer *peer)
             remove_entity.entity = static_cast<entt::entity>(PacketBuffer::read_UI64(read_buffer));
             globals::dispatcher.trigger(remove_entity);
             break;
+        case protocol::EntityPlayer::ID:
+            entity_player.entity = static_cast<entt::entity>(PacketBuffer::read_UI64(read_buffer));
+            globals::dispatcher.trigger(entity_player);
+            break;
     }
 }
 
@@ -392,6 +405,13 @@ void protocol::send_entity_velocity(ENetPeer *peer, ENetHost *host, entt::entity
         packet.linear = component->linear;
         protocol::send(peer, host, packet);
     }
+}
+
+void protocol::send_entity_player(ENetPeer *peer, ENetHost *host, entt::entity entity)
+{
+    protocol::EntityPlayer packet = {};
+    packet.entity = entity;
+    protocol::send(peer, host, packet);
 }
 
 void protocol::send_spawn_player(ENetPeer *peer, ENetHost *host, entt::entity entity)

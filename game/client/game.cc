@@ -47,6 +47,12 @@
 #include <imgui.h>
 #include <spdlog/spdlog.h>
 
+// Debug
+#include <game/shared/entity/head.hh>
+#include <game/shared/entity/player.hh>
+#include <game/shared/entity/transform.hh>
+#include <game/shared/entity/velocity.hh>
+
 bool client_game::vertical_sync = true;
 bool client_game::world_curvature = true;
 unsigned int client_game::pixel_size = 4U;
@@ -439,6 +445,26 @@ void client_game::render(void)
     chunk_renderer::render();
 
     player_target::render();
+
+    const auto group = globals::registry.group(entt::get<PlayerComponent, HeadComponent, TransformComponent>);
+
+    outline_renderer::prepare_depth();
+    for(const auto [entity, head, transform] : group.each()) {
+        if(entity != globals::player) {
+            WorldCoord wpos = transform.position;
+            wpos.local += head.offset;
+
+            WorldCoord wpos_cube = wpos;
+            wpos_cube.local -= 0.5f;
+
+            Vec3f forward = {};
+            Vec3angles::vectors(head.angles + transform.angles, &forward, nullptr, nullptr);
+            forward *= 2.0f;
+
+            outline_renderer::cube(wpos_cube, Vec3f(1.0f));
+            outline_renderer::line(wpos, forward);
+        }
+    }
 
     glViewport(0, 0, globals::width, globals::height);
     glClearColor(0.000f, 0.000f, 0.000f, 1.000f);
