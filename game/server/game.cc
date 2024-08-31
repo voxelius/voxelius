@@ -121,7 +121,7 @@ void server_game::init_late(void)
     constexpr int WSIZE = 8;
     for(int x = -WSIZE; x < WSIZE; x += 1)
     for(int z = -WSIZE; z < WSIZE; z += 1)
-    for(int y = -2; y < 1; y += 1) {
+    for(int y = -4; y < 1; y += 1) {
         generate({x, y, z});
     }
 
