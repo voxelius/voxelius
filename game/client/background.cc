@@ -7,7 +7,6 @@
 #include <game/client/globals.hh>
 #include <game/client/settings.hh>
 #include <game/client/varied_program.hh>
-#include <GLFW/glfw3.h>
 #include <mathlib/constexpr.hh>
 #include <mathlib/vec2f.hh>
 #include <spdlog/spdlog.h>
@@ -16,7 +15,6 @@ static bool enable_panorama = false;
 
 static VariedProgram program = {};
 static std::size_t u_screen_scale = {};
-static std::size_t u_curtime = {};
 static std::size_t u_texture = {};
 static int texture_width = {};
 static int texture_height = {};
@@ -58,7 +56,6 @@ void background::init(void)
     }
 
     u_screen_scale = VariedProgram::add_uniform(program, "u_ScreenScale");
-    u_curtime = VariedProgram::add_uniform(program, "u_CurTime");
     u_texture = VariedProgram::add_uniform(program, "u_Texture");
 
     const Vec2f vertices[4] = {
@@ -112,7 +109,6 @@ void background::render(void)
 
     glUseProgram(program.handle);
     glUniform2f(program.uniforms[u_screen_scale].location, scale_x, scale_y);
-    glUniform1f(program.uniforms[u_curtime].location, glfwGetTime());
     glUniform1i(program.uniforms[u_texture].location, 0); // GL_TEXTURE0
 
     glBindVertexArray(vaobj);
