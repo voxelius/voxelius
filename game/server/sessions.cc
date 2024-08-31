@@ -65,6 +65,7 @@ static void on_login_request_packet(const protocol::LoginRequest &packet)
             protocol::send_entity_head(session->peer, nullptr, entity);
             protocol::send_entity_transform(session->peer, nullptr, entity);
             protocol::send_entity_velocity(session->peer, nullptr, entity);
+            protocol::send_entity_player(session->peer, nullptr, entity);
         }
 
         session->player = globals::registry.create();
@@ -78,6 +79,12 @@ static void on_login_request_packet(const protocol::LoginRequest &packet)
         protocol::send_entity_head(nullptr, globals::server_host, session->player);
         protocol::send_entity_transform(nullptr, globals::server_host, session->player);
         protocol::send_entity_velocity(nullptr, globals::server_host, session->player);
+        protocol::send_entity_player(nullptr, globals::server_host, session->player);
+
+        // SpawnPlayer serves a different purpose compared to EntityPlayer
+        // The latter is used to construct entities (as in "attach a component")
+        // whilst the SpawnPlayer packet is used to notify client-side that the
+        // entity identifier in the packet is to be treated as the local player entity
         protocol::send_spawn_player(session->peer, nullptr, session->player);
 
         return;

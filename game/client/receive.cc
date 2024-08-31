@@ -80,12 +80,23 @@ static void on_entity_velocity_packet(const protocol::EntityVelocity &packet)
     }
 }
 
-static void on_spawn_player_packet(const protocol::SpawnPlayer &packet)
+static void on_entity_player_packet(const protocol::EntityPlayer &packet)
 {
     if(globals::session_peer) {
         if(!globals::registry.valid(packet.entity))
             static_cast<void>(globals::registry.create(packet.entity));
-        globals::registry.get_or_emplace<PlayerComponent>(packet.entity);
+        globals::registry.emplace_or_replace<PlayerComponent>(packet.entity);
+    }
+}
+
+static void on_spawn_player_packet(const protocol::SpawnPlayer &packet)
+{
+    if(globals::session_peer) {
+        if(!globals::registry.valid(packet.entity)) {
+            static_cast<void>(globals::registry.create(packet.entity));
+            globals::registry.emplace_or_replace<PlayerComponent>(packet.entity);
+        }
+
         globals::player = packet.entity;
         globals::gui_screen = GUI_SCREEN_NONE;
     }
@@ -106,6 +117,7 @@ void client_receive::init(void)
     globals::dispatcher.sink<protocol::EntityHead>().connect<&on_entity_head_packet>();
     globals::dispatcher.sink<protocol::EntityTransform>().connect<&on_entity_transform_packet>();
     globals::dispatcher.sink<protocol::EntityVelocity>().connect<&on_entity_velocity_packet>();
+    globals::dispatcher.sink<protocol::EntityPlayer>().connect<&on_entity_player_packet>();
     globals::dispatcher.sink<protocol::SpawnPlayer>().connect<&on_spawn_player_packet>();
     globals::dispatcher.sink<protocol::RemoveEntity>().connect<&on_remove_entity_packet>();
 }
