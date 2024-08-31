@@ -9,9 +9,45 @@
 #include <game/shared/globals.hh>
 #include <game/shared/protocol.hh>
 #include <mathlib/floathacks.hh>
+#include <miniz.h>
 
 static PacketBuffer read_buffer = {};
 static PacketBuffer write_buffer = {};
+static std::vector<std::uint8_t> read_zdata = {};
+static std::vector<std::uint8_t> write_zdata = {};
+
+static void write_voxel_storage(PacketBuffer &buffer, const VoxelStorage &storage)
+{
+    mz_ulong bound = mz_compressBound(sizeof(VoxelStorage));
+
+    VoxelStorage net_storage = {};
+    for(std::size_t i = 0; i < CHUNK_VOLUME; ++i) {
+        // Convert voxel data into network byte order
+        // FIXME: what if we change voxel size to 32 bits?
+        net_storage[i] = ENET_HOST_TO_NET_16(storage[i]);
+    }
+
+    write_zdata.resize(bound);
+    mz_compress(write_zdata.data(), &bound, reinterpret_cast<const unsigned char *>(net_storage.data()), sizeof(VoxelStorage));
+    PacketBuffer::write_UI64(buffer, static_cast<std::uint64_t>(bound));
+    for(mz_ulong i = 0; i < bound; PacketBuffer::write_UI8(buffer, write_zdata[i++]));
+}
+
+static void read_voxel_storage(PacketBuffer &buffer, VoxelStorage &storage)
+{
+    mz_ulong size = static_cast<mz_ulong>(sizeof(VoxelStorage));
+    mz_ulong bound = static_cast<mz_ulong>(PacketBuffer::read_UI64(buffer));
+
+    read_zdata.resize(bound);
+    for(mz_ulong i = 0; i < bound; read_zdata[i++] = PacketBuffer::read_UI8(buffer));
+    mz_uncompress(reinterpret_cast<unsigned char *>(storage.data()), &size, read_zdata.data(), bound);
+
+    for(std::size_t i = 0; i < CHUNK_VOLUME; ++i) {
+        // Convert voxel storage to host byte order in-situ
+        // FIXME: what if we change voxel size to 32 bits?
+        storage[i] = ENET_NET_TO_HOST_16(storage[i]);
+    }
+}
 
 // [peer], [NULL] - send to one specific peer
 // [NULL], [host] - broadcast to all the host peers
@@ -95,7 +131,7 @@ void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::ChunkVoxels 
     PacketBuffer::write_I32(write_buffer, packet.chunk[0]);
     PacketBuffer::write_I32(write_buffer, packet.chunk[1]);
     PacketBuffer::write_I32(write_buffer, packet.chunk[2]);
-    for(std::size_t i = 0; i < CHUNK_VOLUME; PacketBuffer::write_UI16(write_buffer, packet.voxels[i++]));
+    write_voxel_storage(write_buffer, packet.voxels);
     basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
@@ -237,7 +273,7 @@ void protocol::receive(const ENetPacket *packet, ENetPeer *peer)
             chunk_voxels.chunk[0] = PacketBuffer::read_I32(read_buffer);
             chunk_voxels.chunk[1] = PacketBuffer::read_I32(read_buffer);
             chunk_voxels.chunk[2] = PacketBuffer::read_I32(read_buffer);
-            for(std::size_t i = 0; i < CHUNK_VOLUME; chunk_voxels.voxels[i++] = PacketBuffer::read_UI16(read_buffer));
+            read_voxel_storage(read_buffer, chunk_voxels.voxels);
             globals::dispatcher.trigger(chunk_voxels);
             break;
         case protocol::EntityTransform::ID:

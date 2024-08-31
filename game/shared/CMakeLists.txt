@@ -9,7 +9,7 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/vdef.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world.cc")
 target_include_directories(shared PUBLIC "${CMAKE_SOURCE_DIR}")
-target_link_libraries(shared PUBLIC common emhash enet entt FNL parson thread_pool)
+target_link_libraries(shared PUBLIC common emhash enet entt FNL miniz parson thread_pool)
 
 if(WIN32)
     # https://github.com/voxelius/voxelius/issues/2#issuecomment-1757782477
