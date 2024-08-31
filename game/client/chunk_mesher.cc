@@ -203,6 +203,7 @@ static void process(WorkerContext *ctx)
 
 static void finalize(WorkerContext *ctx, entt::entity entity)
 {
+    bool has_no_submeshes = true;
     auto &comp = globals::registry.emplace_or_replace<ChunkMeshComponent>(entity);
     const std::size_t plane_count = ctx->quads.size();
 
@@ -225,10 +226,13 @@ static void finalize(WorkerContext *ctx, entt::entity entity)
             glBindBuffer(GL_ARRAY_BUFFER, buffer.handle);
             glBufferData(GL_ARRAY_BUFFER, sizeof(ChunkQuad) * builder.size(), builder.data(), GL_STATIC_DRAW);
             buffer.size = builder.size();
-        }
-        
-        chunk_visibility::update_chunk(entity);
+            has_no_submeshes = false;
+        }        
     }
+
+    if(has_no_submeshes)
+        globals::registry.remove<ChunkMeshComponent>(entity);
+    else chunk_visibility::update_chunk(entity);
 }
 
 #if defined(_WIN32) && !defined(NDEBUG)

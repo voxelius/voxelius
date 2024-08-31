@@ -8,6 +8,7 @@
 #include <game/client/debug_toggles.hh>
 #include <game/client/game.hh>
 #include <game/client/globals.hh>
+#include <game/client/outline_renderer.hh>
 #include <game/client/varied_program.hh>
 #include <game/client/view.hh>
 #include <game/client/voxel_anims.hh>
@@ -135,6 +136,15 @@ void chunk_renderer::render(void)
             
             globals::num_drawcalls += 1;
             globals::num_triangles += 2 * mesh.quad[plane_id].size;
+        }
+    }
+
+    if(debug_toggles::draw_chunk_borders) {
+        outline_renderer::prepare_depth();
+        for(const auto [entity, chunk, mesh] : group.each()) {
+            const WorldCoord wpos = ChunkCoord::to_world(chunk.coord);
+            const Vec3f size = Vec3f(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
+            outline_renderer::cube(wpos, size, 1.0f, Vec4f::yellow());
         }
     }
 }
