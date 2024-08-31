@@ -123,7 +123,7 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
 
         if(!fstools::read_bytes("fonts/unscii-16.ttf", fontbin))
             std::terminate();
-        io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 16.0f * scale, &font_config, ranges.Data);
+        ImGui::GetIO().FontDefault = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 16.0f * scale, &font_config, ranges.Data);
 
         if(!fstools::read_bytes("fonts/unscii-8.ttf", fontbin))
             std::terminate();
