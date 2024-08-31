@@ -38,7 +38,7 @@ std::uint8_t PacketBuffer::read_UI8(PacketBuffer &buffer)
     }
 
     buffer.read_position += 1U;
-    return UINT8_MAX;
+    return UINT8_C(0);
 }
 
 std::uint16_t PacketBuffer::read_UI16(PacketBuffer &buffer)
@@ -52,7 +52,7 @@ std::uint16_t PacketBuffer::read_UI16(PacketBuffer &buffer)
     }
 
     buffer.read_position += 2U;
-    return UINT16_MAX;
+    return UINT16_C(0);
 }
 
 std::uint32_t PacketBuffer::read_UI32(PacketBuffer &buffer)
@@ -68,7 +68,7 @@ std::uint32_t PacketBuffer::read_UI32(PacketBuffer &buffer)
     }
 
     buffer.read_position += 4U;
-    return UINT32_MAX;
+    return UINT32_C(0);
 }
 
 std::uint64_t PacketBuffer::read_UI64(PacketBuffer &buffer)
@@ -88,7 +88,7 @@ std::uint64_t PacketBuffer::read_UI64(PacketBuffer &buffer)
     }
 
     buffer.read_position += 8U;
-    return UINT64_MAX;
+    return UINT64_C(0);
 }
 
 std::string PacketBuffer::read_string(PacketBuffer &buffer)

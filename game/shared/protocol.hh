@@ -17,6 +17,7 @@ namespace protocol
 template<std::uint16_t packet_id>
 struct Base {
     constexpr static std::uint16_t ID = packet_id;
+    virtual ~Base(void) = default;
     ENetPeer *peer {nullptr};
 };
 } // namespace protocol
@@ -81,10 +82,12 @@ void send_set_voxel(ENetPeer *peer, ENetHost *host, const VoxelCoord &vpos, Voxe
 } // namespace protocol
 
 struct protocol::StatusRequest final : public protocol::Base<0x0000> {
+    virtual ~StatusRequest(void) = default;
     std::uint32_t version {};
 };
 
 struct protocol::StatusResponse final : public protocol::Base<0x0001> {
+    virtual ~StatusResponse(void) = default;
     std::uint32_t version {};
     std::uint16_t max_players {};
     std::uint16_t num_players {};
@@ -92,6 +95,7 @@ struct protocol::StatusResponse final : public protocol::Base<0x0001> {
 };
 
 struct protocol::LoginRequest final : public protocol::Base<0x0002> {
+    virtual ~LoginRequest(void) = default;
     std::uint32_t version {};
     std::uint64_t password_hash {};
     std::uint64_t vdef_checksum {};
@@ -100,53 +104,63 @@ struct protocol::LoginRequest final : public protocol::Base<0x0002> {
 };
 
 struct protocol::LoginResponse final : public protocol::Base<0x0003> {
+    virtual ~LoginResponse(void) = default;
     std::uint16_t session_id {};
     std::uint16_t tickrate {};
     std::string username {};
 };
 
 struct protocol::Disconnect final : public protocol::Base<0x0004> {
+    virtual ~Disconnect(void) = default;
     std::string reason {};
 };
 
 struct protocol::ChunkVoxels final : public protocol::Base<0x0005> {
+    virtual ~ChunkVoxels(void) = default;
     entt::entity entity {};
     ChunkCoord chunk {};
     VoxelStorage voxels {};
 };
 
 struct protocol::EntityTransform final : public protocol::Base<0x0006> {
+    virtual ~EntityTransform(void) = default;
     entt::entity entity {};
     WorldCoord coord {};
     Vec3angles angles {};
 };
 
 struct protocol::EntityHead final : public protocol::Base<0x0007> {
+    virtual ~EntityHead(void) = default;
     entt::entity entity {};
     Vec3angles angles {};
 };
 
 struct protocol::EntityVelocity final : public protocol::Base<0x0008> {
+    virtual ~EntityVelocity(void) = default;
     entt::entity entity {};
     Vec3angles angular {};
     Vec3f linear {};
 };
 
 struct protocol::SpawnPlayer final : public protocol::Base<0x0009> {
+    virtual ~SpawnPlayer(void) = default;
     entt::entity entity {};
 };
 
 struct protocol::ChatMessage final : public protocol::Base<0x000A> {
+    virtual ~ChatMessage(void) = default;
     std::uint16_t type {};
     std::string message {};
 };
 
 struct protocol::SetVoxel final : public protocol::Base<0x000B> {
+    virtual ~SetVoxel(void) = default;
     VoxelCoord coord {};
     Voxel voxel {};
     std::uint16_t flags {};
 };
 
 struct protocol::RemoveEntity final : public protocol::Base<0x000C> {
+    virtual ~RemoveEntity(void) = default;
     entt::entity entity {};
 };

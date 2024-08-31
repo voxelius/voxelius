@@ -219,13 +219,13 @@ static void layout_server_item(ServerStatusItem *item)
     }
 
     const ImVec2 name_pos = ImVec2(cursor.x + padding.x + 0.5f * spacing.x, cursor.y + padding.y);
-    draw_list->AddText(name_pos, ImGui::GetColorU32(ImGuiCol_Text), item->name.c_str(), &item->name.cend()[0]);
+    draw_list->AddText(name_pos, ImGui::GetColorU32(ImGuiCol_Text), item->name.c_str(), item->name.cend().base());
 
     if(item->status == STATUS_MOTD) {
         const std::string stats = fmt::format("{}/{}", item->num_players, item->max_players);
-        const float stats_width = ImGui::CalcTextSize(stats.c_str(), &stats.cend()[0]).x;
+        const float stats_width = ImGui::CalcTextSize(stats.c_str(), stats.cend().base()).x;
         const ImVec2 stats_pos = ImVec2(cursor.x + item_width - stats_width - padding.x, cursor.y + padding.y);
-        draw_list->AddText(stats_pos, ImGui::GetColorU32(ImGuiCol_TextDisabled), stats.c_str(), &stats.cend()[0]);
+        draw_list->AddText(stats_pos, ImGui::GetColorU32(ImGuiCol_TextDisabled), stats.c_str(), stats.cend().base());
     }
 
     ImU32 motd_color = {};
@@ -251,7 +251,7 @@ static void layout_server_item(ServerStatusItem *item)
     }
 
     const ImVec2 motd_pos = ImVec2(cursor.x + padding.x + 0.5f * spacing.x, cursor.y + padding.y + line_height);
-    draw_list->AddText(motd_pos, motd_color, motd_text->c_str(), &motd_text->cend()[0]);
+    draw_list->AddText(motd_pos, motd_color, motd_text->c_str(), motd_text->cend().base());
 }
 
 static void layout_server_edit(ServerStatusItem *item)
@@ -378,7 +378,7 @@ void play_menu::init(void)
             item->num_players = UINT16_MAX;
             item->server_motd = std::string();
             item->status = STATUS_INIT;
-            if((parts.size() >= 2) && !strtools::is_empty_or_whitespace(parts[1]))
+            if(parts.size() >= 2)
                 item->name = parts[1];
             else item->name = DEFAULT_SERVER_NAME;
             parse_hostname(item, parts[0]);

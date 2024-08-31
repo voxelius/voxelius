@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.14)
+project(miniz LANGUAGES C VERSION 3.0.2)
+add_library(miniz STATIC "${CMAKE_CURRENT_LIST_DIR}/src/miniz.c")
+target_compile_definitions(miniz PUBLIC MINIZ_NO_ZLIB_COMPATIBLE_NAMES)
+target_include_directories(miniz PUBLIC "${CMAKE_CURRENT_LIST_DIR}/include")
