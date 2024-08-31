@@ -8,7 +8,7 @@
             "intelliSenseMode": "linux-gcc-x64",
             "compilerPath": "/usr/bin/g++",
             "defines": [
-                "GLFW_INCLUDE_NONE", 
+                "GLFW_INCLUDE_NONE", "MINIZ_NO_STDIO",
                 "MINIZ_NO_ZLIB_COMPATIBLE_NAMES",
                 "VGAME_CLIENT"
             ],
