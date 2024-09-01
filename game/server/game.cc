@@ -61,10 +61,10 @@ void server_game::init_late(void)
 
     game_voxels::populate();
 
-    constexpr int WSIZE = 16;
+    constexpr int WSIZE = 8;
     for(int x = -WSIZE; x < WSIZE; x += 1) {
         for(int z = -WSIZE; z < WSIZE; z += 1) {
-            for(int y = -8; y < 3; y += 1) {
+            for(int y = -4; y < 2; y += 1) {
                 spdlog::info("generating {} {} {}", x, y, z);
                 worldgen::generate(ChunkCoord(x, y, z));
             }
