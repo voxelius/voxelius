@@ -30,7 +30,7 @@ void view::init(void)
     Config::add(globals::client_config, "view.max_distance", view::max_distance);
 
     settings::add_slider(1, settings::GENERAL, "view.vertical_fov", view::vertical_fov, 45.0, 120.0f, true, "%.0f");
-    settings::add_slider(0, settings::VIDEO, "view.max_distance", view::max_distance, 4U, 64U, false);
+    settings::add_slider(0, settings::VIDEO, "view.max_distance", view::max_distance, 2U, 64U, false);
 
     reset();
 }

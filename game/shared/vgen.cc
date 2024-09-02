@@ -47,8 +47,13 @@ void vgen::gen_overworld(ChunkCoord::value_type cx, ChunkCoord::value_type cz)
         const std::int64_t vz = lpos[2] + static_cast<std::int64_t>(cz << CHUNK_SIZE_LOG2);
         const std::int64_t vy = lpos[1] + OW_V_OFFSET;
 
-        const float density = 64.0f * fnlGetNoise3D(&ow_terrain, vx, vy, vz) - vy;
+        if(vy < -32) {
+            // It's full solid from here
+            voxels[i] = game_voxels::stone;
+            continue;
+        }
 
+        const float density = 32.0f * fnlGetNoise3D(&ow_terrain, vx, vy, vz) - vy;
         if(density > 0.0f)
             voxels[i] = game_voxels::stone;
         else voxels[i] = NULL_VOXEL;
