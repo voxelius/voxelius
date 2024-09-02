@@ -107,8 +107,14 @@ bool worldgen::generate(const ChunkCoord &cpos)
         const auto vpos = ChunkCoord::to_voxel(cpos, lpos);
         const float ca = fnlGetNoise3D(&cave_noise_a, vpos[0], vpos[1] * 1.5f, vpos[2]);
         const float cb = fnlGetNoise3D(&cave_noise_b, vpos[0], vpos[1] * 1.5f, vpos[2]);
+        const float thres = 0.0125f;
 
-        if((ca * ca + cb * cb) <= 0.0125f) {
+        const float bias_shift = 56.0f;
+        const float bias_scale = 40.0f;
+        const float bias = 1.0f - std::exp(-1.0f * std::pow((vpos[1] + bias_shift) / bias_scale, 4.0f));
+        const float cave = ca * ca + cb * cb + thres * bias;
+
+        if(cave <= 0.0125f) {
             voxels[i] = NULL_VOXEL;
             continue;
         }

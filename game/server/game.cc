@@ -14,8 +14,8 @@
 #include <game/shared/game_voxels.hh>
 #include <game/shared/protocol.hh>
 #include <game/shared/splash.hh>
+#include <game/shared/vgen.hh>
 #include <game/shared/world.hh>
-#include <game/shared/worldgen.hh>
 #include <mathlib/constexpr.hh>
 #include <spdlog/spdlog.h>
 
@@ -35,7 +35,7 @@ void server_game::init(void)
     server_recieve::init();
 
     world::init();
-    worldgen::init(42);
+    vgen::init(42);
 }
 
 void server_game::init_late(void)
@@ -64,10 +64,8 @@ void server_game::init_late(void)
     constexpr int WSIZE = 8;
     for(int x = -WSIZE; x < WSIZE; x += 1) {
         for(int z = -WSIZE; z < WSIZE; z += 1) {
-            for(int y = -4; y < 2; y += 1) {
-                spdlog::info("generating {} {} {}", x, y, z);
-                worldgen::generate(ChunkCoord(x, y, z));
-            }
+            spdlog::info("generating {} {}", x, z);
+            vgen::gen_overworld(x, z);
         }
     }
 }
