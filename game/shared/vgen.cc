@@ -8,23 +8,115 @@
 #include <game/shared/world.hh>
 #include <random>
 
-constexpr static std::int32_t OW_HEIGHT = INT32_C(2);
-constexpr static std::int32_t OW_OFFSET = INT32_C(-1);
-constexpr static std::int64_t OW_V_HEIGHT = CHUNK_SIZE * OW_HEIGHT;
-constexpr static std::int64_t OW_V_OFFSET = CHUNK_SIZE * OW_OFFSET;
+static std::mt19937_64 twister = {};
 
 static fnl_state ow_terrain = {};
+static fnl_state ow_cave_a = {};
+static fnl_state ow_cave_b = {};
+static fnl_state ow_cave_c = {};
+
+static std::int32_t ow_height = 8;
+static std::int64_t ow_surface = 0;
+
+static bool ow_generate(const ChunkCoord &cpos, VoxelStorage &voxels)
+{
+    bool empty_chunk = true;
+    
+    // This defines variation scale (amplification);
+    // UNDONE: influence this via a second 2D noise map
+    const std::int64_t ow_variation = static_cast<std::int64_t>(32);
+
+    // This contains sampled surface levels
+    // FIXME: the heightmap can be reused for all the chunks
+    // with the same X and Z coordinates; store it somewhere?
+    std::array<std::int64_t, CHUNK_AREA> heightmap = {};
+
+    for(std::size_t i = 0; i < CHUNK_AREA; ++i) {
+        const std::int16_t lx = static_cast<std::int16_t>(i % CHUNK_SIZE);
+        const std::int16_t lz = static_cast<std::int16_t>(i / CHUNK_SIZE);
+        const VoxelCoord vpos = ChunkCoord::to_voxel(cpos, LocalCoord(lx, 0, lz));
+        heightmap[i] = ow_surface + ow_variation * fnlGetNoise2D(&ow_terrain, vpos[0], vpos[2]);
+    }
+
+    for(std::size_t i = 0; i < CHUNK_VOLUME; ++i) {
+        const auto lpos = LocalCoord::from_index(i);
+        const auto vpos = ChunkCoord::to_voxel(cpos, lpos);
+        const std::int64_t surf = heightmap[lpos[0] + lpos[2] * CHUNK_SIZE];
+
+        if(vpos[1] <= ow_surface - 96 + (static_cast<std::int64_t>(twister()) % 4)) {
+            voxels[i] = game_voxels::slate;
+            empty_chunk = false;
+            continue;
+        }
+
+        if(vpos[1] <= surf - 8) {
+            voxels[i] = game_voxels::stone;
+            empty_chunk = false;
+            continue;
+        }
+
+        if(vpos[1] <= surf - 1) {
+            voxels[i] = game_voxels::dirt;
+            empty_chunk = false;
+            continue;
+        }
+
+        if(vpos[1] <= surf) {
+            voxels[i] = game_voxels::grass;
+            empty_chunk = false;
+            continue;
+        }
+    }
+
+    if(empty_chunk) {
+        // There is no point in carving
+        // out cave systems from an empty chunk
+        return false;
+    }
+
+/*
+    for(std::size_t i = 0; i < CHUNK_VOLUME; ++i) {
+        const auto lpos = LocalCoord::from_index(i);
+        const auto vpos = ChunkCoord::to_voxel(cpos, lpos);
+        const float ca = fnlGetNoise3D(&ow_cave_a, vpos[0], 1.50f * vpos[1], vpos[2]);
+        const float cb = fnlGetNoise3D(&ow_cave_b, vpos[0], 1.50f * vpos[1], vpos[2]);
+        const float cc = fnlGetNoise3D(&ow_cave_c, vpos[0], 0.75f * vpos[1], vpos[2]);
+        
+        if((ca * ca + cb * cb + 0.5f * cc * cc * cc * cc) <= 0.005f) {
+            voxels[i] = NULL_VOXEL;
+            continue;
+        }
+    }
+*/
+
+    return true;
+}
 
 void vgen::init(std::uint64_t seed)
 {
-    std::mt19937_64 twister = std::mt19937_64(seed);
+    twister.seed(seed);
 
     ow_terrain = fnlCreateState();
     ow_terrain.seed = static_cast<int>(twister());
-    ow_terrain.noise_type = FNL_NOISE_OPENSIMPLEX2;
-    ow_terrain.fractal_type = FNL_FRACTAL_FBM;
-    ow_terrain.frequency = 0.0065f;
+    ow_terrain.noise_type = FNL_NOISE_OPENSIMPLEX2S;
+    ow_terrain.fractal_type = FNL_FRACTAL_RIDGED;
+    ow_terrain.frequency = 0.0025f;
     ow_terrain.octaves = 4;
+
+    ow_cave_a = fnlCreateState();
+    ow_cave_a.seed = static_cast<int>(twister());
+    ow_cave_a.noise_type = FNL_NOISE_PERLIN;
+    ow_cave_a.frequency = 0.025f;
+
+    ow_cave_b = fnlCreateState();
+    ow_cave_b.seed = static_cast<int>(twister());
+    ow_cave_b.noise_type = FNL_NOISE_PERLIN;
+    ow_cave_b.frequency = 0.025f;
+
+    ow_cave_c = fnlCreateState();
+    ow_cave_c.seed = static_cast<int>(twister());
+    ow_cave_c.noise_type = FNL_NOISE_PERLIN;
+    ow_cave_c.frequency = 0.0125f;
 }
 
 void vgen::init_late(void)
@@ -32,64 +124,26 @@ void vgen::init_late(void)
 
 }
 
-void vgen::gen_islands(ChunkCoord::value_type cx, ChunkCoord::value_type cz)
+void vgen::deinit(void)
 {
-    // not implemented
+    
 }
 
-void vgen::gen_overworld(ChunkCoord::value_type cx, ChunkCoord::value_type cz)
+void vgen::generate(const ChunkCoord &cpos)
 {
-    std::array<Voxel, CHUNK_VOLUME * OW_HEIGHT> voxels = {};
-
-    for(std::size_t i = 0; i < voxels.size(); ++i) {
-        const LocalCoord lpos = LocalCoord::from_index(i);
-        const std::int64_t vx = lpos[0] + static_cast<std::int64_t>(cx << CHUNK_SIZE_LOG2);
-        const std::int64_t vz = lpos[2] + static_cast<std::int64_t>(cz << CHUNK_SIZE_LOG2);
-        const std::int64_t vy = lpos[1] + OW_V_OFFSET;
-
-        if(vy < -32) {
-            // It's full solid from here
-            voxels[i] = game_voxels::stone;
-            continue;
-        }
-
-        const float density = 32.0f * fnlGetNoise3D(&ow_terrain, vx, vy, vz) - vy;
-        if(density > 0.0f)
-            voxels[i] = game_voxels::stone;
-        else voxels[i] = NULL_VOXEL;
+    // Figure out overworld metrics
+    // FIXME: this can be reused; move to init/init_late?
+    const std::int32_t ow_half_height = static_cast<std::int32_t>(ow_height >> 1);
+    const std::int32_t ow_surface_chunk = static_cast<std::int32_t>(ow_surface >> CHUNK_SIZE_LOG2);
+    const std::int32_t ow_start_chunk = ow_surface_chunk - ow_half_height;
+    const std::int32_t ow_end_chunk = ow_surface_chunk + ow_half_height;
+    
+    VoxelStorage voxels = {};
+    voxels.fill(NULL_VOXEL);
+    
+    if((cpos[1] >= ow_start_chunk) && (cpos[1] <= ow_end_chunk)) {
+        if(ow_generate(cpos, voxels))
+            world::assign(cpos, globals::registry.create())->voxels = voxels;
+        return;
     }
-
-    for(std::int16_t x = 0; x < CHUNK_SIZE; ++x) {
-        for(std::int16_t z = 0; z < CHUNK_SIZE; ++z) {
-            for(std::int16_t y = 4; y < OW_V_HEIGHT; ++y) {
-                const auto c_idx = LocalCoord::to_index({x, y, z});
-
-                if(!voxels[c_idx]) {
-                    for(std::int16_t b = 0; b < 4; ++b) {
-                        const auto p_idx = LocalCoord::to_index(LocalCoord(x, y - b - 1, z));
-
-                        if(voxels[p_idx] == game_voxels::stone) {
-                            if(b == 0)
-                                voxels[p_idx] = game_voxels::grass;
-                            else voxels[p_idx] = game_voxels::dirt;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    for(std::int32_t cy = 0; cy < OW_HEIGHT; ++cy) {
-        Chunk *chunk = world::assign(ChunkCoord(cx, cy + OW_OFFSET, cz), globals::registry.create());
-        std::size_t offset = CHUNK_VOLUME * cy;
-
-        for(std::size_t i = 0; i < CHUNK_VOLUME; ++i) {
-            chunk->voxels[i] = voxels[offset + i];
-        }
-    }
-}
-
-void vgen::gen_nether(ChunkCoord::value_type cx, ChunkCoord::value_type cz)
-{
-    // not implemented
 }

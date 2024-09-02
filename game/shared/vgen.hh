@@ -7,11 +7,11 @@ namespace vgen
 {
 void init(std::uint64_t seed);
 void init_late(void);
+void deinit(void);
+void update(void);
 } // namespace vgen
 
 namespace vgen
 {
-void gen_islands(ChunkCoord::value_type cx, ChunkCoord::value_type cz);
-void gen_overworld(ChunkCoord::value_type cx, ChunkCoord::value_type cz);
-void gen_nether(ChunkCoord::value_type cx, ChunkCoord::value_type cz);
+void generate(const ChunkCoord &cpos);
 } // namespace vgen
