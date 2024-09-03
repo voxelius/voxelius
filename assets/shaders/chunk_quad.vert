@@ -75,13 +75,13 @@ void main(void)
     gl_Position = u_ViewProjMatrix * gl_Position;
 
 #if WORLD_CURVATURE
-    gl_Position.y -= gl_Position.z * gl_Position.z / u_ViewDistance * 0.0625;
-    gl_Position.y -= gl_Position.x * gl_Position.x / u_ViewDistance * 0.0625;
+    gl_Position.y -= gl_Position.z * gl_Position.z / u_ViewDistance / 32.0;
+    gl_Position.y -= gl_Position.x * gl_Position.x / u_ViewDistance / 32.0;
 #endif
 
 #if WORLD_FOG == 1
     // Use a simple linear fog factor
-    vs_FogFactor = 1.0 - clamp((u_ViewDistance - length(gl_Position.xyz)) / (u_ViewDistance - 32.0), 0.0, 1.0);
+    vs_FogFactor = 1.0 - clamp((u_ViewDistance - length(gl_Position.xyz)) / (u_ViewDistance - 16.0), 0.0, 1.0);
 #elif WORLD_FOG == 2
     // Use a fancy exponential fog factor
     float fogd = 2.0 / u_ViewDistance * length(gl_Position.xyz);
