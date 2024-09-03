@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <common/config.hh>
+#include <common/epoch.hh>
 #include <entt/entity/registry.hpp>
 #include <game/server/game.hh>
 #include <game/server/globals.hh>
@@ -35,7 +36,9 @@ void server_game::init(void)
     server_recieve::init();
 
     world::init();
-    vgen::init(42);
+
+    //vgen::init(epoch::microseconds());
+    vgen::init(UINT64_C(42));
 }
 
 void server_game::init_late(void)

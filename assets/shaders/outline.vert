@@ -26,7 +26,7 @@ void main(void)
     gl_Position.z -= 0.00025;
 
 #if WORLD_CURVATURE
-    gl_Position.y -= gl_Position.z * gl_Position.z / u_ViewDistance * 0.0625;
-    gl_Position.y -= gl_Position.x * gl_Position.x / u_ViewDistance * 0.0625;
+    gl_Position.y -= gl_Position.z * gl_Position.z / u_ViewDistance / 32.0;
+    gl_Position.y -= gl_Position.x * gl_Position.x / u_ViewDistance / 32.0;
 #endif
 }
