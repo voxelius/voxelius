@@ -11,9 +11,8 @@
 static std::mt19937_64 twister = {};
 
 static fnl_state ow_terrain = {};
-static fnl_state ow_cave_a = {};
-static fnl_state ow_cave_b = {};
-static fnl_state ow_cave_c = {};
+static fnl_state ow_noodle_a = {};
+static fnl_state ow_noodle_b = {};
 
 static std::int32_t ow_height = 8;
 static std::int64_t ow_surface = 0;
@@ -29,20 +28,15 @@ void vgen::init(std::uint64_t seed)
     ow_terrain.frequency = 0.005f;
     ow_terrain.octaves = 4;
 
-    ow_cave_a = fnlCreateState();
-    ow_cave_a.seed = static_cast<int>(twister());
-    ow_cave_a.noise_type = FNL_NOISE_PERLIN;
-    ow_cave_a.frequency = 0.025f;
+    ow_noodle_a = fnlCreateState();
+    ow_noodle_a.seed = static_cast<int>(twister());
+    ow_noodle_a.noise_type = FNL_NOISE_PERLIN;
+    ow_noodle_a.frequency = 0.0075f;
 
-    ow_cave_b = fnlCreateState();
-    ow_cave_b.seed = static_cast<int>(twister());
-    ow_cave_b.noise_type = FNL_NOISE_PERLIN;
-    ow_cave_b.frequency = 0.025f;
-
-    ow_cave_c = fnlCreateState();
-    ow_cave_c.seed = static_cast<int>(twister());
-    ow_cave_c.noise_type = FNL_NOISE_PERLIN;
-    ow_cave_c.frequency = 0.0125f;
+    ow_noodle_b = fnlCreateState();
+    ow_noodle_b.seed = static_cast<int>(twister());
+    ow_noodle_b.noise_type = FNL_NOISE_PERLIN;
+    ow_noodle_b.frequency = 0.0075f;
 }
 
 void vgen::init_late(void)
@@ -118,15 +112,13 @@ void vgen::generate_overworld(ChunkCoord::value_type cx, ChunkCoord::value_type 
         const auto vpos = ChunkCoord::to_voxel(ChunkCoord(cx, ow_start_chunk, cz), lpos);
 
         if(vpos[1] <= variation) {
-            const float ca = fnlGetNoise3D(&ow_cave_a, vpos[0], 1.50f * vpos[1], vpos[2]);
-            const float cb = fnlGetNoise3D(&ow_cave_b, vpos[0], 1.50f * vpos[1], vpos[2]);
-            const float cc = fnlGetNoise3D(&ow_cave_c, vpos[0], 0.25f * vpos[1], vpos[2]);
-            
-            // https://github.com/voxelius/voxelius/pull/20
-            if((ca * ca + cb * cb + 0.5f * cc * cc * cc * cc) <= 0.015f) {
+            const float na = fnlGetNoise3D(&ow_noodle_a, vpos[0], 1.5f * vpos[1], vpos[2]);
+            const float nb = fnlGetNoise3D(&ow_noodle_b, vpos[0], 1.5f * vpos[1], vpos[2]);
+
+            if((na * na + nb * nb) <= (1.0f / 1024.0f)) {
                 voxels[idx] = NULL_VOXEL;
                 continue;
-            }            
+            }
         }
     }
 
