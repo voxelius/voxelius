@@ -13,5 +13,5 @@ void update(void);
 
 namespace vgen
 {
-void generate(const ChunkCoord &cpos);
+void generate_overworld(ChunkCoord::value_type cx, ChunkCoord::value_type cz);
 } // namespace vgen
