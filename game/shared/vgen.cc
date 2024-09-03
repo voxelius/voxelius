@@ -92,15 +92,15 @@ void vgen::generate_overworld(ChunkCoord::value_type cx, ChunkCoord::value_type 
         else voxels[idx] = NULL_VOXEL;
     }
 
-    // Sprinkle initial surface voxels
-    // This is a pass before we carve caves out
+    // Sprinkle surface voxels
     for(std::int16_t lx = 0; lx < CHUNK_SIZE; lx += 1)
     for(std::int16_t lz = 0; lz < CHUNK_SIZE; lz += 1)
     for(std::int16_t ly = 4; ly < ow_height_v; ly += 1) {
-        const auto cdx = LocalCoord::to_index(LocalCoord(lx, ly, lz));
+        const auto vpos = ChunkCoord::to_voxel(ChunkCoord(cx, ow_start_chunk, cz), LocalCoord(lx, ly, lz));
         const auto pdx = LocalCoord::to_index(LocalCoord(lx, ly - 1, lz));
+        const auto cdx = LocalCoord::to_index(LocalCoord(lx, ly, lz));
         
-        if((voxels[cdx] == NULL_VOXEL) && (voxels[pdx] == game_voxels::stone)) {
+        if((cxpr::abs(vpos[1]) <= variation) && (voxels[cdx] == NULL_VOXEL) && (voxels[pdx] == game_voxels::stone)) {
             for(std::int16_t bias = 0; bias < 4; bias += 1) {
                 const auto bdx = LocalCoord::to_index(LocalCoord(lx, ly - bias - 1, lz));
                 if(voxels[bdx] == game_voxels::stone) {
@@ -120,12 +120,25 @@ void vgen::generate_overworld(ChunkCoord::value_type cx, ChunkCoord::value_type 
         if(vpos[1] <= variation) {
             const float ca = fnlGetNoise3D(&ow_cave_a, vpos[0], 1.50f * vpos[1], vpos[2]);
             const float cb = fnlGetNoise3D(&ow_cave_b, vpos[0], 1.50f * vpos[1], vpos[2]);
-            const float cc = fnlGetNoise3D(&ow_cave_c, vpos[0], 0.75f * vpos[1], vpos[2]);
+            const float cc = fnlGetNoise3D(&ow_cave_c, vpos[0], 0.25f * vpos[1], vpos[2]);
             
-            if((ca * ca + cb * cb + cc * cc) <= 0.015f) {
+            // https://github.com/voxelius/voxelius/pull/20
+            if((ca * ca + cb * cb + 0.5f * cc * cc * cc * cc) <= 0.015f) {
                 voxels[idx] = NULL_VOXEL;
                 continue;
             }            
+        }
+    }
+
+    // Convert anything below 64 voxels in depth into slate
+    for(std::size_t idx = 0; idx < voxels.size(); idx += 1) {
+        const auto lpos = LocalCoord::from_index(idx);
+        const auto vpos = ChunkCoord::to_voxel(ChunkCoord(cx, ow_start_chunk, cz), lpos);
+        const auto thres = ow_surface - (64 + (static_cast<std::int64_t>(twister()) % INT64_C(4)));
+        
+        if((voxels[idx] == game_voxels::stone) && (vpos[1] <= thres)) {
+            voxels[idx] = game_voxels::slate;
+            continue;
         }
     }
 
