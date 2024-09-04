@@ -4,7 +4,7 @@
 #include <game/shared/chunk.hh>
 #include <game/shared/chunk_coord.hh>
 
-struct ChunkRemoveEvent final {
+struct ChunkComponent final {
     ChunkCoord coord {};
     Chunk *chunk {};
 };

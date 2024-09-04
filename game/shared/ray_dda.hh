@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #pragma once
-#include <game/shared/coord.hh>
+#include <game/shared/voxel_coord.hh>
+#include <game/shared/world_coord.hh>
 #include <game/shared/voxel.hh>
 
 class RayDDA final {

@@ -13,7 +13,7 @@
 #include <game/client/view.hh>
 #include <game/client/voxel_anims.hh>
 #include <game/client/voxel_atlas.hh>
-#include <game/shared/chunk.hh>
+#include <game/shared/entity/chunk.hh>
 #include <spdlog/spdlog.h>
 
 // ONLY TOUCH THESE IF THE RESPECTIVE SHADER
