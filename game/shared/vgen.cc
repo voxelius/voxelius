@@ -35,10 +35,10 @@ static void generate_overworld(ChunkCoord::value_type cx, ChunkCoord::value_type
     // As it turns out LocalCoord::to_index and LocalCoord::from_index
     // both work perfectly fine with values way out of range on the Y axis
     std::array<Voxel, CHUNK_AREA * overworld_height_v> voxels = {};
-    std::array<std::int64_t, CHUNK_AREA> heightmap = {};
+    std::array<std::int16_t, CHUNK_AREA> heightmap = {};
     
     voxels.fill(NULL_VOXEL);
-    heightmap.fill(INT64_MIN);
+    heightmap.fill(INT16_MIN);
 
     // FIXME: influence this by a 2D heightmap
     // FIXME: influence surface level by a 2D heightmap as well
@@ -60,8 +60,8 @@ static void generate_overworld(ChunkCoord::value_type cx, ChunkCoord::value_type
         const float density = OVERWORLD_VAR * fnlGetNoise3D(&ow_terrain, vpos[0], vpos[1], vpos[2]) - surface;
 
         if(density > 0.0f) {
-            if(vpos[1] > heightmap[heightmap_at])
-                heightmap[heightmap_at] = vpos[1];
+            if(lpos[1] > heightmap[heightmap_at])
+                heightmap[heightmap_at] = lpos[1];
             voxels[idx] = game_voxels::stone;
             continue;
         }
@@ -115,14 +115,19 @@ static void generate_overworld(ChunkCoord::value_type cx, ChunkCoord::value_type
         }
     }
 
-    // UNDONE: actually store this in a separate hashmap
-    for(std::size_t idx = 0; idx < voxels.size(); idx += 1) {
-        const auto lpos = LocalCoord::from_index(idx);
-        const auto vpos = ChunkCoord::to_voxel(ChunkCoord(cx, OVERWORLD_START, cz), lpos);
+    // Test - generate some "features"
+    for(std::size_t attempt = 0; attempt < 2; attempt += 1) {
+        const auto lx = static_cast<std::int16_t>(twister() % CHUNK_SIZE);
+        const auto lz = static_cast<std::int16_t>(twister() % CHUNK_SIZE);
+        const auto ly = heightmap.at(lx + lz * CHUNK_SIZE);
         
-        if(vpos[1] == heightmap.at(lpos[0] + lpos[2] * CHUNK_SIZE)) {
-            voxels[idx] = game_voxels::vtest;
-            continue;
+        if(voxels.at(LocalCoord::to_index(LocalCoord(lx, ly, lz))) != NULL_VOXEL) {
+            const auto limit = static_cast<std::int16_t>(6 + twister() % 2);
+            for(std::int16_t lb = 1; lb <= limit; lb += 1) {
+                if(ly + lb >= overworld_height_v)
+                    break;
+                voxels[LocalCoord::to_index(LocalCoord(lx, ly + lb, lz))] = game_voxels::vtest;
+            }
         }
     }
 
