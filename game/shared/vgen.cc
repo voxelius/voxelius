@@ -14,7 +14,7 @@ static fnl_state ow_terrain = {};
 static fnl_state ow_noodle_a = {};
 static fnl_state ow_noodle_b = {};
 
-static std::int32_t ow_height = 8;
+static std::int32_t ow_height = 16;
 static std::int64_t ow_surface = 0;
 
 void vgen::init(std::uint64_t seed)
@@ -106,6 +106,7 @@ void vgen::generate_overworld(ChunkCoord::value_type cx, ChunkCoord::value_type 
         }
     }
 
+/*
     // Carve noise caves out
     for(std::size_t idx = 0; idx < voxels.size(); idx += 1) {
         const auto lpos = LocalCoord::from_index(idx);
@@ -121,6 +122,7 @@ void vgen::generate_overworld(ChunkCoord::value_type cx, ChunkCoord::value_type 
             }
         }
     }
+*/
 
     // Convert anything below 64 voxels in depth into slate
     for(std::size_t idx = 0; idx < voxels.size(); idx += 1) {
