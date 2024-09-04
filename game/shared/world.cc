@@ -18,7 +18,7 @@ static void on_destroy_chunk(entt::registry &registry, entt::entity entity)
 {
     ChunkComponent &component = registry.get<ChunkComponent>(entity);
     chunks.erase(component.coord);
-    delete component.chunk;
+    Chunk::dealloc(component.chunk);
 }
 
 void world::init(void)
@@ -29,9 +29,7 @@ void world::init(void)
 Chunk *world::assign(const ChunkCoord &cpos, entt::entity entity)
 {
     ChunkComponent &component = globals::registry.get_or_emplace<ChunkComponent>(entity);
-    component.chunk = new Chunk();
-    component.chunk->entity = entity;
-    component.chunk->voxels.fill(NULL_VOXEL);
+    component.chunk = Chunk::alloc(entity);
     component.coord = cpos;
 
     chunks.emplace(component.coord, component.chunk);
