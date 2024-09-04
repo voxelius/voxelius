@@ -64,11 +64,11 @@ void server_game::init_late(void)
 
     game_voxels::populate();
 
-    constexpr int WSIZE = 16;
+    constexpr int WSIZE = 8;
     for(int x = -WSIZE; x < WSIZE; x += 1) {
         for(int z = -WSIZE; z < WSIZE; z += 1) {
             spdlog::info("generating {} {}", x, z);
-            vgen::generate_overworld(x, z);
+            vgen::generate(x, z);
         }
     }
 }
