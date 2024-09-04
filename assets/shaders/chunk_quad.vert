@@ -22,21 +22,17 @@ uniform float u_ViewDistance;
 void main(void)
 {
     vec3 quad_offset;
+    quad_offset.x = float(0x00FFU & (vert_Quad.x >> 24U)) / 16.0;
+    quad_offset.y = float(0x00FFU & (vert_Quad.x >> 16U)) / 16.0;
+    quad_offset.z = float(0x00FFU & (vert_Quad.x >> 8U))  / 16.0;
+
     vec2 quad_scale;
+    quad_scale.x = float((0x000FU & (vert_Quad.x >> 4U)) + 1U) / 16.0;
+    quad_scale.y = float((0x000FU & (vert_Quad.x >> 0U)) + 1U) / 16.0;
 
-    // [0] XXXXXXXXXXYYYYYYYYYYZZZZZZZZZZ--
-    quad_offset.x = float(0x000003FFU & (vert_Quad.x >> 22U)) / 32.0;
-    quad_offset.y = float(0x000003FFU & (vert_Quad.x >> 12U)) / 32.0;
-    quad_offset.z = float(0x000003FFU & (vert_Quad.x >> 2U))  / 32.0;
-
-    // [1] WWWWWHHHHH----------------------
-    quad_scale.x = float((0x0000001FU & (vert_Quad.y >> 27U)) + 1U) / 32.0;
-    quad_scale.y = float((0x0000001FU & (vert_Quad.y >> 22U)) + 1U) / 32.0;
-
-    // [1] ----------FFFFTTTTTTTTTTTAAAAA--
-    uint quad_facing = (0x000FU & (vert_Quad.y >> 18U));
-    uint quad_toffset = (0x07FFU & (vert_Quad.y >> 7U));
-    uint quad_tframes = max(1U, (0x001FU & (vert_Quad.y >> 2U)));
+    uint quad_facing = (0x000FU & (vert_Quad.y >> 28U));
+    uint quad_toffset = (0x07FFU & (vert_Quad.y >> 17));
+    uint quad_tframes = max(1U, (0x001FU & (vert_Quad.y >> 12)));
 
     gl_Position.xyz = vert_Position;
     gl_Position.x *= quad_scale.x;
