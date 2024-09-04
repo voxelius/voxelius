@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #pragma once
-#include <game/shared/coord.hh>
+#include <game/shared/world_coord.hh>
 #include <mathlib/vec3angles.hh>
 
 class TransformComponent final {

@@ -8,7 +8,6 @@
 #include <game/shared/entity/head.hh>
 #include <game/shared/entity/transform.hh>
 #include <game/shared/entity/velocity.hh>
-#include <game/shared/coord.hh>
 #include <game/shared/protocol.hh>
 #include <game/shared/world.hh>
 

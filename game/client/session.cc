@@ -10,8 +10,10 @@
 #include <game/client/session.hh>
 #include <game/shared/event/chunk_update.hh>
 #include <game/shared/event/voxel_set.hh>
-#include <game/shared/coord.hh>
+#include <game/shared/chunk_coord.hh>
+#include <game/shared/local_coord.hh>
 #include <game/shared/protocol.hh>
+#include <game/shared/voxel_coord.hh>
 #include <game/shared/world.hh>
 #include <spdlog/spdlog.h>
 

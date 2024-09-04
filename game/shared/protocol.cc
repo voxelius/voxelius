@@ -3,6 +3,7 @@
 #include <common/packet_buffer.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
+#include <game/shared/entity/chunk.hh>
 #include <game/shared/entity/head.hh>
 #include <game/shared/entity/transform.hh>
 #include <game/shared/entity/velocity.hh>

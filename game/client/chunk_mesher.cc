@@ -8,11 +8,15 @@
 #include <game/client/chunk_visibility.hh>
 #include <game/client/globals.hh>
 #include <game/client/voxel_atlas.hh>
+#include <game/shared/entity/chunk.hh>
 #include <game/shared/event/chunk_create.hh>
 #include <game/shared/event/chunk_remove.hh>
 #include <game/shared/event/chunk_update.hh>
 #include <game/shared/event/voxel_set.hh>
+#include <game/shared/chunk_coord.hh>
+#include <game/shared/local_coord.hh>
 #include <game/shared/vdef.hh>
+#include <game/shared/voxel_coord.hh>
 #include <game/shared/world.hh>
 #include <spdlog/spdlog.h>
 #include <thread_pool.hpp>

@@ -3,10 +3,13 @@
 #include <emhash/hash_table8.hpp>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
+#include <game/shared/entity/chunk.hh>
 #include <game/shared/event/chunk_create.hh>
 #include <game/shared/event/chunk_remove.hh>
 #include <game/shared/event/voxel_set.hh>
 #include <game/shared/globals.hh>
+#include <game/shared/local_coord.hh>
+#include <game/shared/voxel_coord.hh>
 #include <game/shared/world.hh>
 
 static emhash8::HashMap<ChunkCoord, Chunk *> chunks = {};

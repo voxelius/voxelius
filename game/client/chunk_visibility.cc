@@ -4,7 +4,7 @@
 #include <game/client/chunk_visibility.hh>
 #include <game/client/globals.hh>
 #include <game/client/view.hh>
-#include <game/shared/chunk.hh>
+#include <game/shared/entity/chunk.hh>
 #include <game/shared/world.hh>
 
 static ChunkCoord cached_cpos = {};

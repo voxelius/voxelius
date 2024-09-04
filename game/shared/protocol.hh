@@ -5,6 +5,7 @@
 #include <enet/enet.h>
 #include <mathlib/vec3angles.hh>
 #include <game/shared/chunk.hh>
+#include <game/shared/world_coord.hh>
 
 namespace protocol
 {
