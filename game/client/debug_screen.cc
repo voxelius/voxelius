@@ -12,7 +12,7 @@
 #include <imgui_stdlib.h>
 #include <spdlog/spdlog.h>
 
-constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav;
+constexpr static ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoNav;
 
 static std::string gl_version = {};
 static std::string gl_renderer = {};
@@ -30,7 +30,7 @@ void debug_screen::layout(void)
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
     ImGui::PushFont(globals::font_debug);
 
-    if(ImGui::Begin("###debug", nullptr, MENU_FLAGS)) {
+    if(ImGui::Begin("###debug", nullptr, WINDOW_FLAGS)) {
         const float ui_framerate = 1.0f / globals::frametime_avg;
         const float ui_frametime = 1000.0f * globals::frametime_avg;
   

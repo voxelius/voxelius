@@ -12,7 +12,7 @@
 #include <game/client/session.hh>
 #include <imgui.h>
 
-constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
+constexpr static ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
 
 static std::string str_play = {};
 static std::string str_resume = {};
@@ -61,10 +61,10 @@ void main_menu::layout(void)
     ImGui::SetNextWindowPos(window_start);
     ImGui::SetNextWindowSize(window_size);
 
-    if(ImGui::Begin("###main_menu", nullptr, MENU_FLAGS)) {
+    if(ImGui::Begin("###main_menu", nullptr, WINDOW_FLAGS)) {
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 2.0f * globals::gui_scale));
 
-        ImGui::PushFont(globals::font_menu_title);
+        ImGui::PushFont(globals::font_title);
         constexpr static const char *title_str = "Voxelius";
         const float title_width = ImGui::CalcTextSize(title_str).x;
         const float title_xpos = 0.5f * (window_size.x - title_width);

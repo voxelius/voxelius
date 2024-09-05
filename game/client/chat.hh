@@ -13,5 +13,6 @@ void layout(void);
 
 namespace client_chat
 {
+void clear(void);
 void send(const std::string &message);
 } // namespace client_chat

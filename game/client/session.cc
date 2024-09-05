@@ -2,6 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
+#include <game/client/chat.hh>
 #include <game/client/game.hh>
 #include <game/client/globals.hh>
 #include <game/client/gui_screen.hh>
@@ -36,6 +37,8 @@ static void on_disconnect_packet(const protocol::Disconnect &packet)
     enet_peer_disconnect(globals::session_peer, 0);
 
     spdlog::info("session: disconnected: {}", packet.reason);
+
+    client_chat::clear();
 
     globals::session_peer = nullptr;
     globals::session_id = UINT16_MAX;
@@ -169,6 +172,8 @@ void session::disconnect(const std::string &reason)
 
         globals::player = entt::null;
         globals::registry.clear();
+        
+        client_chat::clear();
     }
 }
 
