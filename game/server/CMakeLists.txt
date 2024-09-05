@@ -1,4 +1,5 @@
 add_library(server STATIC
+    "${CMAKE_CURRENT_LIST_DIR}/chat.cc"
     "${CMAKE_CURRENT_LIST_DIR}/game.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
     "${CMAKE_CURRENT_LIST_DIR}/main.cc"

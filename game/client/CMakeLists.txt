@@ -1,5 +1,6 @@
 add_library(client STATIC
     "${CMAKE_CURRENT_LIST_DIR}/background.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/chat.cc"
     "${CMAKE_CURRENT_LIST_DIR}/chunk_mesher.cc"
     "${CMAKE_CURRENT_LIST_DIR}/chunk_renderer.cc"
     "${CMAKE_CURRENT_LIST_DIR}/chunk_visibility.cc"

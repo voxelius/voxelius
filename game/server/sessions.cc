@@ -87,6 +87,12 @@ static void on_login_request_packet(const protocol::LoginRequest &packet)
         // entity identifier in the packet is to be treated as the local player entity
         protocol::send_spawn_player(session->peer, nullptr, session->player);
 
+        protocol::ChatMessage message = {};
+        message.type = protocol::ChatMessage::PLAYER_JOIN;
+        message.sender = session->username;
+        message.message = std::string();
+        protocol::send(nullptr, globals::server_host, message);
+
         return;
     }
 
@@ -96,7 +102,14 @@ static void on_login_request_packet(const protocol::LoginRequest &packet)
 static void on_disconnect_packet(const protocol::Disconnect &packet)
 {
     if(Session *session = sessions::find(packet.peer)) {
+        protocol::ChatMessage message = {};
+        message.type = protocol::ChatMessage::PLAYER_LEAVE;
+        message.sender = session->username;
+        message.message = packet.reason;
+        protocol::send(session->peer, globals::server_host, message);
+
         spdlog::info("{} disconnected ({})", session->username, packet.reason);
+
         sessions::destroy(session);
     }
 }
