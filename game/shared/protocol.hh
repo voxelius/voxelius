@@ -144,10 +144,9 @@ struct protocol::SpawnPlayer final : public protocol::Base<0x0009> {
 };
 
 struct protocol::ChatMessage final : public protocol::Base<0x000A> {
-    constexpr static std::uint16_t PLAYER_MSG   = 0x0000;
+    constexpr static std::uint16_t TEXT_MESSAGE = 0x0000;
     constexpr static std::uint16_t PLAYER_JOIN  = 0x0001;
     constexpr static std::uint16_t PLAYER_LEAVE = 0x0002;
-    constexpr static std::uint16_t SERVER_MSG   = 0x0003;
 
     std::uint16_t type {};
     std::string sender {};

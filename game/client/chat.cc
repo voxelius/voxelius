@@ -34,10 +34,10 @@ static bool needs_focus = false;
 
 static void on_chat_message_packet(const protocol::ChatMessage &packet)
 {
-    if(packet.type == protocol::ChatMessage::PLAYER_MSG) {
+    if(packet.type == protocol::ChatMessage::TEXT_MESSAGE) {
         GuiChatMessage message = {};
         message.spawn = globals::curtime;
-        message.text = fmt::format("<{}> {}", packet.sender, packet.message);
+        message.text = fmt::format("[{}] {}", packet.sender, packet.message);
         message.color = ImGui::GetStyleColorVec4(ImGuiCol_Text);
         history.push_back(message);
         return;
@@ -60,15 +60,6 @@ static void on_chat_message_packet(const protocol::ChatMessage &packet)
         history.push_back(message);
         return;
     }
-    
-    if(packet.type == protocol::ChatMessage::SERVER_MSG) {
-        GuiChatMessage message = {};
-        message.spawn = globals::curtime;
-        message.text = fmt::format("[{}] {}", packet.sender, packet.message);
-        message.color = ImGui::GetStyleColorVec4(ImGuiCol_Text);
-        history.push_back(message);
-        return;
-    }
 }
 
 static void on_glfw_key(const GlfwKeyEvent &event)
@@ -78,7 +69,7 @@ static void on_glfw_key(const GlfwKeyEvent &event)
             if(!strtools::is_empty_or_whitespace(chat_input)) {
                 if(globals::session_peer) {
                     protocol::ChatMessage packet = {};
-                    packet.type = protocol::ChatMessage::PLAYER_MSG;
+                    packet.type = protocol::ChatMessage::TEXT_MESSAGE;
                     packet.sender = globals::session_username;
                     packet.message = chat_input;
                     protocol::send(globals::session_peer, nullptr, packet);
@@ -202,13 +193,20 @@ void client_chat::clear(void)
     history.clear();
 }
 
-void client_chat::send(const std::string &message)
+void client_chat::refresh_timings(void)
 {
-    if(globals::session_peer) {
-        protocol::ChatMessage packet = {};
-        packet.type = protocol::ChatMessage::PLAYER_MSG;
-        packet.sender = globals::session_username;
-        packet.message = message;
-        protocol::send(globals::session_peer, nullptr, packet);
+    for(auto it = history.begin(); it < history.end(); ++it) {
+        // Reset the spawn time so the fadeout timer
+        // is reset; SpawnPlayer handler might call this
+        it->spawn = globals::curtime;
     }
+}
+
+void client_chat::print(const std::string &text)
+{
+    GuiChatMessage message = {};
+    message.spawn = globals::curtime;
+    message.text = text;
+    message.color = ImGui::GetStyleColorVec4(ImGuiCol_Text);
+    history.push_back(message);
 }

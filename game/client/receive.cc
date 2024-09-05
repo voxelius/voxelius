@@ -2,6 +2,7 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
+#include <game/client/chat.hh>
 #include <game/client/globals.hh>
 #include <game/client/gui_screen.hh>
 #include <game/client/receive.hh>
@@ -99,6 +100,8 @@ static void on_spawn_player_packet(const protocol::SpawnPlayer &packet)
 
         globals::player = packet.entity;
         globals::gui_screen = GUI_SCREEN_NONE;
+
+        client_chat::refresh_timings();
     }
 }
 

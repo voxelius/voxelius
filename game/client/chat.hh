@@ -14,5 +14,6 @@ void layout(void);
 namespace client_chat
 {
 void clear(void);
-void send(const std::string &message);
+void refresh_timings(void);
+void print(const std::string &str);
 } // namespace client_chat
