@@ -163,7 +163,7 @@ void client_chat::layout(void)
                 needs_focus = false;
             }
 
-            ImGui::SetNextItemWidth(window_size.x - 2.0f * padding.x);
+            ImGui::SetNextItemWidth(window_size.x + 32.0f * padding.x);
             ImGui::SetCursorScreenPos(ImVec2(padding.x, ypos));
             ImGui::InputText("###chat.input", &chat_input);
         }
@@ -181,13 +181,6 @@ void client_chat::layout(void)
                 const float fadeout = std::exp(-1.0f * std::pow(1.0e-6 * static_cast<float>(globals::curtime - it->spawn) / fadeout_seconds, 10.0f));
                 const float rect_alpha = ((globals::gui_screen == GUI_CHAT) ? (0.75f) : (0.50f * fadeout));
                 const float text_alpha = ((globals::gui_screen == GUI_CHAT) ? (1.00f) : (1.00f * fadeout));
-                const float chat_height = ((globals::gui_screen == GUI_CHAT) ? (0.50f) : (0.75f));
-
-                if((ypos - rect_size.y) < (window_size.y * chat_height)) {
-                    // Cull out messages that are not
-                    // supposed to be visible anymore
-                    break;
-                }
                 
                 const ImU32 rect_col = ImGui::GetColorU32(ImGuiCol_FrameBg, rect_alpha);
                 const ImU32 text_col = ImGui::GetColorU32(ImVec4(it->color.x, it->color.y, it->color.z, it->color.w * text_alpha));

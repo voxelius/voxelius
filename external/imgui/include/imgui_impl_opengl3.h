@@ -13,7 +13,7 @@
 // - For other targets, the define needs to be visible from the imgui_impl_opengl3.cpp compilation unit. If unsure, define globally or in imconfig.h.
 
 // You can use unmodified imgui_impl_* files in your project. See examples/ folder for examples of using this.
-// Prefer including the entire im/ repository into your project (either as a copy or as a submodule), and only build the backends you need.
+// Prefer including the entire imgui/ repository into your project (either as a copy or as a submodule), and only build the backends you need.
 // Learn about Dear ImGui:
 // - FAQ                  https://dearimgui.com/faq
 // - Getting Started      https://dearimgui.com/getting-started
@@ -29,7 +29,7 @@
 #include "imgui.h"      // IMGUI_IMPL_API
 #ifndef IMGUI_DISABLE
 
-// Backend API
+// Follow "Getting Started" link and check examples/ folder to learn about using backends!
 IMGUI_IMPL_API bool     ImGui_ImplOpenGL3_Init(const char* glsl_version = nullptr);
 IMGUI_IMPL_API void     ImGui_ImplOpenGL3_Shutdown();
 IMGUI_IMPL_API void     ImGui_ImplOpenGL3_NewFrame();
@@ -41,9 +41,9 @@ IMGUI_IMPL_API void     ImGui_ImplOpenGL3_DestroyFontsTexture();
 IMGUI_IMPL_API bool     ImGui_ImplOpenGL3_CreateDeviceObjects();
 IMGUI_IMPL_API void     ImGui_ImplOpenGL3_DestroyDeviceObjects();
 
-// Specific OpenGL ES versions
-//#define IMGUI_IMPL_OPENGL_ES2     // Auto-detected on Emscripten
-//#define IMGUI_IMPL_OPENGL_ES3     // Auto-detected on iOS/Android
+// Configuration flags to add in your imconfig file:
+//#define IMGUI_IMPL_OPENGL_ES2     // Enable ES 2 (Auto-detected on Emscripten)
+//#define IMGUI_IMPL_OPENGL_ES3     // Enable ES 3 (Auto-detected on iOS/Android)
 
 // You can explicitly select GLES2 or GLES3 API by using one of the '#define IMGUI_IMPL_OPENGL_LOADER_XXX' in imconfig.h or compiler command-line.
 #if !defined(IMGUI_IMPL_OPENGL_ES2) \
