@@ -3,6 +3,7 @@
 #include <common/config.hh>
 #include <common/epoch.hh>
 #include <entt/entity/registry.hpp>
+#include <game/server/chat.hh>
 #include <game/server/game.hh>
 #include <game/server/globals.hh>
 #include <game/server/receive.hh>
@@ -33,6 +34,7 @@ void server_game::init(void)
     splash::init("texts/motds.txt");
     status::init();
 
+    server_chat::init();
     server_recieve::init();
 
     world::init();
@@ -64,7 +66,7 @@ void server_game::init_late(void)
 
     game_voxels::populate();
 
-    constexpr int WSIZE = 16;
+    constexpr int WSIZE = 8;
     for(int x = -WSIZE; x < WSIZE; x += 1) {
         for(int z = -WSIZE; z < WSIZE; z += 1) {
             spdlog::info("generating {} {}", x, z);

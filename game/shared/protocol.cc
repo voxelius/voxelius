@@ -102,7 +102,7 @@ void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::LoginRequest
     PacketBuffer::write_UI64(write_buffer, packet.password_hash);
     PacketBuffer::write_UI64(write_buffer, packet.vdef_checksum);
     PacketBuffer::write_UI64(write_buffer, packet.player_uid);
-    PacketBuffer::write_string(write_buffer, packet.username);
+    PacketBuffer::write_string(write_buffer, packet.username.substr(0, protocol::MAX_USERNAME));
     basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
@@ -191,7 +191,8 @@ void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::ChatMessage 
     PacketBuffer::setup(write_buffer);
     PacketBuffer::write_UI16(write_buffer, protocol::ChatMessage::ID);
     PacketBuffer::write_UI16(write_buffer, packet.type);
-    PacketBuffer::write_string(write_buffer, packet.message);
+    PacketBuffer::write_string(write_buffer, packet.sender.substr(0, protocol::MAX_USERNAME));
+    PacketBuffer::write_string(write_buffer, packet.message.substr(0, protocol::MAX_CHAT));
     basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
@@ -327,6 +328,7 @@ void protocol::receive(const ENetPacket *packet, ENetPeer *peer)
         case protocol::ChatMessage::ID:
             chat_message.peer = peer;
             chat_message.type = PacketBuffer::read_UI16(read_buffer);
+            chat_message.sender = PacketBuffer::read_string(read_buffer);
             chat_message.message = PacketBuffer::read_string(read_buffer);
             globals::dispatcher.trigger(chat_message);
             break;

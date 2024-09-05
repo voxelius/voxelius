@@ -6,6 +6,7 @@
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <game/client/background.hh>
+#include <game/client/chat.hh>
 #include <game/client/chunk_mesher.hh>
 #include <game/client/chunk_renderer.hh>
 #include <game/client/chunk_visibility.hh>
@@ -290,6 +291,8 @@ void client_game::init(void)
     progress::init();
     message_box::init();
 
+    client_chat::init();
+
     debug_session::init();
 
     globals::sky_color[0] = 0.529f;
@@ -309,6 +312,8 @@ void client_game::init_late(void)
     language::init_late();
 
     settings::init_late();
+
+    client_chat::init_late();
 
     game_voxels::populate();
 
@@ -389,6 +394,8 @@ void client_game::update(void)
     chunk_mesher::update();
 
     chunk_visibility::update();
+    
+    client_chat::update();
 }
 
 void client_game::update_late(void)
@@ -483,7 +490,7 @@ void client_game::layout(void)
     }
 
     if(globals::gui_screen) {
-        if(globals::registry.valid(globals::player)) {
+        if(globals::registry.valid(globals::player) && (globals::gui_screen != GUI_CHAT)) {
             const float width_f = static_cast<float>(globals::width);
             const float height_f = static_cast<float>(globals::height);
             const ImU32 splash = ImGui::GetColorU32(ImVec4(0.00f, 0.00f, 0.00f, 0.75f));
@@ -506,9 +513,13 @@ void client_game::layout(void)
             case GUI_MESSAGE_BOX:
                 message_box::layout();
                 break;
+            case GUI_CHAT:
+                client_chat::layout();
+                break;
         }
     }
-    else if(debug_toggles::draw_debug_screen) {
+
+    if(debug_toggles::draw_debug_screen) {
         // This contains Minecraft-esque debug information
         // about the hardware, world state and other
         // things that might be uesful

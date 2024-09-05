@@ -9,8 +9,10 @@
 
 namespace protocol
 {
+constexpr static std::size_t MAX_CHAT = 16384;
+constexpr static std::size_t MAX_USERNAME = 64;
 constexpr static std::uint16_t PORT = 43103;
-constexpr static std::uint32_t VERSION = 2;
+constexpr static std::uint32_t VERSION = 3;
 } // namespace protocol
 
 namespace protocol
@@ -142,7 +144,13 @@ struct protocol::SpawnPlayer final : public protocol::Base<0x0009> {
 };
 
 struct protocol::ChatMessage final : public protocol::Base<0x000A> {
+    constexpr static std::uint16_t PLAYER_MSG   = 0x0000;
+    constexpr static std::uint16_t PLAYER_JOIN  = 0x0001;
+    constexpr static std::uint16_t PLAYER_LEAVE = 0x0002;
+    constexpr static std::uint16_t SERVER_MSG   = 0x0003;
+
     std::uint16_t type {};
+    std::string sender {};
     std::string message {};
 };
 
