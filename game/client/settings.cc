@@ -16,7 +16,7 @@
 #include <unordered_map>
 #include <vector>
 
-constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
+constexpr static ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
 
 enum class SettingValueType : unsigned int {
     Checkbox        = 0x0000,
@@ -447,7 +447,7 @@ void settings::layout(void)
     ImGui::SetNextWindowPos(window_start);
     ImGui::SetNextWindowSize(window_size);
 
-    if(ImGui::Begin("###settings", nullptr, MENU_FLAGS)) {
+    if(ImGui::Begin("###settings", nullptr, WINDOW_FLAGS)) {
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(3.0f * globals::gui_scale, 3.0f * globals::gui_scale));
 
         if(ImGui::BeginTabBar("###settings.tabs", ImGuiTabBarFlags_FittingPolicyResizeDown)) {

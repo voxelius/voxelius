@@ -8,7 +8,7 @@
 #include <spdlog/fmt/fmt.h>
 #include <vector>
 
-constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
+constexpr static ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
 
 struct Button final {
     std::string str_title {};
@@ -35,7 +35,7 @@ void message_box::layout(void)
     ImGui::SetNextWindowPos(window_start);
     ImGui::SetNextWindowSize(window_size);
 
-    if(ImGui::Begin("###UIProgress", nullptr, MENU_FLAGS)) {
+    if(ImGui::Begin("###UIProgress", nullptr, WINDOW_FLAGS)) {
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0.0f, 1.0f * globals::gui_scale));
         
         const float title_width = ImGui::CalcTextSize(str_title.c_str()).x;

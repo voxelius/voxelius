@@ -20,7 +20,7 @@
 #include <spdlog/spdlog.h>
 #include <sstream>
 
-constexpr static ImGuiWindowFlags MENU_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
+constexpr static ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
 
 using ServerStatus = unsigned int;
 constexpr static ServerStatus STATUS_INIT = 0x0000;
@@ -421,7 +421,7 @@ void play_menu::layout(void)
     ImGui::SetNextWindowPos(window_start);
     ImGui::SetNextWindowSize(window_size);
 
-    if(ImGui::Begin("###play_menu", nullptr, MENU_FLAGS)) {
+    if(ImGui::Begin("###play_menu", nullptr, WINDOW_FLAGS)) {
         ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(3.0f * globals::gui_scale, 3.0f * globals::gui_scale));
 
         if(ImGui::BeginTabBar("###play_menu.tabs", ImGuiTabBarFlags_FittingPolicyResizeDown)) {

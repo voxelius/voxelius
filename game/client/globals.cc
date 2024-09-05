@@ -31,8 +31,9 @@ GLuint globals::world_fbo_depth = 0;
 
 Vec4f globals::sky_color = Vec4f::transparent();
 
+ImFont *globals::font_chat = nullptr;
+ImFont *globals::font_title = nullptr;
 ImFont *globals::font_debug = nullptr;
-ImFont *globals::font_menu_title = nullptr;
 
 int *globals::gui_keybind_ptr = nullptr;
 unsigned int globals::gui_scale = 0U;

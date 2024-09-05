@@ -125,15 +125,16 @@ static void on_glfw_framebuffer_size(const GlfwFramebufferSizeEvent &event)
         if(!fstools::read_bytes("fonts/unscii-16.ttf", fontbin))
             std::terminate();
         ImGui::GetIO().FontDefault = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 16.0f * scale, &font_config, ranges.Data);
-
-        if(!fstools::read_bytes("fonts/unscii-8.ttf", fontbin))
-            std::terminate();
-        globals::font_debug = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 4.0f * scale, &font_config);
+        globals::font_chat = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 8.0f * scale, &font_config, ranges.Data);
 
         // UNDONE: design a logo and draw it as a TEXTURE/SPRITE
         if(!fstools::read_bytes("fonts/din1451alt.ttf", fontbin))
             std::terminate();
-        globals::font_menu_title = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 64.0f * scale, &font_config);
+        globals::font_title = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 64.0f * scale, &font_config);
+
+        if(!fstools::read_bytes("fonts/unscii-8.ttf", fontbin))
+            std::terminate();
+        globals::font_debug = io.Fonts->AddFontFromMemoryTTF(fontbin.data(), fontbin.size(), 4.0f * scale, &font_config);
 
         // This should be here!!! Just calling Build()
         // on the font atlas does not invalidate internal
@@ -267,7 +268,7 @@ void client_game::init(void)
     style.Colors[ImGuiCol_TableRowBg]               = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
     style.Colors[ImGuiCol_TableRowBgAlt]            = ImVec4(1.00f, 1.00f, 1.00f, 0.06f);
     style.Colors[ImGuiCol_TextSelectedBg]           = ImVec4(0.61f, 0.61f, 0.61f, 0.35f);
-    style.Colors[ImGuiCol_DragDropTarget]           = ImVec4(1.00f, 1.00f, 0.00f, 0.90f);
+    style.Colors[ImGuiCol_DragDropTarget]           = ImVec4(1.00f, 1.00f, 0.00f, 1.00f);
     style.Colors[ImGuiCol_NavHighlight]             = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);
     style.Colors[ImGuiCol_NavWindowingHighlight]    = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
     style.Colors[ImGuiCol_NavWindowingDimBg]        = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
@@ -285,13 +286,13 @@ void client_game::init(void)
 
     background::init();
 
+    client_chat::init();
+
     main_menu::init();
     play_menu::init();
     settings::init();
     progress::init();
     message_box::init();
-
-    client_chat::init();
 
     debug_session::init();
 
@@ -513,16 +514,18 @@ void client_game::layout(void)
             case GUI_MESSAGE_BOX:
                 message_box::layout();
                 break;
-            case GUI_CHAT:
-                client_chat::layout();
-                break;
+        }
+    }
+    else {
+        if(debug_toggles::draw_debug_screen) {
+            // This contains Minecraft-esque debug information
+            // about the hardware, world state and other
+            // things that might be uesful
+            debug_screen::layout();
         }
     }
 
-    if(debug_toggles::draw_debug_screen) {
-        // This contains Minecraft-esque debug information
-        // about the hardware, world state and other
-        // things that might be uesful
-        debug_screen::layout();
+    if(globals::registry.valid(globals::player)) {
+        client_chat::layout();
     }
 }

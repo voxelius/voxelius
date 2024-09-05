@@ -112,7 +112,7 @@ void protocol::send(ENetPeer *peer, ENetHost *host, const protocol::LoginRespons
     PacketBuffer::write_UI16(write_buffer, protocol::LoginResponse::ID);
     PacketBuffer::write_UI16(write_buffer, packet.session_id);
     PacketBuffer::write_UI16(write_buffer, packet.tickrate);
-    PacketBuffer::write_string(write_buffer, packet.username);
+    PacketBuffer::write_string(write_buffer, packet.username.substr(0, protocol::MAX_USERNAME));
     basic_send(peer, host, enet_packet_create(write_buffer.vector.data(), write_buffer.vector.size(), ENET_PACKET_FLAG_RELIABLE));
 }
 
