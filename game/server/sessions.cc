@@ -39,12 +39,11 @@ static std::string make_unique_username(const std::string &username)
 
 static void on_login_request_packet(const protocol::LoginRequest &packet)
 {
-    
     if(packet.version > protocol::VERSION) {
-        protocol::send_disconnect(packet.peer, nullptr, "protocol.outdated_client");
+        protocol::send_disconnect(packet.peer, nullptr, "protocol.outdated_server");
         return;
     }
-    
+
     if(packet.version < protocol::VERSION) {
         protocol::send_disconnect(packet.peer, nullptr, "protocol.outdated_client");
         return;
