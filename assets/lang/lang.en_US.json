@@ -41,6 +41,7 @@
   "settings.value.game.fog_mode.1": "Linear",
   "settings.value.game.fog_mode.2": "Fancy",
   "settings.value.game.world_curvature": "World Curvature",
+  "settings.value.key.chat": "Open chat",
   "settings.value.key.back": "Move back",
   "settings.value.key.down": "Move down",
   "settings.value.key.forward": "Move forward",
