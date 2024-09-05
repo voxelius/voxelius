@@ -169,7 +169,7 @@ void client_chat::layout(void)
                 const ImVec2 text_pos = ImVec2(rect_pos.x + padding.x, rect_pos.y + padding.y);
                 
                 const float fadeout_seconds = 10.0f;
-                const float fadeout = std::exp(-1.0f * std::pow(1.0e-6 * static_cast<float>(globals::curtime - it->spawn) / fadeout_seconds, 6.0f));
+                const float fadeout = std::exp(-1.0f * std::pow(1.0e-6 * static_cast<float>(globals::curtime - it->spawn) / fadeout_seconds, 10.0f));
                 const float rect_alpha = ((globals::gui_screen == GUI_CHAT) ? (0.75f) : (0.50f * fadeout));
                 const float text_alpha = ((globals::gui_screen == GUI_CHAT) ? (1.00f) : (1.00f * fadeout));
                 
