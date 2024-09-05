@@ -14,13 +14,13 @@
 
 constexpr static std::int64_t FLOATLANDS_VAR = INT64_C(64);
 constexpr static std::int64_t FLOATLANDS_MIDDLE = INT64_C(640);
-constexpr static std::int32_t FLOATLANDS_START_C = INT32_C(16); // 2
+constexpr static std::int32_t FLOATLANDS_START_C = INT32_C(2); // 16
 constexpr static std::int32_t FLOATLANDS_HEIGHT_C = INT32_C(16); // hardcoded
 constexpr static std::int64_t FLOATLANDS_HEIGHT_V = CHUNK_SIZE * FLOATLANDS_HEIGHT_C;
 
-constexpr static std::int64_t OVERWORLD_VAR = INT64_C(64); // 16
+constexpr static std::int64_t OVERWORLD_VAR = INT64_C(16); // 64
 constexpr static std::int64_t OVERWORLD_SURFACE = INT64_C(0);
-constexpr static std::int32_t OVERWORLD_START_C = INT32_C(-16); // -2
+constexpr static std::int32_t OVERWORLD_START_C = INT32_C(-2); // -16
 constexpr static std::int32_t OVERWORLD_HEIGHT_C = FLOATLANDS_START_C - OVERWORLD_START_C;
 constexpr static std::int64_t OVERWORLD_HEIGHT_V = CHUNK_SIZE * OVERWORLD_HEIGHT_C;
 

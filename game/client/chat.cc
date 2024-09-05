@@ -19,6 +19,8 @@
 
 constexpr static ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration;
 
+constexpr static std::size_t MAX_HISTORY_SIZE = 128;
+
 struct GuiChatMessage final {
     std::uint64_t spawn {};
     std::string text {};
@@ -126,6 +128,10 @@ void client_chat::init_late(void)
 
 void client_chat::update(void)
 {
+    while(history.size() > MAX_HISTORY_SIZE) {
+        // Truncate old chat messages
+        history.pop_front();
+    }
 }
 
 void client_chat::layout(void)
