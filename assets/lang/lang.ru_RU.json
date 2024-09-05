@@ -41,6 +41,7 @@
   "settings.value.game.fog_mode.1": "Линейный",
   "settings.value.game.fog_mode.2": "Красивый",
   "settings.value.game.world_curvature": "Искривление Мира",
+  "settings.value.key.chat": "Открыть чат",
   "settings.value.key.back": "Двигаться назад",
   "settings.value.key.down": "Двигаться вниз",
   "settings.value.key.forward": "Двигаться вперед",
