@@ -84,22 +84,22 @@ Voxel VDefBuilder::build(void) const
     std::string json_source = {};
 
     if(!fstools::read_string(json_path, json_source)) {
-        spdlog::warn("vdef: {}: {}", json_path, fstools::error());
-        return NULL_VOXEL;
+        spdlog::error("vdef: {}: {}", json_path, fstools::error());
+        std::terminate();
     }
 
     JSON_Value *jsonv = json_parse_string(json_source.c_str());
     const JSON_Object *json = json_value_get_object(jsonv);
 
     if(!jsonv) {
-        spdlog::warn("vdef: {}: parse error", json_path);
-        return NULL_VOXEL;
+        spdlog::error("vdef: {}: parse error", json_path);
+        std::terminate();
     }
 
     if(!json) {
-        spdlog::warn("vdef: {}: root is not an object", json_path);
+        spdlog::error("vdef: {}: root is not an object", json_path);
         json_value_free(jsonv);
-        return NULL_VOXEL;
+        std::terminate();
     }
 
     if((vdef::voxels.size() + states.size()) >= VOXEL_MAX) {
@@ -145,9 +145,9 @@ Voxel VDefBuilder::build(void) const
         const JSON_Object *state = json_object_get_object(json, state_name.c_str());
 
         if(!state) {
-            spdlog::warn("vdef: {}: {} is not an object", json_path, state_name);
+            spdlog::error("vdef: {}: {} is not an object", json_path, state_name);
             json_value_free(jsonv);
-            return NULL_VOXEL;
+            std::terminate();
         }
 
         VoxelInfo info = {};
@@ -165,7 +165,7 @@ Voxel VDefBuilder::build(void) const
         if(!parse_string_array(json_object_get_array(textures, "default"), default_texture)) {
             spdlog::error("vdef: {}: {}: default: non-string array entry", json_path, state_name);
             json_value_free(jsonv);
-            return NULL_VOXEL;
+            std::terminate();
         }
 
         info.textures.resize(face_count);
@@ -190,24 +190,24 @@ Voxel VDefBuilder::build(void) const
             const std::size_t face_index = static_cast<std::size_t>(face);
 
             if((face == VoxelFace::Invalid) || (face_index >= face_count)) {
-                spdlog::warn("vdef: {}: invalid texture name {}", json_path, state_name, tex_name);
+                spdlog::error("vdef: {}: invalid texture name {}", json_path, state_name, tex_name);
                 json_value_free(jsonv);
-                return NULL_VOXEL;
+                std::terminate();
             }
 
             const JSON_Value *texturev = json_object_get_value_at(textures, i);
             const JSON_Array *texture = json_value_get_array(texturev);
 
             if(!texture) {
-                spdlog::warn("vdef: {}: {}: {} is not an array", json_path, state_name, tex_name);
+                spdlog::error("vdef: {}: {}: {} is not an array", json_path, state_name, tex_name);
                 json_value_free(jsonv);
-                return NULL_VOXEL;
+                std::terminate();
             }
 
             if(!parse_string_array(texture, info.textures[face_index].paths)) {
-                spdlog::warn("vdef: {}: {}: {}: non-string array entry", json_path, state_name, tex_name);
+                spdlog::error("vdef: {}: {}: {}: non-string array entry", json_path, state_name, tex_name);
                 json_value_free(jsonv);
-                return NULL_VOXEL;
+                std::terminate();
             }
         }
 
