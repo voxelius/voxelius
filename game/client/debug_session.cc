@@ -71,13 +71,6 @@ void debug_session::update(void)
     }
 }
 
-void debug_session::run(void)
-{
-    if(globals::session_peer)
-        return;
-    session::connect("localhost", protocol::PORT);
-}
-
 void debug_session::init_late(void)
 {
     place_voxels.push_back(game_voxels::dirt);
