@@ -6,6 +6,7 @@
 #include <game/client/debug_session.hh>
 #include <game/client/event/glfw_mouse_button.hh>
 #include <game/client/event/glfw_scroll.hh>
+#include <game/client/chat.hh>
 #include <game/client/globals.hh>
 #include <game/client/gui_screen.hh>
 #include <game/client/message_box.hh>
@@ -25,8 +26,8 @@
 #include <game/shared/world.hh>
 #include <spdlog/spdlog.h>
 
-static int s_voxnum = 0;
-static Voxel s_voxels[5];
+static std::size_t place_voxnum = 0;
+static std::vector<Voxel> place_voxels = {};
 
 static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
 {
@@ -36,31 +37,19 @@ static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
                 world::set_voxel(NULL_VOXEL, player_target::vvec);
                 return;
             }
-            if(event.button == GLFW_MOUSE_BUTTON_RIGHT) {
-                world::set_voxel(game_voxels::stone, player_target::vvec + player_target::vnormal);
-                return;
-            }
-            if (event.button == GLFW_MOUSE_BUTTON_MIDDLE) {
-                if (++s_voxnum > 4)
-                    s_voxnum = 0;
+
+            if((event.button == GLFW_MOUSE_BUTTON_RIGHT) && (glfwGetKey(globals::window, GLFW_KEY_LEFT_ALT) != GLFW_PRESS)) {
+                world::set_voxel(place_voxels[place_voxnum], player_target::vvec + player_target::vnormal);
                 return;
             }
         }
-    }
-}
 
-static void on_glfw_scroll(const GlfwScrollEvent &event)
-{
-    if(!globals::gui_screen && globals::registry.valid(globals::player)) {
-        if(player_target::voxel != NULL_VOXEL) {
-            if(event.dx < 0.0) {
-                world::set_voxel(s_voxels[s_voxnum], player_target::vvec + player_target::vnormal);
-                return;
-            }
-            if(event.dx > 0.0) {
-                world::set_voxel(NULL_VOXEL, player_target::vvec);
-                return;
-            }
+        if((event.action == GLFW_PRESS) && (event.button == GLFW_MOUSE_BUTTON_MIDDLE)) {
+            place_voxnum += 1;
+            place_voxnum %= place_voxels.size();
+            if(const VoxelInfo *info = vdef::find(place_voxels[place_voxnum]))
+                client_chat::print(fmt::format("[debug] place_voxel: {}", info->name));
+            return;
         }
     }
 }
@@ -68,12 +57,18 @@ static void on_glfw_scroll(const GlfwScrollEvent &event)
 void debug_session::init(void)
 {
     globals::dispatcher.sink<GlfwMouseButtonEvent>().connect<&on_glfw_mouse_button>();
-    globals::dispatcher.sink<GlfwScrollEvent>().connect<&on_glfw_scroll>();
 }
 
 void debug_session::update(void)
 {
-
+    if(player_target::voxel != NULL_VOXEL) {
+        if(glfwGetKey(globals::window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) {
+            if(glfwGetMouseButton(globals::window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+                world::set_voxel(place_voxels[place_voxnum], player_target::vvec + player_target::vnormal);
+                return;
+            }
+        }
+    }
 }
 
 void debug_session::run(void)
@@ -85,9 +80,9 @@ void debug_session::run(void)
 
 void debug_session::init_late(void)
 {
-    s_voxels[0] = game_voxels::dirt;
-    s_voxels[1] = game_voxels::grass;
-    s_voxels[2] = game_voxels::slate;
-    s_voxels[3] = game_voxels::stone;
-    s_voxels[4] = game_voxels::vtest;
+    place_voxels.push_back(game_voxels::dirt);
+    place_voxels.push_back(game_voxels::grass);
+    place_voxels.push_back(game_voxels::slate);
+    place_voxels.push_back(game_voxels::stone);
+    place_voxels.push_back(game_voxels::vtest);
 }
