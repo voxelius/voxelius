@@ -13,5 +13,5 @@ void update(void);
 
 namespace vgen
 {
-void generate(ChunkCoord::value_type cx, ChunkCoord::value_type cz);
+bool generate(ChunkCoord::value_type cx, ChunkCoord::value_type cz);
 } // namespace vgen

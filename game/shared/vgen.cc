@@ -12,24 +12,50 @@
 #include <mathlib/vec2base.hh>
 #include <random>
 
-constexpr static std::int64_t FLOATLANDS_VAR = INT64_C(64);
-constexpr static std::int64_t FLOATLANDS_MIDDLE = INT64_C(640);
-constexpr static std::int32_t FLOATLANDS_START_C = INT32_C(2); // 16
-constexpr static std::int32_t FLOATLANDS_HEIGHT_C = INT32_C(16); // hardcoded
-constexpr static std::int64_t FLOATLANDS_HEIGHT_V = CHUNK_SIZE * FLOATLANDS_HEIGHT_C;
+constexpr static VoxelCoord::value_type FLOATLANDS_VAR = VoxelCoord::value_type(64);
+constexpr static VoxelCoord::value_type FLOATLANDS_MIDDLE = VoxelCoord::value_type(640);
+constexpr static ChunkCoord::value_type FLOATLANDS_START_C = ChunkCoord::value_type(2); // prev: 16
+constexpr static ChunkCoord::value_type FLOATLANDS_HEIGHT_C = ChunkCoord::value_type(16); // hadcoded
+constexpr static VoxelCoord::value_type FLOATLANDS_HEIGHT_V = CHUNK_SIZE * FLOATLANDS_HEIGHT_C;
+constexpr static std::size_t FLOATLANDS_VOLUME = CHUNK_VOLUME * FLOATLANDS_HEIGHT_C;
 
-constexpr static std::int64_t OVERWORLD_VAR = INT64_C(16); // 64
-constexpr static std::int64_t OVERWORLD_SURFACE = INT64_C(0);
-constexpr static std::int32_t OVERWORLD_START_C = INT32_C(-2); // -16
-constexpr static std::int32_t OVERWORLD_HEIGHT_C = FLOATLANDS_START_C - OVERWORLD_START_C;
-constexpr static std::int64_t OVERWORLD_HEIGHT_V = CHUNK_SIZE * OVERWORLD_HEIGHT_C;
+constexpr static VoxelCoord::value_type OVERWORLD_VAR = VoxelCoord::value_type(16); // prev: 64
+constexpr static VoxelCoord::value_type OVERWORLD_SURFACE = VoxelCoord::value_type(0);
+constexpr static ChunkCoord::value_type OVERWORLD_START_C = ChunkCoord::value_type(-2); // prev: -16
+constexpr static ChunkCoord::value_type OVERWORLD_HEIGHT_C = FLOATLANDS_START_C - OVERWORLD_START_C;
+constexpr static VoxelCoord::value_type OVERWORLD_HEIGHT_V = CHUNK_SIZE * OVERWORLD_HEIGHT_C;
+constexpr static std::size_t OVERWORLD_VOLUME = CHUNK_VOLUME * OVERWORLD_HEIGHT_C;
 
-constexpr static std::int64_t DEPTHS_VAR1 = INT64_C(64);
-constexpr static std::int64_t DEPTHS_VAR2 = INT64_C(16);
-constexpr static std::int64_t DEPTHS_MIDDLE = INT64_C(-640);
-constexpr static std::int32_t DEPTHS_START_C = INT32_C(-24);
-constexpr static std::int32_t DEPTHS_HEIGHT_C = OVERWORLD_START_C - DEPTHS_START_C;
-constexpr static std::int64_t DEPTHS_HEIGHT_V = CHUNK_SIZE * DEPTHS_HEIGHT_C;
+// Proto-chunks use 2D X/Z chunk coordinates
+using ProtoChunkCoord = Vec2base<ChunkCoord::value_type>;
+
+enum class ProtoChunkStage : unsigned int {
+    Allocate    = 0x0000,
+    Terrain     = 0x0001,
+    Surface     = 0x0002,
+    Caves       = 0x0003,
+    Submit      = 0x0004,
+    Zombie      = 0x0005,
+};
+
+struct ProtoChunk final {
+    std::array<Chunk *, FLOATLANDS_HEIGHT_C> floatlands {};
+    std::array<Chunk *, OVERWORLD_HEIGHT_C> overworld {};
+    ProtoChunkStage stage {};
+};
+
+template<>
+struct std::hash<ProtoChunkCoord> final {
+    constexpr inline std::size_t operator()(const ProtoChunkCoord &ppos) const
+    {
+        std::size_t value = 0;
+        value ^= ppos[0] * 73856093;
+        value ^= ppos[1] * 19349663;
+        return value;
+    }
+};
+
+static emhash8::HashMap<ProtoChunkCoord, ProtoChunk> proto_chunks = {};
 
 static fnl_state ow_terrain = {};
 static fnl_state ow_caves_a = {};
@@ -37,117 +63,109 @@ static fnl_state ow_caves_b = {};
 
 static std::mt19937_64 twister = {};
 
-static void generate_overworld(ChunkCoord::value_type cx, ChunkCoord::value_type cz)
+static void overworld_allocate(const ProtoChunkCoord &ppos, ProtoChunk &pc)
 {
-    // As it turns out LocalCoord::to_index and LocalCoord::from_index
-    // both work perfectly fine with values way out of range on the Y axis
-    std::array<Voxel, CHUNK_AREA * OVERWORLD_HEIGHT_V> voxels = {};
-    std::array<std::int16_t, CHUNK_AREA> heightmap = {};
-    
-    voxels.fill(NULL_VOXEL);
-    heightmap.fill(INT16_MIN);
+    for(std::size_t i = 0; i < pc.overworld.size(); pc.overworld[i++] = Chunk::alloc());
+}
 
-    // FIXME: influence this by a 2D heightmap
-    // FIXME: influence surface level by a 2D heightmap as well
-    const std::int64_t variation = 64;
-
-    // Generate base noise terrain
-    for(std::size_t idx = 0; idx < voxels.size(); idx += 1) {
-        const LocalCoord lpos = LocalCoord::from_index(idx);
-        const VoxelCoord vpos = ChunkCoord::to_voxel(ChunkCoord(cx, OVERWORLD_START_C, cz), lpos);
-        const std::int64_t surface = vpos[1] + OVERWORLD_SURFACE;
+static void overworld_terrain(const ProtoChunkCoord &ppos, ProtoChunk &pc)
+{
+    for(std::size_t idx = 0; idx < OVERWORLD_VOLUME; idx += 1) {
+        const std::size_t chunk_idx = idx / CHUNK_VOLUME;
+        const std::size_t local_idx = idx % CHUNK_VOLUME;
         
-        if(cxpr::abs(surface) > variation) {
-            if(surface < INT64_C(0))
-                voxels[idx] = game_voxels::stone;
+        const LocalCoord lpos = LocalCoord::from_index(idx);
+        const VoxelCoord vpos = ChunkCoord::to_voxel(ChunkCoord(ppos[0], OVERWORLD_START_C + chunk_idx, ppos[1]), lpos);
+        const VoxelCoord::value_type surface = vpos[1] + OVERWORLD_SURFACE;
+        
+        if(cxpr::abs(surface) > OVERWORLD_VAR) {
+            if(surface < VoxelCoord::value_type(0))
+                pc.overworld[chunk_idx]->voxels[local_idx] = game_voxels::stone;
             continue;
         }
 
-        const auto heightmap_at = lpos[0] + lpos[2] * CHUNK_SIZE;
         const float density = OVERWORLD_VAR * fnlGetNoise3D(&ow_terrain, vpos[0], vpos[1], vpos[2]) - surface;
 
         if(density > 0.0f) {
-            if(lpos[1] > heightmap[heightmap_at])
-                heightmap[heightmap_at] = lpos[1];
-            voxels[idx] = game_voxels::stone;
+            pc.overworld[chunk_idx]->voxels[local_idx] = game_voxels::stone;
             continue;
         }
     }
+}
 
-    // Sprinkle surface voxels
-    for(std::int16_t lx = 0; lx < CHUNK_SIZE; lx += 1)
-    for(std::int16_t lz = 0; lz < CHUNK_SIZE; lz += 1)
-    for(std::int16_t ly = 4; ly < OVERWORLD_HEIGHT_V; ly += 1) {
-        const auto vpos = ChunkCoord::to_voxel(ChunkCoord(cx, OVERWORLD_START_C, cz), LocalCoord(lx, ly, lz));
-        const auto pdx = LocalCoord::to_index(LocalCoord(lx, ly - 1, lz));
-        const auto cdx = LocalCoord::to_index(LocalCoord(lx, ly, lz));
+static void overworld_surface(const ProtoChunkCoord &ppos, ProtoChunk &pc)
+{
+    for(LocalCoord::value_type lx = 0; lx < CHUNK_SIZE; lx += 1)
+    for(LocalCoord::value_type lz = 0; lz < CHUNK_SIZE; lz += 1)
+    for(LocalCoord::value_type ly = 4; ly < OVERWORLD_HEIGHT_V; ly += 1) {
+        const VoxelCoord vpos = ChunkCoord::to_voxel(ChunkCoord(ppos[0], OVERWORLD_START_C, ppos[1]), LocalCoord(lx, ly, lz));
         
-        if((cxpr::abs(vpos[1]) <= variation) && (voxels[cdx] == NULL_VOXEL) && (voxels[pdx] == game_voxels::stone)) {
-            for(std::int16_t bias = 0; bias < 4; bias += 1) {
-                const auto bdx = LocalCoord::to_index(LocalCoord(lx, ly - bias - 1, lz));
-                if(voxels[bdx] == game_voxels::stone) {
-                    if(bias == 0)
-                        voxels[bdx] = game_voxels::grass;
-                    else voxels[bdx] = game_voxels::dirt;
-                }
+        if(cxpr::abs(vpos[1]) > OVERWORLD_VAR) {
+            // Out of range
+            continue;
+        }
+        
+        const std::size_t prev_idx = LocalCoord::to_index(LocalCoord(lx, ly - 1, lz));
+        const std::size_t prev_chunk = prev_idx / CHUNK_VOLUME;
+        const std::size_t prev_local = prev_idx % CHUNK_VOLUME;
+        
+        const std::size_t curr_idx = LocalCoord::to_index(LocalCoord(lx, ly, lz));
+        const std::size_t curr_chunk = curr_idx / CHUNK_VOLUME;
+        const std::size_t curr_local = curr_idx % CHUNK_VOLUME;
+        
+        const Voxel prev_voxel = pc.overworld[prev_chunk]->voxels[prev_local];
+        const Voxel curr_voxel = pc.overworld[curr_chunk]->voxels[curr_local];
+        
+        if((curr_voxel != NULL_VOXEL) || (prev_voxel != game_voxels::stone)) {
+            // Not a surface
+            continue;
+        }
+        
+        for(LocalCoord::value_type bias = 0; bias < 4; bias += 1) {
+            const std::size_t bias_idx = LocalCoord::to_index(LocalCoord(lx, ly - bias - 1, lz));
+            const std::size_t bias_chunk = bias_idx / CHUNK_VOLUME;
+            const std::size_t bias_local = bias_idx % CHUNK_VOLUME;
+            
+            if(pc.overworld[bias_chunk]->voxels[bias_local] == game_voxels::stone) {
+                if(bias == 0)
+                    pc.overworld[bias_chunk]->voxels[bias_local] = game_voxels::grass;
+                else pc.overworld[bias_chunk]->voxels[bias_local] = game_voxels::dirt;
             }
         }
     }
+}
 
-    // Carve noise caves out
-    for(std::size_t idx = 0; idx < voxels.size(); idx += 1) {
-        const auto lpos = LocalCoord::from_index(idx);
-        const auto vpos = ChunkCoord::to_voxel(ChunkCoord(cx, OVERWORLD_START_C, cz), lpos);
-
-        if(vpos[1] <= variation) {
-            const float na = fnlGetNoise3D(&ow_caves_a, vpos[0], 1.5f * vpos[1], vpos[2]);
-            const float nb = fnlGetNoise3D(&ow_caves_b, vpos[0], 1.5f * vpos[1], vpos[2]);
-
-            if((na * na + nb * nb) <= (1.0f / 1024.0f)) {
-                voxels[idx] = NULL_VOXEL;
-                continue;
-            }
-        }
-    }
-
-    // Convert anything below 64 voxels in depth into slate
-    for(std::size_t idx = 0; idx < voxels.size(); idx += 1) {
-        const auto lpos = LocalCoord::from_index(idx);
-        const auto vpos = ChunkCoord::to_voxel(ChunkCoord(cx, OVERWORLD_START_C, cz), lpos);
-        const auto thres = OVERWORLD_SURFACE - (64 + (static_cast<std::int64_t>(twister()) % INT64_C(4)));
+static void overworld_caves(const ProtoChunkCoord &ppos, ProtoChunk &pc)
+{
+    for(std::size_t idx = 0; idx < OVERWORLD_VOLUME; idx += 1) {
+        const std::size_t chunk_idx = idx / CHUNK_VOLUME;
+        const std::size_t local_idx = idx % CHUNK_VOLUME;
         
-        if((voxels[idx] == game_voxels::stone) && (vpos[1] <= thres)) {
-            voxels[idx] = game_voxels::slate;
+        const LocalCoord lpos = LocalCoord::from_index(idx);
+        const VoxelCoord vpos = ChunkCoord::to_voxel(ChunkCoord(ppos[0], OVERWORLD_START_C + chunk_idx, ppos[1]), lpos);
+        const VoxelCoord::value_type surface = vpos[1] + OVERWORLD_SURFACE;
+        
+        if(surface > OVERWORLD_VAR) {
+            // Can't carve air
+            continue;
+        }
+
+        const float na = fnlGetNoise3D(&ow_caves_a, vpos[0], 1.5f * vpos[1], vpos[2]);
+        const float nb = fnlGetNoise3D(&ow_caves_b, vpos[0], 1.5f * vpos[1], vpos[2]);
+
+        if((na * na + nb * nb) <= (1.0f / 1024.0f)) {
+            pc.overworld[chunk_idx]->voxels[local_idx] = NULL_VOXEL;
             continue;
         }
     }
+}
 
-    // Test - generate some "features"
-    for(std::size_t attempt = 0; attempt < 2; attempt += 1) {
-        const auto lx = static_cast<std::int16_t>(twister() % CHUNK_SIZE);
-        const auto lz = static_cast<std::int16_t>(twister() % CHUNK_SIZE);
-        const auto ly = heightmap.at(lx + lz * CHUNK_SIZE);
-        
-        if(voxels.at(LocalCoord::to_index(LocalCoord(lx, ly, lz))) != NULL_VOXEL) {
-            const auto limit = static_cast<std::int16_t>(6 + twister() % 2);
-            for(std::int16_t lb = 1; lb <= limit; lb += 1) {
-                if(ly + lb >= OVERWORLD_HEIGHT_V)
-                    break;
-                voxels[LocalCoord::to_index(LocalCoord(lx, ly + lb, lz))] = game_voxels::vtest;
-            }
-        }
-    }
-
-    // Copy voxel data into cubic chunks
-    for(std::int32_t cy = 0; cy < OVERWORLD_HEIGHT_C; ++cy) {
-        const auto cpos = ChunkCoord(cx, cy + OVERWORLD_START_C, cz);
-        const auto offset = CHUNK_VOLUME * cy;
-
-        if(Chunk *chunk = world::assign(cpos, globals::registry.create())) {
-            for(std::size_t i = 0; i < CHUNK_VOLUME; ++i) {
-                chunk->voxels[i] = voxels[offset + i];
-            }
-        }
+static void overworld_submit(const ProtoChunkCoord &ppos, ProtoChunk &pc)
+{
+    for(ChunkCoord::value_type cy = 0; cy < pc.overworld.size(); cy += 1) {
+        pc.overworld[cy]->entity = globals::registry.create();
+        world::assign(ChunkCoord(ppos[0], OVERWORLD_START_C + cy, ppos[1]), pc.overworld[cy]);
+        pc.overworld[cy] = nullptr;
     }
 }
 
@@ -175,20 +193,57 @@ void vgen::init(std::uint64_t seed)
 
 void vgen::init_late(void)
 {
-
 }
 
 void vgen::deinit(void)
 {
-
 }
 
 void vgen::update(void)
 {
-
+    for(auto &it : proto_chunks) {
+        if(it.second.stage == ProtoChunkStage::Allocate) {
+            overworld_allocate(it.first, it.second);
+            it.second.stage = ProtoChunkStage::Terrain;
+            continue;
+        }
+        
+        if(it.second.stage == ProtoChunkStage::Terrain) {
+            overworld_terrain(it.first, it.second);
+            it.second.stage = ProtoChunkStage::Surface;
+            continue;
+        }
+        
+        if(it.second.stage == ProtoChunkStage::Surface) {
+            overworld_surface(it.first, it.second);
+            it.second.stage = ProtoChunkStage::Caves;
+            continue;
+        }
+        
+        if(it.second.stage == ProtoChunkStage::Caves) {
+            overworld_caves(it.first, it.second);
+            it.second.stage = ProtoChunkStage::Submit;
+            continue;
+        }
+        
+        if(it.second.stage == ProtoChunkStage::Submit) {
+            overworld_submit(it.first, it.second);
+            it.second.stage = ProtoChunkStage::Zombie;
+            continue;
+        }
+    }
 }
 
-void vgen::generate(ChunkCoord::value_type cx, ChunkCoord::value_type cz)
+bool vgen::generate(ChunkCoord::value_type cx, ChunkCoord::value_type cz)
 {
-    generate_overworld(cx, cz);
+    const ProtoChunkCoord ppos = ProtoChunkCoord(cx, cz);
+    const auto it = proto_chunks.find(ppos);
+    
+    if(it == proto_chunks.cend()) {
+        ProtoChunk &pc = proto_chunks.emplace(ppos, ProtoChunk()).first->second;
+        pc.stage = ProtoChunkStage::Allocate;
+        return true;
+    }
+    
+    return false;
 }

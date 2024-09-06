@@ -26,6 +26,21 @@ void world::init(void)
     globals::registry.on_destroy<ChunkComponent>().connect<&on_destroy_chunk>();
 }
 
+void world::assign(const ChunkCoord &cpos, Chunk *chunk)
+{
+    ChunkComponent &component = globals::registry.get_or_emplace<ChunkComponent>(chunk->entity);
+    component.chunk = chunk;
+    component.coord = cpos;
+
+    chunks.emplace(component.coord, component.chunk);
+
+    ChunkCreateEvent event = {};
+    event.chunk = component.chunk;
+    event.coord = component.coord;
+
+    globals::dispatcher.trigger(event);
+}
+
 Chunk *world::assign(const ChunkCoord &cpos, entt::entity entity)
 {
     ChunkComponent &component = globals::registry.get_or_emplace<ChunkComponent>(entity);

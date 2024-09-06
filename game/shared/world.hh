@@ -10,6 +10,7 @@ void init(void);
 
 namespace world
 {
+void assign(const ChunkCoord &cpos, Chunk *object);
 Chunk *assign(const ChunkCoord &cpos, entt::entity entity);
 Chunk *find(const ChunkCoord &cpos);
 Chunk *find(entt::entity entity);
