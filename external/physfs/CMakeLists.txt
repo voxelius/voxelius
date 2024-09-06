@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 project(PhysFS VERSION 3.3.0 LANGUAGES C)
 add_library(physfs STATIC
     "${CMAKE_CURRENT_LIST_DIR}/src/physfs.c"

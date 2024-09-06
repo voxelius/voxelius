@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 project(EnTT VERSION 3.13.2 LANGUAGES CXX)
 add_library(entt INTERFACE)
 target_include_directories(entt INTERFACE "${CMAKE_CURRENT_LIST_DIR}/include")
