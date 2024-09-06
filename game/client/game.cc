@@ -318,6 +318,8 @@ void client_game::init_late(void)
 
     game_voxels::populate();
 
+    debug_session::init_late();
+
     std::size_t max_texture_count = 0;
 
     // Figure out the total texture count
