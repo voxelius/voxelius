@@ -25,7 +25,8 @@
 #include <game/shared/world.hh>
 #include <spdlog/spdlog.h>
 
-static int voxnum = 0;
+static int s_voxnum = 0;
+static Voxel s_voxels[5];
 
 static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
 {
@@ -40,8 +41,8 @@ static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
                 return;
             }
             if (event.button == GLFW_MOUSE_BUTTON_MIDDLE) {
-                if (++voxnum > 4)
-                    voxnum = 0;
+                if (++s_voxnum > 4)
+                    s_voxnum = 0;
                 return;
             }
         }
@@ -53,23 +54,7 @@ static void on_glfw_scroll(const GlfwScrollEvent &event)
     if(!globals::gui_screen && globals::registry.valid(globals::player)) {
         if(player_target::voxel != NULL_VOXEL) {
             if(event.dx < 0.0) {
-                switch (voxnum) {
-                    case 0:
-                        world::set_voxel(game_voxels::dirt, player_target::vvec + player_target::vnormal);
-                        break;
-                    case 1:
-                        world::set_voxel(game_voxels::grass, player_target::vvec + player_target::vnormal);
-                        break;
-                    case 2:
-                        world::set_voxel(game_voxels::slate, player_target::vvec + player_target::vnormal);
-                        break;
-                    case 3:
-                        world::set_voxel(game_voxels::stone, player_target::vvec + player_target::vnormal);
-                        break;
-                    case 4:
-                        world::set_voxel(game_voxels::vtest, player_target::vvec + player_target::vnormal);
-                        break;
-                }
+                world::set_voxel(s_voxels[s_voxnum], player_target::vvec + player_target::vnormal);
                 return;
             }
             if(event.dx > 0.0) {
@@ -96,4 +81,13 @@ void debug_session::run(void)
     if(globals::session_peer)
         return;
     session::connect("localhost", protocol::PORT);
+}
+
+void debug_session::init_late(void)
+{
+    s_voxels[0] = game_voxels::dirt;
+    s_voxels[1] = game_voxels::grass;
+    s_voxels[2] = game_voxels::slate;
+    s_voxels[3] = game_voxels::stone;
+    s_voxels[4] = game_voxels::vtest;
 }
