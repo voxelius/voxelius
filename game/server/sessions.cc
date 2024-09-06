@@ -10,6 +10,7 @@
 #include <game/shared/entity/player.hh>
 #include <game/shared/entity/transform.hh>
 #include <game/shared/entity/velocity.hh>
+#include <game/shared/event/chunk_create.hh>
 #include <game/shared/event/voxel_set.hh>
 #include <game/shared/protocol.hh>
 #include <mathlib/constexpr.hh>
@@ -116,6 +117,15 @@ static void on_disconnect_packet(const protocol::Disconnect &packet)
 // NOTE: [sessions] is a good place for this since [receive]
 // handles entity data sent by players and [sessions] handles
 // everything else network related that is not player movement
+static void on_chunk_create(const ChunkCreateEvent &event)
+{
+    protocol::ChunkVoxels packet = {};
+    packet.entity = event.chunk->entity;
+    packet.chunk = event.coord;
+    packet.voxels = event.chunk->voxels;
+    protocol::send(nullptr, globals::server_host, packet);
+}
+
 static void on_voxel_set(const VoxelSetEvent &event)
 {
     protocol::send_set_voxel(nullptr, globals::server_host, event.vpos, event.voxel);
@@ -135,6 +145,7 @@ void sessions::init(void)
     globals::dispatcher.sink<protocol::LoginRequest>().connect<&on_login_request_packet>();
     globals::dispatcher.sink<protocol::Disconnect>().connect<&on_disconnect_packet>();
 
+    globals::dispatcher.sink<ChunkCreateEvent>().connect<&on_chunk_create>();
     globals::dispatcher.sink<VoxelSetEvent>().connect<&on_voxel_set>();
 
     globals::registry.on_destroy<entt::entity>().connect<&on_destroy_entity>();

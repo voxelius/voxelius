@@ -66,7 +66,9 @@ void server_game::init_late(void)
 
     game_voxels::populate();
 
-    constexpr int WSIZE = 8;
+    vgen::init_late();
+
+    constexpr int WSIZE = 64;
     for(int x = -WSIZE; x < WSIZE; x += 1) {
         for(int z = -WSIZE; z < WSIZE; z += 1) {
             spdlog::info("generating {} {}", x, z);
@@ -79,6 +81,8 @@ void server_game::deinit(void)
 {
     protocol::send_disconnect(nullptr, globals::server_host, "protocol.server_shutdown");
 
+    vgen::deinit();
+
     sessions::deinit();
 
     enet_host_flush(globals::server_host);
@@ -88,15 +92,7 @@ void server_game::deinit(void)
 
 void server_game::update(void)
 {
-#if 0
-    const auto group = globals::registry.group<PlayerComponent, HeadComponent, TransformComponent, VelocityComponent>();
-
-    for(const auto [entity, head, transform, velocity] : group.each()) {
-        spdlog::info("player: {} {} {} / {} {} {}",
-            transform.position.chunk[0], transform.position.chunk[1], transform.position.chunk[2],
-            transform.position.local[0], transform.position.local[1], transform.position.local[2]);
-    }
-#endif
+    vgen::update();
 }
 
 void server_game::update_late(void)
