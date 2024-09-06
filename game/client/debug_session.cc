@@ -38,7 +38,7 @@ static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
                 return;
             }
 
-            if((event.button == GLFW_MOUSE_BUTTON_RIGHT) && (glfwGetKey(globals::window, GLFW_KEY_LEFT_ALT) != GLFW_PRESS)) {
+            if(event.button == GLFW_MOUSE_BUTTON_RIGHT) {
                 world::set_voxel(place_voxels[place_voxnum], player_target::vvec + player_target::vnormal);
                 return;
             }
@@ -54,21 +54,33 @@ static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
     }
 }
 
+static void on_glfw_scroll(const GlfwScrollEvent &event)
+{
+    if(!globals::gui_screen && globals::registry.valid(globals::player)) {
+        if(player_target::voxel != NULL_VOXEL) {
+            if(glfwGetKey(globals::window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) {
+                if(event.dx < 0.0) {
+                    world::set_voxel(place_voxels[place_voxnum], player_target::vvec + player_target::vnormal);
+                    return;
+                }
+
+                if(event.dx > 0.0) {
+                    world::set_voxel(NULL_VOXEL, player_target::vvec);
+                    return;
+                }
+            }
+        }
+    }
+}
+
 void debug_session::init(void)
 {
     globals::dispatcher.sink<GlfwMouseButtonEvent>().connect<&on_glfw_mouse_button>();
+    globals::dispatcher.sink<GlfwScrollEvent>().connect<&on_glfw_scroll>();
 }
 
 void debug_session::update(void)
 {
-    if(player_target::voxel != NULL_VOXEL) {
-        if(glfwGetKey(globals::window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) {
-            if(glfwGetMouseButton(globals::window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-                world::set_voxel(place_voxels[place_voxnum], player_target::vvec + player_target::vnormal);
-                return;
-            }
-        }
-    }
 }
 
 void debug_session::init_late(void)
