@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 project(enet LANGUAGES C VERSION 1.3.17)
 
 add_library(enet STATIC
