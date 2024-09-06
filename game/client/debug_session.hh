@@ -7,4 +7,5 @@ namespace debug_session
 void init(void);
 void update(void);
 void run(void);
+void init_late(void);
 } // namespace debug_session
