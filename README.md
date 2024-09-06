@@ -6,3 +6,4 @@ An in-development open-source voxel (block, cube) game with the goal to replicat
 ## Documentation
 * [Building](misc/docs/building.md)  
 * [Protocol](misc/docs/protocol.md)  
+* [Launching](misc/docs/launch.md)
