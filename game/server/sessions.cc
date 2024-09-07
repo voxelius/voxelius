@@ -11,6 +11,7 @@
 #include <game/shared/entity/transform.hh>
 #include <game/shared/entity/velocity.hh>
 #include <game/shared/event/chunk_create.hh>
+#include <game/shared/event/chunk_update.hh>
 #include <game/shared/event/voxel_set.hh>
 #include <game/shared/protocol.hh>
 #include <mathlib/constexpr.hh>
@@ -126,6 +127,15 @@ static void on_chunk_create(const ChunkCreateEvent &event)
     protocol::send(nullptr, globals::server_host, packet);
 }
 
+static void on_chunk_update(const ChunkUpdateEvent &event)
+{
+    protocol::ChunkVoxels packet = {};
+    packet.entity = event.chunk->entity;
+    packet.chunk = event.coord;
+    packet.voxels = event.chunk->voxels;
+    protocol::send(nullptr, globals::server_host, packet);
+}
+
 static void on_voxel_set(const VoxelSetEvent &event)
 {
     protocol::send_set_voxel(nullptr, globals::server_host, event.vpos, event.voxel);
@@ -146,6 +156,7 @@ void sessions::init(void)
     globals::dispatcher.sink<protocol::Disconnect>().connect<&on_disconnect_packet>();
 
     globals::dispatcher.sink<ChunkCreateEvent>().connect<&on_chunk_create>();
+    globals::dispatcher.sink<ChunkUpdateEvent>().connect<&on_chunk_update>();
     globals::dispatcher.sink<VoxelSetEvent>().connect<&on_voxel_set>();
 
     globals::registry.on_destroy<entt::entity>().connect<&on_destroy_entity>();

@@ -6,6 +6,7 @@
 #include <game/shared/entity/chunk.hh>
 #include <game/shared/event/chunk_create.hh>
 #include <game/shared/event/chunk_remove.hh>
+#include <game/shared/event/chunk_update.hh>
 #include <game/shared/event/voxel_set.hh>
 #include <game/shared/globals.hh>
 #include <game/shared/local_coord.hh>
@@ -18,7 +19,7 @@ static void on_destroy_chunk(entt::registry &registry, entt::entity entity)
 {
     ChunkComponent &component = registry.get<ChunkComponent>(entity);
     chunks.erase(component.coord);
-    Chunk::dealloc(component.chunk);
+    Chunk::destroy(component.chunk);
 }
 
 void world::init(void)
@@ -26,36 +27,44 @@ void world::init(void)
     globals::registry.on_destroy<ChunkComponent>().connect<&on_destroy_chunk>();
 }
 
-void world::assign(const ChunkCoord &cpos, Chunk *chunk)
+void world::emplace_or_replace(const ChunkCoord &cpos, Chunk *chunk)
 {
-    ChunkComponent &component = globals::registry.get_or_emplace<ChunkComponent>(chunk->entity);
-    component.chunk = chunk;
-    component.coord = cpos;
+    auto it = chunks.find(cpos);
 
-    chunks.emplace(component.coord, component.chunk);
+    if(it != chunks.end()) {
+        ChunkComponent &component = globals::registry.get<ChunkComponent>(it->second->entity);
+        component.chunk = chunk;
+        component.coord = cpos;
 
-    ChunkCreateEvent event = {};
-    event.chunk = component.chunk;
-    event.coord = component.coord;
+        if(chunk->entity != it->second->entity)
+            chunk->entity = it->second->entity;
+        Chunk::destroy(it->second);
+        it->second = chunk;
 
-    globals::dispatcher.trigger(event);
-}
+        ChunkUpdateEvent event = {};
+        event.chunk = component.chunk;
+        event.coord = component.coord;
 
-Chunk *world::assign(const ChunkCoord &cpos, entt::entity entity)
-{
-    ChunkComponent &component = globals::registry.get_or_emplace<ChunkComponent>(entity);
-    component.chunk = Chunk::alloc(entity);
-    component.coord = cpos;
+        globals::dispatcher.trigger(event);
+    }
+    else {
+        if(!globals::registry.valid(chunk->entity)) {
+            // The chunk didn't exist yet, we must fix this
+            chunk->entity = globals::registry.create();
+        }
 
-    chunks.emplace(component.coord, component.chunk);
+        ChunkComponent &component = globals::registry.emplace<ChunkComponent>(chunk->entity);
+        component.chunk = chunk;
+        component.coord = cpos;
 
-    ChunkCreateEvent event = {};
-    event.chunk = component.chunk;
-    event.coord = component.coord;
+        chunks.emplace(component.coord, component.chunk);
 
-    globals::dispatcher.trigger(event);
+        ChunkCreateEvent event = {};
+        event.chunk = component.chunk;
+        event.coord = component.coord;
 
-    return component.chunk;
+        globals::dispatcher.trigger(event);
+    }
 }
 
 Chunk *world::find(const ChunkCoord &cpos)

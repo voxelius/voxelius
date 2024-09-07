@@ -65,8 +65,11 @@ static void on_set_voxel_packet(const protocol::SetVoxel &packet)
         const auto lpos = VoxelCoord::to_local(packet.coord);
         const auto index = LocalCoord::to_index(lpos);
 
-        Chunk *chunk = world::assign(cpos, globals::registry.create());
+        Chunk *chunk = Chunk::create(ChunkType::Inhabited);
+        chunk->entity = globals::registry.create();
         chunk->voxels[index] = packet.voxel;
+
+        world::emplace_or_replace(cpos, chunk);
         
         // Broadcast the newly created chunk to peers
         protocol::send_chunk_voxels(nullptr, globals::server_host, chunk->entity);
