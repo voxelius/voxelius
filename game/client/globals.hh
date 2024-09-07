@@ -7,7 +7,6 @@
 #include <entt/entity/entity.hpp>
 #include <game/shared/globals.hh>
 #include <glad/gl.h>
-#include <mathlib/vec4f.hh>
 #include <string>
 
 class Config;
@@ -41,8 +40,6 @@ extern entt::entity player;
 extern GLuint world_fbo;
 extern GLuint world_fbo_color;
 extern GLuint world_fbo_depth;
-
-extern Vec4f sky_color;
 
 extern ImFont *font_chat;
 extern ImFont *font_title;

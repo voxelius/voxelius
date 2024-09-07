@@ -33,6 +33,7 @@
 #include <game/client/play_menu.hh>
 #include <game/client/session.hh>
 #include <game/client/settings.hh>
+#include <game/client/skybox.hh>
 #include <game/client/view.hh>
 #include <game/client/voxel_anims.hh>
 #include <game/client/voxel_atlas.hh>
@@ -198,6 +199,8 @@ void client_game::init(void)
     chunk_mesher::init();
     chunk_renderer::init();
 
+    skybox::init();
+
     outline_renderer::init();
     
     world::init();
@@ -296,11 +299,6 @@ void client_game::init(void)
 
     debug_session::init();
 
-    globals::sky_color[0] = 0.529f;
-    globals::sky_color[1] = 0.808f;
-    globals::sky_color[2] = 0.922f;
-    globals::sky_color[3] = 1.000f;
-
     globals::gui_keybind_ptr = nullptr;
     globals::gui_scale = 0U;
     globals::gui_screen = GUI_MAIN_MENU;
@@ -372,6 +370,8 @@ void client_game::deinit(void)
 
     outline_renderer::deinit();
 
+    skybox::deinit();
+
     chunk_renderer::deinit();
     chunk_mesher::deinit();
 
@@ -398,6 +398,8 @@ void client_game::update(void)
 
     chunk_visibility::update();
     
+    skybox::update();
+
     client_chat::update();
 }
 
@@ -447,10 +449,12 @@ void client_game::render(void)
     const int scaled_width = globals::width / cxpr::max(1U, client_game::pixel_size);
     const int scaled_height = globals::height / cxpr::max(1U, client_game::pixel_size);
 
+    glClearColor(0.000f, 0.000f, 0.000f, 1.000f);
     glViewport(0, 0, scaled_width, scaled_height);
-    glClearColor(globals::sky_color[0], globals::sky_color[1], globals::sky_color[2], globals::sky_color[3]);
     glBindFramebuffer(GL_FRAMEBUFFER, globals::world_fbo);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    skybox::render();
 
     chunk_renderer::render();
 

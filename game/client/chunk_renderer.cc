@@ -9,6 +9,7 @@
 #include <game/client/game.hh>
 #include <game/client/globals.hh>
 #include <game/client/outline_renderer.hh>
+#include <game/client/skybox.hh>
 #include <game/client/varied_program.hh>
 #include <game/client/view.hh>
 #include <game/client/voxel_anims.hh>
@@ -25,7 +26,7 @@ static VariedProgram quad_program = {};
 static std::size_t u_quad_vproj_matrix = {};
 static std::size_t u_quad_world_position = {};
 static std::size_t u_quad_timings = {};
-static std::size_t u_quad_sky_color = {};
+static std::size_t u_quad_fog_color = {};
 static std::size_t u_quad_view_distance = {};
 static std::size_t u_quad_textures = {};
 static GLuint quad_vaobj = {};
@@ -41,7 +42,7 @@ void chunk_renderer::init(void)
     u_quad_vproj_matrix = VariedProgram::add_uniform(quad_program, "u_ViewProjMatrix");
     u_quad_world_position = VariedProgram::add_uniform(quad_program, "u_WorldPosition");
     u_quad_timings = VariedProgram::add_uniform(quad_program, "u_Timings");
-    u_quad_sky_color = VariedProgram::add_uniform(quad_program, "u_SkyColor");
+    u_quad_fog_color = VariedProgram::add_uniform(quad_program, "u_FogColor");
     u_quad_view_distance = VariedProgram::add_uniform(quad_program, "u_ViewDistance");
     u_quad_textures = VariedProgram::add_uniform(quad_program, "u_Textures");
 
@@ -111,7 +112,7 @@ void chunk_renderer::render(void)
         glUseProgram(quad_program.handle);
         glUniformMatrix4fv(quad_program.uniforms[u_quad_vproj_matrix].location, 1, false, view::matrix.data()->data());
         glUniform3uiv(quad_program.uniforms[u_quad_timings].location, 1, timings);
-        glUniform4fv(quad_program.uniforms[u_quad_sky_color].location, 1, globals::sky_color.data());
+        glUniform4fv(quad_program.uniforms[u_quad_fog_color].location, 1, skybox::fog_color.data());
         glUniform1f(quad_program.uniforms[u_quad_view_distance].location, view::max_distance * CHUNK_SIZE);
         glUniform1i(quad_program.uniforms[u_quad_textures].location, 0); // GL_TEXTURE0
 
