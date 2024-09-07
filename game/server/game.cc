@@ -69,7 +69,7 @@ void server_game::init_late(void)
     constexpr int WSIZE = 16;
     for(int x = -WSIZE; x < WSIZE; x += 1) {
         for(int z = -WSIZE; z < WSIZE; z += 1) {
-            for(int y = -3; y < 2; y += 1) {
+            for(int y = -8; y < 4; y += 1) {
                 worldgen::generate(ChunkCoord(x, y, z));
             }
         }
