@@ -150,7 +150,11 @@ void session::connect(const std::string &host, std::uint16_t port)
         globals::session_send_time = UINT64_MAX;
         globals::session_username = std::string();
 
-        globals::gui_screen = GUI_MAIN_MENU;
+        if(globals::registry.valid(globals::player))
+            globals::player = entt::null;
+        globals::registry.clear();
+
+        globals::gui_screen = GUI_PLAY_MENU;
     });
 
     globals::gui_screen = GUI_PROGRESS;
