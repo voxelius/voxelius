@@ -519,11 +519,13 @@ void client_game::layout(void)
         }
     }
 
-    if(debug_toggles::draw_debug_screen) {
-        // This contains Minecraft-esque debug information
-        // about the hardware, world state and other
-        // things that might be uesful
-        debug_screen::layout();
+    if(!globals::gui_screen || (globals::gui_screen == GUI_CHAT)) {
+        if(debug_toggles::draw_debug_screen) {
+            // This contains Minecraft-esque debug information
+            // about the hardware, world state and other
+            // things that might be uesful
+            debug_screen::layout();
+        }
     }
 
     if(globals::registry.valid(globals::player)) {

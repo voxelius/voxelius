@@ -29,6 +29,8 @@ template<typename T>
 constexpr static inline const T pow2(const T x);
 template<typename T>
 constexpr static inline const T radians(const T x);
+template<typename T>
+constexpr static inline const bool range(const T x, const T min, const T max);
 } // namespace cxpr
 
 template<typename T>
@@ -130,4 +132,10 @@ template<typename T>
 constexpr static inline const T cxpr::radians(const T x)
 {
     return x * M_PI / 180.0f;
+}
+
+template<typename T>
+constexpr static inline const bool cxpr::range(const T x, const T min, const T max)
+{
+    return ((x >= min) && (x <= max));
 }

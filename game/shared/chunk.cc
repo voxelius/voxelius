@@ -2,20 +2,25 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <game/shared/chunk.hh>
 
-Chunk *Chunk::alloc(void)
+Chunk *Chunk::create(ChunkType type)
 {
-    return Chunk::alloc(entt::null);
+    Chunk *object = new Chunk();
+    object->voxels.fill(NULL_VOXEL);
+    object->entity = entt::null;
+    object->type = type;
+    return object;
 }
 
-Chunk *Chunk::alloc(entt::entity entity)
+Chunk *Chunk::create(ChunkType type, entt::entity entity)
 {
-    Chunk *chunk = new Chunk();
-    chunk->voxels.fill(NULL_VOXEL);
-    chunk->entity = entity;
-    return chunk;
+    Chunk *object = new Chunk();
+    object->voxels.fill(NULL_VOXEL);
+    object->entity = entity;
+    object->type = type;
+    return object;
 }
 
-void Chunk::dealloc(Chunk *chunk)
+void Chunk::destroy(Chunk *chunk)
 {
     delete chunk;
 }

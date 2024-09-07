@@ -211,4 +211,8 @@ void session::invalidate(void)
     globals::session_tick_dt = UINT64_MAX;
     globals::session_send_time = UINT64_MAX;
     globals::session_username = std::string();
+
+    if(globals::registry.valid(globals::player))
+        globals::player = entt::null;
+    globals::registry.clear();
 }

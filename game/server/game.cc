@@ -16,8 +16,8 @@
 #include <game/shared/game_voxels.hh>
 #include <game/shared/protocol.hh>
 #include <game/shared/splash.hh>
-#include <game/shared/vgen.hh>
 #include <game/shared/world.hh>
+#include <game/shared/worldgen.hh>
 #include <mathlib/constexpr.hh>
 #include <spdlog/spdlog.h>
 
@@ -38,9 +38,7 @@ void server_game::init(void)
     server_recieve::init();
 
     world::init();
-
-    //vgen::init(epoch::microseconds());
-    vgen::init(UINT64_C(42));
+    worldgen::init();
 }
 
 void server_game::init_late(void)
@@ -66,13 +64,14 @@ void server_game::init_late(void)
 
     game_voxels::populate();
 
-    vgen::init_late();
+    worldgen::init_late(UINT64_C(42));
 
-    constexpr int WSIZE = 64;
+    constexpr int WSIZE = 16;
     for(int x = -WSIZE; x < WSIZE; x += 1) {
         for(int z = -WSIZE; z < WSIZE; z += 1) {
-            spdlog::info("generating {} {}", x, z);
-            vgen::generate(x, z);
+            for(int y = -3; y < 2; y += 1) {
+                worldgen::generate(ChunkCoord(x, y, z));
+            }
         }
     }
 }
@@ -81,7 +80,7 @@ void server_game::deinit(void)
 {
     protocol::send_disconnect(nullptr, globals::server_host, "protocol.server_shutdown");
 
-    vgen::deinit();
+    worldgen::deinit();
 
     sessions::deinit();
 
@@ -92,7 +91,7 @@ void server_game::deinit(void)
 
 void server_game::update(void)
 {
-    vgen::update();
+    worldgen::update();
 }
 
 void server_game::update_late(void)

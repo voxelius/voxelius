@@ -44,8 +44,11 @@ static void on_chunk_voxels_packet(const protocol::ChunkVoxels &packet)
             }
         }
 
-        Chunk *chunk = world::assign(packet.chunk, packet.entity);
+        Chunk *chunk = Chunk::create(ChunkType::Generic);
+        chunk->entity = packet.entity;
         chunk->voxels = packet.voxels;
+
+        world::emplace_or_replace(packet.chunk, chunk);
     }
 }
 
