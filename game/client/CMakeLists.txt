@@ -26,6 +26,7 @@ add_library(client STATIC
     "${CMAKE_CURRENT_LIST_DIR}/screenshot.cc"
     "${CMAKE_CURRENT_LIST_DIR}/session.cc"
     "${CMAKE_CURRENT_LIST_DIR}/settings.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/skybox.cc"
     "${CMAKE_CURRENT_LIST_DIR}/varied_program.cc"
     "${CMAKE_CURRENT_LIST_DIR}/view.cc"
     "${CMAKE_CURRENT_LIST_DIR}/voxel_anims.cc"

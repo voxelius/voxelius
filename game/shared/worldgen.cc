@@ -62,7 +62,7 @@ static fnl_state ow_caves_b = {};
 
 // Nominal variation value which should be
 // influenced by the biome we're in and other things
-constexpr static std::int64_t OW_VARIATION = INT64_C(64);
+constexpr static std::int64_t OW_VARIATION = INT64_C(16);
 
 // Terrain noise is also sampled when we're placing
 // surface voxels; this is needed becuase chunks don't

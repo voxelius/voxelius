@@ -13,7 +13,7 @@ in float vs_FogFactor;
 
 out vec4 frag_Target;
 
-uniform vec4 u_SkyColor;
+uniform vec4 u_FogColor;
 uniform sampler2DArray u_Textures;
 
 void main(void)
@@ -21,6 +21,6 @@ void main(void)
     frag_Target = vs_Shade * texture(u_Textures, vs_TexCoord);
 
 #if WORLD_FOG
-    frag_Target = mix(frag_Target, u_SkyColor, vs_FogFactor);
+    frag_Target = mix(frag_Target, u_FogColor, vs_FogFactor);
 #endif
 }
