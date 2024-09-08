@@ -449,9 +449,9 @@ void client_game::render(void)
     const int scaled_width = globals::width / cxpr::max(1U, client_game::pixel_size);
     const int scaled_height = globals::height / cxpr::max(1U, client_game::pixel_size);
 
-    glClearColor(0.000f, 0.000f, 0.000f, 1.000f);
     glViewport(0, 0, scaled_width, scaled_height);
     glBindFramebuffer(GL_FRAMEBUFFER, globals::world_fbo);
+    glClearColor(skybox::fog_color[0], skybox::fog_color[1], skybox::fog_color[2], 1.000f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     skybox::render();

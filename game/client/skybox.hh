@@ -21,7 +21,6 @@ extern float zenith_offset;
 namespace skybox
 {
 extern Vec3f fog_color;
-extern Vec3f sky_color;
 } // namespace skybox
 
 namespace skybox
