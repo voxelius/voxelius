@@ -118,6 +118,6 @@ void skybox::layout_debug(void)
 {
     ImGui::SliderFloat("azimuth", &skybox::sun_angles[0], 0.0f, 360.0f, "%.0f");
     ImGui::SliderFloat("elevation", &skybox::sun_angles[1], -180.0f, 180.0f, "%.0f");
-    ImGui::SliderFloat("horizon[0]", &skybox::horizon[0], 0.000f, 0.250f, "%.03f");
-    ImGui::SliderFloat("horizon[1]", &skybox::horizon[1], 0.000f, 0.250f, "%.03f");
+    ImGui::SliderFloat("horizon[0]", &skybox::horizon[0], 0.000f, 0.500f, "%.03f");
+    ImGui::SliderFloat("horizon[1]", &skybox::horizon[1], 0.000f, 0.500f, "%.03f");
 }
