@@ -10,7 +10,9 @@ in vec3 vs_Direction;
 
 out vec4 frag_Target;
 
+uniform vec3 u_Atmosphere;
 uniform vec3 u_SunDirection;
+uniform vec2 u_SunDisk;
 uniform vec2 u_Horizon;
 
 uint hash(uint x)
@@ -26,9 +28,9 @@ uint hash(uint x)
 void main(void)
 {
     vec3 phase = vec3(0.0, 0.0, 0.0);
-    phase.x = 1.0 - pow(2.0, (u_SunDirection.y + 0.125) * (-35.0));
-    phase.y = 1.0 - pow(2.0, (u_SunDirection.y + 0.125) * (-10.0));
-    phase.z = 1.0 - pow(2.0, (u_SunDirection.y + 0.125) * (-7.0));
+    phase.x = 1.0 - pow(2.0, (u_SunDirection.y + 0.125) * (-u_Atmosphere.x));
+    phase.y = 1.0 - pow(2.0, (u_SunDirection.y + 0.125) * (-u_Atmosphere.y));
+    phase.z = 1.0 - pow(2.0, (u_SunDirection.y + 0.125) * (-u_Atmosphere.z));
 
     vec3 normalized_dir = normalize(vs_Direction);
 
@@ -37,7 +39,7 @@ void main(void)
     frag_Target.z = phase.z * pow(max(1.0 - smoothstep(-u_Horizon.x, u_Horizon.y, normalized_dir.y) * 0.25, 0.0), 1.5);
     frag_Target.w = 1.0;
 
-    float sun_disk = smoothstep(0.0625, 0.0500, distance(normalized_dir, u_SunDirection));
+    float sun_disk = smoothstep(u_SunDisk.y, u_SunDisk.x, distance(normalized_dir, u_SunDirection));
     float sun_dot = clamp(dot(normalized_dir, u_SunDirection), 0.0, 1.0);
     frag_Target.xyz += phase * pow(sun_dot, 64.0) * 0.25;
     frag_Target.xyz += phase * sun_disk;
