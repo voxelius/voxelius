@@ -159,7 +159,7 @@ void client_chat::layout(void)
             ImGui::InputText("###chat.input", &chat_input);
         }
 
-        if((globals::gui_screen == GUI_SCREEN_NONE) || (globals::gui_screen == GUI_CHAT)) {
+        if((globals::gui_screen == GUI_SCREEN_NONE) || (globals::gui_screen == GUI_CHAT) || (globals::gui_screen == GUI_DEBUG_WINDOW)) {
             for(auto it = history.crbegin(); it < history.crend(); ++it) {
                 const ImVec2 text_size = ImGui::CalcTextSize(it->text.c_str(), &it->text.cend()[0], false, window_size.x);
                 const ImVec2 rect_size = ImVec2(window_size.x, text_size.y + 2.0f * padding.y);
