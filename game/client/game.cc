@@ -13,6 +13,7 @@
 #include <game/client/debug_screen.hh>
 #include <game/client/debug_session.hh>
 #include <game/client/debug_toggles.hh>
+#include <game/client/debug_window.hh>
 #include <game/client/entity/player_look.hh>
 #include <game/client/entity/player_move.hh>
 #include <game/client/event/glfw_framebuffer_size.hh>
@@ -286,6 +287,7 @@ void client_game::init(void)
     debug_toggles::init();
     debug_screen::init();
     debug_session::init();
+    debug_window::init();
 
     background::init();
 
@@ -496,8 +498,21 @@ void client_game::layout(void)
         background::render();
     }
 
+    if(!globals::gui_screen || (globals::gui_screen == GUI_CHAT) || (globals::gui_screen == GUI_DEBUG_WINDOW)) {
+        if(debug_toggles::draw_debug_screen) {
+            // This contains Minecraft-esque debug information
+            // about the hardware, world state and other
+            // things that might be uesful
+            debug_screen::layout();
+        }
+    }
+
+    if(globals::registry.valid(globals::player)) {
+        client_chat::layout();
+    }
+
     if(globals::gui_screen) {
-        if(globals::registry.valid(globals::player) && (globals::gui_screen != GUI_CHAT)) {
+        if(globals::registry.valid(globals::player) && (globals::gui_screen != GUI_CHAT) && (globals::gui_screen != GUI_DEBUG_WINDOW)) {
             const float width_f = static_cast<float>(globals::width);
             const float height_f = static_cast<float>(globals::height);
             const ImU32 splash = ImGui::GetColorU32(ImVec4(0.00f, 0.00f, 0.00f, 0.75f));
@@ -520,19 +535,9 @@ void client_game::layout(void)
             case GUI_MESSAGE_BOX:
                 message_box::layout();
                 break;
+            case GUI_DEBUG_WINDOW:
+                debug_window::layout();
+                break;
         }
-    }
-
-    if(!globals::gui_screen || (globals::gui_screen == GUI_CHAT)) {
-        if(debug_toggles::draw_debug_screen) {
-            // This contains Minecraft-esque debug information
-            // about the hardware, world state and other
-            // things that might be uesful
-            debug_screen::layout();
-        }
-    }
-
-    if(globals::registry.valid(globals::player)) {
-        client_chat::layout();
     }
 }

@@ -1,4 +1,6 @@
 add_library(client STATIC
+    "${CMAKE_CURRENT_LIST_DIR}/entity/player_look.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/entity/player_move.cc"
     "${CMAKE_CURRENT_LIST_DIR}/background.cc"
     "${CMAKE_CURRENT_LIST_DIR}/chat.cc"
     "${CMAKE_CURRENT_LIST_DIR}/chunk_mesher.cc"
@@ -7,8 +9,7 @@ add_library(client STATIC
     "${CMAKE_CURRENT_LIST_DIR}/debug_screen.cc"
     "${CMAKE_CURRENT_LIST_DIR}/debug_session.cc"
     "${CMAKE_CURRENT_LIST_DIR}/debug_toggles.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/entity/player_look.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/entity/player_move.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/debug_window.cc"
     "${CMAKE_CURRENT_LIST_DIR}/game.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
     "${CMAKE_CURRENT_LIST_DIR}/keyboard.cc"

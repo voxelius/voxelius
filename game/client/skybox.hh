@@ -12,10 +12,8 @@ extern Vec3f sun_direction;
 
 namespace skybox
 {
-extern float anisotropic_intensity;
-extern float atmospheric_density;
-extern float multiscatter_phase;
-extern float zenith_offset;
+extern float horizon_x;
+extern float horizon_y;
 } // namespace skybox
 
 namespace skybox
@@ -29,4 +27,5 @@ void init(void);
 void deinit(void);
 void update(void);
 void render(void);
+void layout_debug(void);
 } // namespace skybox
