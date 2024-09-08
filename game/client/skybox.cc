@@ -2,20 +2,18 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <game/client/debug_toggles.hh>
 #include <game/client/globals.hh>
-#include <game/client/settings.hh>
 #include <game/client/skybox.hh>
 #include <game/client/varied_program.hh>
 #include <game/client/view.hh>
+#include <imgui.h>
 #include <mathlib/vec4f.hh>
 #include <spdlog/spdlog.h>
 
 Vec2f skybox::sun_angles = Vec2f(0.0f, 0.0f);
 Vec3f skybox::sun_direction = Vec3f(0.0f, 0.0f, 0.0f);
 
-float skybox::anisotropic_intensity = 1.0f;
-float skybox::atmospheric_density = 0.5f;
-float skybox::multiscatter_phase = 0.1f;
-float skybox::zenith_offset = 0.0f;
+float skybox::horizon_x = 0.100f;
+float skybox::horizon_y = 0.250f;
 
 Vec3f skybox::fog_color = Vec3f(0.00f, 0.00f, 0.00f);
 
@@ -23,6 +21,7 @@ static VariedProgram program = {};
 static std::size_t u_vproj_matrix = {};
 static std::size_t u_world_position = {};
 static std::size_t u_sun_direction = {};
+static std::size_t u_horizon = {};
 
 static GLuint cube_vaobj = {};
 static GLuint cube_vbo = {};
@@ -37,6 +36,7 @@ void skybox::init(void)
     u_vproj_matrix = VariedProgram::add_uniform(program, "u_ViewProjMatrix");
     u_world_position = VariedProgram::add_uniform(program, "u_WorldPosition");
     u_sun_direction = VariedProgram::add_uniform(program, "u_SunDirection");
+    u_horizon = VariedProgram::add_uniform(program, "u_Horizon");
 
     // https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
     const Vec3f vertices[14] = {
@@ -76,20 +76,19 @@ void skybox::deinit(void)
 
 void skybox::update(void)
 {
-    sun_angles[1] = 0.0f;
-
     const float az_sin = std::sin(cxpr::radians(skybox::sun_angles[0]));
     const float az_cos = std::cos(cxpr::radians(skybox::sun_angles[0]));
     const float el_sin = std::sin(cxpr::radians(skybox::sun_angles[1]));
     const float el_cos = std::cos(cxpr::radians(skybox::sun_angles[1]));
 
+    // https://www.desmos.com/3d/8npmtkuc3k
     skybox::sun_direction[0] = az_sin * el_cos;
-    skybox::sun_direction[1] = az_cos * el_cos;
-    skybox::sun_direction[2] = el_sin;
+    skybox::sun_direction[1] = el_sin;
+    skybox::sun_direction[2] = az_cos * el_cos;
 
-    skybox::fog_color[0] = cxpr::clamp(1.0f - std::pow(2.0f, skybox::sun_direction[1] * (-35.0f)), 0.0f, 1.0f);
-    skybox::fog_color[1] = cxpr::clamp(1.0f - std::pow(2.0f, skybox::sun_direction[1] * (-10.0f)), 0.0f, 1.0f);
-    skybox::fog_color[2] = cxpr::clamp(1.0f - std::pow(2.0f, skybox::sun_direction[1] * (-7.0f)), 0.0f, 1.0f);
+    skybox::fog_color[0] = cxpr::clamp(1.0f - std::pow(2.0f, (0.125f + skybox::sun_direction[1]) * (-35.0f)), 0.0f, 1.0f);
+    skybox::fog_color[1] = cxpr::clamp(1.0f - std::pow(2.0f, (0.125f + skybox::sun_direction[1]) * (-10.0f)), 0.0f, 1.0f);
+    skybox::fog_color[2] = cxpr::clamp(1.0f - std::pow(2.0f, (0.125f + skybox::sun_direction[1]) * (-7.0f)), 0.0f, 1.0f);
 }
 
 void skybox::render(void)
@@ -108,17 +107,20 @@ void skybox::render(void)
         std::terminate();
     }
 
-    Vec4f params = {};
-    params[0] = skybox::anisotropic_intensity;
-    params[1] = skybox::atmospheric_density;
-    params[2] = skybox::multiscatter_phase;
-    params[3] = skybox::zenith_offset;
-
     glUseProgram(program.handle);
     glUniformMatrix4fv(program.uniforms[u_vproj_matrix].location, 1, false, view::matrix.data()->data());
     glUniform3fv(program.uniforms[u_world_position].location, 1, view::position.local.data());
     glUniform3fv(program.uniforms[u_sun_direction].location, 1, skybox::sun_direction.data());
+    glUniform2f(program.uniforms[u_horizon].location, skybox::horizon_x, skybox::horizon_y);
 
     glBindVertexArray(cube_vaobj);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
+}
+
+void skybox::layout_debug(void)
+{
+    ImGui::SliderFloat("azimuth", &skybox::sun_angles[0], 0.0f, 360.0f, "%.0f");
+    ImGui::SliderFloat("elevation", &skybox::sun_angles[1], -180.0f, 180.0f, "%.0f");
+    ImGui::SliderFloat("horizon_x", &skybox::horizon_x, 0.0f, 0.25f, "%.03f");
+    ImGui::SliderFloat("horizon_y", &skybox::horizon_y, 0.0f, 0.25f, "%.03f");
 }
