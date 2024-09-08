@@ -66,7 +66,7 @@ void server_game::init_late(void)
 
     worldgen::init_late(UINT64_C(42));
 
-    constexpr int WSIZE = 8;
+    constexpr int WSIZE = 64;
     for(int x = -WSIZE; x < WSIZE; x += 1) {
         for(int z = -WSIZE; z < WSIZE; z += 1) {
             for(int y = -2; y < 2; y += 1) {
