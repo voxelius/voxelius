@@ -62,7 +62,7 @@ constexpr static inline const T cxpr::ceil(const F x)
 template<typename T>
 constexpr static inline const T cxpr::degrees(const T x)
 {
-    return x * 180.0f / M_PI;
+    return x * static_cast<T>(180.0) / static_cast<T>(M_PI);
 }
 
 template<typename T, typename F>
@@ -131,7 +131,7 @@ constexpr static inline const T cxpr::pow2(const T x)
 template<typename T>
 constexpr static inline const T cxpr::radians(const T x)
 {
-    return x * M_PI / 180.0f;
+    return x * static_cast<T>(M_PI) / static_cast<T>(180.0);
 }
 
 template<typename T>

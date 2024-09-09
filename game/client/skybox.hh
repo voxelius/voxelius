@@ -6,14 +6,18 @@
 
 namespace skybox
 {
-extern Vec3f absorption;
-extern float horizon_scale;
-extern float horizon_start;
-extern float horizon_end;
-extern float stars_gamma;
-extern unsigned int stars_scale;
+extern float anisotropic_intensity;
+extern float atmospheric_density;
+extern float multiscatter_phase;
+extern float zenith_offset;
+extern unsigned int stars_gamma;
+extern unsigned int stars_zoom;
 extern unsigned int stars_seed;
-extern float twilight_offset;
+} // namespace skybox
+
+namespace skybox
+{
+extern Vec3f sky_color;
 extern Vec2f sun_angles;
 } // namespace skybox
 
