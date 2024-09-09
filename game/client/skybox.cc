@@ -9,16 +9,26 @@
 #include <mathlib/vec4f.hh>
 #include <spdlog/spdlog.h>
 
-Vec2f skybox::horizon = Vec2f(0.100f, 0.250f);
+Vec3f skybox::absorption = Vec3f(30.0f, 10.0f, 10.0f);
+float skybox::horizon_scale = 0.25f;
+float skybox::horizon_start = -0.100f;
+float skybox::horizon_end = 0.200f;
+float skybox::stars_gamma = 2.2f;
+unsigned int skybox::stars_scale = 256U;
+unsigned int skybox::stars_seed = 42U;
+float skybox::twilight_offset = 0.25f;
 Vec2f skybox::sun_angles = Vec2f(0.0f, 0.0f);
 Vec3f skybox::sun_direction = Vec3f(0.0f, 0.0f, 0.0f);
-Vec3f skybox::fog_color = Vec3f(0.00f, 0.00f, 0.00f);
+Vec3f skybox::fog_color = Vec3f(0.0f, 0.0f, 0.0f);
 
 static VariedProgram program = {};
 static std::size_t u_vproj_matrix = {};
 static std::size_t u_world_position = {};
-static std::size_t u_direction = {};
+static std::size_t u_absorption = {};
 static std::size_t u_horizon = {};
+static std::size_t u_stars = {};
+static std::size_t u_sun_direction = {};
+static std::size_t u_twilight_offset = {};
 
 static GLuint cube_vaobj = {};
 static GLuint cube_vbo = {};
@@ -32,8 +42,11 @@ void skybox::init(void)
 
     u_vproj_matrix = VariedProgram::add_uniform(program, "u_ViewProjMatrix");
     u_world_position = VariedProgram::add_uniform(program, "u_WorldPosition");
-    u_direction = VariedProgram::add_uniform(program, "u_Direction");
+    u_absorption = VariedProgram::add_uniform(program, "u_Absorption");
     u_horizon = VariedProgram::add_uniform(program, "u_Horizon");
+    u_stars = VariedProgram::add_uniform(program, "u_Stars");
+    u_sun_direction = VariedProgram::add_uniform(program, "u_SunDirection");
+    u_twilight_offset = VariedProgram::add_uniform(program, "u_TwilightOffset");
 
     // https://stackoverflow.com/questions/28375338/cube-using-single-gl-triangle-strip
     const Vec3f vertices[14] = {
@@ -83,9 +96,9 @@ void skybox::update(void)
     skybox::sun_direction[1] = el_sin;
     skybox::sun_direction[2] = az_cos * el_cos;
 
-    skybox::fog_color[0] = cxpr::clamp(1.0f - std::pow(2.0f, (0.25f + skybox::sun_direction[1]) * (-30.0f)), 0.0f, 1.0f);
-    skybox::fog_color[1] = cxpr::clamp(1.0f - std::pow(2.0f, (0.25f + skybox::sun_direction[1]) * (-10.0f)), 0.0f, 1.0f);
-    skybox::fog_color[2] = cxpr::clamp(1.0f - std::pow(2.0f, (0.25f + skybox::sun_direction[1]) * (-10.0f)), 0.0f, 1.0f);
+    skybox::fog_color[0] = cxpr::clamp(1.0f - std::pow(2.0f, (skybox::twilight_offset + skybox::sun_direction[1]) * (-skybox::absorption[0])), 0.0f, 1.0f);
+    skybox::fog_color[1] = cxpr::clamp(1.0f - std::pow(2.0f, (skybox::twilight_offset + skybox::sun_direction[1]) * (-skybox::absorption[1])), 0.0f, 1.0f);
+    skybox::fog_color[2] = cxpr::clamp(1.0f - std::pow(2.0f, (skybox::twilight_offset + skybox::sun_direction[1]) * (-skybox::absorption[2])), 0.0f, 1.0f);
 }
 
 void skybox::render(void)
@@ -107,8 +120,11 @@ void skybox::render(void)
     glUseProgram(program.handle);
     glUniformMatrix4fv(program.uniforms[u_vproj_matrix].location, 1, false, view::matrix.data()->data());
     glUniform3fv(program.uniforms[u_world_position].location, 1, view::position.local.data());
-    glUniform3fv(program.uniforms[u_direction].location, 1, skybox::sun_direction.data());
-    glUniform2fv(program.uniforms[u_horizon].location, 1, skybox::horizon.data());
+    glUniform3fv(program.uniforms[u_absorption].location, 1, skybox::absorption.data());
+    glUniform3f(program.uniforms[u_horizon].location, skybox::horizon_scale, skybox::horizon_start, skybox::horizon_end);
+    glUniform3f(program.uniforms[u_stars].location, skybox::stars_gamma, skybox::stars_scale, skybox::stars_seed);
+    glUniform3fv(program.uniforms[u_sun_direction].location, 1, skybox::sun_direction.data());
+    glUniform1f(program.uniforms[u_twilight_offset].location, skybox::twilight_offset);
 
     glBindVertexArray(cube_vaobj);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 14);
@@ -116,8 +132,24 @@ void skybox::render(void)
 
 void skybox::layout_debug(void)
 {
-    ImGui::SliderFloat("azimuth", &skybox::sun_angles[0], 0.0f, 360.0f, "%.0f");
-    ImGui::SliderFloat("elevation", &skybox::sun_angles[1], -180.0f, 180.0f, "%.0f");
-    ImGui::SliderFloat("horizon[0]", &skybox::horizon[0], 0.000f, 0.500f, "%.03f");
-    ImGui::SliderFloat("horizon[1]", &skybox::horizon[1], 0.000f, 0.500f, "%.03f");
+    ImGui::SliderFloat("sun_angles[AZ]", &skybox::sun_angles[0], 0.0f, 360.0f, "%.0f");
+    ImGui::SliderFloat("sun_angles[EL]", &skybox::sun_angles[1], -180.0f, 180.0f, "%.0f");
+
+    ImGui::SeparatorText("Atmosphere");
+    ImGui::SliderFloat("absorption[R]", &skybox::absorption[0], 0.0f, 100.0f, "%.0f");
+    ImGui::SliderFloat("absorption[G]", &skybox::absorption[1], 0.0f, 100.0f, "%.0f");
+    ImGui::SliderFloat("absorption[B]", &skybox::absorption[2], 0.0f, 100.0f, "%.0f");
+    ImGui::SliderFloat("horizon_scale", &skybox::horizon_scale, 0.00f, 1.00f, "%.02f");
+    ImGui::SliderFloat("horizon_start", &skybox::horizon_start, -1.000f, 1.000f, "%.03f");
+    ImGui::SliderFloat("horizon_end", &skybox::horizon_end, -1.000f, 1.000f, "%.03f");
+    ImGui::SliderFloat("twilight_offset", &skybox::twilight_offset, 0.00f, 1.00f, "%.02f");
+
+    ImGui::SeparatorText("Stars");
+    int stars_seed_v = static_cast<int>(skybox::stars_seed);
+    int stars_scale_v = static_cast<int>(skybox::stars_scale);
+    ImGui::SliderFloat("stars_gamma", &skybox::stars_gamma, 0.0f, 10.0f, "%.01f");
+    ImGui::SliderInt("stars_scale", &stars_scale_v, 0, 1024);
+    ImGui::InputInt("stars_seed", &stars_seed_v);
+    skybox::stars_scale = cxpr::clamp<unsigned int>(stars_scale_v, 1U, 1024U);
+    skybox::stars_seed = static_cast<unsigned int>(stars_seed_v);
 }
