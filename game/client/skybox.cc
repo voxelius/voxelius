@@ -10,9 +10,9 @@
 #include <random>
 #include <spdlog/spdlog.h>
 
-float skybox::anisotropic_intensity = 0.0f;
-float skybox::atmospheric_density = 0.50f;
-float skybox::multiscatter_phase = 0.35f;
+float skybox::anisotropic_intensity = 1.00f;
+float skybox::atmospheric_density = 0.20f;
+float skybox::multiscatter_phase = 0.32f;
 float skybox::zenith_offset = 0.0f;
 unsigned int skybox::stars_gamma = 2048U;
 unsigned int skybox::stars_zoom = 256U;
