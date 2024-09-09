@@ -66,7 +66,7 @@ void main(void)
     uint stars_z = uint(float(STARS_ZOOM) + float(STARS_ZOOM) * look.z);
     uint stars_hash = hash(stars_x + hash(stars_y) + hash(stars_z) + hash(STARS_SEED));
     float stars_value = uintBitsToFloat(0x3F800000U | (stars_hash >> 9)) - 1.0;
-    float stars = clamp(pow(stars_value, float(STARS_GAMMA)), 0.0, 1.0);
+    float stars = (1.0 - 0.5 * zenith) * clamp(pow(stars_value, float(STARS_GAMMA)), 0.0, 1.0);
 
     frag_Target.xyz = max(frag_Target.xyz, vec3(stars * (1.0 - (0.5 + 0.5 * u_SunDirection.y))));
 }
