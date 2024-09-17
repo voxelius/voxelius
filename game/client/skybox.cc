@@ -9,11 +9,11 @@
 #include <mathlib/vec4f.hh>
 #include <spdlog/spdlog.h>
 
-Vec3f skybox::absorption = Vec3f(100.0f, 20.0f, 20.0f);
-float skybox::horizon_scale = 0.25f;
+Vec3f skybox::absorption = Vec3f(20.0f, 10.0f, 10.0f);
+float skybox::horizon_scale = 0.25f;    
 float skybox::horizon_start = -0.100f;
 float skybox::horizon_end = 0.200f;
-float skybox::stars_gamma = 2.2f;
+float skybox::stars_gamma = 1.2f;
 unsigned int skybox::stars_scale = 256U;
 unsigned int skybox::stars_seed = 42U;
 float skybox::twilight_offset = 0.25f;
