@@ -2,8 +2,8 @@
 // Copyright (C) 2024, Voxelius Contributors
 #pragma once
 
-namespace debug_screen
+namespace metrics
 {
 void init(void);
 void layout(void);
-} // namespace debug_screen
+} // namespace metrics

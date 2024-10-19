@@ -114,7 +114,7 @@ static void on_glfw_scroll(GLFWwindow *window, double dx, double dy)
 {
     GlfwScrollEvent event = {};
     event.dx = static_cast<float>(dx);
-    event.dx = static_cast<float>(dy);
+    event.dy = static_cast<float>(dy);
     globals::dispatcher.trigger(event);
 
     if(globals::gui_screen) {

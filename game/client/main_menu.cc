@@ -4,7 +4,6 @@
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
 #include <game/client/event/language_set.hh>
-#include <game/client/debug_session.hh>
 #include <game/client/event/glfw_key.hh>
 #include <game/client/globals.hh>
 #include <game/client/gui_screen.hh>

@@ -2,9 +2,9 @@
 // Copyright (C) 2024, Voxelius Contributors
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
-#include <game/client/debug_screen.hh>
 #include <game/client/game.hh>
 #include <game/client/globals.hh>
+#include <game/client/metrics.hh>
 #include <game/client/view.hh>
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -17,20 +17,20 @@ constexpr static ImGuiWindowFlags WINDOW_FLAGS = ImGuiWindowFlags_NoBackground |
 static std::string gl_version = {};
 static std::string gl_renderer = {};
 
-void debug_screen::init(void)
+void metrics::init(void)
 {
     gl_version = reinterpret_cast<const char *>(glGetString(GL_VERSION));
     gl_renderer = reinterpret_cast<const char *>(glGetString(GL_RENDERER));
 }
 
-void debug_screen::layout(void)
+void metrics::layout(void)
 {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowSize(viewport->Size);
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f));
     ImGui::PushFont(globals::font_debug);
 
-    if(ImGui::Begin("###debug", nullptr, WINDOW_FLAGS)) {
+    if(ImGui::Begin("###metrics", nullptr, WINDOW_FLAGS)) {
         const float ui_framerate = 1.0f / globals::frametime_avg;
         const float ui_frametime = 1000.0f * globals::frametime_avg;
   

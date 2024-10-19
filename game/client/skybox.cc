@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
-#include <game/client/debug_toggles.hh>
 #include <game/client/globals.hh>
 #include <game/client/skybox.hh>
+#include <game/client/toggles.hh>
 #include <game/client/varied_program.hh>
 #include <game/client/view.hh>
 #include <imgui.h>
@@ -107,7 +107,7 @@ void skybox::render(void)
     glDisable(GL_DEPTH_TEST);
     glLineWidth(1.0f);
 
-    if(debug_toggles::render_wireframe)
+    if(toggles::render_wireframe)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 

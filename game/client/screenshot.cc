@@ -4,11 +4,11 @@
 #include <common/epoch.hh>
 #include <common/fstools.hh>
 #include <entt/signal/dispatcher.hpp>
-#include <game/client/debug_toggles.hh>
 #include <game/client/event/glfw_key.hh>
 #include <game/client/globals.hh>
 #include <game/client/screenshot.hh>
 #include <game/client/settings.hh>
+#include <game/client/toggles.hh>
 #include <spdlog/fmt/fmt.h>
 #include <stb_image_write.h>
 
@@ -22,7 +22,7 @@ static void png_write(void *context, void *data, int size)
 
 static void on_glfw_key(const GlfwKeyEvent &event)
 {
-    if(!globals::gui_keybind_ptr && !debug_toggles::is_sequence_await) {    
+    if(!globals::gui_keybind_ptr && !toggles::is_sequence_await) {    
         if((event.key == key_screenshot) && (event.action == GLFW_PRESS)) {
             screenshot::take();
             return;

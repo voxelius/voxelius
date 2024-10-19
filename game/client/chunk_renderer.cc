@@ -5,11 +5,11 @@
 #include <game/client/chunk_quad.hh>
 #include <game/client/chunk_renderer.hh>
 #include <game/client/chunk_visibility.hh>
-#include <game/client/debug_toggles.hh>
 #include <game/client/game.hh>
 #include <game/client/globals.hh>
 #include <game/client/outline_renderer.hh>
 #include <game/client/skybox.hh>
+#include <game/client/toggles.hh>
 #include <game/client/varied_program.hh>
 #include <game/client/view.hh>
 #include <game/client/voxel_anims.hh>
@@ -82,7 +82,7 @@ void chunk_renderer::render(void)
     glDepthFunc(GL_LEQUAL);
     glLineWidth(1.0f);
 
-    if(debug_toggles::render_wireframe)
+    if(toggles::render_wireframe)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     else glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -140,7 +140,7 @@ void chunk_renderer::render(void)
         }
     }
 
-    if(debug_toggles::draw_chunk_borders) {
+    if(toggles::draw_chunk_borders) {
         outline_renderer::prepare_depth();
         for(const auto [entity, chunk, mesh] : group.each()) {
             const WorldCoord wpos = ChunkCoord::to_world(chunk.coord);
