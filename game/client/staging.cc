@@ -35,7 +35,7 @@ static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
 
 static void on_glfw_scroll(const GlfwScrollEvent &event)
 {
-    if(!globals::gui_screen && !globals::registry.valid(globals::player)) {
+    if(!globals::gui_screen && globals::registry.valid(globals::player)) {
         if(const auto delta = cxpr::sign<int>(event.dy)) {
             if((delta > 0) && (place_index > 0))
                 place_index -= 1;
@@ -60,6 +60,9 @@ void staging::init_late(void)
     place_voxels.push_back(game_voxels::slate);
     place_voxels.push_back(game_voxels::stone);
     place_voxels.push_back(game_voxels::vtest);
+
+    place_voxels.push_back(game_voxels::oak_leaves);
+    place_voxels.push_back(game_voxels::oak_log);
 }
 
 void staging::deinit(void)

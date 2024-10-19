@@ -1,0 +1,9 @@
+{
+  "default": {
+    "animated": false,
+    "blending": false,
+    "textures": {
+      "default": ["textures/voxels/oak_leaves.png"]
+    }
+  }
+}
