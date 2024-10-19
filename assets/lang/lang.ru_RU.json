@@ -78,5 +78,8 @@
   "disconnected.back": "Назад",
 
   "enet.peer_connection_failed": "Не удалось подключиться к узлу",
-  "enet.peer_connection_timeout": "Истекло время ожидания пакетов"
+  "enet.peer_connection_timeout": "Истекло время ожидания пакетов",
+
+  "chat.client_join": "присоединился к игре",
+  "chat.client_left": "покинул игру"
 }

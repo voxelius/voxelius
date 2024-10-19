@@ -78,5 +78,8 @@
   "disconnected.back": "Back",
 
   "enet.peer_connection_failed": "Peer connection failed",
-  "enet.peer_connection_timeout": "Peer connection timed out"
+  "enet.peer_connection_timeout": "Peer connection timed out",
+
+  "chat.client_join": "joined the game",
+  "chat.client_left": "left the game"
 }
