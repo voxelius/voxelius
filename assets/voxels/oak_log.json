@@ -1,0 +1,11 @@
+{
+  "default": {
+    "animated": false,
+    "blending": false,
+    "textures": {
+      "default": ["textures/voxels/oak_log_01.png", "textures/voxels/oak_log_02.png"],
+      "bottom": ["textures/voxels/oak_log_top.png"],
+      "top": ["textures/voxels/oak_log_top.png"]
+    }
+  }
+}
