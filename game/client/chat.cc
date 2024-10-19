@@ -10,6 +10,7 @@
 #include <game/client/game.hh>
 #include <game/client/globals.hh>
 #include <game/client/gui_screen.hh>
+#include <game/client/language.hh>
 #include <game/client/settings.hh>
 #include <game/shared/protocol.hh>
 #include <imgui.h>
@@ -46,7 +47,7 @@ static void on_chat_message_packet(const protocol::ChatMessage &packet)
     if(packet.type == protocol::ChatMessage::PLAYER_JOIN) {
         GuiChatMessage message = {};
         message.spawn = globals::curtime;
-        message.text = fmt::format("{} joined the game", packet.sender);
+        message.text = fmt::format("{} {}", packet.sender, language::resolve("chat.client_join"));
         message.color = ImGui::GetStyleColorVec4(ImGuiCol_DragDropTarget);
         history.push_back(message);
         return;
@@ -55,7 +56,7 @@ static void on_chat_message_packet(const protocol::ChatMessage &packet)
     if(packet.type == protocol::ChatMessage::PLAYER_LEAVE) {
         GuiChatMessage message = {};
         message.spawn = globals::curtime;
-        message.text = fmt::format("{} left the game ({})", packet.sender, packet.message);
+        message.text = fmt::format("{} {} ({})", packet.sender, language::resolve("chat.client_left"), language::resolve(packet.message));
         message.color = ImGui::GetStyleColorVec4(ImGuiCol_DragDropTarget);
         history.push_back(message);
         return;
