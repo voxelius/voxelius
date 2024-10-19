@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <entt/signal/dispatcher.hpp>
-#include <game/client/debug_toggles.hh>
 #include <game/client/debug_window.hh>
 #include <game/client/event/glfw_key.hh>
 #include <game/client/globals.hh>
 #include <game/client/language.hh>
+#include <game/client/toggles.hh>
 #include <spdlog/spdlog.h>
 
-bool debug_toggles::is_sequence_await = false;
+bool toggles::is_sequence_await = false;
 
-bool debug_toggles::draw_chunk_borders = false;
-bool debug_toggles::render_fullbright = false;
-bool debug_toggles::render_wireframe = false;
+bool toggles::draw_chunk_borders = false;
+bool toggles::render_fullbright = false;
+bool toggles::render_wireframe = false;
 
 #if defined(NDEBUG)
-bool debug_toggles::draw_debug_screen = false;
+bool toggles::draw_metrics = false;
 #else
-bool debug_toggles::draw_debug_screen = true;
+bool toggles::draw_metrics = true;
 #endif
 
 static void on_glfw_key(const GlfwKeyEvent &event)
@@ -30,29 +30,29 @@ static void on_glfw_key(const GlfwKeyEvent &event)
 
     if(event.key == GLFW_KEY_F3) {
         if(event.action == GLFW_PRESS) {
-            debug_toggles::is_sequence_await = true;
+            toggles::is_sequence_await = true;
             return;
         }
 
         if(event.action == GLFW_RELEASE) {
-            debug_toggles::is_sequence_await = false;
+            toggles::is_sequence_await = false;
             return;
         }
     }
 
-    if((event.action == GLFW_PRESS) && debug_toggles::is_sequence_await) {
+    if((event.action == GLFW_PRESS) && toggles::is_sequence_await) {
         switch(event.key) {
             case GLFW_KEY_G:
-                debug_toggles::draw_chunk_borders = !debug_toggles::draw_chunk_borders;
+                toggles::draw_chunk_borders = !toggles::draw_chunk_borders;
                 return;
             case GLFW_KEY_V:
-                debug_toggles::draw_debug_screen = !debug_toggles::draw_debug_screen;
+                toggles::draw_metrics = !toggles::draw_metrics;
                 return;
             case GLFW_KEY_J:
-                debug_toggles::render_fullbright = !debug_toggles::render_fullbright;
+                toggles::render_fullbright = !toggles::render_fullbright;
                 return;
             case GLFW_KEY_Z:
-                debug_toggles::render_wireframe = !debug_toggles::render_wireframe;
+                toggles::render_wireframe = !toggles::render_wireframe;
                 return;
             case GLFW_KEY_E:
                 debug_window::toggle();
@@ -67,7 +67,7 @@ static void on_glfw_key(const GlfwKeyEvent &event)
     }
 }
 
-void debug_toggles::init(void)
+void toggles::init(void)
 {
     globals::dispatcher.sink<GlfwKeyEvent>().connect<&on_glfw_key>();
 }

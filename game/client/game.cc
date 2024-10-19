@@ -10,9 +10,6 @@
 #include <game/client/chunk_mesher.hh>
 #include <game/client/chunk_renderer.hh>
 #include <game/client/chunk_visibility.hh>
-#include <game/client/debug_screen.hh>
-#include <game/client/debug_session.hh>
-#include <game/client/debug_toggles.hh>
 #include <game/client/debug_window.hh>
 #include <game/client/entity/player_look.hh>
 #include <game/client/entity/player_move.hh>
@@ -25,6 +22,7 @@
 #include <game/client/language.hh>
 #include <game/client/main_menu.hh>
 #include <game/client/message_box.hh>
+#include <game/client/metrics.hh>
 #include <game/client/mouse.hh>
 #include <game/client/outline_renderer.hh>
 #include <game/client/player_target.hh>
@@ -35,6 +33,8 @@
 #include <game/client/session.hh>
 #include <game/client/settings.hh>
 #include <game/client/skybox.hh>
+#include <game/client/staging.hh>
+#include <game/client/toggles.hh>
 #include <game/client/view.hh>
 #include <game/client/voxel_anims.hh>
 #include <game/client/voxel_atlas.hh>
@@ -284,9 +284,8 @@ void client_game::init(void)
     // so there's simply no point for an INI file.
     ImGui::GetIO().IniFilename = nullptr;
 
-    debug_toggles::init();
-    debug_screen::init();
-    debug_session::init();
+    toggles::init();
+    metrics::init();
     debug_window::init();
 
     background::init();
@@ -299,7 +298,7 @@ void client_game::init(void)
     progress::init();
     message_box::init();
 
-    debug_session::init();
+    staging::init();
 
     globals::gui_keybind_ptr = nullptr;
     globals::gui_scale = 0U;
@@ -318,7 +317,7 @@ void client_game::init_late(void)
 
     game_voxels::populate();
 
-    debug_session::init_late();
+    staging::init_late();
 
     std::size_t max_texture_count = 0;
 
@@ -360,6 +359,8 @@ void client_game::deinit(void)
         while(enet_host_service(globals::client_host, nullptr, 50));
     }
 
+    staging::deinit();
+
     play_menu::deinit();
 
     voxel_atlas::destroy();
@@ -384,7 +385,7 @@ void client_game::deinit(void)
 
 void client_game::update(void)
 {
-    debug_session::update();
+    staging::update();
 
     player_move::update();
     player_target::update();
@@ -407,6 +408,8 @@ void client_game::update(void)
 
 void client_game::update_late(void)
 {
+    staging::update_late();
+
     mouse::update_late();
 
     if(client_game::vertical_sync)
@@ -499,11 +502,11 @@ void client_game::layout(void)
     }
 
     if(!globals::gui_screen || (globals::gui_screen == GUI_CHAT) || (globals::gui_screen == GUI_DEBUG_WINDOW)) {
-        if(debug_toggles::draw_debug_screen) {
+        if(toggles::draw_metrics) {
             // This contains Minecraft-esque debug information
             // about the hardware, world state and other
             // things that might be uesful
-            debug_screen::layout();
+            metrics::layout();
         }
     }
 
