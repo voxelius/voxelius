@@ -10,7 +10,6 @@
 #include <game/client/chunk_mesher.hh>
 #include <game/client/chunk_renderer.hh>
 #include <game/client/chunk_visibility.hh>
-#include <game/client/debug_window.hh>
 #include <game/client/entity/player_look.hh>
 #include <game/client/entity/player_move.hh>
 #include <game/client/event/glfw_framebuffer_size.hh>
@@ -286,7 +285,6 @@ void client_game::init(void)
 
     toggles::init();
     metrics::init();
-    debug_window::init();
 
     background::init();
 
@@ -373,8 +371,6 @@ void client_game::deinit(void)
 
     outline_renderer::deinit();
 
-    skybox::deinit();
-
     chunk_renderer::deinit();
     chunk_mesher::deinit();
 
@@ -401,8 +397,6 @@ void client_game::update(void)
 
     chunk_visibility::update();
     
-    skybox::update();
-
     client_chat::update();
 }
 
@@ -458,8 +452,6 @@ void client_game::render(void)
     glBindFramebuffer(GL_FRAMEBUFFER, globals::world_fbo);
     glClearColor(skybox::fog_color[0], skybox::fog_color[1], skybox::fog_color[2], 1.000f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    skybox::render();
 
     chunk_renderer::render();
 
@@ -537,9 +529,6 @@ void client_game::layout(void)
                 break;
             case GUI_MESSAGE_BOX:
                 message_box::layout();
-                break;
-            case GUI_DEBUG_WINDOW:
-                debug_window::layout();
                 break;
         }
     }
