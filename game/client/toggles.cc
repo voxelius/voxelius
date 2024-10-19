@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <entt/signal/dispatcher.hpp>
-#include <game/client/debug_window.hh>
 #include <game/client/event/glfw_key.hh>
 #include <game/client/globals.hh>
 #include <game/client/language.hh>
@@ -53,9 +52,6 @@ static void on_glfw_key(const GlfwKeyEvent &event)
                 return;
             case GLFW_KEY_Z:
                 toggles::render_wireframe = !toggles::render_wireframe;
-                return;
-            case GLFW_KEY_E:
-                debug_window::toggle();
                 return;
             case GLFW_KEY_L:
                 // This causes the language subsystem
