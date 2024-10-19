@@ -35,13 +35,15 @@ static void on_glfw_mouse_button(const GlfwMouseButtonEvent &event)
 
 static void on_glfw_scroll(const GlfwScrollEvent &event)
 {
-    if(const auto delta = cxpr::sign<int>(event.dy)) {
-        if((delta > 0) && (place_index > 0))
-            place_index -= 1;
-        if((delta < 0) && (place_index < (place_voxels.size() - 1)))
-            place_index += 1;
-        const auto info = vdef::find(place_voxels[place_index]);
-        client_chat::print(fmt::format("[debug] {}", info ? info->name : std::string("nullptr")));
+    if(!globals::gui_screen && !globals::registry.valid(globals::player)) {
+        if(const auto delta = cxpr::sign<int>(event.dy)) {
+            if((delta > 0) && (place_index > 0))
+                place_index -= 1;
+            if((delta < 0) && (place_index < (place_voxels.size() - 1)))
+                place_index += 1;
+            const auto info = vdef::find(place_voxels[place_index]);
+            client_chat::print(fmt::format("[debug] {}", info ? info->name : std::string("nullptr")));
+        }
     }
 }
 
