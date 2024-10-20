@@ -294,7 +294,6 @@ static void layout_server_edit(ServerStatusItem *item)
 
 static void layout_worlds(void)
 {
-    ImGui::ShowStyleEditor();
 }
 
 static void layout_servers(void)
