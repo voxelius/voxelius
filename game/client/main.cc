@@ -194,14 +194,20 @@ void client::main(void)
     }
 
     if(GLAD_GL_KHR_debug) {
-        glEnable(GL_DEBUG_OUTPUT);
-        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageCallback(&on_opengl_message, nullptr);
+        if(!cmdline::contains("nogldebug")) {
+            glEnable(GL_DEBUG_OUTPUT);
+            glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+            glDebugMessageCallback(&on_opengl_message, nullptr);
 
-        // NVIDIA drivers print additional buffer information
-        // to the debug output that programmers might find useful.
-        static const uint32_t ignore_nvidia_131185 = 131185;
-        glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, 1, &ignore_nvidia_131185, GL_FALSE);
+            // NVIDIA drivers print additional buffer information
+            // to the debug output that programmers might find useful.
+            static const uint32_t ignore_nvidia_131185 = 131185;
+            glDebugMessageControl(GL_DEBUG_SOURCE_API, GL_DEBUG_TYPE_OTHER, GL_DONT_CARE, 1, &ignore_nvidia_131185, GL_FALSE);
+        }
+        else {
+            spdlog::warn("glad: nogldebug command line parameter found");
+            spdlog::warn("glad: OpenGL errors will not be logged");
+        }
     }
     else {
         spdlog::warn("glad: KHR_debug extension not supported");
