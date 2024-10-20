@@ -6,6 +6,7 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/game_voxels.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
     "${CMAKE_CURRENT_LIST_DIR}/local_coord.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/overworld.cc"
     "${CMAKE_CURRENT_LIST_DIR}/protocol.cc"
     "${CMAKE_CURRENT_LIST_DIR}/ray_dda.cc"
     "${CMAKE_CURRENT_LIST_DIR}/splash.cc"
