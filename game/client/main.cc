@@ -134,7 +134,7 @@ static void on_opengl_message(GLenum source, GLenum type, GLuint id, GLenum seve
 
 void client::main(void)
 {
-    spdlog::info("client: game version: {}", GAME_VERSION_STRING);
+    spdlog::info("client: game version: {}/{}", GAME_VERSION_STRING, GAME_VERSION_META);
 
     glfwSetErrorCallback(&on_glfw_error);
 
@@ -213,7 +213,7 @@ void client::main(void)
 
     splash::init("texts/splash.txt");
 
-    const std::string title = fmt::format("Voxelius: {}", splash::get());
+    const std::string title = fmt::format("Voxelius {}/{}: {}", GAME_VERSION_STRING, GAME_VERSION_META, splash::get());
     glfwSetWindowTitle(globals::window, title.c_str());
 
     glDisable(GL_MULTISAMPLE);
