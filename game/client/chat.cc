@@ -162,7 +162,7 @@ void client_chat::layout(void)
 
         if((globals::gui_screen == GUI_SCREEN_NONE) || (globals::gui_screen == GUI_CHAT) || (globals::gui_screen == GUI_DEBUG_WINDOW)) {
             for(auto it = history.crbegin(); it < history.crend(); ++it) {
-                const ImVec2 text_size = ImGui::CalcTextSize(it->text.c_str(), &it->text.cend()[0], false, window_size.x);
+                const ImVec2 text_size = ImGui::CalcTextSize(it->text.c_str(), it->text.c_str() + it->text.size(), false, window_size.x);
                 const ImVec2 rect_size = ImVec2(window_size.x, text_size.y + 2.0f * padding.y);
 
                 const ImVec2 rect_pos = ImVec2(padding.x, ypos - text_size.y - 2.0f * padding.y);
@@ -178,7 +178,7 @@ void client_chat::layout(void)
                 const ImU32 text_col = ImGui::GetColorU32(ImVec4(it->color.x, it->color.y, it->color.z, it->color.w * text_alpha));
 
                 draw_list->AddRectFilled(rect_pos, rect_end, rect_col);
-                draw_list->AddText(font, font->FontSize, text_pos, text_col, it->text.c_str(), &it->text.cend()[0], window_size.x);
+                draw_list->AddText(font, font->FontSize, text_pos, text_col, it->text.c_str(), it->text.c_str() + it->text.size(), window_size.x);
 
                 ypos -= rect_size.y;
             }
