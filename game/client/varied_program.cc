@@ -47,10 +47,10 @@ static GLuint compile_shader(const std::string &path, const std::string &source,
     glCompileShader(shader);
 
     GLint info_log_length;
-    std::basic_string<GLchar> info_log = {};
     glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &info_log_length);
 
     if(info_log_length >= 2) {
+        std::basic_string<GLchar> info_log;
         info_log.resize(info_log_length);
         glGetShaderInfoLog(shader, info_log_length, nullptr, info_log.data());
         spdlog::info("varied_program: {}: shader information:", path);
@@ -129,10 +129,10 @@ bool VariedProgram::update(VariedProgram &program)
     glLinkProgram(program.handle);
 
     GLint info_log_length;
-    std::basic_string<GLchar> info_log;
     glGetProgramiv(program.handle, GL_INFO_LOG_LENGTH, &info_log_length);
 
     if(info_log_length >= 2) {
+        std::basic_string<GLchar> info_log;
         info_log.resize(info_log_length);
         glGetProgramInfoLog(program.handle, info_log_length, nullptr, info_log.data());
         spdlog::info("varied_program: [{}; {}]: program information", vert, frag);
