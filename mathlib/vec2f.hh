@@ -15,6 +15,7 @@ public:
 public:
     static float length(const Vec2f &vector);
     static float length2(const Vec2f &vector);
+    static Vec2f normalized(const Vec2f &vector);
     static float normalize(Vec2f &vector);
 };
 

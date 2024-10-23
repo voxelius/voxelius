@@ -11,6 +11,16 @@ float Vec3f::length2(const Vec3f &vector)
 {
     return Vec3f::dot(vector, vector);
 }
+    
+Vec3f Vec3f::normalized(const Vec3f &vector)
+{
+    Vec3f result = {};
+    const float multip = 1.0f / Vec3f::length(vector);
+    result[0] = multip * vector[0];
+    result[1] = multip * vector[1];
+    result[2] = multip * vector[2];
+    return std::move(result);
+}
 
 float Vec3f::normalize(Vec3f &vector)
 {

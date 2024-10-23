@@ -11,6 +11,7 @@ public:
     using Mat4x4base<float>::Mat4x4base;
 
 public:
+    static Mat4x4f model_rotate(const Mat4x4f &model, const float angle, const Vec3f &axis);
     static Mat4x4f proj_ortho(float left, float right, float bottom, float top, float z_near, float z_far);
     static Mat4x4f proj_persp(float y_fov, float aspect, float z_near, float z_far);
     static Mat4x4f view_psrc(const Vec3f &position, const Vec3angles &angles);

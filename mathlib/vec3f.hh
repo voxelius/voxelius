@@ -16,6 +16,7 @@ public:
 public:
     static float length(const Vec3f &vector);
     static float length2(const Vec3f &vector);
+    static Vec3f normalized(const Vec3f &vector);
     static float normalize(Vec3f &vector);
 };
 
