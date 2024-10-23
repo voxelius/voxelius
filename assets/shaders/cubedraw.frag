@@ -2,13 +2,11 @@
 // Copyright (C) 2024, Voxelius Contributors
 #version 330 core
 
-in vec2 vs_TexCoord;
-
 out vec4 frag_Target;
 
-uniform sampler2D u_RT_Texture;
+uniform vec4 u_Modulate;
 
 void main(void)
 {
-    frag_Target = texture(u_RT_Texture, vec2(0.5));
+    frag_Target = u_Modulate;
 }

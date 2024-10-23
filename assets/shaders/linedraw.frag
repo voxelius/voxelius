@@ -4,9 +4,9 @@
 
 out vec4 frag_Target;
 
-uniform vec4 u_Color;
+uniform vec4 u_Modulate;
 
 void main(void)
 {
-    frag_Target = u_Color;
+    frag_Target = u_Modulate;
 }

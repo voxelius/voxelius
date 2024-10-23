@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 project(VOXELIUS LANGUAGES CXX VERSION 0.0.1)
-set(VOXELIUS_VERSION_META "PT.2024-10-20")
+set(VOXELIUS_VERSION_META "DEV")
 
 set(BUILD_CLIENT ON CACHE BOOL "Build client executable")
 set(BUILD_SERVER ON CACHE BOOL "Build server executable")

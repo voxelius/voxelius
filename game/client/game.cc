@@ -13,22 +13,23 @@
 #include <game/client/entity/player_look.hh>
 #include <game/client/entity/player_move.hh>
 #include <game/client/event/glfw_framebuffer_size.hh>
+#include <game/client/cubedraw.hh>
 #include <game/client/game.hh>
 #include <game/client/globals.hh>
 #include <game/client/gui_screen.hh>
 #include <game/client/keyboard.hh>
 #include <game/client/keynames.hh>
 #include <game/client/language.hh>
+#include <game/client/linedraw.hh>
 #include <game/client/main_menu.hh>
 #include <game/client/message_box.hh>
 #include <game/client/metrics.hh>
 #include <game/client/mouse.hh>
-#include <game/client/outline_renderer.hh>
+#include <game/client/play_menu.hh>
 #include <game/client/player_target.hh>
 #include <game/client/progress.hh>
 #include <game/client/receive.hh>
 #include <game/client/screenshot.hh>
-#include <game/client/play_menu.hh>
 #include <game/client/session.hh>
 #include <game/client/settings.hh>
 #include <game/client/skybox.hh>
@@ -201,8 +202,9 @@ void client_game::init(void)
 
     skybox::init();
 
-    outline_renderer::init();
-    
+    cubedraw::init();
+    linedraw::init();
+
     world::init();
 
     ImGuiStyle &style = ImGui::GetStyle();
@@ -228,7 +230,7 @@ void client_game::init(void)
     style.Colors[ImGuiCol_WindowBg]                 = ImVec4(0.06f, 0.06f, 0.06f, 0.94f);
     style.Colors[ImGuiCol_ChildBg]                  = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
     style.Colors[ImGuiCol_PopupBg]                  = ImVec4(0.08f, 0.08f, 0.08f, 0.94f);
-    style.Colors[ImGuiCol_Border]                   = ImVec4(0.43f, 0.43f, 0.50f, 0.50f);
+    style.Colors[ImGuiCol_Border]                   = ImVec4(0.79f, 0.79f, 0.79f, 0.50f);
     style.Colors[ImGuiCol_BorderShadow]             = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
     style.Colors[ImGuiCol_FrameBg]                  = ImVec4(0.00f, 0.00f, 0.00f, 0.54f);
     style.Colors[ImGuiCol_FrameBgHovered]           = ImVec4(0.36f, 0.36f, 0.36f, 0.40f);
@@ -369,7 +371,8 @@ void client_game::deinit(void)
 
     background::deinit();
 
-    outline_renderer::deinit();
+    linedraw::deinit();
+    cubedraw::deinit();
 
     chunk_renderer::deinit();
     chunk_mesher::deinit();
@@ -459,7 +462,6 @@ void client_game::render(void)
 
     const auto group = globals::registry.group(entt::get<PlayerComponent, HeadComponent, TransformComponent>);
 
-    outline_renderer::prepare_depth();
     for(const auto [entity, head, transform] : group.each()) {
         if(entity != globals::player) {
             WorldCoord wpos = transform.position;
@@ -472,8 +474,10 @@ void client_game::render(void)
             Vec3angles::vectors(head.angles + transform.angles, &forward, nullptr, nullptr);
             forward *= 2.0f;
 
-            outline_renderer::cube(wpos_cube, Vec3f(1.0f));
-            outline_renderer::line(wpos, forward);
+            glEnable(GL_DEPTH_TEST);
+
+            cubedraw::render(wpos_cube, Vec3f(1.0f));
+            linedraw::render(wpos, forward);
         }
     }
 

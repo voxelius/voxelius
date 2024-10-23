@@ -9,8 +9,10 @@ An in-development open-source voxel (block, cube) game with the goal to replicat
 
 ![](misc/rd1.png)  
 ![](misc/2024/1725250058988055.png)  
+![](misc/2024/1729707424361093.png)  
+![](misc/2024/1729707430739178.png)  
 
 ## Documentation
 * [Building](misc/docs/building.md)  
 * [Protocol](misc/docs/protocol.md)  
-* [Launching](misc/docs/launch.md)
+* [Launching](misc/docs/launch.md)  

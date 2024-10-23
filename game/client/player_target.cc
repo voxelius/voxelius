@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Zlib
 // Copyright (C) 2024, Voxelius Contributors
 #include <entt/entity/registry.hpp>
+#include <game/client/cubedraw.hh>
 #include <game/client/globals.hh>
-#include <game/client/outline_renderer.hh>
 #include <game/client/player_target.hh>
 #include <game/client/view.hh>
 #include <game/shared/ray_dda.hh>
@@ -52,7 +52,6 @@ void player_target::update(void)
 void player_target::render(void)
 {
     if(player_target::voxel != NULL_VOXEL) {
-        outline_renderer::prepare_depth();
-        outline_renderer::cube(VoxelCoord::to_world(player_target::vvec), Vec3f(1.0f), 2.0f, Vec4f::black());
+        cubedraw::render(VoxelCoord::to_world(player_target::vvec), Vec3f(1.0f), 2.0f, Vec4f::black());
     }
 }
