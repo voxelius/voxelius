@@ -6,11 +6,10 @@
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/0a9ed5bed7154863b927e2e4300a144d)](https://app.codacy.com/gh/voxelius/voxelius/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 An in-development open-source voxel (block, cube) game with the goal to replicate the atmosphere of Minecraft Beta 1.7.3 using modern tools and having modern features.  
-
-![](https://raw.githubusercontent.com/voxelius/media/master/rd1.png)  
-![](https://raw.githubusercontent.com/voxelius/media/master/2024/1725250058988055.png)  
-![](https://raw.githubusercontent.com/voxelius/media/master/2024/1729707424361093.png)  
-![](https://raw.githubusercontent.com/voxelius/media/master/2024/1729707430739178.png)  
+![](https://media.githubusercontent.com/media/voxelius/media/refs/heads/master/rd1.png)  
+![](https://media.githubusercontent.com/media/voxelius/media/refs/heads/master/2024/1725250058988055.png)  
+![](https://media.githubusercontent.com/media/voxelius/media/refs/heads/master/2024/1729707424361093.png)  
+![](https://media.githubusercontent.com/media/voxelius/media/refs/heads/master/2024/1729707430739178.png)  
 
 ## Documentation
 * [Building](docs/01-building.md)  
