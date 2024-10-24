@@ -55,7 +55,7 @@ void main_menu::layout(void)
 {
     const ImGuiViewport* viewport = ImGui::GetMainViewport();
     const ImVec2 window_start = ImVec2(0.0f, viewport->Size.y * 0.10f);
-    const ImVec2 window_size = ImVec2(viewport->Size.x, viewport->Size.y * 0.80f);
+    const ImVec2 window_size = ImVec2(viewport->Size.x, viewport->Size.y);
 
     ImGui::SetNextWindowPos(window_start);
     ImGui::SetNextWindowSize(window_size);
@@ -108,6 +108,16 @@ void main_menu::layout(void)
             if(ImGui::Button(str_quit.c_str(), ImVec2(button_width, 0.0f)))
                 glfwSetWindowShouldClose(globals::window, true);
             ImGui::Spacing();            
+        }
+
+        if(!globals::registry.valid(globals::player)) {
+            const ImVec2 &padding = ImGui::GetStyle().FramePadding;
+            const ImVec2 &spacing = ImGui::GetStyle().ItemSpacing;
+
+            ImGui::PushFont(globals::font_debug);
+            ImGui::SetCursorScreenPos(ImVec2(padding.x + spacing.x, window_size.y - globals::font_debug->FontSize - padding.y - spacing.y));
+            ImGui::Text("Voxelius %s/%s", GAME_VERSION_STRING, GAME_VERSION_META);
+            ImGui::PopFont();
         }
 
         ImGui::PopStyleVar();

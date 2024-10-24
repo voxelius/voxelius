@@ -13,18 +13,17 @@
 #include <game/client/entity/player_look.hh>
 #include <game/client/entity/player_move.hh>
 #include <game/client/event/glfw_framebuffer_size.hh>
-#include <game/client/cubedraw.hh>
 #include <game/client/game.hh>
 #include <game/client/globals.hh>
 #include <game/client/gui_screen.hh>
 #include <game/client/keyboard.hh>
 #include <game/client/keynames.hh>
 #include <game/client/language.hh>
-#include <game/client/linedraw.hh>
 #include <game/client/main_menu.hh>
 #include <game/client/message_box.hh>
 #include <game/client/metrics.hh>
 #include <game/client/mouse.hh>
+#include <game/client/outline.hh>
 #include <game/client/play_menu.hh>
 #include <game/client/player_target.hh>
 #include <game/client/progress.hh>
@@ -202,8 +201,7 @@ void client_game::init(void)
 
     skybox::init();
 
-    cubedraw::init();
-    linedraw::init();
+    outline::init();
 
     world::init();
 
@@ -371,8 +369,7 @@ void client_game::deinit(void)
 
     background::deinit();
 
-    linedraw::deinit();
-    cubedraw::deinit();
+    outline::deinit();
 
     chunk_renderer::deinit();
     chunk_mesher::deinit();
@@ -462,6 +459,8 @@ void client_game::render(void)
 
     const auto group = globals::registry.group(entt::get<PlayerComponent, HeadComponent, TransformComponent>);
 
+    outline::prepare();
+
     for(const auto [entity, head, transform] : group.each()) {
         if(entity != globals::player) {
             WorldCoord wpos = transform.position;
@@ -476,8 +475,8 @@ void client_game::render(void)
 
             glEnable(GL_DEPTH_TEST);
 
-            cubedraw::render(wpos_cube, Vec3f(1.0f));
-            linedraw::render(wpos, forward);
+            outline::cube(wpos_cube, Vec3f(1.0f));
+            outline::line(wpos, forward);
         }
     }
 

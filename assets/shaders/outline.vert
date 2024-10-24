@@ -12,9 +12,7 @@ uniform vec3 u_Scale;
 
 void main(void)
 {
-    gl_Position.w = 1.0;
-    gl_Position.xyz = vert_Position * u_Scale + u_WorldPosition;
-    gl_Position = u_ViewProjMatrix * gl_Position;
+    gl_Position = u_ViewProjMatrix * vec4((u_WorldPosition + u_Scale * vert_Position), 1.0);
     gl_Position.z -= 0.00025;
 
 #if WORLD_CURVATURE

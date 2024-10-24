@@ -5,9 +5,9 @@
 #include <game/client/chunk_quad.hh>
 #include <game/client/chunk_renderer.hh>
 #include <game/client/chunk_visibility.hh>
-#include <game/client/cubedraw.hh>
 #include <game/client/game.hh>
 #include <game/client/globals.hh>
+#include <game/client/outline.hh>
 #include <game/client/skybox.hh>
 #include <game/client/toggles.hh>
 #include <game/client/varied_program.hh>
@@ -104,8 +104,8 @@ void chunk_renderer::render(void)
     const auto group = globals::registry.group(entt::get<ChunkComponent, ChunkMeshComponent, ChunkVisibleComponent>);
 
     for(std::size_t plane_id = 0; plane_id < voxel_atlas::plane_count(); ++plane_id) {
-        glBindTexture(GL_TEXTURE_2D_ARRAY, voxel_atlas::plane_texture(plane_id));
         glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, voxel_atlas::plane_texture(plane_id));
 
         glBindVertexArray(quad_vaobj);
 
@@ -141,10 +141,12 @@ void chunk_renderer::render(void)
     }
 
     if(toggles::draw_chunk_borders) {
+        outline::prepare();
+
         for(const auto [entity, chunk, mesh] : group.each()) {
             const WorldCoord wpos = ChunkCoord::to_world(chunk.coord);
             const Vec3f size = Vec3f(CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE);
-            cubedraw::render(wpos, size, 1.0f, Vec4f::yellow());
+            outline::cube(wpos, size, 1.0f, Vec4f::yellow());
         }
     }
 }

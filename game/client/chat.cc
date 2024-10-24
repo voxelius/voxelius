@@ -138,7 +138,6 @@ void client_chat::layout(void)
     ImGui::PushFont(globals::font_chat);
 
     if(ImGui::Begin("###chat", nullptr, WINDOW_FLAGS)) {
-        const ImVec2 &cursor = ImGui::GetCursorScreenPos();
         const ImVec2 &padding = ImGui::GetStyle().FramePadding;
         const ImVec2 &spacing = ImGui::GetStyle().ItemSpacing;
         const ImFont *font = ImGui::GetFont();
