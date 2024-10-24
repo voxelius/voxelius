@@ -12,6 +12,6 @@ An in-development open-source voxel (block, cube) game with the goal to replicat
 ![](https://media.githubusercontent.com/media/voxelius/media/refs/heads/master/2024/1729707430739178.png)  
 
 ## Documentation
-* [Building](docs/01-building.md)  
-* [Protocol](docs/02-protocol.md)  
-* [Launching](docs/03-launch.md)  
+* [Building](docs/00-building.md)  
+* [Protocol](docs/01-protocol.md)  
+* [Launching](docs/02-launch.md)  
