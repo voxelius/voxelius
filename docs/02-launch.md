@@ -1,6 +1,6 @@
 # Launching Voxelius
 Because the game is in active development, straight up compiling and launching can be a little bit tricky because the game cannot figure out by itself where all the assets located at, throws out a bunch of error messages and dies:  
-![](launch.0000.png)
+![](images/launch.0000.png)
 
 ## Virtual file system
 Voxelius uses [PhysFS](https://github.com/icculus/physfs) to manage assets using virtual root-based paths; however before the game runs, the library must be configured: mount points for content locations must be added, write directory must be set, etc etc.  
@@ -36,20 +36,20 @@ Since packaging is not implemented yet, your best bet is to launch the game from
   ```
 
 If nothing goes wrong, you should see the game window pop up:  
-![](launch.0001.png)  
+![](images/launch.0001.png)  
 
 You can play around with the game settings:  
-![](launch.0002.png)  
+![](images/launch.0002.png)  
 
 Rebind some keys to your will:  
-![](launch.0003.png)  
+![](images/launch.0003.png)  
 
 Setup your mouse input correctly:  
-![](launch.0004.png)  
+![](images/launch.0004.png)  
 
 Make sure the game doesn't turn your GPU into a furnace:  
-![](launch.0005.png)  
+![](images/launch.0005.png)  
 
 And finally join a server (single-player is TBD):  
-![](launch.0006.png)  
+![](images/launch.0006.png)  
 

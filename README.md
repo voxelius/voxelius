@@ -7,12 +7,12 @@
 
 An in-development open-source voxel (block, cube) game with the goal to replicate the atmosphere of Minecraft Beta 1.7.3 using modern tools and having modern features.  
 
-![](misc/rd1.png)  
-![](misc/2024/1725250058988055.png)  
-![](misc/2024/1729707424361093.png)  
-![](misc/2024/1729707430739178.png)  
+![](https://raw.githubusercontent.com/voxelius/media/master/rd1.png)  
+![](https://raw.githubusercontent.com/voxelius/media/master/2024/1725250058988055.png)  
+![](https://raw.githubusercontent.com/voxelius/media/master/2024/1729707424361093.png)  
+![](https://raw.githubusercontent.com/voxelius/media/master/2024/1729707430739178.png)  
 
 ## Documentation
-* [Building](misc/docs/building.md)  
-* [Protocol](misc/docs/protocol.md)  
-* [Launching](misc/docs/launch.md)  
+* [Building](docs/01-building.md)  
+* [Protocol](docs/02-protocol.md)  
+* [Launching](docs/03-launch.md)  
