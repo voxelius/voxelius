@@ -210,6 +210,8 @@ void session::invalidate(void)
         globals::gui_screen = GUI_MESSAGE_BOX;
     }
 
+    client_chat::clear();
+
     globals::session_peer = nullptr;
     globals::session_id = UINT16_MAX;
     globals::session_tick_dt = UINT64_MAX;
