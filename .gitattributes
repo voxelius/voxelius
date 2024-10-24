@@ -3,3 +3,5 @@
 # instead of separate repositories. This makes
 # GitHub's language tracker to go nuts!
 deps/* linguist-vendored
+*.png filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
