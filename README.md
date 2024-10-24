@@ -8,8 +8,8 @@
 An in-development open-source voxel (block, cube) game with the goal to replicate the atmosphere of Minecraft Beta 1.7.3 using modern tools and having modern features.  
 ![](https://media.githubusercontent.com/media/voxelius/media/refs/heads/master/rd1.png)  
 ![](https://media.githubusercontent.com/media/voxelius/media/refs/heads/master/2024/1725250058988055.png)  
-![](https://media.githubusercontent.com/media/voxelius/media/refs/heads/master/2024/1729707424361093.png)  
-![](https://media.githubusercontent.com/media/voxelius/media/refs/heads/master/2024/1729707430739178.png)  
+![](https://media.githubusercontent.com/media/voxelius/media/refs/heads/master/2024/1729769770640910.png)  
+![](https://media.githubusercontent.com/media/voxelius/media/refs/heads/master/2024/1729769777521150.png)  
 
 ## Tree cleanup notice (2024-10-24)
 I have pruned the tree of screenshots, essentially re-making the entire git history from scratch with anything from `misc/<year>` excluded. Any pull requests forking from the repository before 2024-10-24 contain an older version of the tree and will not be merged 
