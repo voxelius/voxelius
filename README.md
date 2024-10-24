@@ -11,6 +11,9 @@ An in-development open-source voxel (block, cube) game with the goal to replicat
 ![](https://media.githubusercontent.com/media/voxelius/media/refs/heads/master/2024/1729707424361093.png)  
 ![](https://media.githubusercontent.com/media/voxelius/media/refs/heads/master/2024/1729707430739178.png)  
 
+## Tree cleanup notice (2024-10-24)
+I have pruned the tree of screenshots, essentially re-making the entire git history from scratch with anything from `misc/<year>` excluded. Any pull requests forking from the repository before 2024-10-24 contain an older version of the tree and will not be merged 
+
 ## Documentation
 * [Building](docs/00-building.md)  
 * [Protocol](docs/01-protocol.md)  
