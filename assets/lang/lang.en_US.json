@@ -32,7 +32,8 @@
 
   "settings.value.view.vertical_fov": "FOV",
   "settings.value.view.max_distance": "View distance",
-  "settings.value.background.panorama": "Enable panorama",
+  "settings.value.background.enable_3D": "Enable 3D cubes",
+  "settings.value.crosshair.invert_behind": "Invert crosshair",
   "settings.value.game.pixel_size": "Pixel size",
   "settings.value.game.username": "Username",
   "settings.value.game.vertical_sync": "Vertical sync",
@@ -54,7 +55,8 @@
   "settings.value.mouse.sensitivity": "Sensitivity",
 
   "settings.tooltip.view.vertical_fov": "Field Of View",
-  "settings.tooltip.background.panorama": "WIP",
+  "settings.tooltip.background.enable_3D": "Enable floating 3D cubes in main menu",
+  "settings.tooltip.crosshair.invert_behind": "Show inverted colors behind the crosshair",
   "settings.tooltip.game.world_curvature": "Simulate Earth's\nhorizon warping",
   "settings.tooltip.game.pixel_size": "Draw the world into a fraction of the window's frame size",
   "settings.tooltip.game.username": "Username changes apply only upon reconnecting",

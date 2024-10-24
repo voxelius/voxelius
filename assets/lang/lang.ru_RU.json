@@ -32,7 +32,8 @@
 
   "settings.value.view.vertical_fov": "FOV",
   "settings.value.view.max_distance": "Дальность отрисовки",
-  "settings.value.background.panorama": "Панорама в меню",
+  "settings.value.background.enable_3D": "3D кубы в меню",
+  "settings.value.crosshair.invert_behind": "Инверсия прицела",
   "settings.value.game.pixel_size": "Размер пикселя",
   "settings.value.game.username": "Имя пользователя",
   "settings.value.game.vertical_sync": "Вертикальная синхронизация",
@@ -54,7 +55,8 @@
   "settings.value.mouse.sensitivity": "Чувствительность",
 
   "settings.tooltip.view.vertical_fov": "Поле зрения",
-  "settings.tooltip.background.panorama": "В разработке",
+  "settings.tooltip.background.enable_3D": "Стилизованные кубы в главном меню",
+  "settings.tooltip.crosshair.invert_behind": "Показывать инвертированные цвета внутри прицела",
   "settings.tooltip.game.world_curvature": "Симулировать искривление\nгоризонта Земли",
   "settings.tooltip.game.pixel_size": "Рисовать мир в масштабе, меньшем чем размер экрана",
   "settings.tooltip.game.username": "Изменения имени пользователя применяются только при переподключении",

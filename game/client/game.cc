@@ -5,14 +5,15 @@
 #include <common/fstools.hh>
 #include <entt/entity/registry.hpp>
 #include <entt/signal/dispatcher.hpp>
+#include <game/client/entity/player_look.hh>
+#include <game/client/entity/player_move.hh>
+#include <game/client/event/glfw_framebuffer_size.hh>
 #include <game/client/background.hh>
 #include <game/client/chat.hh>
 #include <game/client/chunk_mesher.hh>
 #include <game/client/chunk_renderer.hh>
 #include <game/client/chunk_visibility.hh>
-#include <game/client/entity/player_look.hh>
-#include <game/client/entity/player_move.hh>
-#include <game/client/event/glfw_framebuffer_size.hh>
+#include <game/client/crosshair.hh>
 #include <game/client/game.hh>
 #include <game/client/globals.hh>
 #include <game/client/gui_screen.hh>
@@ -199,6 +200,8 @@ void client_game::init(void)
     chunk_mesher::init();
     chunk_renderer::init();
 
+    crosshair::init();
+
     skybox::init();
 
     outline::init();
@@ -371,6 +374,8 @@ void client_game::deinit(void)
 
     outline::deinit();
 
+    crosshair::deinit();
+
     chunk_renderer::deinit();
     chunk_mesher::deinit();
 
@@ -488,6 +493,10 @@ void client_game::render(void)
     glBindFramebuffer(GL_READ_FRAMEBUFFER, globals::world_fbo);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0, 0, scaled_width, scaled_height, 0, 0, globals::width, globals::height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+
+    if((globals::gui_screen == GUI_SCREEN_NONE) || (globals::gui_screen == GUI_CHAT)) {
+        crosshair::render();
+    }
 }
 
 void client_game::layout(void)

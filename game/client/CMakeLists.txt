@@ -6,6 +6,7 @@ add_library(client STATIC
     "${CMAKE_CURRENT_LIST_DIR}/chunk_mesher.cc"
     "${CMAKE_CURRENT_LIST_DIR}/chunk_renderer.cc"
     "${CMAKE_CURRENT_LIST_DIR}/chunk_visibility.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/crosshair.cc"
     "${CMAKE_CURRENT_LIST_DIR}/game.cc"
     "${CMAKE_CURRENT_LIST_DIR}/globals.cc"
     "${CMAKE_CURRENT_LIST_DIR}/keyboard.cc"
