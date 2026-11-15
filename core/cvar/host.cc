@@ -11,7 +11,6 @@
 static vx::hash_map<std::string, std::shared_ptr<cvar::detail::VariableBinding>> s_variables {};
 static vx::hash_map<std::string, std::shared_ptr<cvar::detail::CommandBinding>> s_commands {};
 static std::vector<cvar::write_hook_type> s_write_hooks {};
-static bool s_cheats_enabled { false };
 
 static vx::hash_set<std::string> s_dirty_set {};
 static std::vector<std::string> s_dirty_list {};
@@ -40,6 +39,13 @@ static std::string rebuild_line(std::string_view name, std::span<const std::stri
     }
 
     return line;
+}
+
+// A context without a client is local: the server
+// config, the server itself, or the client's own console.
+static bool is_trusted(const cvar::Context& ctx)
+{
+    return !ctx.client_id.has_value() || ctx.is_operator;
 }
 
 void cvar::detail::mark_dirty(std::string_view name)
@@ -206,15 +212,15 @@ cvar::status cvar::exec(std::string_view name, std::span<const std::string_view>
 
     if(auto command = find_cmd(name)) {
         auto flags = command->flags().value_or(FCVAR_NONE);
-        auto is_cheat = static_cast<bool>(flags & FCVAR_CHEAT);
+        auto is_admin = static_cast<bool>(flags & FCVAR_ADMIN);
         auto is_recall = static_cast<bool>(flags & FCVAR_RECALL);
 
         if(!is_remote && command->is_remote() && s_remote_exec) {
             return s_remote_exec(rebuild_line(name, args));
         }
 
-        if(is_cheat && !s_cheats_enabled) {
-            msg::log_warning("{} is cheat-protected", name);
+        if(is_admin && !is_trusted(ctx)) {
+            msg::log_warning("{}: operator access required", name);
 
             return status::UNKNOWN;
         }
@@ -230,7 +236,7 @@ cvar::status cvar::exec(std::string_view name, std::span<const std::string_view>
 
     if(auto variable = find_var(name)) {
         auto flags = variable->flags().value_or(FCVAR_NONE);
-        auto is_cheat = static_cast<bool>(flags & FCVAR_CHEAT);
+        auto is_admin = static_cast<bool>(flags & FCVAR_ADMIN);
         auto is_readonly = static_cast<bool>(flags & FCVAR_READONLY);
 
         if(args.empty()) {
@@ -239,8 +245,8 @@ cvar::status cvar::exec(std::string_view name, std::span<const std::string_view>
             return status::OK;
         }
 
-        if(is_cheat && !s_cheats_enabled) {
-            msg::log_warning("{} is cheat-protected", name);
+        if(is_admin && !is_trusted(ctx)) {
+            msg::log_warning("{}: operator access required", name);
 
             return status::UNKNOWN;
         }
@@ -277,16 +283,6 @@ cvar::status cvar::exec(std::string_view name, std::span<const std::string_view>
     msg::log_warning("{}: unknown command or variable", name);
 
     return status::UNKNOWN;
-}
-
-bool cvar::cheats_enabled(void)
-{
-    return s_cheats_enabled;
-}
-
-void cvar::enable_cheats(void)
-{
-    s_cheats_enabled = true;
 }
 
 bool cvar::exec_from(std::string_view path)
@@ -345,19 +341,6 @@ void cvar::save_values(std::string_view path)
     }
 
     utils::write_file(path, stream.str());
-}
-
-void cvar::disable_cheats(void)
-{
-    s_cheats_enabled = false;
-
-    for(auto& [name, binding] : s_variables) {
-        auto flags = binding->flags().value_or(FCVAR_NONE);
-
-        if(flags & FCVAR_CHEAT) {
-            binding->revert();
-        }
-    }
 }
 
 void cvar::for_each_var(flag_bits mask, std::function<void(const detail::VariableBinding&)> callback)

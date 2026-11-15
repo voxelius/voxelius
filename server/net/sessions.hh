@@ -18,8 +18,14 @@ enum class session_state : std::uint8_t {
     CONNECTED,
 };
 
+enum class session_access : std::uint8_t {
+    PLAYER,
+    OPERATOR,
+};
+
 struct Session final {
     session_state state;
+    session_access access;
 
     ed25519::pkey_type pkey;
     std::array<std::byte, 64> nonce;

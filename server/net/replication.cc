@@ -62,6 +62,7 @@ static void on_cvar_command(const packet::Cvar_Command& packet)
     if(take_ratelimit_token(session)) {
         cvar::Context ctx {};
         ctx.client_id = session->client_id;
+        ctx.is_operator = session->access == session_access::OPERATOR;
 
         auto capture = msg::ScopedCapture(msg::LEVEL_INFO, MAX_CAPTURE);
         auto status = cvar::exec(packet.line, ctx);
@@ -148,7 +149,7 @@ void replication::synchronize(Session* session)
     assert(session);
 
     packet::Cvar_ServerVars::build_full(variables);
-    packet::Cvar_ServerCmds::build_full(commands);
+    packet::Cvar_ServerCmds::build_full(commands, session->access == session_access::OPERATOR);
 
     protocol::send(variables, session->peer);
     protocol::send(commands, session->peer);

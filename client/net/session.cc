@@ -5,6 +5,8 @@
 #include "core/buffer.hh"
 #include "core/cvar/host.hh"
 #include "core/cvar/string.hh"
+#include "core/msg/log.hh"
+#include "core/utils/crc64.hh"
 #include "core/utils/epoch.hh"
 #include "core/utils/physfs.hh"
 #include "core/utils/string.hh"
@@ -148,6 +150,13 @@ static void on_session_disconnect(const packet::Session_Disconnect& packet)
     handle_disconnect(packet.reason);
 }
 
+static cvar::status cmd_pkey(const cvar::Context& ctx, std::span<const std::string_view> args)
+{
+    msg::log_info("pkey: {}", ed25519::export_pkey(s_auth_pair.first));
+    msg::log_info("identity: {}", utils::crc64(s_auth_pair.first));
+    return cvar::status::OK;
+}
+
 void session::init(void)
 {
     auto& username_binding = cvar::bind_var(s_desired_username, "net_username");
@@ -181,6 +190,10 @@ void session::init(void)
     });
 
     settings::general.add_child(s_desired_username_gui, 3);
+
+    auto& pkey_binding = cvar::bind_cmd("pkey");
+    pkey_binding.set_help("Print your public key and identity");
+    pkey_binding.connect<&cmd_pkey>();
 
     std::vector<std::byte> source;
 

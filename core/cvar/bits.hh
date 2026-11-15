@@ -4,7 +4,7 @@
 namespace cvar::detail
 {
 enum flag_index : unsigned short {
-    IDX_CHEAT,
+    IDX_ADMIN,
     IDX_READONLY,
     IDX_ARCHIVE,
     IDX_REPLICATED,
@@ -32,7 +32,7 @@ void make_bitstring_long(flag_bits bits, std::string& out);
 } // namespace cvar
 
 constexpr static auto FCVAR_NONE = static_cast<cvar::flag_bits>(0x0000);
-constexpr static auto FCVAR_CHEAT = cvar::FLAG_BIT<cvar::detail::IDX_CHEAT>;
+constexpr static auto FCVAR_ADMIN = cvar::FLAG_BIT<cvar::detail::IDX_ADMIN>;
 constexpr static auto FCVAR_READONLY = cvar::FLAG_BIT<cvar::detail::IDX_READONLY>;
 constexpr static auto FCVAR_ARCHIVE = cvar::FLAG_BIT<cvar::detail::IDX_ARCHIVE>;
 constexpr static auto FCVAR_REPLICATED = cvar::FLAG_BIT<cvar::detail::IDX_REPLICATED>;

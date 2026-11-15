@@ -5,12 +5,20 @@
 #include "server/net/whitelist.hh"
 
 static vx::hash_set<std::uint64_t> s_invites;
-static std::mt19937_64 s_randomizer;
+
+static std::uint64_t generate_token(void)
+{
+    auto seed = ed25519::generate_seed();
+
+    std::uint64_t token;
+    std::memcpy(&token, seed.data(), sizeof(token));
+
+    return token;
+}
 
 void invites::init(void)
 {
-    std::random_device noise;
-    s_randomizer.seed(noise());
+    // empty
 }
 
 void invites::shutdown(void)
@@ -20,10 +28,11 @@ void invites::shutdown(void)
 
 std::uint64_t invites::issue(void)
 {
-    std::uint64_t token = s_randomizer();
+    // Zero on the wire means "no invite", so it is never issued.
+    std::uint64_t token = generate_token();
 
-    while(s_invites.contains(token)) {
-        token = s_randomizer();
+    while(token == 0 || s_invites.contains(token)) {
+        token = generate_token();
     }
 
     s_invites.emplace(token);

@@ -33,7 +33,7 @@ struct packet::Cvar_ServerCmds final : public packet::Base<packet::CVAR_SERVER_C
     static void encode(const Cvar_ServerCmds& packet, WriteBuffer& buffer);
     static void decode(Cvar_ServerCmds& packet, ReadBuffer& buffer);
 
-    static void build_full(Cvar_ServerCmds& packet);
+    static void build_full(Cvar_ServerCmds& packet, bool include_admin);
 
     std::vector<Command> commands;
 };

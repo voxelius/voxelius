@@ -38,7 +38,7 @@ The client proves its identity with an Ed25519 keypair. The server challenges th
 
 ##### Invite codes
 
-The invite code is a one-time code. On a successful login, the server consumes the invite code. The server then adds the client's public key to its whitelist. The same client can then reconnect later without a new invite.
+The invite code is a one-time code. On a successful login, the server consumes the invite code. The server then adds the client's public key to its whitelist. The same client can then reconnect later without a new invite. An operator issues codes with `op_invite`.
 
 ##### Registry hashes
 
@@ -49,6 +49,46 @@ This check protects both sides:
 - It stops a mismatched client from receiving chunk data it would render as corrupted or nonsensical.
 - It stops that same client from placing a block ID the server does not recognize.
 
+## Operator access
+
+A server can mark an Ed25519 public key as an operator. The server keeps these keys in `operators.txt` next to `whitelist.txt` in the user directory. The file holds one exported public key per line, the same format as `whitelist.txt`.
+
+The status is tracked per session. An operator bypasses the whitelist, so the same key does not have to appear in both files.
+
+### Enrolling an operator
+
+The player runs the `pkey` command in the console. The client prints its public key and its identity. The identity is the `crc64` of the key and is the value that shows up in server logs; the public key is the value the files expect.
+
+The first operator enrolls by hand:
+
+|Step|Who|Action|
+|----|----|----|
+|1|Player|Connect and run `pkey`|
+|2|Server host|Copy the `pkey:` line into `operators.txt`|
+|3|Server host|Restart the server|
+
+After that, an operator runs `op_add <public key>` or `op_remove <public key>`. These update `operators.txt` right away and promote or demote a matching live session without a reconnect. A hand edit still needs a restart, because the server loads the file during startup and writes it back on shutdown.
+
+### Operator commands
+
+An operator connects like everyone else. The server sends the command list of an operator with the operator-only commands included, and every other client gets a list without them. A client that does not know a command reports it as unknown.
+
+|Command|Description|
+|----|----|
+|`op_list`|List connected sessions with their client IDs, identities, public keys, and access levels|
+|`op_add`|Add a public key to the operator list and promote that player|
+|`op_remove`|Remove a public key from the operator list and demote that player|
+|`op_kick`|Disconnect a player by client ID or username|
+|`op_invite`|Issue a one-time invite code|
+
+The commands carry the `admin` and `recall` flags. `recall` lets the client forward the command to the server. `admin` makes `cvar::exec` refuse it unless the context holds a client that is an operator. A context without a client, such as `server.conf` or the client's own console, is trusted.
+
+A demoted operator keeps the commands it already learned, but the server rejects them.
+
+### Kicking
+
+`op_kick` sends a disconnect packet with the kicked reason and then closes the connection. The key is not banned; a kicked client can reconnect unless something else, such as the whitelist or a full server, stops it.
+
 ## Cvar replication
 
 The server owns every variable flagged with `FCVAR_REPLICATED`. After admission it sends a full snapshot of them. On every fixed tick it sends the variables that changed since the previous tick.
@@ -56,6 +96,8 @@ The server owns every variable flagged with `FCVAR_REPLICATED`. After admission 
 The client keeps the server value in a shadow. A local variable with the same name must also be flagged `FCVAR_REPLICATED`; otherwise the server value is ignored and a warning is logged. A full snapshot drops stale remote variables and clears the old shadows.
 
 The server does not accept cvar values from clients. Gamerules use the `gr_` prefix; match rules will use `mp_`. The full list is in [CVars](../../reference/cvars.md).
+
+The command snapshot follows the same exchange. The server sends one full list to each admitted client, and the list leaves out the commands flagged `FCVAR_ADMIN` unless that client is an operator. When a live session is promoted or demoted, the server sends the list again. A dirty variable update never carries admin-flagged variables, since none of those replicate.
 
 The snapshot packet carries a `uint8 full` flag and a `uint32 count`, then for each variable a `string name` and a `string value`. A full snapshot adds a `uint16 flags` and a `string help` for each entry.
 
@@ -176,6 +218,7 @@ Disconnection notification. Each network side should but may not terminate the c
 |`0x00000008`|Outdated server|Client is too new for the server|
 |`0x00000009`|Server is full|No more free slots available|
 |`0x0000000A`|Server shutdown|Server is terminating|
+|`0x0000000C`|Kicked|An operator removed the client|
 
 ### `0x0008` `RequestChunk`
 

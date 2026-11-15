@@ -17,6 +17,7 @@
   "protocol.disconnect.server_is_full": "Server is full",
   "protocol.disconnect.server_shutdown": "Server shutdown",
   "protocol.disconnect.cvar_rejected": "Server variable rejected",
+  "protocol.disconnect.kicked": "Kicked",
 
   "main_menu.button.play": "Play Game",
   "main_menu.button.resume": "Resume",

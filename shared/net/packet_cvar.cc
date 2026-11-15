@@ -104,14 +104,20 @@ void packet::Cvar_ServerCmds::decode(Cvar_ServerCmds& packet, ReadBuffer& buffer
     }
 }
 
-void packet::Cvar_ServerCmds::build_full(Cvar_ServerCmds& packet)
+void packet::Cvar_ServerCmds::build_full(Cvar_ServerCmds& packet, bool include_admin)
 {
     packet.commands.clear();
 
     cvar::for_each_cmd(FCVAR_RECALL, [&](const cvar::detail::CommandBinding& binding) {
+        auto flags = binding.flags().value_or(FCVAR_NONE);
+
+        if(!include_admin && (flags & FCVAR_ADMIN)) {
+            return;
+        }
+
         auto& command = packet.commands.emplace_back();
         command.name = std::string(binding.name());
-        command.flags = binding.flags().value_or(FCVAR_NONE);
+        command.flags = flags;
 
         if(auto& help = binding.help()) {
             command.help = help.value();

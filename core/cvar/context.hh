@@ -5,6 +5,7 @@ namespace cvar
 {
 struct Context final {
     std::optional<std::uint16_t> client_id {};
+    bool is_operator { false };
 };
 } // namespace cvar
 

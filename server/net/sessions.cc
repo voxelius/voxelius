@@ -21,6 +21,7 @@
 #include "server/globals.hh"
 #include "server/net/host.hh"
 #include "server/net/invites.hh"
+#include "server/net/operators.hh"
 #include "server/net/replication.hh"
 #include "server/net/whitelist.hh"
 
@@ -90,18 +91,13 @@ static void on_auth_request(const packet::Auth_Request& packet)
         return;
     }
 
-    auto client_whitelisted = false;
+    auto access = operators::contains(packet.pkey) ? session_access::OPERATOR : session_access::PLAYER;
 
-    if(whitelist::enabled.value()) {
-        if(whitelist::contains(packet.pkey)) {
-            client_whitelisted = true;
-        }
-        else if(packet.invite_code) {
-            client_whitelisted = invites::consume(packet.invite_code, packet.pkey);
-        }
-    }
-    else {
-        client_whitelisted = true;
+    // An operator is trusted by definition and does not need a second line in the whitelist.
+    auto client_whitelisted = !whitelist::enabled.value() || whitelist::contains(packet.pkey) || access == session_access::OPERATOR;
+
+    if(!client_whitelisted && packet.invite_code) {
+        client_whitelisted = invites::consume(packet.invite_code, packet.pkey);
     }
 
     if(!client_whitelisted) {
@@ -138,6 +134,7 @@ static void on_auth_request(const packet::Auth_Request& packet)
     }
 
     session->pkey = packet.pkey;
+    session->access = access;
 
     auto timestamp_sec = utils::epoch_seconds();
     auto timestamp_min = timestamp_sec / 60;
@@ -155,7 +152,8 @@ static void on_auth_request(const packet::Auth_Request& packet)
     session->identity = utils::crc64(session->pkey);
     session->state = session_state::CHALLENGE;
 
-    msg::log_info("{} ({}) connected", session->username, session->identity);
+    auto access_string = access == session_access::OPERATOR ? " as operator" : "";
+    msg::log_info("{} ({}) connected{}", session->username, session->identity, access_string);
 
     packet::Auth_Challenge response {};
     response.nonce = session->nonce;
@@ -284,6 +282,7 @@ void sessions::init_late(void)
     for(std::size_t i = 0; i < host::max_players.value(); ++i) {
         auto& session = s_sessions[i];
         session.state = session_state::UNCONNECTED;
+        session.access = session_access::PLAYER;
         session.client_id = UINT16_MAX;
         session.identity = UINT64_MAX;
         session.username = std::string {};
@@ -318,6 +317,7 @@ Session* sessions::create(ENetPeer* peer, std::string_view username)
 
         if(session.peer == nullptr) {
             session.state = session_state::UNCONNECTED;
+            session.access = session_access::PLAYER;
             session.client_id = static_cast<std::uint16_t>(i);
             session.identity = UINT64_MAX;
             session.username = sanitize_username(username);
@@ -419,6 +419,7 @@ void sessions::destroy(Session* session, std::optional<std::uint32_t> reason)
         }
 
         session->state = session_state::UNCONNECTED;
+        session->access = session_access::PLAYER;
         session->client_id = UINT16_MAX;
         session->identity = UINT64_MAX;
         session->username = std::string {};

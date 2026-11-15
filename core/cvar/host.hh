@@ -71,13 +71,6 @@ void clear_remote(void);
 
 namespace cvar
 {
-bool cheats_enabled(void);
-void enable_cheats(void);
-void disable_cheats(void);
-} // namespace cvar
-
-namespace cvar
-{
 void for_each_var(flag_bits mask, std::function<void(const detail::VariableBinding&)> callback);
 void for_each_cmd(flag_bits mask, std::function<void(const detail::CommandBinding&)> callback);
 } // namespace cvar

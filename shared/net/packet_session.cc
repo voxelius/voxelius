@@ -49,6 +49,9 @@ std::string_view packet::Session_Disconnect::reason_string_client(std::uint32_t 
 
         case CVAR_REJECTED:
             return std::string_view("protocol.disconnect.cvar_rejected");
+
+        case KICKED:
+            return std::string_view("protocol.disconnect.kicked");
     }
 
     return std::string_view("protocol.disconnect.unspecified");
@@ -89,6 +92,9 @@ std::string_view packet::Session_Disconnect::reason_string_server(std::uint32_t 
 
         case CVAR_REJECTED:
             return std::string_view("cvar rejected");
+
+        case KICKED:
+            return std::string_view("kicked");
     }
 
     return std::string_view("unspecified");

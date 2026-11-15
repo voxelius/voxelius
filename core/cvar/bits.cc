@@ -9,8 +9,8 @@ constexpr static char UNSET_CHAR = '-';
 static char flag_char(cvar::flag_bits bit)
 {
     switch(bit) {
-        case FCVAR_CHEAT:
-            return 'C';
+        case FCVAR_ADMIN:
+            return 'O';
 
         case FCVAR_NOTIFY:
             return 'N';
@@ -78,8 +78,8 @@ void cvar::make_bitstring_long(flag_bits bits, std::string& out)
         values.push_back("notify");
     }
 
-    if(bits & FCVAR_CHEAT) {
-        values.push_back("cheat");
+    if(bits & FCVAR_ADMIN) {
+        values.push_back("admin");
     }
 
     if(bits & FCVAR_RECALL) {

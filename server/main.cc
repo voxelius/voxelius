@@ -19,6 +19,8 @@
 #include "server/net/host.hh"
 #include "server/net/interest.hh"
 #include "server/net/invites.hh"
+#include "server/net/op_commands.hh"
+#include "server/net/operators.hh"
 #include "server/net/receive.hh"
 #include "server/net/replication.hh"
 #include "server/net/sessions.hh"
@@ -96,9 +98,11 @@ static void wrapped_main(int argc, char** argv)
     interest::init();
 
     whitelist::init();
+    operators::init();
     invites::init();
     sessions::init();
     replication::init();
+    op_commands::init();
     status::init();
     receive::init();
     transmit::init();
@@ -194,6 +198,8 @@ static void wrapped_main(int argc, char** argv)
     sessions::shutdown();
     invites::shutdown();
     whitelist::shutdown();
+    operators::shutdown();
+    op_commands::shutdown();
 
     server_game::shutdown();
     shared_game::shutdown();
