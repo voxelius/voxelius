@@ -107,12 +107,14 @@
   "settings.value.net_username": "Username",
   "settings.value.r_mode": "Video mode",
   "settings.value.r_vsync": "V-Sync",
+  "settings.value.r_software_cursor": "Software cursor",
 
   "settings.tooltip.r_fov": "Field Of View",
   "settings.tooltip.r_pixel_size": "Controls the size of each pixel in the rendered image",
   "settings.tooltip.in_sensitivity": "Specifies the rate at which cursor movement on 2D screen is reflected by the camera",
   "settings.tooltip.net_username": "Name changes apply on next connection to a server",
   "settings.tooltip.r_vsync": "Synchronize buffer swapping with your monitor's refresh rate; this removes screen tearing but adds a noticeable input lag",
+  "settings.tooltip.r_software_cursor": "Draw the menu cursor in software; enable this if the pointer is invisible in exclusive fullscreen with stuff like OBS",
 
   "settings.choice.video_mode.windowed": "Windowed",
 
