@@ -10,7 +10,6 @@
 #include "shared/world/chunk.hh"
 #include "shared/world/world.hh"
 
-#include "server/constant.hh"
 #include "server/entity/entity_loader.hh"
 #include "server/universe.hh"
 #include "server/utils/region.hh"
@@ -24,17 +23,39 @@ struct RegionEntry final {
 
     std::mutex io_mutex;
     ZvoxFile region_file;
-    std::chrono::steady_clock::time_point last_used;
+    std::atomic<std::chrono::steady_clock::time_point> last_used;
 };
 
-RegionEntry::RegionEntry(std::filesystem::path path) : region_file(std::move(path))
-{
-    // empty
-}
+class LoadTask final : public Task {
+public:
+    explicit LoadTask(ChunkPos pos);
+    virtual ~LoadTask(void) override;
+    virtual void process(void) override;
+    virtual void finalize(void) override;
+
+private:
+    ChunkPos m_pos;
+    Chunk::Snapshot m_snapshot;
+    bool m_found { false };
+};
+
+class SaveTask final : public Task {
+public:
+    explicit SaveTask(ChunkPos pos, Chunk::Snapshot snapshot);
+    virtual ~SaveTask(void) override = default;
+    virtual void process(void) override;
+    virtual void finalize(void) override;
+
+private:
+    ChunkPos m_pos;
+    Chunk::Snapshot m_snapshot;
+};
 
 static std::shared_mutex s_cache_mutex;
 static vx::hash_map<RegionKey, std::shared_ptr<RegionEntry>> s_cache;
 static vx::hash_set<RegionPos> s_pending;
+static vx::hash_set<RegionPos> s_saving;
+static vx::hash_set<RegionPos> s_deferred;
 
 static std::filesystem::path region_path(biome_realm realm, const RegionPos& region)
 {
@@ -59,13 +80,14 @@ static std::shared_ptr<RegionEntry> find_region(biome_realm realm, const RegionP
         return nullptr;
     }
 
+    it->second->last_used.store(std::chrono::steady_clock::now(), std::memory_order_relaxed);
+
     return it->second;
 }
 
 static std::shared_ptr<RegionEntry> get_region(biome_realm realm, const RegionPos& pos)
 {
     if(auto entry = find_region(realm, pos)) {
-        entry->last_used = std::chrono::steady_clock::now();
         return entry;
     }
 
@@ -75,8 +97,17 @@ static std::shared_ptr<RegionEntry> get_region(biome_realm realm, const RegionPo
 
     std::unique_lock lock(s_cache_mutex);
 
+    // Another thread may have opened the region while this one waited for
+    // the exclusive lock. Opening the same file twice would give both
+    // instances their own stream and free-range bookkeeping, and their
+    // writes would corrupt each other.
+    if(auto it = s_cache.find(key); it != s_cache.cend()) {
+        it->second->last_used.store(std::chrono::steady_clock::now(), std::memory_order_relaxed);
+        return it->second;
+    }
+
     auto entry = std::make_shared<RegionEntry>(region_path(realm, pos));
-    entry->last_used = std::chrono::steady_clock::now();
+    entry->last_used.store(std::chrono::steady_clock::now(), std::memory_order_relaxed);
 
     s_cache.insert_or_assign(key, std::shared_ptr(entry));
 
@@ -96,7 +127,7 @@ static void evict_stale(void)
         }
 
         std::sort(entries.begin(), entries.end(), [](const auto& a, const auto& b) {
-            return a.second->last_used < b.second->last_used;
+            return a.second->last_used.load(std::memory_order_relaxed) < b.second->last_used.load(std::memory_order_relaxed);
         });
 
         for(const auto& [key, entry] : entries) {
@@ -114,7 +145,7 @@ static void evict_stale(void)
     }
 }
 
-static void write_chunk(const ChunkPos& pos, const BlockStorage& blocks)
+static void write_chunk(const ChunkPos& pos, const Chunk::Snapshot& snapshot)
 {
     auto realm = utils::realm(pos.y());
     auto region = utils::region_of(pos);
@@ -123,40 +154,39 @@ static void write_chunk(const ChunkPos& pos, const BlockStorage& blocks)
     auto entry = get_region(realm, region);
 
     WriteBuffer buffer;
-    BlockStorage::encode_dat(blocks, buffer);
+    Chunk::encode_dat(snapshot, buffer);
 
     std::scoped_lock io_lock(entry->io_mutex);
     entry->region_file.write_slot(slot, buffer);
 }
 
-class LoadTask final : public Task {
-public:
-    explicit LoadTask(ChunkPos pos);
-    virtual ~LoadTask(void) override;
-    virtual void process(void) override;
-    virtual void finalize(void) override;
+static void finish_save(const ChunkPos& pos)
+{
+    s_saving.erase(pos);
 
-private:
-    ChunkPos m_pos;
-    BlockStorage m_blocks;
-    bool m_found { false };
-};
+    if(s_deferred.erase(pos)) {
+        chunk_loader::request(pos);
+    }
+}
 
-class SaveTask final : public Task {
-public:
-    explicit SaveTask(ChunkPos pos, BlockStorage blocks);
-    virtual ~SaveTask(void) override = default;
-    virtual void process(void) override;
-    virtual void finalize(void) override;
+static void on_chunk_update(const ChunkUpdateEvent& event)
+{
+    world::chunk_registry.emplace_or_replace<ChunkDirtyMarker>(event.chunk()->entity());
+}
 
-private:
-    ChunkPos m_pos;
-    BlockStorage m_blocks;
-};
+static void on_block_update(const BlockUpdateEvent& event)
+{
+    world::chunk_registry.emplace_or_replace<ChunkDirtyMarker>(event.chunk()->entity());
+}
+
+RegionEntry::RegionEntry(std::filesystem::path path) : region_file(std::move(path))
+{
+    // empty
+}
 
 LoadTask::LoadTask(ChunkPos pos) : m_pos(std::move(pos))
 {
-    m_blocks.fill(BLOCK_ID_NULL);
+    // empty
 }
 
 LoadTask::~LoadTask(void)
@@ -179,7 +209,7 @@ void LoadTask::process(void)
     std::scoped_lock io_lock(entry->io_mutex);
 
     if(entry->region_file.read_slot(slot, buffer)) {
-        BlockStorage::decode_dat(m_blocks, buffer);
+        Chunk::decode_dat(m_snapshot, buffer);
         m_found = true;
     }
 }
@@ -190,7 +220,7 @@ void LoadTask::finalize(void)
 
     if(m_found) {
         auto chunk = world::create_chunk(m_pos);
-        chunk->set_blocks(std::move(m_blocks));
+        chunk->restore(std::move(m_snapshot), globals::current_tick);
 
         // Not ChunkUpdateEvent: loaded-from-disk chunks are identical
         // to what's saved and must NOT be marked ChunkDirtyMarker.
@@ -203,7 +233,7 @@ void LoadTask::finalize(void)
     }
 }
 
-SaveTask::SaveTask(ChunkPos pos, BlockStorage blocks) : m_pos(std::move(pos)), m_blocks(std::move(blocks))
+SaveTask::SaveTask(ChunkPos pos, Chunk::Snapshot snapshot) : m_pos(std::move(pos)), m_snapshot(std::move(snapshot))
 {
     // empty
 }
@@ -212,22 +242,12 @@ void SaveTask::process(void)
 {
     ZoneScopedN("chunk_loader::save");
 
-    write_chunk(m_pos, m_blocks);
+    write_chunk(m_pos, m_snapshot);
 }
 
 void SaveTask::finalize(void)
 {
-    // empty
-}
-
-static void on_chunk_update(const ChunkUpdateEvent& event)
-{
-    world::chunk_registry.emplace_or_replace<ChunkDirtyMarker>(event.chunk()->entity());
-}
-
-static void on_block_update(const BlockUpdateEvent& event)
-{
-    world::chunk_registry.emplace_or_replace<ChunkDirtyMarker>(event.chunk()->entity());
+    finish_save(m_pos);
 }
 
 void chunk_loader::init(void)
@@ -238,10 +258,14 @@ void chunk_loader::init(void)
 
 void chunk_loader::shutdown(void)
 {
+    // Unloading submits saves to the pool; without this they are still
+    // queued when the pool is cancelled and the chunks are lost.
+    threading::wait();
+
     auto view = world::chunk_registry.view<Chunk_Component, ChunkDirtyMarker>();
 
     for(auto [entity, component] : view.each()) {
-        write_chunk(component.position, component.ptr->blocks());
+        write_chunk(component.position, component.ptr->snapshot(globals::current_tick));
     }
 
     std::unique_lock lock(s_cache_mutex);
@@ -263,6 +287,11 @@ void chunk_loader::request(const ChunkPos& pos)
         return;
     }
 
+    if(s_saving.contains(pos)) {
+        s_deferred.emplace(pos);
+        return;
+    }
+
     s_pending.emplace(pos);
 
     threading::submit<LoadTask>(pos);
@@ -270,7 +299,7 @@ void chunk_loader::request(const ChunkPos& pos)
 
 bool chunk_loader::pending(const ChunkPos& pos)
 {
-    return s_pending.contains(pos);
+    return s_pending.contains(pos) || s_saving.contains(pos);
 }
 
 bool chunk_loader::save(const ChunkPos& pos)
@@ -285,7 +314,8 @@ bool chunk_loader::save(const ChunkPos& pos)
 
     if(world::chunk_registry.all_of<ChunkDirtyMarker>(entity)) {
         world::chunk_registry.remove<ChunkDirtyMarker>(entity);
-        threading::submit<SaveTask>(pos, chunk->blocks());
+        s_saving.emplace(pos);
+        threading::submit<SaveTask>(pos, chunk->snapshot(globals::current_tick));
         return true;
     }
 

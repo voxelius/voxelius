@@ -145,6 +145,26 @@ Example:
 #include "client/res/texture2D.hh"
 ```
 
+## Order in a file
+
+Every translation unit keeps the same top-level order:
+
+1. includes;
+2. forward declarations;
+3. compile-time constants: `constexpr`, `static constexpr` and object-like `#define`s;
+4. type definitions: `using`, `enum`, `struct` and `class`;
+5. read-only data such as `static const char* const names[] = { ... }`;
+6. static and global variables, in any order among themselves;
+7. static functions and other functions with internal linkage;
+8. public functions, including out-of-line member definitions.
+
+- A constant belongs in the constant block and a helper belongs in the static function block. Do not put either next to its first use
+  between functions of another kind.
+- Static functions go in dependency order, callees first. A static prototype is only necessary for mutual recursion.
+- A table of callbacks or a registration list goes right after the last function it points to.
+- Function-like macros and `static_assert`s stay next to what they belong to.
+- Headers follow the same order. A `constexpr` body stays right after its declaration.
+
 ## Comments
 
 - Use plain C++ comments (except for include guards).

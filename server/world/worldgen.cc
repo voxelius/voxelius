@@ -21,8 +21,6 @@
 #include "server/world/realm_surface.hh"
 #include "server/world/terrain.hh"
 
-static vx::hash_set<ChunkPos> s_pending;
-
 class WorldgenTask final : public Task {
 public:
     explicit WorldgenTask(const ChunkPos& pos);
@@ -35,6 +33,8 @@ private:
     std::unique_ptr<BiomeSlice> m_biomes;
     ChunkPos m_pos;
 };
+
+static vx::hash_set<ChunkPos> s_pending;
 
 WorldgenTask::WorldgenTask(const ChunkPos& pos) : m_pos(pos)
 {
@@ -110,6 +110,12 @@ void worldgen::init(void)
 
 void worldgen::shutdown(void)
 {
+    // Pending generators still touch feature rules, noise caches and the
+    // heightmap. Drain them before any of that is destroyed, otherwise a
+    // worker can outlive the teardown and keep feature handles alive (or
+    // use the destroyed state outright).
+    threading::wait();
+
     feature_placer::shutdown();
 
     realm_sky::shutdown();

@@ -144,6 +144,26 @@ differently.
 - Do not edit `deps/`. A new dependency follows the shape of the current ones: a `deps/<name>/` directory, a `CMakeLists.txt` there that
   defines `deps::<name>`, and an entry in `deps/CMakeLists.txt`.
 
+### Order in a file
+
+Every translation unit keeps the same top-level order:
+
+1. includes;
+2. forward declarations;
+3. compile-time constants: `constexpr`, `static constexpr` and object-like `#define`s;
+4. type definitions: `using`, `enum`, `struct` and `class`;
+5. read-only data such as `static const char* const names[] = { ... }`;
+6. static and global variables, in any order among themselves;
+7. static functions and other functions with internal linkage;
+8. public functions, including out-of-line member definitions.
+
+- A constant goes into the constant block and a helper into the static function block; do not put either next to its first use between
+  functions of another kind.
+- Static functions go in dependency order, callees first, so a static prototype is only necessary for mutual recursion.
+- A table of callbacks or a registration list goes right after the last function it points to.
+- Function-like macros and `static_assert`s stay next to what they belong to.
+- Headers follow the same order; a `constexpr` body stays right after its declaration as "Language" says.
+
 ### Comments
 
 - Use `//`. Comment sparingly and explain the reason that the code does not show. Do not restate what the code does.

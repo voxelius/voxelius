@@ -4,12 +4,11 @@
 
 #include "core/buffer.hh"
 
-Chunk::Chunk(entt::entity entity) : m_entity(entity)
-{
-    // empty
-}
+// Marks the schedule trailer so a slot saved before the trailer existed
+// decodes as blocks with no pending ticks instead of garbage.
+constexpr static std::uint32_t SCHEDULE_MAGIC = 0x4B434954; // TICK
 
-static void serialize_schedule(const std::multimap<std::uint64_t, std::pair<std::size_t, block_tick_source>>& schedule, WriteBuffer& buffer)
+static void serialize_schedule(const Chunk::schedule_type& schedule, WriteBuffer& buffer)
 {
     buffer.write<std::uint32_t>(static_cast<std::uint32_t>(schedule.size()));
 
@@ -20,9 +19,19 @@ static void serialize_schedule(const std::multimap<std::uint64_t, std::pair<std:
     }
 }
 
-static void deserialize_schedule(std::multimap<std::uint64_t, std::pair<std::size_t, block_tick_source>>& schedule, ReadBuffer& buffer)
+static void deserialize_schedule(Chunk::schedule_type& schedule, ReadBuffer& buffer)
 {
+    constexpr static std::size_t RECORD_SIZE = sizeof(std::uint64_t) + 2 * sizeof(std::uint32_t);
+
+    if(!buffer.has_records(1, sizeof(std::uint32_t))) {
+        return;
+    }
+
     const auto size = buffer.read<std::uint32_t>();
+
+    if(!buffer.has_records(size, RECORD_SIZE)) {
+        return;
+    }
 
     for(std::uint32_t i = 0; i < size; ++i) {
         auto deadline = buffer.read<std::uint64_t>();
@@ -30,6 +39,11 @@ static void deserialize_schedule(std::multimap<std::uint64_t, std::pair<std::siz
         auto source = buffer.read<std::uint32_t>();
         schedule.emplace(deadline, std::make_pair(index, static_cast<block_tick_source>(source)));
     }
+}
+
+Chunk::Chunk(entt::entity entity) : m_entity(entity)
+{
+    // empty
 }
 
 void Chunk::encode(const Chunk& chunk, WriteBuffer& buffer)
@@ -42,6 +56,31 @@ void Chunk::decode(Chunk& chunk, ReadBuffer& buffer)
 {
     BlockStorage::decode_net(chunk.m_blocks, buffer);
     deserialize_schedule(chunk.m_scheduled, buffer);
+}
+
+void Chunk::encode_dat(const Snapshot& snapshot, WriteBuffer& buffer)
+{
+    BlockStorage::encode_dat(snapshot.blocks, buffer);
+
+    buffer.write<std::uint32_t>(SCHEDULE_MAGIC);
+    serialize_schedule(snapshot.scheduled, buffer);
+}
+
+void Chunk::decode_dat(Snapshot& snapshot, ReadBuffer& buffer)
+{
+    BlockStorage::decode_dat(snapshot.blocks, buffer);
+
+    snapshot.scheduled.clear();
+
+    if(!buffer.has_records(1, sizeof(std::uint32_t))) {
+        return;
+    }
+
+    if(buffer.read<std::uint32_t>() != SCHEDULE_MAGIC) {
+        return;
+    }
+
+    deserialize_schedule(snapshot.scheduled, buffer);
 }
 
 block_id_type Chunk::get_block(std::size_t index) const
@@ -67,6 +106,34 @@ void Chunk::set_block(const LocalPos& pos, block_id_type id)
 void Chunk::set_blocks(BlockStorage blocks)
 {
     m_blocks = std::move(blocks);
+}
+
+Chunk::Snapshot Chunk::snapshot(std::uint64_t now) const
+{
+    Snapshot result;
+    result.blocks = m_blocks;
+
+    for(const auto& [deadline, entry] : m_scheduled) {
+        result.scheduled.emplace(deadline > now ? deadline - now : std::uint64_t(0), entry);
+    }
+
+    return result;
+}
+
+void Chunk::restore(Snapshot snapshot, std::uint64_t now)
+{
+    m_blocks = std::move(snapshot.blocks);
+    m_scheduled.clear();
+
+    for(const auto& [remaining, entry] : snapshot.scheduled) {
+        auto deadline = now + remaining;
+
+        if(deadline < now) {
+            continue; // corrupted file
+        }
+
+        m_scheduled.emplace(deadline, entry);
+    }
 }
 
 void Chunk::schedule(std::size_t index, std::uint64_t deadline, block_tick_source source)

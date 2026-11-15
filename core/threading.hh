@@ -34,6 +34,7 @@ namespace threading
 void init(void);
 void shutdown(void);
 void update(void);
+void wait(void);
 } // namespace threading
 
 namespace threading

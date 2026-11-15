@@ -91,6 +91,15 @@ void threading::shutdown(void)
     s_threads.reset();
 }
 
+void threading::wait(void)
+{
+    for(auto& task : s_deque) {
+        if(task->future.valid()) {
+            task->future.wait();
+        }
+    }
+}
+
 void threading::update(void)
 {
     ZoneScoped;

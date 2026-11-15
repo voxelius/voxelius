@@ -5,8 +5,18 @@
 
 class Chunk final {
 public:
+    using schedule_type = std::multimap<std::uint64_t, std::pair<std::size_t, block_tick_source>>;
+
+    struct Snapshot final {
+        BlockStorage blocks;
+        schedule_type scheduled; // deadlines are relative to the tick the snapshot was taken on
+    };
+
     static void encode(const Chunk& chunk, WriteBuffer& buffer);
     static void decode(Chunk& chunk, ReadBuffer& buffer);
+
+    static void encode_dat(const Snapshot& snapshot, WriteBuffer& buffer);
+    static void decode_dat(Snapshot& snapshot, ReadBuffer& buffer);
 
     explicit Chunk(entt::entity entity);
 
@@ -20,13 +30,16 @@ public:
     constexpr const BlockStorage& blocks(void) const;
     void set_blocks(BlockStorage blocks);
 
+    Snapshot snapshot(std::uint64_t now) const;
+    void restore(Snapshot snapshot, std::uint64_t now);
+
     void schedule(std::size_t index, std::uint64_t deadline, block_tick_source source);
     void pop_due(std::uint64_t now, std::vector<std::pair<std::size_t, block_tick_source>>& out);
 
 private:
     entt::entity m_entity;
     BlockStorage m_blocks;
-    std::multimap<std::uint64_t, std::pair<std::size_t, block_tick_source>> m_scheduled;
+    schedule_type m_scheduled;
 };
 
 struct Chunk_Component final {

@@ -101,6 +101,49 @@ static bool in_reach(entt::entity player, const BlockPos& bpos)
     return distance <= s_reach_distance.value();
 }
 
+// The client predicts block changes locally. A rejected action must send
+// the server state back for every position it could have touched, or the
+// prediction stays in the client world until it is rebuilt from scratch.
+static void send_correction(ENetPeer* peer, const BlockPos& bpos)
+{
+    auto cpos = utils::to_chunk(bpos);
+    auto chunk = world::find_chunk(cpos);
+
+    if(chunk == nullptr) {
+        // The client kept a chunk the server no longer has. Resending the
+        // whole chunk rolls back every prediction made against it.
+        auto& waiting = s_waiting_peers[cpos];
+
+        if(std::find(waiting.begin(), waiting.end(), peer) == waiting.end()) {
+            waiting.push_back(peer);
+        }
+
+        chunk_loader::request(cpos);
+        return;
+    }
+
+    packet::World_SetBlock correction {};
+    correction.bpos = bpos;
+    correction.block = chunk->get_block(utils::to_local(bpos));
+    protocol::send(correction, peer);
+}
+
+static BlockPos placed_position(const packet::Player_InteractB& packet)
+{
+    return packet.bpos + packet.normal.cast<BlockPos::value_type>();
+}
+
+static void reject_break(ENetPeer* peer, const BlockPos& bpos)
+{
+    send_correction(peer, bpos);
+}
+
+static void reject_place(ENetPeer* peer, const packet::Player_InteractB& packet)
+{
+    send_correction(peer, packet.bpos);
+    send_correction(peer, placed_position(packet));
+}
+
 static void on_player_attack_b(const packet::Player_AttackB& packet)
 {
     if(!gamerules::allow_building.value()) {
@@ -114,14 +157,12 @@ static void on_player_attack_b(const packet::Player_AttackB& packet)
     }
 
     if(!in_reach(session->player, packet.bpos)) {
+        reject_break(packet.peer, packet.bpos);
         return;
     }
 
     if(world::get_block(packet.bpos) != packet.expected) {
-        packet::World_SetBlock correction {};
-        correction.bpos = packet.bpos;
-        correction.block = world::get_block(packet.bpos);
-        protocol::send(correction, packet.peer);
+        reject_break(packet.peer, packet.bpos);
         return;
     }
 
@@ -150,14 +191,12 @@ static void on_player_interact_b(const packet::Player_InteractB& packet)
     }
 
     if(!in_reach(session->player, packet.bpos)) {
+        reject_place(packet.peer, packet);
         return;
     }
 
     if(world::get_block(packet.bpos) != packet.expected) {
-        packet::World_SetBlock correction {};
-        correction.bpos = packet.bpos;
-        correction.block = world::get_block(packet.bpos);
-        protocol::send(correction, packet.peer);
+        reject_place(packet.peer, packet);
         return;
     }
 
