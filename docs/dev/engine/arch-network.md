@@ -38,7 +38,7 @@ The client proves its identity with an Ed25519 keypair. The server challenges th
 
 ##### Invite codes
 
-The invite code is a one-time code. On a successful login, the server consumes the invite code. The server then adds the client's public key to its whitelist. The same client can then reconnect later without a new invite. An operator issues codes with `op_invite`.
+The invite code is a one-time code. On a successful login, the server consumes the invite code. The server then adds the client's public key to its whitelist. The same client can then reconnect later without a new invite. An operator issues codes with `invite`.
 
 ##### Registry hashes
 
@@ -57,17 +57,17 @@ The status is tracked per session. An operator bypasses the whitelist, so the sa
 
 ### Enrolling an operator
 
-The player runs the `pkey` command in the console. The client prints its public key and its identity. The identity is the `crc64` of the key and is the value that shows up in server logs; the public key is the value the files expect.
+The player runs the `whoami` command in the console. The client prints its public key and its identity. The identity is the `crc64` of the key and is the value that shows up in server logs; the public key is the value the files expect.
 
 The first operator enrolls by hand:
 
 |Step|Who|Action|
 |----|----|----|
-|1|Player|Connect and run `pkey`|
-|2|Server host|Copy the `pkey:` line into `operators.txt`|
+|1|Player|Connect and run `whoami`|
+|2|Server host|Copy the `public key:` line into `operators.txt`|
 |3|Server host|Restart the server|
 
-After that, an operator runs `op_add <public key>` or `op_remove <public key>`. These update `operators.txt` right away and promote or demote a matching live session without a reconnect. A hand edit still needs a restart, because the server loads the file during startup and writes it back on shutdown.
+After that, an operator runs `op <public key>` or `deop <public key>`. These update `operators.txt` right away and promote or demote a matching live session without a reconnect. A hand edit still needs a restart, because the server loads the file during startup and writes it back on shutdown.
 
 ### Operator commands
 
@@ -75,11 +75,11 @@ An operator connects like everyone else. The server sends the command list of an
 
 |Command|Description|
 |----|----|
-|`op_list`|List connected sessions with their client IDs, identities, public keys, and access levels|
-|`op_add`|Add a public key to the operator list and promote that player|
-|`op_remove`|Remove a public key from the operator list and demote that player|
-|`op_kick`|Disconnect a player by client ID or username|
-|`op_invite`|Issue a one-time invite code|
+|`who`|List connected sessions with their client IDs, identities, public keys, and access levels|
+|`op`|Add a public key to the operator list and promote that player|
+|`deop`|Remove a public key from the operator list and demote that player|
+|`kick`|Disconnect a player by client ID or username|
+|`invite`|Issue a one-time invite code|
 
 The commands carry the `admin` and `recall` flags. `recall` lets the client forward the command to the server. `admin` makes `cvar::exec` refuse it unless the context holds a client that is an operator. A context without a client, such as `server.conf` or the client's own console, is trusted.
 
@@ -87,7 +87,7 @@ A demoted operator keeps the commands it already learned, but the server rejects
 
 ### Kicking
 
-`op_kick` sends a disconnect packet with the kicked reason and then closes the connection. The key is not banned; a kicked client can reconnect unless something else, such as the whitelist or a full server, stops it.
+`kick` sends a disconnect packet with the kicked reason and then closes the connection. The key is not banned; a kicked client can reconnect unless something else, such as the whitelist or a full server, stops it.
 
 ## Cvar replication
 

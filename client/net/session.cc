@@ -150,9 +150,9 @@ static void on_session_disconnect(const packet::Session_Disconnect& packet)
     handle_disconnect(packet.reason);
 }
 
-static cvar::status cmd_pkey(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_whoami(const cvar::Context& ctx, std::span<const std::string_view> args)
 {
-    msg::log_info("pkey: {}", ed25519::export_pkey(s_auth_pair.first));
+    msg::log_info("public key: {}", ed25519::export_pkey(s_auth_pair.first));
     msg::log_info("identity: {}", utils::crc64(s_auth_pair.first));
     return cvar::status::OK;
 }
@@ -191,9 +191,9 @@ void session::init(void)
 
     settings::general.add_child(s_desired_username_gui, 3);
 
-    auto& pkey_binding = cvar::bind_cmd("pkey");
-    pkey_binding.set_help("Print your public key and identity");
-    pkey_binding.connect<&cmd_pkey>();
+    auto& whoami_binding = cvar::bind_cmd("whoami");
+    whoami_binding.set_help("Print your public key and identity");
+    whoami_binding.connect<&cmd_whoami>();
 
     std::vector<std::byte> source;
 

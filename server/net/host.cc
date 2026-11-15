@@ -21,21 +21,21 @@ static cvar::String s_bind { "0.0.0.0" };
 
 void host::init(void)
 {
-    auto& max_players_binding = cvar::bind_var(max_players, "net_maxplayers");
-    max_players_binding.set_help("Maximum number of players");
-    max_players_binding.set_flags(FCVAR_ARCHIVE);
+    auto& sv_max_players_binding = cvar::bind_var(max_players, "sv_max_players");
+    sv_max_players_binding.set_help("Maximum number of players");
+    sv_max_players_binding.set_flags(FCVAR_ARCHIVE);
 
-    auto& status_peers_binding = cvar::bind_var(s_status_peers, "net_statuspeers");
-    status_peers_binding.set_help("Maximum number of status peers");
-    status_peers_binding.set_flags(FCVAR_ARCHIVE);
+    auto& sv_status_peers_binding = cvar::bind_var(s_status_peers, "sv_status_peers");
+    sv_status_peers_binding.set_help("Maximum number of status peers");
+    sv_status_peers_binding.set_flags(FCVAR_ARCHIVE);
 
-    auto& port_binding = cvar::bind_var(s_port, "net_listen_port");
-    port_binding.set_help("Listen port");
-    port_binding.set_flags(FCVAR_ARCHIVE);
+    auto& net_port_binding = cvar::bind_var(s_port, "net_port");
+    net_port_binding.set_help("Listen port");
+    net_port_binding.set_flags(FCVAR_ARCHIVE);
 
-    auto& bind_binding = cvar::bind_var(s_bind, "net_listen_addr");
-    bind_binding.set_help("Address to bind the listen socket to");
-    bind_binding.set_flags(FCVAR_ARCHIVE);
+    auto& net_bind_binding = cvar::bind_var(s_bind, "net_bind");
+    net_bind_binding.set_help("Address to bind the listen socket to");
+    net_bind_binding.set_flags(FCVAR_ARCHIVE);
 }
 
 void host::init_late(void)

@@ -234,9 +234,9 @@ static void on_player_move_data(const packet::Player_MoveData& packet)
 
 void receive::init(void)
 {
-    auto& reach_distance_binding = cvar::bind_var(s_reach_distance, "net_reachdistance");
-    reach_distance_binding.set_help("Maximum block interaction distance");
-    reach_distance_binding.set_flags(FCVAR_ARCHIVE);
+    auto& gr_reach_distance_binding = cvar::bind_var(s_reach_distance, "gr_reach_distance");
+    gr_reach_distance_binding.set_help("Maximum block interaction distance");
+    gr_reach_distance_binding.set_flags(FCVAR_ARCHIVE);
 
     globals::dispatcher.sink<packet::World_Request>().connect<&on_world_request>();
 

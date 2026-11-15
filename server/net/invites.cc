@@ -1,5 +1,9 @@
 #include "server/pch.hh"
 
+#include "core/cvar/bits.hh"
+#include "core/cvar/host.hh"
+#include "core/msg/log.hh"
+
 #include "server/net/invites.hh"
 
 #include "server/net/whitelist.hh"
@@ -16,9 +20,19 @@ static std::uint64_t generate_token(void)
     return token;
 }
 
+static cvar::status cmd_invite(const cvar::Context& ctx, std::span<const std::string_view> args)
+{
+    msg::log_info("invite code: {}", invites::issue());
+
+    return cvar::status::OK;
+}
+
 void invites::init(void)
 {
-    // empty
+    auto& invite_binding = cvar::bind_cmd("invite");
+    invite_binding.set_help("Issue a one-time invite code that whitelists whoever redeems it");
+    invite_binding.set_flags(FCVAR_RECALL | FCVAR_ADMIN);
+    invite_binding.connect<&cmd_invite>();
 }
 
 void invites::shutdown(void)

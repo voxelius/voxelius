@@ -56,6 +56,12 @@ extern std::uint16_t num_players;
 
 namespace sessions
 {
+void set_access(Session* session, session_access access);
+void refresh_access(const ed25519::pkey_type& pkey, session_access access);
+} // namespace sessions
+
+namespace sessions
+{
 std::span<Session> all(void);
 } // namespace sessions
 

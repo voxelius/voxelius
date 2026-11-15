@@ -4,7 +4,7 @@ The client renders through OpenGL 3.3 core profile, with no optional extensions 
 
 ## Window and video mode
 
-The `video` subsystem creates the window and resolves the video mode. At startup, it picks a display: the primary display, or the one the `-monitor` command-line option names. It also lists the fullscreen modes that display supports. The engine stores the chosen mode in the `r_vidmode` cvar, so it persists between runs. The mode is either windowed, or a specific fullscreen resolution and rate. Vertical sync is `r_vsync`, applied through the window's swap interval.
+The `video` subsystem creates the window and resolves the video mode. At startup, it picks a display: the primary display, or the one the `-monitor` command-line option names. It also lists the fullscreen modes that display supports. The engine stores the chosen mode in the `r_mode` cvar, so it persists between runs. The mode is either windowed, or a specific fullscreen resolution and rate. Vertical sync is `r_vsync`, applied through the window's swap interval.
 
 The `head` subsystem creates the actual OpenGL context on top of the window `video` made. This split exists for a reason: the context, and everything that depends on it (shaders, framebuffers, ImGui), can be destroyed and rebuilt without recreating the window itself.
 
@@ -16,7 +16,7 @@ A `ShaderProgram` only recompiles when a variant value actually changes. This la
 
 ## The frame pipeline
 
-The client renders each frame at an internal, pixel-scaled resolution, then upscales the result to the window size. The pixel scale is the `r_pixelsize` cvar. It gives the game its blocky, low-resolution look, regardless of the window's real size.
+The client renders each frame at an internal, pixel-scaled resolution, then upscales the result to the window size. The pixel scale is the `r_pixel_size` cvar. It gives the game its blocky, low-resolution look, regardless of the window's real size.
 
 A frame renders into three separate layers, each with its own color and depth target:
 

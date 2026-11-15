@@ -2,14 +2,14 @@
 """Generates the console variable and command reference from the sources.
 
 Two pages come out of one pass, docs/manual/console/variables.md and commands.md. The side
-is a column rather than a third page, because names carry no side: net_username is a client
-variable while net_maxplayers is a server one.
+is a column rather than a third page, because the same category can appear on either side:
+net_username is a client variable while net_port is a server one.
 
 The owning file keeps the binding in a local named <name>_binding:
 
-    auto& net_maxplayers_binding = cvar::bind_var(net_maxplayers, "net_maxplayers");
-    net_maxplayers_binding.set_help("...");
-    net_maxplayers_binding.set_flags(FCVAR_ARCHIVE);
+    auto& sv_max_players_binding = cvar::bind_var(max_players, "sv_max_players");
+    sv_max_players_binding.set_help("...");
+    sv_max_players_binding.set_flags(FCVAR_ARCHIVE);
 
 The variable itself is declared in the same file. Bindings without the _binding local are
 non-owners and are skipped, as is anything flagged FCVAR_HIDDEN.
@@ -207,7 +207,7 @@ def render_commands(commands):
         "",
         HEADER,
         "",
-        "A command runs an action. Some commands take arguments, for example `op_kick player`.",
+        "A command runs an action. Some commands take arguments, for example `kick player`.",
         "",
         "This page leaves out debug and hidden commands; run `list_cmds` in the console to see everything the running side has. Each name links to the line in the sources that binds it. The flags are described in [Console](index.md#flags).",
         "",

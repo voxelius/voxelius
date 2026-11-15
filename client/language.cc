@@ -96,12 +96,12 @@ void language::init(void)
 {
     auto manifest_path = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "manifest").as_file_path("lang", ".json");
 
-    auto& lang_current_binding = cvar::bind_var(s_lang_current, "lang_current");
-    lang_current_binding.set_help("Current language");
-    lang_current_binding.set_flags(FCVAR_ARCHIVE);
-    lang_current_binding.changed().connect<&update_language>();
+    auto& lang_binding = cvar::bind_var(s_lang_current, "lang");
+    lang_binding.set_help("Language");
+    lang_binding.set_flags(FCVAR_ARCHIVE);
+    lang_binding.changed().connect<&update_language>();
 
-    s_language_selector.set_key("lang_current");
+    s_language_selector.set_key("lang");
     settings::general.add_child(s_language_selector, 0);
 
     std::string source;

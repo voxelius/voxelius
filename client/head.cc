@@ -209,13 +209,13 @@ static void on_pixel_size_changed(void)
 
 void head::init(void)
 {
-    auto& pixel_size_binding = cvar::bind_var(s_head_pixel_size, "r_pixelsize");
+    auto& pixel_size_binding = cvar::bind_var(s_head_pixel_size, "r_pixel_size");
     pixel_size_binding.set_help("Internal render scale, in pixels");
     pixel_size_binding.set_flags(FCVAR_ARCHIVE);
     pixel_size_binding.changed().connect<&on_pixel_size_changed>();
 
     s_pixel_size_gui.set_range(1, 4).enable_tooltip();
-    s_pixel_size_gui.bind("r_pixelsize");
+    s_pixel_size_gui.bind("r_pixel_size");
     settings::video.add_child(s_pixel_size_gui, 2);
 
     globals::gl_context = SDL_GL_CreateContext(globals::window);

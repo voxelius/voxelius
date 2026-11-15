@@ -254,16 +254,183 @@ static std::string sanitize_username(std::string_view username)
     return sanitized;
 }
 
+static Session* find_target(std::string_view name)
+{
+    std::uint16_t client_id;
+
+    if(!name.empty() && name.size() <= 5) {
+        auto check = std::from_chars(name.data(), name.data() + name.size(), client_id);
+
+        if(check.ec == std::errc {} && check.ptr == name.data() + name.size()) {
+            if(auto session = sessions::find(client_id)) {
+                return session;
+            }
+        }
+    }
+
+    return sessions::find(name);
+}
+
+static cvar::status cmd_who(const cvar::Context& ctx, std::span<const std::string_view> args)
+{
+    for(auto& session : sessions::all()) {
+        if(session.state == session_state::UNCONNECTED) {
+            continue;
+        }
+
+        auto access = session.access == session_access::OPERATOR ? "operator" : "player";
+
+        msg::log_info("id={} user={} identity={} access={} pkey={}", session.client_id, session.username, session.identity, access,
+            ed25519::export_pkey(session.pkey));
+    }
+
+    return cvar::status::OK;
+}
+
+static cvar::status cmd_op(const cvar::Context& ctx, std::span<const std::string_view> args)
+{
+    if(args.empty()) {
+        msg::log_warning("usage: op <public key>");
+
+        return cvar::status::ARGUMENT;
+    }
+
+    auto pkey = ed25519::import_pkey(args[0]);
+
+    if(!pkey.has_value()) {
+        msg::log_warning("{}: not a valid public key", args[0]);
+
+        return cvar::status::ARGUMENT;
+    }
+
+    operators::add(pkey.value());
+    sessions::refresh_access(pkey.value(), session_access::OPERATOR);
+
+    msg::log_info("{}: added to operators.txt", args[0]);
+
+    return cvar::status::OK;
+}
+
+static cvar::status cmd_deop(const cvar::Context& ctx, std::span<const std::string_view> args)
+{
+    if(args.empty()) {
+        msg::log_warning("usage: deop <public key>");
+
+        return cvar::status::ARGUMENT;
+    }
+
+    auto pkey = ed25519::import_pkey(args[0]);
+
+    if(!pkey.has_value()) {
+        msg::log_warning("{}: not a valid public key", args[0]);
+
+        return cvar::status::ARGUMENT;
+    }
+
+    operators::remove(pkey.value());
+    sessions::refresh_access(pkey.value(), session_access::PLAYER);
+
+    msg::log_info("{}: removed from operators.txt", args[0]);
+
+    return cvar::status::OK;
+}
+
+static cvar::status cmd_kick(const cvar::Context& ctx, std::span<const std::string_view> args)
+{
+    if(args.empty()) {
+        msg::log_warning("usage: kick <client id or username>");
+
+        return cvar::status::ARGUMENT;
+    }
+
+    auto target = find_target(args[0]);
+
+    if(target == nullptr) {
+        msg::log_warning("{}: not connected", args[0]);
+
+        return cvar::status::ARGUMENT;
+    }
+
+    // The caller's own log reply would be sent to a session that no longer has a peer.
+    if(ctx.client_id.has_value() && target->client_id == ctx.client_id.value()) {
+        msg::log_warning("{}: you cannot kick yourself", target->username);
+
+        return cvar::status::ARGUMENT;
+    }
+
+    msg::log_info("{} ({}) was kicked", target->username, target->identity);
+
+    packet::Session_Disconnect response {};
+    response.reason = packet::Session_Disconnect::KICKED;
+    protocol::send(response, target->peer);
+
+    enet_peer_disconnect_later(target->peer, 0);
+
+    sessions::destroy(target, packet::Session_Disconnect::KICKED);
+
+    return cvar::status::OK;
+}
+
 std::span<Session> sessions::all(void)
 {
     return s_sessions;
 }
 
+void sessions::set_access(Session* session, session_access access)
+{
+    if(session->access == access) {
+        return;
+    }
+
+    session->access = access;
+
+    // The command list a client knows about depends on its access level.
+    if(session->state == session_state::CONNECTED) {
+        replication::synchronize(session);
+    }
+
+    if(access == session_access::OPERATOR) {
+        msg::log_info("{} ({}) is now an operator", session->username, session->identity);
+    }
+    else {
+        msg::log_info("{} ({}) is no longer an operator", session->username, session->identity);
+    }
+}
+
+void sessions::refresh_access(const ed25519::pkey_type& pkey, session_access access)
+{
+    for(auto& session : sessions::all()) {
+        if(session.state != session_state::UNCONNECTED && session.pkey == pkey) {
+            set_access(&session, access);
+        }
+    }
+}
+
 void sessions::init(void)
 {
-    auto& strict_version_binding = cvar::bind_var(strict_version, "net_strictversion");
-    strict_version_binding.set_help("Reject clients with a different protocol version");
-    strict_version_binding.set_flags(FCVAR_ARCHIVE);
+    auto& net_strict_version_binding = cvar::bind_var(strict_version, "net_strict_version");
+    net_strict_version_binding.set_help("Reject clients with a different protocol version");
+    net_strict_version_binding.set_flags(FCVAR_ARCHIVE);
+
+    auto& who_binding = cvar::bind_cmd("who");
+    who_binding.set_help("List connected sessions and their access levels");
+    who_binding.set_flags(FCVAR_RECALL | FCVAR_ADMIN);
+    who_binding.connect<&cmd_who>();
+
+    auto& op_binding = cvar::bind_cmd("op");
+    op_binding.set_help("Add a public key to operators.txt and promote that player");
+    op_binding.set_flags(FCVAR_RECALL | FCVAR_ADMIN);
+    op_binding.connect<&cmd_op>();
+
+    auto& deop_binding = cvar::bind_cmd("deop");
+    deop_binding.set_help("Remove a public key from operators.txt and demote that player");
+    deop_binding.set_flags(FCVAR_RECALL | FCVAR_ADMIN);
+    deop_binding.connect<&cmd_deop>();
+
+    auto& kick_binding = cvar::bind_cmd("kick");
+    kick_binding.set_help("Disconnect a player by client ID or username");
+    kick_binding.set_flags(FCVAR_RECALL | FCVAR_ADMIN);
+    kick_binding.connect<&cmd_kick>();
 
     std::random_device noise;
     s_randomizer.seed(noise());

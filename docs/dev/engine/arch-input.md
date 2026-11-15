@@ -31,7 +31,7 @@ The server uses the same cvar host for `server.conf`. The server does not create
 
 The console is a GUI screen with a log view and a command line. The grave key toggles it. Escape closes it. The console command line sends each submitted line to `cvar::exec`, so it accepts the same variables and commands as `client.conf`.
 
-The console adds a message sink to the `msg` logging layer. The sink copies records into the log view. The `con_historysize` cvar sets the log capacity. The `con_filter_*` cvars hide levels. The sink reads atomic copies of the filter values, because logging can come from worker threads.
+The console adds a message sink to the `msg` logging layer. The sink copies records into the log view. The `con_history` cvar sets the log capacity. The `con_filter_*` cvars hide levels. The sink reads atomic copies of the filter values, because logging can come from worker threads.
 
 ## Settings controls
 

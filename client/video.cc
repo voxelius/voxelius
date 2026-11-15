@@ -135,12 +135,12 @@ void video::init(void)
     s_enable_vsync_gui.bind("r_vsync");
     settings::video.add_child(s_enable_vsync_gui, 1);
 
-    auto& current_mode_binding = cvar::bind_var(s_current_mode, "r_vidmode");
-    current_mode_binding.set_help("Current video mode");
+    auto& current_mode_binding = cvar::bind_var(s_current_mode, "r_mode");
+    current_mode_binding.set_help("Video mode");
     current_mode_binding.set_flags(FCVAR_ARCHIVE);
 
     s_video_mode_control.on_change(&settings::detail::video_mode_popup);
-    s_video_mode_control.set_key("r_vidmode");
+    s_video_mode_control.set_key("r_mode");
     settings::video.add_child(s_video_mode_control, 0);
 
     vx::throw_if_not_fmt(SDL_InitSubSystem(SDL_INIT_VIDEO), "SDL_InitSubSystem for video failed: {}", SDL_GetError());

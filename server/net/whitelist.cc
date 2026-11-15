@@ -14,9 +14,9 @@ cvar::Boolean whitelist::enabled { false };
 
 void whitelist::init(void)
 {
-    auto& enabled_binding = cvar::bind_var(enabled, "net_whitelist");
-    enabled_binding.set_help("Only allow whitelisted players");
-    enabled_binding.set_flags(FCVAR_ARCHIVE);
+    auto& sv_whitelist_binding = cvar::bind_var(enabled, "sv_whitelist");
+    sv_whitelist_binding.set_help("Only allow whitelisted players");
+    sv_whitelist_binding.set_flags(FCVAR_ARCHIVE);
 
     std::string line;
     std::istringstream stream;

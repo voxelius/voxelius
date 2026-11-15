@@ -11,7 +11,7 @@ r_vsync 0
 A command runs an action. Some commands take arguments:
 
 ```
-op_kick player
+kick player
 ```
 
 The client and the server each keep their own set. A client variable changes what you see and touch, and the client saves it to `client.conf`. A server variable changes the session for everyone, and the server reads it from `server.conf`. A command flagged `recall` can be typed in the client console and is forwarded to the server; the server decides whether to run it.

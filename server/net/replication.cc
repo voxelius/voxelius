@@ -20,10 +20,10 @@
 
 constexpr static std::size_t MAX_CAPTURE = 32;
 
-static cvar::Number<std::uint16_t> net_cvarburst { 8, 1, 64 };
-static cvar::Number<std::uint16_t> net_cvarrate { 4, 1, 64 };
+static cvar::Number<std::uint16_t> s_cmd_burst { 8, 1, 64 };
+static cvar::Number<std::uint16_t> s_cmd_rate { 4, 1, 64 };
 
-static cvar::status cmd_srv_echo(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_dbg_echo(const cvar::Context& ctx, std::span<const std::string_view> args)
 {
     msg::log_info("{}", utils::join(args, " "));
 
@@ -84,18 +84,18 @@ static void on_cvar_command(const packet::Cvar_Command& packet)
 
 void replication::init(void)
 {
-    auto& net_cvarburst_binding = cvar::bind_var(net_cvarburst, "net_cvarburst");
-    net_cvarburst_binding.set_help("How many console commands a client may send back to back");
-    net_cvarburst_binding.set_flags(FCVAR_ARCHIVE);
+    auto& net_cmd_burst_binding = cvar::bind_var(s_cmd_burst, "net_cmd_burst");
+    net_cmd_burst_binding.set_help("How many console commands a client may send back to back");
+    net_cmd_burst_binding.set_flags(FCVAR_ARCHIVE);
 
-    auto& net_cvarrate_binding = cvar::bind_var(net_cvarrate, "net_cvarrate");
-    net_cvarrate_binding.set_help("Console commands per second a client is allowed to sustain");
-    net_cvarrate_binding.set_flags(FCVAR_ARCHIVE);
+    auto& net_cmd_rate_binding = cvar::bind_var(s_cmd_rate, "net_cmd_rate");
+    net_cmd_rate_binding.set_help("Console commands per second a client is allowed to sustain");
+    net_cmd_rate_binding.set_flags(FCVAR_ARCHIVE);
 
-    auto& srv_echo_binding = cvar::bind_cmd("srv_echo");
-    srv_echo_binding.set_help("Echo arguments back to the requesting client");
-    srv_echo_binding.set_flags(FCVAR_RECALL);
-    srv_echo_binding.connect<&cmd_srv_echo>();
+    auto& dbg_echo_binding = cvar::bind_cmd("dbg_echo");
+    dbg_echo_binding.set_help("Echo arguments back to the requesting client");
+    dbg_echo_binding.set_flags(FCVAR_RECALL | FCVAR_ADMIN | FCVAR_HIDDEN);
+    dbg_echo_binding.connect<&cmd_dbg_echo>();
 
     globals::dispatcher.sink<packet::Cvar_Command>().connect<&on_cvar_command>();
 }
@@ -111,8 +111,8 @@ void replication::fixed_update_late(void)
 
     static packet::Cvar_ServerVars variables;
 
-    auto refill = static_cast<float>(net_cvarrate.value()) * globals::fixed_frametime;
-    auto burst = static_cast<float>(net_cvarburst.value());
+    auto refill = static_cast<float>(s_cmd_rate.value()) * globals::fixed_frametime;
+    auto burst = static_cast<float>(s_cmd_burst.value());
 
     for(auto& session : sessions::all()) {
         if(session.state == session_state::UNCONNECTED) {

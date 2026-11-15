@@ -35,7 +35,7 @@ static gui::VerticalStack s_stack;
 static gui::LogView s_log_view;
 static gui::CommandLine s_input;
 
-static cvar::Number<unsigned> con_historysize { 1024, 16, 8192 };
+static cvar::Number<unsigned> con_history { 1024, 16, 8192 };
 static cvar::Boolean con_filter_debug { true };
 static cvar::Boolean con_filter_info { true };
 static cvar::Boolean con_filter_warning { true };
@@ -73,7 +73,7 @@ static void console_sink(const msg::Record& record)
 
 static void update_history_size(void)
 {
-    s_log_view.set_capacity(static_cast<std::size_t>(con_historysize.value()));
+    s_log_view.set_capacity(static_cast<std::size_t>(con_history.value()));
 }
 
 static void update_filters(void)
@@ -131,10 +131,10 @@ void console::init(void)
 {
     msg::add_sink<&console_sink>();
 
-    auto& con_historysize_binding = cvar::bind_var(con_historysize, "con_historysize");
-    con_historysize_binding.set_flags(FCVAR_ARCHIVE);
-    con_historysize_binding.set_help("History size, in messages");
-    con_historysize_binding.changed().connect<&update_history_size>();
+    auto& con_history_binding = cvar::bind_var(con_history, "con_history");
+    con_history_binding.set_flags(FCVAR_ARCHIVE);
+    con_history_binding.set_help("History size, in messages");
+    con_history_binding.changed().connect<&update_history_size>();
 
     auto& con_filter_debug_binding = cvar::bind_var(con_filter_debug, "con_filter_debug");
     con_filter_debug_binding.set_help("Show debug messages in the console");

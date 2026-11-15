@@ -50,13 +50,13 @@ static void send_full_update(entt::entity entity)
 
 void pmove_validator::init(void)
 {
-    auto& pos_threshold_binding = cvar::bind_var(s_pos_threshold, "net_pmove_pos_threshold");
-    pos_threshold_binding.set_help("Maximum position desync before a full update");
-    pos_threshold_binding.set_flags(FCVAR_ARCHIVE);
+    auto& pm_pos_threshold_binding = cvar::bind_var(s_pos_threshold, "pm_pos_threshold");
+    pm_pos_threshold_binding.set_help("Maximum position desync before a full update");
+    pm_pos_threshold_binding.set_flags(FCVAR_ARCHIVE);
 
-    auto& vel_threshold_binding = cvar::bind_var(s_vel_threshold, "net_pmove_vel_threshold");
-    vel_threshold_binding.set_help("Maximum velocity desync before a full update");
-    vel_threshold_binding.set_flags(FCVAR_ARCHIVE);
+    auto& pm_vel_threshold_binding = cvar::bind_var(s_vel_threshold, "pm_vel_threshold");
+    pm_vel_threshold_binding.set_help("Maximum velocity desync before a full update");
+    pm_vel_threshold_binding.set_flags(FCVAR_ARCHIVE);
 }
 
 void pmove_validator::fixed_update_late(void)
