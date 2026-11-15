@@ -109,5 +109,8 @@ nav:
         - Fluids: dev/modding/lib-flowdef.md
         - Logs: dev/modding/lib-logdef.md
         - Slabs: dev/modding/lib-slabdef.md
-  - Reference:
-    - CVars: reference/cvars.md
+  - Manual:
+    - Console:
+      - manual/console/index.md
+      - Variables: manual/console/variables.md
+      - Commands: manual/console/commands.md

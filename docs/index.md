@@ -17,6 +17,7 @@ Voxelius is a voxel game and engine hybrid. Core gameplay, rendering, and world 
 ## Where do I go?
 
 - **[Documentation](dev/index.md)** - engine setup, architecture, and Lua API
+- **[Manual](manual/console/index.md)** - the console, and the variables and commands it takes
 - **[History](about/history.md)** - how the project got here (rewrites included)
 - **[Features](about/features.md)** - what the project includes
 - **[GitHub](https://github.com/untodesu/voxelius)** - source code and issue tracker

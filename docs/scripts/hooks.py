@@ -18,7 +18,8 @@ def load_script(name):
 
 def on_pre_build(config, **kwargs):
     cvars = load_script("make-cvars")
-    text, _, _ = cvars.generate()
+    pages, _, _ = cvars.generate()
 
-    if cvars.write_if_changed(cvars.DEFAULT_OUT, text):
-        log.info(f"regenerated {cvars.DEFAULT_OUT.name}")
+    for name, text in pages.items():
+        if cvars.write_if_changed(cvars.DEFAULT_DIR / name, text):
+            log.info(f"regenerated {name}")

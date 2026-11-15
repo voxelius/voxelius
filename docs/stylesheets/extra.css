@@ -15,7 +15,7 @@
 .md-typeset table:not([class]) td, 
 .md-typeset table:not([class]) th {
   word-break: break-word;
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.7rem;
 }
 
 .md-typeset table:not([class]) code {

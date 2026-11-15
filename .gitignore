@@ -12,7 +12,8 @@
 /build/
 /build/*
 /compile_commands.json
-/docs/reference/cvars.md
+/docs/manual/console/variables.md
+/docs/manual/console/commands.md
 /dist/
 /dist/*
 /site/
