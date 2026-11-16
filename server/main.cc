@@ -203,6 +203,10 @@ static void wrapped_main(int argc, char** argv)
 
     host::shutdown();
 
+    // Workers keep thread-local scratch alive until the pool is destroyed;
+    // stop it first so that a zombie warning in hard_purge means a real leak
+    threading::shutdown();
+
     res::hard_purge();
 
     cvar::save_values("server.conf");

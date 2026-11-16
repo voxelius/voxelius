@@ -34,7 +34,7 @@ Purging follows a fixed memory policy, not a one-off cleanup call. A soft purge 
 
 The engine pushes heavy, non-interactive work onto a background thread pool instead of running it inline. Examples of this work include world generation and chunk meshing, or any CPU-heavy task that would otherwise stall a frame. The pool size comes from the `threads` command-line option, and defaults to four workers.
 
-The engine splits each piece of work into two parts. Computation runs on a worker thread. Any step that touches shared state, such as uploading a mesh or changing the world, waits until the computation finishes. The main loop checks, once per frame, which tasks have finished. For each finished task, it runs that second step on the main thread. This design removes the need for manual locking in most cases. On shutdown, the engine cancels any task that has not finished yet. It does not wait for the task, and it does not run the task's main-thread step.
+The engine splits each piece of work into two parts. Computation runs on a worker thread. Any step that touches shared state, such as uploading a mesh or changing the world, waits until the computation finishes. The main loop checks, once per frame, which tasks have finished. For each finished task, it runs that second step on the main thread. This design removes the need for manual locking in most cases. On shutdown, the engine cancels any task that has not finished yet. It does not wait for the task, and it does not run the task's main-thread step. The pool is stopped before the hard purge runs, so a worker thread never holds a resource when the purge frees it. A resource warning from the purge is therefore a real leak, not a shutdown artifact.
 
 ## Buffers
 

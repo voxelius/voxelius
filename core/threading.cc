@@ -75,6 +75,12 @@ void threading::init(void)
 
 void threading::shutdown(void)
 {
+    if(s_threads == nullptr) {
+        // entry points stop the pool before the hard purge, so
+        // core::teardown usually calls this a second time
+        return;
+    }
+
     for(auto& it : s_deque) {
         auto status = it->status.load(std::memory_order_relaxed);
 
