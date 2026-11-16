@@ -21,6 +21,7 @@
 #include "client/globals.hh"
 #include "client/gui/button_bind.hh"
 #include "client/gui/screen.hh"
+#include "client/gui/stone.hh"
 #include "client/head.hh"
 #include "client/input/axes.hh"
 #include "client/input/buttons.hh"
@@ -254,6 +255,7 @@ static void wrapped_main(int argc, char** argv)
     buttons::init();
     axes::init();
     gui::ButtonBind::init();
+    gui::detail::stone_init();
 
     settings::init();
     main_menu::init();
@@ -382,6 +384,7 @@ static void wrapped_main(int argc, char** argv)
     host::shutdown();
 
     gui::ButtonBind::shutdown();
+    gui::detail::stone_shutdown();
     console::shutdown();
 
     // Workers keep thread-local scratch alive until the pool is destroyed;

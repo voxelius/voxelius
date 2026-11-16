@@ -15,6 +15,13 @@ enum class icon_type {
 
 namespace gui::detail
 {
+// Loads the grain texture; called once at startup, the counterpart of stone_shutdown
+void stone_init(void);
+void stone_shutdown(void);
+} // namespace gui::detail
+
+namespace gui::detail
+{
 void draw_stone_face(ImDrawList* draw_list, ImVec2 item_min, ImVec2 item_max, const ImVec4& base);
 } // namespace gui::detail
 

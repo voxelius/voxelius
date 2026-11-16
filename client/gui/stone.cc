@@ -16,21 +16,21 @@ constexpr static int NOISE_ALPHA = 96;
 constexpr static float POPUP_PAD = 3.0f;
 
 static res::handle<Texture2D> s_noise {};
-static std::once_flag s_noise_once {};
 
-static ImTextureID stone_noise(void)
+void gui::detail::stone_init(void)
 {
-    // A failed load is not retried, otherwise stbi re-reads the file every frame
-    std::call_once(s_noise_once, [] {
-        auto id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "stone_noise.png");
-        s_noise = res::load<Texture2D>(id, "textures/gui", RESFLAG_TEX_NEAREST);
-    });
+    // The grain is decoration, so a failed load only costs the buttons their
+    // texture: the loader already warns about the missing file
+    auto id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "stone_noise.png");
 
-    if(s_noise == nullptr) {
-        return 0;
-    }
+    s_noise = res::load<Texture2D>(id, "textures/gui", RESFLAG_TEX_NEAREST);
+}
 
-    return s_noise->imgui;
+void gui::detail::stone_shutdown(void)
+{
+    // Without this the loader still sees the handle and reports the grain
+    // as a zombie resource on the way out
+    s_noise.reset();
 }
 
 void gui::detail::draw_stone_face(ImDrawList* draw_list, ImVec2 item_min, ImVec2 item_max, const ImVec4& base)
@@ -54,9 +54,8 @@ void gui::detail::draw_stone_face(ImDrawList* draw_list, ImVec2 item_min, ImVec2
     // The grain is the stone block texture. ImGui's backend binds its own
     // samplers with CLAMP_TO_EDGE, so uv beyond 1 would smear the last row
     // instead of tiling; the face is covered with one quad per tile instead
-    auto noise = stone_noise();
-
-    if(noise) {
+    if(s_noise) {
+        auto noise = s_noise->imgui;
         auto tint = IM_COL32(255, 255, 255, NOISE_ALPHA);
 
         // A texel of the grain is an interface pixel, the same way the
