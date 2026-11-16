@@ -1,6 +1,8 @@
 #ifndef C54F2663_7A25_4729_AEA3_64ED51F441F0
 #define C54F2663_7A25_4729_AEA3_64ED51F441F0
 
+#include "client/globals.hh"
+
 #include "client/gui/container.hh"
 
 namespace gui
@@ -91,7 +93,11 @@ ImVec2 gui::ListBoxItemBuilder<Derived>::begin_row(const ImVec2& row_size)
         end.x = cursor.x + width;
         end.y = cursor.y + row_size.y;
 
-        draw_list->AddRect(cursor, end, ImGui::GetColorU32(ImGuiCol_Text));
+        // A hairline outline disappears next to a scaled row, so it is one
+        // interface pixel thick like the other stone details
+        auto thickness = static_cast<float>(globals::gui_scale);
+
+        draw_list->AddRect(cursor, end, ImGui::GetColorU32(ImGuiCol_Text), 0.0f, 0, thickness);
     }
 
     return cursor;

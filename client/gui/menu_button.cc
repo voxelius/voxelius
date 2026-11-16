@@ -27,7 +27,11 @@ void gui::MenuButton::layout(void)
 {
     auto& palette = style::palette();
 
-    auto size = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight());
+    // The button fills the cell the surrounding stack gives it, the same way
+    // a Button with a negative size does; the frame height alone does not
+    // follow the row height and left the chevron shorter than its neighbours
+    auto avail = ImGui::GetContentRegionAvail();
+    auto size = ImVec2(std::max(4.0f, avail.x), std::max(4.0f, avail.y));
 
     auto& control_id = imgui_id();
 
