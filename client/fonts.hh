@@ -3,6 +3,7 @@
 
 namespace fonts
 {
+extern ImFont* proggy_clean;
 extern ImFont* unscii16;
 extern ImFont* unscii8;
 } // namespace fonts

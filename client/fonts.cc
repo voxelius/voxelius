@@ -8,6 +8,7 @@
 
 #include "client/constant.hh"
 
+ImFont* fonts::proggy_clean;
 ImFont* fonts::unscii16;
 ImFont* fonts::unscii8;
 
@@ -45,6 +46,9 @@ void fonts::load(void)
 
     auto unscii16_path = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "unscii-16").as_file_path("fonts", ".ttf");
     auto unscii8_path = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "unscii-8").as_file_path("fonts", ".ttf");
+
+    fonts::proggy_clean = io.Fonts->AddFontDefault();
+    vx::throw_if_not(fonts::proggy_clean, "proggyclean: load failed");
 
     fonts::unscii16 = load_font(unscii16_path, 16.0f, s_unscii16_data, io);
     fonts::unscii8 = load_font(unscii8_path, 8.0f, s_unscii8_data, io);

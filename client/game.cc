@@ -19,6 +19,7 @@
 #include "client/camera.hh"
 #include "client/globals.hh"
 #include "client/language.hh"
+#include "client/metrics.hh"
 #include "client/net/transmit.hh"
 #include "client/system/interpolation.hh"
 #include "client/system/player_target.hh"
@@ -33,6 +34,8 @@ void client_game::init(void)
     gamerules::init(false);
 
     interpolation::init();
+
+    metrics::init();
 
     player_look::init();
     player_move::init();
@@ -60,6 +63,8 @@ void client_game::update(void)
     player_look::update();
     player_move::update();
     pmove::update(globals::window_frametime);
+
+    metrics::update();
 }
 
 void client_game::update_late(void)
@@ -85,7 +90,7 @@ void client_game::fixed_update_late(void)
 
 void client_game::layout(void)
 {
-    // empty
+    metrics::layout();
 }
 
 void client_game::render(void)
