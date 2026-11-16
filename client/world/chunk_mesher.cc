@@ -13,6 +13,7 @@
 #include "shared/world/block_storage.hh"
 #include "shared/world/chunk.hh"
 #include "shared/world/fluid_registry.hh"
+#include "shared/world/light_material.hh"
 #include "shared/world/tint_registry.hh"
 #include "shared/world/world.hh"
 
@@ -111,6 +112,7 @@ public:
 
 private:
     std::uint32_t calculate_ao(const LocalPos& lpos, block_face face, const Eigen::Vector3f& vertex) const;
+    block_light_type sample_light(const LocalPos& lpos, block_face face, const Eigen::Vector3f& vertex, light_channel channel) const;
 
     bool is_culled_block(const LocalPos& lpos, block_face face, block_render self_render) const;
     bool is_culled_fluid(const LocalPos& lpos, block_face face, fluid_id_type fluid_id, bool face_flush) const;
@@ -212,8 +214,8 @@ static CornerSamples sample_corner(const LocalPos& lpos, block_face face, const 
 
 static void emit_quad_vertices(std::vector<ChunkMesh_Vertex>& out, const std::array<Eigen::Vector3f, 4>& positions_16ths,
     const std::array<Eigen::Vector2f, 4>& uvs, const std::array<std::uint32_t, 4>& ao_values, std::uint32_t data_3, float shade,
-    bool animated, bool flip_quad, const Eigen::Vector3f& tint_rgb, block_light_type sky_light, block_light_type block_light,
-    std::uint32_t mask_frame)
+    bool animated, bool flip_quad, const Eigen::Vector3f& tint_rgb, const std::array<block_light_type, 4>& sky_light,
+    const std::array<block_light_type, 4>& block_light, std::uint32_t mask_frame)
 {
     std::array<int, 4> order;
 
@@ -235,7 +237,7 @@ static void emit_quad_vertices(std::vector<ChunkMesh_Vertex>& out, const std::ar
         vertex.data_1 = ChunkMesh_Vertex::pack_1(positions_16ths[corner]);
         vertex.data_2 = ChunkMesh_Vertex::pack_2(uvs[corner], mask_frame);
         vertex.data_3 = data_3;
-        vertex.data_4 = ChunkMesh_Vertex::pack_4(ao_values[corner], shade, animated, tint_rgb, sky_light, block_light);
+        vertex.data_4 = ChunkMesh_Vertex::pack_4(ao_values[corner], shade, animated, tint_rgb, sky_light[corner], block_light[corner]);
         out.push_back(vertex);
     }
 }
@@ -346,6 +348,38 @@ std::uint32_t MeshingTask::calculate_ao(const LocalPos& lpos, block_face face, c
     if(oc_s1 && oc_s2)
         return 0;
     return 3 - (oc_s1 + oc_s2 + oc_c);
+}
+
+block_light_type MeshingTask::sample_light(const LocalPos& lpos, block_face face, const Eigen::Vector3f& vertex,
+    light_channel channel) const
+{
+    auto samples = sample_corner(lpos, face, vertex);
+    LocalPos face_cell = lpos + face_delta(face);
+
+    // A cell that holds an opaque block carries no light of its own, and the
+    // block need not cover the whole cell: a slab leaves half of it open.
+    // Average the light of the cells around the vertex, skipping the ones a
+    // fully opaque block fills, instead of taking the single dark cell in
+    // front.
+    const std::array<LocalPos, 4> cells = { face_cell, samples.side1, samples.side2, samples.corner };
+
+    auto sum = 0U;
+    auto count = 0U;
+
+    for(const auto& cell : cells) {
+        if(light_material::is_opaque(m_cache.get(cell))) {
+            continue;
+        }
+
+        sum += m_cache.get_light(cell, channel);
+        count += 1;
+    }
+
+    if(count == 0) {
+        return m_cache.get_light(face_cell, channel);
+    }
+
+    return static_cast<block_light_type>(sum / count);
 }
 
 bool MeshingTask::is_culled_block(const LocalPos& lpos, block_face face, block_render self_render) const
@@ -460,14 +494,25 @@ void MeshingTask::emit_block_quads(std::vector<ChunkMesh_Vertex>& out, std::span
             }
         }
 
-        auto light_pos = lpos;
+        // An unculled quad can sit inside the cell, such as the cut face of
+        // a slab, so its light is sampled on the side its normal points into
+        // rather than off the block itself.
+        auto light_face = BLOCK_FACE_NORTH;
 
         if(face.has_value()) {
-            light_pos = lpos + face_delta(face.value());
+            light_face = face.value();
+        }
+        else {
+            light_face = bmodel_cache::face_from_normal(quad.packed_normal);
         }
 
-        auto sky_light = m_cache.get_light(light_pos, LIGHT_SKY);
-        auto block_light = m_cache.get_light(light_pos, LIGHT_BLOCK);
+        std::array<block_light_type, 4> sky_light;
+        std::array<block_light_type, 4> block_light;
+
+        for(int i = 0; i < 4; ++i) {
+            sky_light[i] = sample_light(lpos, light_face, quad.positions[i], LIGHT_SKY);
+            block_light[i] = sample_light(lpos, light_face, quad.positions[i], LIGHT_BLOCK);
+        }
 
         auto shade = 1.0f;
 
@@ -758,8 +803,12 @@ void MeshingTask::emit_fluid_face(std::vector<ChunkMesh_Vertex>& out, const Loca
     auto tint_rgb = resolve_tint(lpos, tint);
 
     auto light_pos = lpos + face_delta(face);
-    auto sky_light = m_cache.get_light(light_pos, LIGHT_SKY);
-    auto block_light = m_cache.get_light(light_pos, LIGHT_BLOCK);
+
+    std::array<block_light_type, 4> sky_light;
+    std::array<block_light_type, 4> block_light;
+
+    sky_light.fill(m_cache.get_light(light_pos, LIGHT_SKY));
+    block_light.fill(m_cache.get_light(light_pos, LIGHT_BLOCK));
 
     if(positions[0].y() + positions[2].y() < positions[1].y() + positions[3].y()) {
         emit_quad_vertices(out, positions_16ths, uvs, ao_values, data_3, 1.0f, true, true, tint_rgb, sky_light, block_light, mask_frame);
@@ -1114,16 +1163,6 @@ static void mark_neighbors_dirty(const ChunkPos& cpos)
     }
 }
 
-static void mark_face_neighbors_dirty(const ChunkPos& cpos)
-{
-    mark_dirty(cpos + ChunkPos(1, 0, 0));
-    mark_dirty(cpos + ChunkPos(-1, 0, 0));
-    mark_dirty(cpos + ChunkPos(0, 1, 0));
-    mark_dirty(cpos + ChunkPos(0, -1, 0));
-    mark_dirty(cpos + ChunkPos(0, 0, 1));
-    mark_dirty(cpos + ChunkPos(0, 0, -1));
-}
-
 static void mark_border_neighbors_dirty(const ChunkPos& cpos, const LocalPos& lpos)
 {
     for(ChunkPos::value_type dz = -1; dz <= 1; ++dz) {
@@ -1177,10 +1216,10 @@ static void on_block_update(const BlockUpdateEvent& event)
 
 static void on_chunk_light(const ChunkLightUpdateEvent& event)
 {
-    // Light is sampled per face cell now, so only face neighbours need
-    // their mesh rebuilt.
+    // A vertex samples the light of every cell around it, diagonals
+    // included, so any of the 26 neighbours can need its mesh rebuilt.
     mark_dirty(event.pos());
-    mark_face_neighbors_dirty(event.pos());
+    mark_neighbors_dirty(event.pos());
 }
 
 void chunk_mesher::init(void)

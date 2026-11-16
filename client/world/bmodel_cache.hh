@@ -31,6 +31,7 @@ void shutdown(void);
 namespace bmodel_cache
 {
 const CachedBlockModel* find(block_id_type id);
+block_face face_from_normal(std::uint32_t packed_normal);
 } // namespace bmodel_cache
 
 #endif /* E58051D6_68EC_495E_92C9_545EBD9CD3E9 */

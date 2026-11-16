@@ -4,6 +4,7 @@
 
 #include "shared/utils/coord.hh"
 #include "shared/world/chunk.hh"
+#include "shared/world/light_material.hh"
 #include "shared/world/lighting.hh"
 #include "shared/world/world.hh"
 
@@ -111,22 +112,18 @@ void BlockCache::init(const ChunkPos& cpos)
                 auto top_index = cache_index(static_cast<std::size_t>(hx),
                     static_cast<std::size_t>(PADDING + dy * CHUNK_SIZE_I16 + CHUNK_TOP_LOCAL_Y), static_cast<std::size_t>(hz), SIZE);
                 auto top_id = m_blocks[static_cast<std::size_t>(top_index)];
-                auto opacity = lighting::attenuation(top_id);
 
                 block_light_type level = BLOCK_LIGHT_MAX;
 
-                if(top_id == BLOCK_ID_NULL) {
-                    level = BLOCK_LIGHT_MAX;
-                }
-                else if(opacity >= BLOCK_LIGHT_MAX) {
-                    level = BLOCK_LIGHT_MIN;
-                }
-                else if(top_y < ESTIMATED_SEA_LEVEL) {
+                if(top_y < ESTIMATED_SEA_LEVEL) {
+                    auto opacity = light_material::get(top_id).opacity;
                     auto depth = static_cast<unsigned>(ESTIMATED_SEA_LEVEL - 1 - top_y);
                     auto consumed = depth * opacity;
 
                     level = (consumed >= BLOCK_LIGHT_MAX) ? BLOCK_LIGHT_MIN : static_cast<block_light_type>(BLOCK_LIGHT_MAX - consumed);
                 }
+
+                auto above = BLOCK_ID_NULL;
 
                 for(std::int32_t y = CHUNK_TOP_LOCAL_Y; y >= 0; y -= 1) {
                     auto hy = static_cast<std::int32_t>(PADDING) + dy * CHUNK_SIZE_I16 + y;
@@ -137,19 +134,13 @@ void BlockCache::init(const ChunkPos& cpos)
 
                     auto index = cache_index(static_cast<std::size_t>(hx), static_cast<std::size_t>(hy), static_cast<std::size_t>(hz),
                         SIZE);
-                    auto attenuation = lighting::attenuation(m_blocks[index]);
+                    auto block = m_blocks[index];
+                    auto cost = light_material::crossing_cost(above, block, BLOCK_FACE_TOP);
 
-                    if(attenuation == BLOCK_LIGHT_MIN) {
-                        // Sunlight falls straight down through open air.
-                    }
-                    else if(attenuation >= level) {
-                        level = BLOCK_LIGHT_MIN;
-                    }
-                    else {
-                        level = static_cast<block_light_type>(level - attenuation);
-                    }
-
+                    level = lighting::step_level(level, cost, LIGHT_SKY, true);
                     m_light[index] = static_cast<std::uint8_t>((m_light[index] & 0x0FU) | (level << 4U));
+
+                    above = block;
                 }
             }
         }
@@ -180,8 +171,9 @@ void BlockCache::init(const ChunkPos& cpos)
 
                     auto index = cache_index(static_cast<std::size_t>(hx), static_cast<std::size_t>(hy), static_cast<std::size_t>(hz),
                         SIZE);
-                    auto opacity = lighting::attenuation(m_blocks[index]);
-                    auto level = (opacity >= BLOCK_LIGHT_MAX) ? BLOCK_LIGHT_MIN : static_cast<block_light_type>(BLOCK_LIGHT_MAX - opacity);
+                    auto block = m_blocks[index];
+                    auto cost = light_material::face_cost(block, BLOCK_FACE_TOP);
+                    auto level = lighting::step_level(BLOCK_LIGHT_MAX, cost, LIGHT_SKY, true);
 
                     m_light[index] = static_cast<std::uint8_t>((m_light[index] & 0x0FU) | (level << 4U));
                 }

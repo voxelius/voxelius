@@ -2,6 +2,8 @@
 
 Block collisions define the physical shape for touch and movement response. These models are separate from render geometry.
 
+Lighting reads the same shape: a block only absorbs light across the cell faces the collision covers. A shape that fills half a cell, such as a slab, leaves the other half open for light.
+
 Block collisions live under: `namespace:collisions/block`
 
 ## Top-level fields

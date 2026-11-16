@@ -198,24 +198,45 @@ static std::int64_t chunk_distance(const ChunkPos& pos)
     return best;
 }
 
-static block_light_type light_attenuation(block_id_type id)
+block_light_type lighting::step_level(block_light_type level, block_light_type cost, light_channel channel, bool downward)
 {
-    return light_material::get(id).opacity;
-}
-
-static block_light_type step_level(block_light_type level, block_light_type attenuation, light_channel channel, bool downward)
-{
-    if(channel == LIGHT_SKY && downward && attenuation == BLOCK_LIGHT_MIN) {
+    if(channel == LIGHT_SKY && downward && cost == BLOCK_LIGHT_MIN) {
         return level;
     }
 
-    auto step = std::max<unsigned>(1U, attenuation);
+    auto step = std::max<unsigned>(1U, cost);
 
     if(step >= level) {
         return BLOCK_LIGHT_MIN;
     }
 
     return static_cast<block_light_type>(level - step);
+}
+
+// The face of the destination cell that a step along `offset` crosses.
+static block_face enter_face(const std::array<int, 4>& offset)
+{
+    if(offset[0] < 0) {
+        return BLOCK_FACE_EAST;
+    }
+
+    if(offset[0] > 0) {
+        return BLOCK_FACE_WEST;
+    }
+
+    if(offset[1] < 0) {
+        return BLOCK_FACE_TOP;
+    }
+
+    if(offset[1] > 0) {
+        return BLOCK_FACE_BOTTOM;
+    }
+
+    if(offset[2] < 0) {
+        return BLOCK_FACE_SOUTH;
+    }
+
+    return BLOCK_FACE_NORTH;
 }
 
 static void mark_dirty(const ChunkPos& pos)
@@ -375,21 +396,20 @@ void ChunkLightTask::process(void)
                 level = static_cast<block_light_type>(light[index(gx, LIGHT_PADDING + chunk_size, gz)] >> 4U);
             }
 
+            // The column pass enters every cell through its top face and leaves
+            // it through the bottom one, so a half block closes exactly one of
+            // the two and the sun stops on the side its solid part is on.
+            auto above = blocks[index(gx, LIGHT_PADDING + chunk_size, gz)];
+
             for(int y = chunk_size - 1; y >= 0; y -= 1) {
                 auto cell = index(gx, LIGHT_PADDING + y, gz);
-                auto attenuation = light_attenuation(blocks[cell]);
+                auto block = blocks[cell];
+                auto cost = light_material::crossing_cost(above, block, BLOCK_FACE_TOP);
 
-                if(attenuation == BLOCK_LIGHT_MIN) {
-                    // Sunlight falls straight down through open air.
-                }
-                else if(attenuation >= level) {
-                    level = BLOCK_LIGHT_MIN;
-                }
-                else {
-                    level = static_cast<block_light_type>(level - attenuation);
-                }
-
+                level = lighting::step_level(level, cost, LIGHT_SKY, true);
                 light[cell] = static_cast<std::uint8_t>((light[cell] & 0x0FU) | (level << 4U));
+
+                above = block;
             }
         }
     }
@@ -475,8 +495,8 @@ void ChunkLightTask::process(void)
                 }
 
                 auto next_cell = index(nx, ny, nz);
-                auto attenuation = light_attenuation(blocks[next_cell]);
-                auto next = step_level(node.level, attenuation, node.channel, offset[1] < 0);
+                auto cost = light_material::crossing_cost(blocks[cell], blocks[next_cell], enter_face(offset));
+                auto next = lighting::step_level(node.level, cost, node.channel, offset[1] < 0);
 
                 if(next == BLOCK_LIGHT_MIN) {
                     continue;
@@ -724,8 +744,10 @@ static void process_remove(std::size_t& budget)
                 continue;
             }
 
-            auto attenuation = light_attenuation(cell->chunk->get_block(cell->index));
-            auto expected = step_level(node.level, attenuation, node.channel, cell->downward);
+            auto from = node.chunk->get_block(node.index);
+            auto to = cell->chunk->get_block(cell->index);
+            auto cost = light_material::crossing_cost(from, to, enter_face(offset));
+            auto expected = lighting::step_level(node.level, cost, node.channel, cell->downward);
 
             if(current > expected) {
                 push_add(cell->chunk, cell->cpos, cell->index, current, node.channel);
@@ -769,8 +791,10 @@ static void process_add(std::size_t& budget)
                     continue;
                 }
 
-                auto attenuation = light_attenuation(cell->chunk->get_block(cell->index));
-                auto next = step_level(node.level, attenuation, node.channel, cell->downward);
+                auto from = node.chunk->get_block(node.index);
+                auto to = cell->chunk->get_block(cell->index);
+                auto cost = light_material::crossing_cost(from, to, enter_face(offset));
+                auto next = lighting::step_level(node.level, cost, node.channel, cell->downward);
 
                 if(next == BLOCK_LIGHT_MIN) {
                     continue;
@@ -869,11 +893,6 @@ lighting::LightChange lighting::take_change(const ChunkPos& pos)
     }
 
     return result;
-}
-
-block_light_type lighting::attenuation(block_id_type id)
-{
-    return light_attenuation(id);
 }
 
 void lighting::fixed_update(void)

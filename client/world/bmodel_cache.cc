@@ -112,6 +112,13 @@ static std::uint32_t pack_normal_2_10_10_10(const Eigen::Vector3f& normal)
     return (nz << 20) | (ny << 10) | nx;
 }
 
+static std::int32_t unpack_normal_component(std::uint32_t packed_normal, unsigned shift)
+{
+    auto bits = (packed_normal >> shift) & 0x3FFU;
+
+    return static_cast<std::int32_t>(bits << 22U) >> 22U;
+}
+
 static void make_face_geometry(const Eigen::Vector3f& min, const Eigen::Vector3f& max, block_face face, CachedBlockModel_Quad& quad)
 {
     quad.positions.fill(Eigen::Vector3f::Zero());
@@ -465,6 +472,39 @@ static std::unique_ptr<CachedBlockModel> bake_model(const BlockDefinition& def)
     }
 
     return baked;
+}
+
+block_face bmodel_cache::face_from_normal(std::uint32_t packed_normal)
+{
+    auto nx = unpack_normal_component(packed_normal, 0);
+    auto ny = unpack_normal_component(packed_normal, 10);
+    auto nz = unpack_normal_component(packed_normal, 20);
+
+    auto ax = std::abs(nx);
+    auto ay = std::abs(ny);
+    auto az = std::abs(nz);
+
+    if(ay >= ax && ay >= az) {
+        if(ny > 0) {
+            return BLOCK_FACE_TOP;
+        }
+
+        return BLOCK_FACE_BOTTOM;
+    }
+
+    if(ax >= az) {
+        if(nx > 0) {
+            return BLOCK_FACE_EAST;
+        }
+
+        return BLOCK_FACE_WEST;
+    }
+
+    if(nz > 0) {
+        return BLOCK_FACE_SOUTH;
+    }
+
+    return BLOCK_FACE_NORTH;
 }
 
 void bmodel_cache::init_late(void)

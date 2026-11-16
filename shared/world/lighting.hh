@@ -3,6 +3,7 @@
 
 #include "shared/coord.hh"
 #include "shared/world/block.hh"
+#include "shared/world/light_storage.hh"
 
 namespace lighting
 {
@@ -34,8 +35,10 @@ void set_replica(bool value);
 
 namespace lighting
 {
-// How much light the block absorbs when it is traversed.
-block_light_type attenuation(block_id_type id);
+// How far light falls when it crosses a face that costs `cost`. Sunlight that
+// meets no resistance on its way down keeps its level; every other step costs
+// at least one level.
+block_light_type step_level(block_light_type level, block_light_type cost, light_channel channel, bool downward);
 } // namespace lighting
 
 namespace lighting

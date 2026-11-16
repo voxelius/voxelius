@@ -164,7 +164,7 @@ Returns the numeric block ID.
 |`health`|`integer`|no|`0`|Base hit points needed to break the block. Tool effects can change this|
 |`sound`|`string`|no|N/D|Sound set for this block|
 |`emission`|`integer`|no|`0`|Emission light value, from `0` to `15`. Values outside the range are clamped|
-|`dissipation`|`integer`|no|`0`|Opacity of the block, from `0` to `15`. Light loses this many levels when it passes through. Values outside the range are clamped. A `RENDER_SOLID` block with `0` dissipation is treated as fully opaque|
+|`dissipation`|`integer`|no|`0`|Opacity of the block, from `0` to `15`. Light loses this many levels when it passes through. Values outside the range are clamped. A `RENDER_SOLID` block with `0` dissipation is treated as fully opaque. The block only absorbs light across the cell faces its collision shape covers, so a block that fills half a cell lets light through its open half|
 |`touch`|`integer`|no|`blocks.TOUCH_SOLID`|Block touch response|
 |`touch_coeffs`|`number[3]`|no|`{1, 1, 1}`|Block touch response coefficients|
 |`tags`|`integer[]`|no|`{}`|Block tags|
