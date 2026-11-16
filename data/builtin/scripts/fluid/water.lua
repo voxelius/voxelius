@@ -4,6 +4,7 @@ local still_frames = {}
 local flowing_frames = {}
 
 local WATER_CONFIG <const> = {
+    fluid = "water",
     infinite = true,
     full_height = 14,
     max_level = 8,
@@ -47,5 +48,7 @@ blocks.add("water", {
     variants = flowdef.variants(WATER_CONFIG),
 
     on_place = flowdef.on_place(WATER_CONFIG),
-    on_tick = flowdef.on_tick("water", WATER_CONFIG),
+    on_tick = flowdef.tick,
 })
+
+flowdef.register("water", WATER_CONFIG)

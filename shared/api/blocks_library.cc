@@ -402,6 +402,17 @@ static bool parse_overrides(lua_State* L, int idx, ModContext* ctx, BlockOverrid
         lua_pop(L, 1);
     }
 
+    if(reader.try_push("fluid_faces")) {
+        auto value = utils::require_integer(L, -1);
+
+        if(!value.has_value()) {
+            return false;
+        }
+
+        patch.fluid_faces = static_cast<std::uint32_t>(value.value());
+        lua_pop(L, 1);
+    }
+
     if(reader.try_push("health")) {
         auto value = utils::require_integer(L, -1);
 
@@ -605,6 +616,17 @@ static bool parse_definition(const BlockDefReader& reader, ModContext* ctx, Bloc
         }
 
         def.fluid_level = static_cast<unsigned>(value.value());
+        lua_pop(L, 1);
+    }
+
+    if(reader.try_push("fluid_faces")) {
+        auto value = utils::require_integer(L, -1);
+
+        if(!value.has_value()) {
+            return false;
+        }
+
+        def.fluid_faces = static_cast<std::uint32_t>(value.value());
         lua_pop(L, 1);
     }
 
@@ -1062,6 +1084,7 @@ static bool add_block(lua_State* L, ModContext* ctx, const char* raw_name, int d
 
     def.fluid = FLUID_ID_NULL;
     def.fluid_level = 0;
+    def.fluid_faces = 0;
     def.fluid_name = std::nullopt;
 
     def.health = 0;

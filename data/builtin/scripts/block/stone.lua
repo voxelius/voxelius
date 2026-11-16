@@ -52,4 +52,5 @@ blocks.add("stone", stone_prototype, {
 
 slabdef.add_block("stone_slab", stone_prototype, {
   health = 2,
+  fillable = { "water" },
 })

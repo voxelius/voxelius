@@ -165,7 +165,19 @@ bool utils::block_break(const physics::BlockHit& hit, entt::entity actor)
     lua_pushinteger(L, static_cast<lua_Integer>(hit.block_pos.z()));
     lua_pushinteger(L, static_cast<lua_Integer>(actor));
 
-    call_routine(L, 4, 1, family->name.full_string());
+    auto keep = false;
+
+    if(call_routine(L, 4, 1, family->name.full_string())) {
+        if(lua_isboolean(L, -1)) {
+            keep = static_cast<bool>(lua_toboolean(L, -1));
+        }
+
+        lua_pop(L, 1);
+    }
+
+    if(keep) {
+        return true;
+    }
 
     return world::set_block(hit.block_pos, replace_block);
 }

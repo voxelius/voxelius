@@ -10,7 +10,7 @@ biomes.add("surface_hills_rocky", {
   palette = {
     basic = { name = "stone" },
     filler = { name = "stone" },
-    surface = { name = "stone" },
+    surface = { name = "stone_slab", states = { orientation = "bottom" } },
     fluid = { name = "water", states = { level = "8", source = "true" } },
   },
 

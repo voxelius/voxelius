@@ -99,6 +99,7 @@ struct BlockDefinition final {
 
     fluid_id_type fluid;
     unsigned fluid_level;
+    std::uint32_t fluid_faces;
     std::optional<Identifier> fluid_name;
 
     unsigned health;

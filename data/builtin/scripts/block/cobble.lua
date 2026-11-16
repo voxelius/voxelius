@@ -39,4 +39,5 @@ blocks.add("cobble", cobble_prototype, {
 
 slabdef.add_block("cobble_slab", cobble_prototype, {
   health = 1,
+  fillable = { "water" },
 })

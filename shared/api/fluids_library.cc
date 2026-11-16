@@ -245,6 +245,22 @@ static bool add_fluid(lua_State* L, ModContext* ctx, const char* raw_name, int d
     return true;
 }
 
+static int api_get(lua_State* L)
+{
+    auto ctx = static_cast<ModContext*>(lua_touserdata(L, lua_upvalueindex(1)));
+
+    auto raw_name = luaL_checkstring(L, 1);
+    auto id = Identifier::from_string(raw_name, ctx->name_space());
+
+    if(!id.is_valid()) {
+        lua_pushinteger(L, FLUID_ID_NULL);
+        return 1;
+    }
+
+    lua_pushinteger(L, fluid_registry::find(id));
+    return 1;
+}
+
 static int api_add(lua_State* L)
 {
     auto ctx = static_cast<ModContext*>(lua_touserdata(L, lua_upvalueindex(1)));
@@ -282,6 +298,10 @@ void api::open_fluids_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
     lua_pushlightuserdata(L, ctx);
     lua_pushcclosure(L, api_add, 1);
     lua_setfield(L, -2, "add");
+
+    lua_pushlightuserdata(L, ctx);
+    lua_pushcclosure(L, api_get, 1);
+    lua_setfield(L, -2, "get");
 
     lua_setglobal(L, "fluids");
 }

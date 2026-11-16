@@ -39,4 +39,5 @@ blocks.add("slate", slate_prototype, {
 
 slabdef.add_block("slate_slab", slate_prototype, {
   health = 1,
+  fillable = { "water" },
 })

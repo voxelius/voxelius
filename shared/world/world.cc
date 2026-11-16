@@ -134,6 +134,75 @@ block_id_type world::get_block(const BlockPos& pos)
     return get_block(cpos, lpos);
 }
 
+fluid_id_type world::get_fluid(const ChunkPos& cpos, const LocalPos& lpos)
+{
+    auto id = get_block(cpos, lpos);
+
+    if(auto def = block_registry::find_definition(id)) {
+        return def->fluid;
+    }
+
+    return FLUID_ID_NULL;
+}
+
+fluid_id_type world::get_fluid(const BlockPos& pos)
+{
+    auto cpos = utils::to_chunk(pos);
+    auto lpos = utils::to_local(pos);
+    return get_fluid(cpos, lpos);
+}
+
+std::uint32_t world::get_fluid_faces(const ChunkPos& cpos, const LocalPos& lpos)
+{
+    auto id = get_block(cpos, lpos);
+
+    if(auto def = block_registry::find_definition(id)) {
+        return def->fluid_faces;
+    }
+
+    return 0;
+}
+
+std::uint32_t world::get_fluid_faces(const BlockPos& pos)
+{
+    auto cpos = utils::to_chunk(pos);
+    auto lpos = utils::to_local(pos);
+    return get_fluid_faces(cpos, lpos);
+}
+
+fluid_id_type world::get_state_fluid(const ChunkPos& cpos, const LocalPos& lpos, std::string_view state, std::string_view value)
+{
+    auto id = get_block(cpos, lpos);
+    auto def = block_registry::find_definition(id);
+
+    if(def == nullptr) {
+        return FLUID_ID_NULL;
+    }
+
+    auto family = block_registry::find_family(def->family);
+
+    if(family == nullptr) {
+        return FLUID_ID_NULL;
+    }
+
+    auto state_key = family->state_hash(state);
+
+    if(!family->states.contains(state_key)) {
+        return FLUID_ID_NULL;
+    }
+
+    auto value_key = family->state_hash(value);
+
+    return block_registry::preview_fluid(id, state_key, value_key);
+}
+
+fluid_id_type world::get_state_fluid(const BlockPos& pos, std::string_view state, std::string_view value)
+{
+    auto cpos = utils::to_chunk(pos);
+    auto lpos = utils::to_local(pos);
+    return get_state_fluid(cpos, lpos, state, value);
+}
+
 bool world::set_block(const ChunkPos& cpos, const LocalPos& lpos, block_id_type id)
 {
     if(auto chunk = find_chunk(cpos)) {

@@ -10,13 +10,14 @@ local slabdef = require("builtin:slabdef")
 
 ## Functions
 
-### Function: `slabdef.on_place(identifier) -> function`
+### Function: `slabdef.on_place(identifier, fillable) -> function`
 
 This function returns an `on_place` callback for a given slab identifier.
 
 #### Arguments
 
-- `identifier` is the namespaced block ID. If you omit the namespace, the engine uses `core.NAMESPACE`.
+- `identifier` is the namespaced block ID. If you omit the namespace, the engine uses `core.NAMESPACE`
+- `fillable` is an optional list of fluid names the slab can hold
 
 #### Return value
 
@@ -28,9 +29,17 @@ A wrapper around `blocks.add` that defines a slab block family.
 
 #### Arguments
 
-- `identifier` is the namespaced block ID. If you omit the namespace, the engine uses `core.NAMESPACE`.
+- `identifier` is the namespaced block ID. If you omit the namespace, the engine uses `core.NAMESPACE`
 - `prototype` is the base block definition the function builds on
-- `options` is an optional table with extra parameters
+- `options` is an optional table with extra parameters (see below)
+
+#### Options
+
+|Field|Type|Default|Description|
+|----|----|----|----|
+|`health`|`integer`|prototype health or 2|Hit points of every slab variant|
+|`drop_name`|`string`|`identifier`|Block name dropped by the slab|
+|`fillable`|`string[]`|`{}`|Fluid names that can fill the slab|
 
 #### Return value
 
@@ -39,4 +48,9 @@ A wrapper around `blocks.add` that defines a slab block family.
 #### Notes
 
 - The registered block family gets an `orientation` state and variants for `top`, `bottom`, and `double`.
+- With `fillable`, the family also gets the `flowdef.filled_state` state. Its values are `"none"` and the fluid names. A variant with a fluid name binds that fluid through `fluid_name`, so the slab and the fluid share one cell, like a waterlogged block. A filled cell acts as a full source of that fluid.
+- A `bottom` slab is open through its four side faces and the cell boundary above it; a `top` slab through its side faces and the boundary below it (`fluid_faces`). A `double` slab is a full cube and never holds a fluid.
+- A fillable slab gets `on_break`, which leaves the fluid source behind when the slab breaks. A filled cell does not tick: it is a static source of its fluid, like a waterlogged block.
+- Using a fluid on a fillable slab fills the slab instead of placing a fluid block next to it.
+- Placing a fillable slab into a fluid fills it immediately.
 - The function keeps the touch response values from the prototype unchanged. It only defines block collisions.

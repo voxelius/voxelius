@@ -41,6 +41,32 @@ static int api_set_block(lua_State* L)
     return 1;
 }
 
+static int api_get_fluid(lua_State* L)
+{
+    BlockPos pos = BlockPos::Zero();
+    pos.x() = static_cast<BlockPos::value_type>(luaL_checkinteger(L, 1));
+    pos.y() = static_cast<BlockPos::value_type>(luaL_checkinteger(L, 2));
+    pos.z() = static_cast<BlockPos::value_type>(luaL_checkinteger(L, 3));
+
+    auto fluid = world::get_fluid(pos);
+
+    lua_pushinteger(L, static_cast<lua_Integer>(fluid));
+    return 1;
+}
+
+static int api_get_fluid_faces(lua_State* L)
+{
+    BlockPos pos = BlockPos::Zero();
+    pos.x() = static_cast<BlockPos::value_type>(luaL_checkinteger(L, 1));
+    pos.y() = static_cast<BlockPos::value_type>(luaL_checkinteger(L, 2));
+    pos.z() = static_cast<BlockPos::value_type>(luaL_checkinteger(L, 3));
+
+    auto faces = world::get_fluid_faces(pos);
+
+    lua_pushinteger(L, static_cast<lua_Integer>(faces));
+    return 1;
+}
+
 static int api_get_light(lua_State* L)
 {
     BlockPos pos = BlockPos::Zero();
@@ -87,6 +113,21 @@ static int api_set_state(lua_State* L)
     auto success = world::set_state(pos, state_name, state_value);
 
     lua_pushboolean(L, success);
+    return 1;
+}
+
+static int api_get_state_fluid(lua_State* L)
+{
+    BlockPos pos = BlockPos::Zero();
+    pos.x() = static_cast<BlockPos::value_type>(luaL_checkinteger(L, 1));
+    pos.y() = static_cast<BlockPos::value_type>(luaL_checkinteger(L, 2));
+    pos.z() = static_cast<BlockPos::value_type>(luaL_checkinteger(L, 3));
+
+    auto state_name = luaL_checkstring(L, 4);
+    auto state_value = luaL_checkstring(L, 5);
+    auto fluid = world::get_state_fluid(pos, state_name, state_value);
+
+    lua_pushinteger(L, static_cast<lua_Integer>(fluid));
     return 1;
 }
 
@@ -143,6 +184,12 @@ void api::open_world_library(std::shared_ptr<lua_State>& lua, const ModContext* 
     lua_pushcfunction(L, api_get_block);
     lua_setfield(L, -2, "get_block");
 
+    lua_pushcfunction(L, api_get_fluid);
+    lua_setfield(L, -2, "get_fluid");
+
+    lua_pushcfunction(L, api_get_fluid_faces);
+    lua_setfield(L, -2, "get_fluid_faces");
+
     lua_pushcfunction(L, api_set_block);
     lua_setfield(L, -2, "set_block");
 
@@ -154,6 +201,9 @@ void api::open_world_library(std::shared_ptr<lua_State>& lua, const ModContext* 
 
     lua_pushcfunction(L, api_set_state);
     lua_setfield(L, -2, "set_state");
+
+    lua_pushcfunction(L, api_get_state_fluid);
+    lua_setfield(L, -2, "get_state_fluid");
 
     lua_pushcfunction(L, api_get_temperature_base);
     lua_setfield(L, -2, "get_temperature_base");

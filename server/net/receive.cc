@@ -319,8 +319,8 @@ static void on_player_interact_b(const packet::Player_InteractB& packet)
 
     // TODO: hardcoded placed block until an inventory/hotbar system exists.
     // Keep it in sync with client/system/player_target.cc.
-    auto family = block_registry::find_family(Identifier::from_string("builtin:emitter"));
-    auto block = family ? family->default_variant : block_registry::find(Identifier::from_string("builtin:emitter"));
+    auto family = block_registry::find_family(Identifier::from_string("builtin:water"));
+    auto block = family ? family->default_variant : block_registry::find(Identifier::from_string("builtin:water"));
 
     utils::block_place(hit, session->player, block);
 }

@@ -33,6 +33,7 @@ struct BlockOverridePatch final {
 
     std::optional<Identifier> fluid_name;
     std::optional<unsigned> fluid_level;
+    std::optional<std::uint32_t> fluid_faces;
 
     std::optional<unsigned> health;
 
@@ -125,6 +126,11 @@ bool has_tag_any(block_id_type id, block_tag_bit tag_bits);
 namespace block_registry
 {
 block_id_type resolve_variant(block_id_type curr_id, const vx::hash_map<blockstate_key_type, blockstate_val_type>& map);
+} // namespace block_registry
+
+namespace block_registry
+{
+fluid_id_type preview_fluid(block_id_type id, blockstate_key_type state, blockstate_val_type value);
 } // namespace block_registry
 
 #endif /* C35E197B_F82F_423A_8226_7EB5C9E7FEEC */

@@ -102,6 +102,24 @@ block_id_type get_block(const BlockPos& pos);
 
 namespace world
 {
+fluid_id_type get_fluid(const ChunkPos& cpos, const LocalPos& lpos);
+fluid_id_type get_fluid(const BlockPos& pos);
+} // namespace world
+
+namespace world
+{
+std::uint32_t get_fluid_faces(const ChunkPos& cpos, const LocalPos& lpos);
+std::uint32_t get_fluid_faces(const BlockPos& pos);
+} // namespace world
+
+namespace world
+{
+fluid_id_type get_state_fluid(const ChunkPos& cpos, const LocalPos& lpos, std::string_view state, std::string_view value);
+fluid_id_type get_state_fluid(const BlockPos& pos, std::string_view state, std::string_view value);
+} // namespace world
+
+namespace world
+{
 bool set_block(const ChunkPos& cpos, const LocalPos& lpos, block_id_type id);
 bool set_block(const BlockPos& pos, block_id_type id);
 } // namespace world

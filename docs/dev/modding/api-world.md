@@ -19,6 +19,53 @@ Retrieves a numeric block ID from the world.
 - Normally, a numeric block ID
 - If there is no block or the chunk is not present, returns `blocks.NULL_BLOCK`
 
+### Function: `world.get_fluid(bx, by, bz) -> integer`
+
+Retrieves the fluid ID of the block variant at a position.
+
+#### Arguments
+
+- `bx` is the world-scale block X position
+- `by` is the world-scale block Y position
+- `bz` is the world-scale block Z position
+
+#### Return value
+
+- The numeric fluid ID, including a fluid that shares the cell with a block
+- `fluids.NULL_FLUID` if there is no fluid or the chunk is not present
+
+### Function: `world.get_fluid_faces(bx, by, bz) -> integer`
+
+Retrieves the fluid entry faces of the block variant at a position.
+
+#### Arguments
+
+- `bx` is the world-scale block X position
+- `by` is the world-scale block Y position
+- `bz` is the world-scale block Z position
+
+#### Return value
+
+- A bitmask of `blocks.FACE_*` bits through which a fluid may enter the variant
+- `0` if the variant cannot be filled
+
+### Function: `world.get_state_fluid(bx, by, bz, st, val) -> integer`
+
+Asks which fluid the block at a position would hold if the given blockstate had the given value. The query does not change the world.
+
+#### Arguments
+
+- `bx` is the world-scale block X position
+- `by` is the world-scale block Y position
+- `bz` is the world-scale block Z position
+- `st` is the blockstate name
+- `val` is the blockstate value to test
+
+#### Return value
+
+- The numeric fluid ID the variant would bind
+- `fluids.NULL_FLUID` if the block has no such state, no variant matches the resulting state map, or the variant holds no fluid
+
 ### Function: `world.set_block(bx, by, bz, id) -> boolean`
 
 Assigns a block ID in the world.

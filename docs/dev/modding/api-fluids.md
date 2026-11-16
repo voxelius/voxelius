@@ -34,6 +34,19 @@ Returns the numeric fluid ID.
 
 **Rename rule:** on conflict, the engine adds a `~N` suffix to the encroaching `name`. `N` is the smallest integer, starting at `1`, that gives a free id (e.g. `mymod:mywater~1`). Loading stays deterministic for the same mod list and order.
 
+### Function: `fluids.get(name) -> integer`
+
+Looks up a registered fluid by name.
+
+#### Arguments
+
+- `name` is a namespaced fluid ID, eg `mymod:mywater`
+
+#### Return value
+
+- The numeric fluid ID
+- `fluids.NULL_FLUID` if the fluid does not exist, or the registries have not committed yet
+
 ## Fluid definition
 
 |Field|Type|Required|Default|Description|

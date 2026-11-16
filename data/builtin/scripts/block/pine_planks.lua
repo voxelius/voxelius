@@ -39,4 +39,5 @@ blocks.add("pine_planks", pine_planks_prototype, {
 
 slabdef.add_block("pine_planks_slab", pine_planks_prototype, {
   health = 1,
+  fillable = { "water" },
 })
