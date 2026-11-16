@@ -37,7 +37,7 @@ Registers the flow behaviour of one fluid. Call it after the fluid block is regi
 
 ### Function: `flowdef.tick(bx, by, bz, source)`
 
-The scheduled tick of fluid blocks. Assign it to `on_tick`:
+The scheduled tick of fluid blocks and fillable blocks. Assign it to `on_tick`:
 
 ```lua
 blocks.add("water", {
@@ -46,7 +46,11 @@ blocks.add("water", {
 })
 ```
 
-It looks up the fluid in the cell and runs that fluid's registered flow. Cells without a registered fluid are ignored.
+It looks up the fluid in the cell and runs that fluid's registered flow. Cells without a registered fluid are ignored. A neighbour change only reschedules the cell; a scripted or random tick runs the flow.
+
+### Function: `flowdef.schedule(fluid_id, bx, by, bz) -> boolean`
+
+Schedules the first tick of a cell that has just started holding a fluid, with the fluid's `delay`. Use it whenever a filled cell is created without a spread, eg when a bucket fills a block. Returns `false` when the fluid has no registered flow.
 
 ### Function: `flowdef.place_source(fluid_id, bx, by, bz) -> boolean`
 
@@ -94,7 +98,9 @@ The library mirrors the vanilla `FlowingFluid` and `WaterFluid` classes:
 
 - A cell falls into the cell below whenever it can. It fans out only when it cannot fall, or when it just fell and three or more sources surround it. A source over a hole therefore pours down without flooding the floor around the hole.
 - Sideways flow enters only a cell that holds no fluid. A cell that already holds fluid keeps its own level and recomputes it on its own tick, so the fluid never overwrites itself sideways or from above.
-- A block that can hold a fluid declares the `filled_state` state and binds the fluid in a variant with `fluid_name`. The library asks `world.get_state_fluid` whether the cell would hold its fluid and `world.get_fluid_faces` whether the fluid may enter through the shared face. A filled cell behaves as a full source of that fluid and does not tick on its own, like a waterlogged block.
+- A block that can hold a fluid declares the `filled_state` state and binds the fluid in a variant with `fluid_name`. The library asks `world.get_state_fluid` whether the cell would hold its fluid and `world.get_fluid_faces` whether the fluid may pass the shared face. A filled cell is a full source of that fluid and still ticks: it flows out of its open faces, like a waterlogged block in vanilla.
+- The face mask works both ways. A movement needs the face of the source cell and the face of the target cell open, so a fluid never leaves through a solid face of the block it sits in, nor enters one of the neighbour. A fluid block and a replaceable block leave every face open.
+- A fillable cell takes a source only, like `canPlaceLiquid` does: flowing water never fills a block. A filled cell is therefore a source that cannot seed another one at its neighbour, and a flow into a field of fillable blocks stops instead of flooding it.
 - Among the directions that can take fluid, the cell picks the ones that lead to the nearest drop within `slope_range`.
 - With `infinite`, two horizontal sources turn a cell into a source when the cell below is solid or holds another source.
 - A falling cell is stored as `source = "false"` with `level` equal to `max_level`, so `variants` renders it full.

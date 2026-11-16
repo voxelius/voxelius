@@ -160,7 +160,7 @@ Returns the numeric block ID.
 |`bcoll_facing`|`integer`|no|`blocks.FACE_NORTH`|One of `blocks.FACE_XXXX`. Rotates the resolved collision shape the same way `model_facing` rotates the model. You can set it independently of `model_facing`. The collision shape does not need to match the visual, though it usually should|
 |`fluid_name`|`string`|no|N/D|[Fluid](api-fluids.md) name that shares the grid cell with the block|
 |`fluid_level`|`integer`|no|fluid `full_level`|Fluid level if `fluid_name` is set, in 1/16ths of a block. When omitted, the engine uses the fluid's `full_level`|
-|`fluid_faces`|`integer`|no|`0`|Bitmask of faces a fluid may enter this variant through, made of `blocks.FACE_*` bits. `0` means the variant cannot be filled|
+|`fluid_faces`|`integer`|no|`0`|Bitmask of faces a fluid may enter or leave this variant through, made of `blocks.FACE_*` bits. `0` means the variant cannot be filled|
 |`health`|`integer`|no|`0`|Base hit points needed to break the block. Tool effects can change this|
 |`sound`|`string`|no|N/D|Sound set for this block|
 |`emission`|`integer`|no|`0`|Emission light value, from `0` to `15`. Values outside the range are clamped|

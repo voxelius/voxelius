@@ -41,12 +41,27 @@ local function orientation_overrides(orientation, health, drop_name)
   return overrides
 end
 
-local function fill_name(bx, by, bz, fillable)
-  local fluid = world.get_fluid(bx, by, bz)
+-- A filled cell holds a water source, never a flowing block, so a slab placed
+-- into flowing water stays dry and the flow simply ends there.
+local function holds_source(bx, by, bz)
+  if world.get_fluid(bx, by, bz) == 0 then
+    return false
+  end
 
-  if fluid == 0 then
+  -- A filled cell has no level state and always holds a full source.
+  if not world.get_state(bx, by, bz, "level") then
+    return true
+  end
+
+  return world.get_state(bx, by, bz, "source") == "true"
+end
+
+local function fill_name(bx, by, bz, fillable)
+  if not holds_source(bx, by, bz) then
     return EMPTY
   end
+
+  local fluid = world.get_fluid(bx, by, bz)
 
   for _, name in ipairs(fillable) do
     if fluids.get(name) == fluid then
@@ -193,6 +208,9 @@ function slabdef.add_block(identifier, prototype, options)
   }
 
   if fillable and #fillable > 0 then
+    -- A filled slab keeps a source that still flows out of its open faces, so
+    -- it ticks like a waterlogged block does in vanilla.
+    def.on_tick = options.on_tick or flowdef.tick
     def.on_break = options.on_break or slabdef.on_break()
   end
 

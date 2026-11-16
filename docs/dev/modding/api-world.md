@@ -36,7 +36,7 @@ Retrieves the fluid ID of the block variant at a position.
 
 ### Function: `world.get_fluid_faces(bx, by, bz) -> integer`
 
-Retrieves the fluid entry faces of the block variant at a position.
+Retrieves the fluid faces of the block variant at a position.
 
 #### Arguments
 
@@ -46,7 +46,7 @@ Retrieves the fluid entry faces of the block variant at a position.
 
 #### Return value
 
-- A bitmask of `blocks.FACE_*` bits through which a fluid may enter the variant
+- A bitmask of `blocks.FACE_*` bits through which a fluid may enter or leave the variant
 - `0` if the variant cannot be filled
 
 ### Function: `world.get_state_fluid(bx, by, bz, st, val) -> integer`

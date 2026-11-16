@@ -50,7 +50,7 @@ A wrapper around `blocks.add` that defines a slab block family.
 - The registered block family gets an `orientation` state and variants for `top`, `bottom`, and `double`.
 - With `fillable`, the family also gets the `flowdef.filled_state` state. Its values are `"none"` and the fluid names. A variant with a fluid name binds that fluid through `fluid_name`, so the slab and the fluid share one cell, like a waterlogged block. A filled cell acts as a full source of that fluid.
 - A `bottom` slab is open through its four side faces and the cell boundary above it; a `top` slab through its side faces and the boundary below it (`fluid_faces`). A `double` slab is a full cube and never holds a fluid.
-- A fillable slab gets `on_break`, which leaves the fluid source behind when the slab breaks. A filled cell does not tick: it is a static source of its fluid, like a waterlogged block.
+- A fillable slab gets `on_tick` and `on_break`. A filled cell keeps a full source that flows out of its open faces and ticks on neighbour changes, like a waterlogged block in vanilla; breaking it leaves the fluid source behind.
 - Using a fluid on a fillable slab fills the slab instead of placing a fluid block next to it.
-- Placing a fillable slab into a fluid fills it immediately.
+- Placing a fillable slab into a fluid source fills it immediately; flowing water is displaced and the slab stays dry.
 - The function keeps the touch response values from the prototype unchanged. It only defines block collisions.
