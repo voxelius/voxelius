@@ -93,7 +93,10 @@ void main_menu::init(void)
     screen.add_child(s_popup_quit);
 
     s_menu.set_control(ImVec2(200.0f, 20.0f));
-    s_menu.set_anchor(0.5f, 0.45f);
+
+    // The block hangs below the anchor, so a little above the middle keeps it
+    // close to centered while leaving room for the wordmark and the splash
+    s_menu.set_anchor(0.5f, 0.40f);
 
     s_menu.add_button_ingame("main_menu.button.resume", [] {
         globals::gui_screen = nullptr;
