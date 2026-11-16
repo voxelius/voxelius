@@ -18,9 +18,6 @@
 #include "client/net/session.hh"
 #include "client/world/chunk_visibility.hh"
 
-// Five seconds at the fixed rate; matches the server side log.
-constexpr static std::uint64_t STATS_INTERVAL = 100;
-
 static void on_entity_spawn(const packet::Entity_Spawn& packet)
 {
     auto entity = utils::spawn(packet.class_id, packet.entity);
@@ -148,19 +145,6 @@ static void on_world_set_block(const packet::World_SetBlock& packet)
 static void on_world_timings(const packet::World_Timings& packet)
 {
     globals::current_tick = packet.current_tick;
-
-    static std::uint64_t last_tick;
-
-    if(globals::current_tick - last_tick < STATS_INTERVAL) {
-        return;
-    }
-
-    last_tick = globals::current_tick;
-
-    auto stats = protocol::take_received_stats();
-
-    msg::log_info("net recv: chunks={} biomes={} light={} setblock={} entities={} timings={} other={}", stats.chunks, stats.biomes,
-        stats.light, stats.set_block, stats.entities, stats.timings, stats.other);
 }
 
 static void on_session_state(const SessionStateEvent& event)

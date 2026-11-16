@@ -18,21 +18,6 @@ constexpr static enet_uint32 CHANNEL_COUNT = 2;
 
 namespace protocol
 {
-// How many packets of each family were handed to ENet. Taking the counts
-// resets them, so one call covers one interval.
-struct NetStats final {
-    std::uint64_t chunks { 0 };
-    std::uint64_t biomes { 0 };
-    std::uint64_t light { 0 };
-    std::uint64_t set_block { 0 };
-    std::uint64_t entities { 0 };
-    std::uint64_t timings { 0 };
-    std::uint64_t other { 0 };
-};
-} // namespace protocol
-
-namespace protocol
-{
 void decode(entt::dispatcher& dispatcher, const ENetPacket* packet, ENetPeer* peer);
 } // namespace protocol
 
@@ -42,14 +27,6 @@ template<typename T>
 void broadcast(const T& packet, ENetHost* host, ENetPeer* except = nullptr);
 template<typename T>
 void send(const T& packet, ENetPeer* peer);
-} // namespace protocol
-
-namespace protocol
-{
-NetStats take_sent_stats(void);
-
-// The same, counted where packets are decoded.
-NetStats take_received_stats(void);
 } // namespace protocol
 
 #endif /* A3E273F9_3BF0_49AA_8E3B_C6E5385F7259 */

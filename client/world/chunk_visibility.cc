@@ -2,8 +2,6 @@
 
 #include "client/world/chunk_visibility.hh"
 
-#include "core/msg/log.hh"
-
 #include "shared/coord.hh"
 #include "shared/globals.hh"
 #include "shared/net/packet_world.hh"
@@ -16,7 +14,6 @@
 #include "client/globals.hh"
 #include "client/gui/slider.hh"
 #include "client/net/session.hh"
-#include "client/world/chunk_mesh.hh"
 #include "client/world/chunk_mesher.hh"
 
 struct ChunkRequest final {
@@ -52,8 +49,6 @@ constexpr static float LOOKAHEAD_CHUNKS = 4.0f;
 // then bursting.
 constexpr static std::size_t REQUEST_BACKLOG_LIMIT = 512;
 
-constexpr static std::uint64_t LOG_INTERVAL = 100;
-
 struct PendingRequest final {
     ChunkPos position;
     std::uint64_t tick;
@@ -65,9 +60,6 @@ static std::vector<ChunkRequest> s_requests;
 static std::deque<PendingRequest> s_outstanding;
 static vx::hash_set<ChunkPos> s_outstanding_positions;
 
-static std::size_t s_requests_sent;
-static std::size_t s_chunks_removed;
-static std::uint64_t s_last_log_tick;
 static std::uint64_t s_last_refill_tick;
 
 static bool is_outstanding(const ChunkPos& cpos)
@@ -184,7 +176,6 @@ void chunk_visibility::fixed_update_late(void)
             s_outstanding.push_back(PendingRequest { request.position, tick });
             s_outstanding_positions.insert(request.position);
             s_requests.pop_back();
-            s_requests_sent += 1;
         }
 
         auto view = world::chunk_registry.view<Chunk_Component>();
@@ -201,24 +192,6 @@ void chunk_visibility::fixed_update_late(void)
 
         for(const auto& cpos : to_remove) {
             world::remove_chunk(cpos);
-        }
-
-        s_chunks_removed += to_remove.size();
-
-        // The balance of one interval: what was asked for, what was dropped,
-        // and what survived. A client that flies into a hole either asked too
-        // little, was answered too little, or threw away what it had.
-        if(globals::current_tick - s_last_log_tick >= LOG_INTERVAL) {
-            s_last_log_tick = globals::current_tick;
-
-            auto loaded = world::chunk_map.size();
-            auto meshed = world::chunk_registry.view<ChunkMesh>().size();
-
-            msg::log_info("chunks: loaded={} meshed={} backlog={} requested={} removed={}", loaded, meshed, chunk_mesher::backlog(),
-                s_requests_sent, s_chunks_removed);
-
-            s_requests_sent = 0;
-            s_chunks_removed = 0;
         }
 
         s_bounds_prev = s_bounds_curr;

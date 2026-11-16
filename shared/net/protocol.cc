@@ -13,9 +13,6 @@
 #include "shared/net/packet_status.hh"
 #include "shared/net/packet_world.hh"
 
-static protocol::NetStats s_sent_stats;
-static protocol::NetStats s_received_stats;
-
 static enet_uint32 channel_of(packet::packet_type type)
 {
     switch(type) {
@@ -33,60 +30,6 @@ static enet_uint32 channel_of(packet::packet_type type)
     }
 
     return protocol::CHANNEL_DEFAULT;
-}
-
-static void count_packet(protocol::NetStats& stats, packet::packet_type type)
-{
-    switch(type) {
-        case packet::WORLD_CHUNK_BLOCKS:
-            stats.chunks += 1;
-            break;
-
-        case packet::WORLD_CHUNK_BIOMES:
-            stats.biomes += 1;
-            break;
-
-        case packet::WORLD_CHUNK_LIGHT:
-            stats.light += 1;
-            break;
-
-        case packet::WORLD_SET_BLOCK:
-            stats.set_block += 1;
-            break;
-
-        case packet::ENTITY_SPAWN:
-        case packet::ENTITY_PATCH:
-        case packet::ENTITY_REMOVE:
-        case packet::ENTITY_CLIENT:
-            stats.entities += 1;
-            break;
-
-        case packet::WORLD_TIMINGS:
-            stats.timings += 1;
-            break;
-
-        default:
-            stats.other += 1;
-            break;
-    }
-}
-
-protocol::NetStats protocol::take_sent_stats(void)
-{
-    auto result = s_sent_stats;
-
-    s_sent_stats = NetStats {};
-
-    return result;
-}
-
-protocol::NetStats protocol::take_received_stats(void)
-{
-    auto result = s_received_stats;
-
-    s_received_stats = NetStats {};
-
-    return result;
 }
 
 static void common_broadcast(ENetPacket* packet, ENetHost* host, ENetPeer* except, enet_uint32 channel)
@@ -158,8 +101,6 @@ void protocol::decode(entt::dispatcher& dispatcher, const ENetPacket* packet, EN
 
     auto id = buffer.read<std::uint16_t>();
     auto type = static_cast<packet::packet_type>(id);
-
-    count_packet(s_received_stats, type);
 
     switch(type) {
         case packet::Status_Request::TYPE:
@@ -331,8 +272,6 @@ void protocol::broadcast(const T& packet, ENetHost* host, ENetPeer* except)
     buffer.write<std::uint16_t>(static_cast<std::uint16_t>(T::TYPE));
     T::encode(packet, buffer);
 
-    count_packet(s_sent_stats, T::TYPE);
-
     auto enet_packet = buffer.to_packet(ENET_PACKET_FLAG_RELIABLE);
     common_broadcast(enet_packet, host, except, channel_of(T::TYPE));
 }
@@ -373,8 +312,6 @@ void protocol::send(const T& packet, ENetPeer* peer)
     buffer.reset();
     buffer.write<std::uint16_t>(static_cast<std::uint16_t>(T::TYPE));
     T::encode(packet, buffer);
-
-    count_packet(s_sent_stats, T::TYPE);
 
     auto enet_packet = buffer.to_packet(ENET_PACKET_FLAG_RELIABLE);
     common_send(enet_packet, peer, channel_of(T::TYPE));

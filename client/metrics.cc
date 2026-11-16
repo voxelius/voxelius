@@ -354,6 +354,16 @@ static ImVec2 layout_head(ImDrawList* draw_list, ImVec2 position, ImU32 text, Im
     draw_text(draw_list, draw_line, position, text, shadow);
     position.y += ystep;
 
+    // Loaded chunks against meshed ones against what still waits for a mesh:
+    // a hole in the world is either a chunk nobody asked for or a mesh that
+    // never got built, and the three numbers tell them apart.
+    auto loaded_chunks = world::chunk_map.size();
+    auto meshed_chunks = world::chunk_registry.view<ChunkMesh>().size();
+
+    auto mesh_line = std::format("mesh:  {}/{} backlog {}", meshed_chunks, loaded_chunks, chunk_mesher::backlog());
+    draw_text(draw_list, mesh_line, position, text, shadow);
+    position.y += ystep;
+
     return position;
 }
 
@@ -446,16 +456,6 @@ static ImVec2 layout_position(ImDrawList* draw_list, ImVec2 position, ImU32 text
 
     auto speed_line = std::format("speed: {:8.2f}", speed);
     draw_text(draw_list, speed_line, position, text, shadow);
-    position.y += ystep;
-
-    // Loaded chunks against meshed ones against what still waits for a mesh:
-    // a hole in the world is either a chunk nobody asked for or a mesh that
-    // never got built, and the three numbers tell them apart.
-    auto loaded_chunks = world::chunk_map.size();
-    auto meshed_chunks = world::chunk_registry.view<ChunkMesh>().size();
-
-    auto mesh_line = std::format("mesh:  {}/{} backlog {}", meshed_chunks, loaded_chunks, chunk_mesher::backlog());
-    draw_text(draw_list, mesh_line, position, text, shadow);
     position.y += ystep;
 
     return position;
