@@ -8,9 +8,21 @@
 constexpr static float CONTROL_FRACTION = 0.5f;
 constexpr static float ROW_PAD_X = 4.0f;
 
+// A stone face paints its bevel on top of the frame, and the stock padding is
+// in physical pixels, so on a scaled display the glyphs end up on the bevel
+constexpr static float CONTROL_PAD_Y = 4.0f;
+
 void gui::detail::SettingWidget::layout(void)
 {
-    auto pad_x = ROW_PAD_X * static_cast<float>(globals::gui_scale);
+    auto scale = static_cast<float>(globals::gui_scale);
+
+    auto pad_x = ROW_PAD_X * scale;
+
+    auto& style = ImGui::GetStyle();
+    auto pad_y = std::max(style.FramePadding.y, CONTROL_PAD_Y * scale);
+
+    // The label aligns itself to the frame padding, so this goes on before it
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(style.FramePadding.x, pad_y));
 
     auto row_start_x = ImGui::GetCursorPosX();
     auto content_size = ImGui::GetContentRegionAvail();
@@ -66,10 +78,7 @@ void gui::detail::SettingWidget::layout(void)
     auto control_max = ImGui::GetItemRectMax();
     auto row_max = ImVec2(row_min.x + content_size.x, std::max(label_max.y, control_max.y));
 
-    const auto& style = ImGui::GetStyle();
-    const auto& item_spacing = style.ItemSpacing;
-
-    auto row_pad_y = 0.5f * item_spacing.y;
+    auto row_pad_y = 0.5f * style.ItemSpacing.y;
     row_min.y -= row_pad_y;
     row_max.y += row_pad_y;
 
@@ -89,6 +98,8 @@ void gui::detail::SettingWidget::layout(void)
     if(extra > 0.0f) {
         ImGui::Dummy(ImVec2(1.0f, extra));
     }
+
+    ImGui::PopStyleVar();
 }
 
 void gui::detail::SettingWidget::translate(void)
