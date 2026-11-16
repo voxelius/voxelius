@@ -9,17 +9,19 @@
 ## everything build process generates
 /.cache/
 /.cache/*
+/.dsh*/
+/.dsh*/*
+/*.old/
+/*.old/**
 /build/
 /build/*
 /compile_commands.json
-/docs/manual/console/variables.md
-/docs/manual/console/commands.md
 /dist/
 /dist/*
+/docs/manual/console/commands.md
+/docs/manual/console/variables.md
 /site/
 /site/*
-/*.old/
-/*.old/**
 
 ## Ignore generated files and everything else
 ## that would be emitted by running the game
