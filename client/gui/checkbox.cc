@@ -2,7 +2,9 @@
 
 #include "client/gui/checkbox.hh"
 
+#include "client/gui/stone.hh"
 #include "client/language.hh"
+#include "client/style.hh"
 #include "core/cvar/host.hh"
 
 gui::CheckBox& gui::CheckBox::bind(std::string_view name)
@@ -26,11 +28,37 @@ void gui::CheckBox::set_value(bool value)
 
 void gui::CheckBox::layout_control(void)
 {
-    auto current = m_value.value();
-    auto label = current ? m_label_true.c_str() : m_label_false.c_str();
-    auto width = ImGui::CalcItemWidth();
+    auto& palette = style::palette();
 
-    if(ImGui::Button(label, ImVec2(width, 0.0f))) {
+    auto current = m_value.value();
+
+    // The toggle takes the whole control column: it is a row-level switch,
+    // and a narrower one reads as a stray button
+    auto size = ImVec2(ImGui::CalcItemWidth(), ImGui::GetFrameHeight());
+
+    auto clicked = ImGui::InvisibleButton(imgui_id().c_str(), size);
+
+    auto hovered = ImGui::IsItemHovered();
+    auto held = ImGui::IsItemActive();
+
+    auto base = current ? palette.button_active : palette.button;
+
+    if(held) {
+        base = palette.button_active;
+    }
+    else if(hovered && !current) {
+        base = palette.button_hovered;
+    }
+
+    auto item_min = ImGui::GetItemRectMin();
+    auto item_max = ImGui::GetItemRectMax();
+
+    auto draw_list = ImGui::GetWindowDrawList();
+
+    gui::detail::draw_stone_face(draw_list, item_min, item_max, base);
+    gui::detail::draw_stone_label(draw_list, item_min, item_max, current ? m_label_true : m_label_false, held, true);
+
+    if(clicked) {
         m_value.set_value(!current);
     }
 }
@@ -38,8 +66,5 @@ void gui::CheckBox::layout_control(void)
 void gui::CheckBox::translate_control(void)
 {
     m_label_false = language::resolve("settings.checkbox.false");
-    m_label_false += imgui_id();
-
     m_label_true = language::resolve("settings.checkbox.true");
-    m_label_true += imgui_id();
 }

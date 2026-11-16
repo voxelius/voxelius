@@ -2,7 +2,85 @@
 
 #include "client/gui/slider.hh"
 
+#include "client/globals.hh"
+#include "client/gui/stone.hh"
+#include "client/style.hh"
 #include "core/cvar/host.hh"
+
+constexpr static float HANDLE_WIDTH = 7.0f;
+
+// Draws the trough and the handle, updates the fraction while the mouse is
+// held down. Returns true while the slider is being dragged.
+static bool layout_slider(const std::string& id, std::string_view text, float& fraction, float snap_steps)
+{
+    auto& palette = style::palette();
+
+    auto size = ImVec2(ImGui::CalcItemWidth(), ImGui::GetFrameHeight());
+    auto item_min = ImGui::GetCursorScreenPos();
+
+    ImGui::InvisibleButton(id.c_str(), size);
+
+    auto active = ImGui::IsItemActive();
+
+    auto scale = static_cast<float>(globals::gui_scale);
+    auto bevel = std::max(1.0f, scale);
+    auto handle_width = std::max(2.0f, HANDLE_WIDTH * scale);
+    auto travel = std::max(1.0f, size.x - handle_width);
+
+    if(active) {
+        auto mouse_x = ImGui::GetIO().MousePos.x;
+        fraction = std::clamp((mouse_x - item_min.x - 0.5f * handle_width) / travel, 0.0f, 1.0f);
+
+        // The handle shows the value that the slider will actually hold, so it
+        // snaps to the steps of an integer range instead of gliding
+        if(snap_steps > 0.0f) {
+            fraction = std::round(fraction * snap_steps) / snap_steps;
+        }
+    }
+
+    auto draw_list = ImGui::GetWindowDrawList();
+    auto item_max = ImVec2(item_min.x + size.x, item_min.y + size.y);
+
+    // The trough is inset: shadow on the top left, light on the bottom right
+    draw_list->AddRectFilled(item_min, item_max, ImGui::GetColorU32(palette.frame));
+    draw_list->AddRect(item_min, item_max, ImGui::GetColorU32(palette.border));
+
+    draw_list->AddRectFilled(item_min, ImVec2(item_max.x, item_min.y + bevel), ImGui::GetColorU32(palette.bevel_dark));
+    draw_list->AddRectFilled(item_min, ImVec2(item_min.x + bevel, item_max.y), ImGui::GetColorU32(palette.bevel_dark));
+    draw_list->AddRectFilled(ImVec2(item_min.x, item_max.y - bevel), item_max, ImGui::GetColorU32(palette.bevel_light));
+    draw_list->AddRectFilled(ImVec2(item_max.x - bevel, item_min.y), item_max, ImGui::GetColorU32(palette.bevel_light));
+
+    auto handle_min = ImVec2(item_min.x + fraction * travel, item_min.y + bevel);
+    auto handle_max = ImVec2(handle_min.x + handle_width, item_max.y - bevel);
+
+    // The part left of the handle reads as the filled one
+    if(handle_min.x > item_min.x + bevel) {
+        draw_list->AddRectFilled(ImVec2(item_min.x + bevel, item_min.y + bevel), ImVec2(handle_min.x, item_max.y - bevel),
+            ImGui::GetColorU32(palette.button_active));
+
+        // A dark seam keeps the handle readable even when it sits far right
+        draw_list->AddRectFilled(ImVec2(handle_min.x - 1.0f, item_min.y + bevel), ImVec2(handle_min.x, item_max.y - bevel),
+            ImGui::GetColorU32(palette.bevel_dark));
+    }
+
+    // The handle is a stone knob rather than a flat bar, so it reads as
+    // something you can grab even at the small widget size
+    gui::detail::draw_stone_face(draw_list, handle_min, handle_max, palette.bevel_light);
+
+    auto shadow_color = ImGui::GetColorU32(palette.bevel_dark);
+    auto text_color = ImGui::GetColorU32(palette.text);
+
+    auto text_size = ImGui::CalcTextSize(text.data(), text.data() + text.size());
+
+    auto text_position = ImVec2();
+    text_position.x = std::floor(item_min.x + 0.5f * (size.x - text_size.x));
+    text_position.y = std::floor(item_min.y + 0.5f * (size.y - text_size.y));
+
+    draw_list->AddText(ImVec2(text_position.x + 1.0f, text_position.y + 1.0f), shadow_color, text.data(), text.data() + text.size());
+    draw_list->AddText(text_position, text_color, text.data(), text.data() + text.size());
+
+    return active;
+}
 
 template<typename T>
 gui::Slider<T>& gui::Slider<T>::bind(std::string_view name)
@@ -47,10 +125,16 @@ template<>
 void gui::Slider<int>::layout_control(void)
 {
     auto current = m_value.value();
-    auto format = m_format.size() ? m_format.c_str() : "%d";
+    auto range = m_max - m_min;
 
-    if(ImGui::SliderInt(this->imgui_id().c_str(), &current, m_min, m_max, format)) {
-        m_value.set_value(current);
+    auto fraction = (0 == range) ? 0.0f : static_cast<float>(current - m_min) / static_cast<float>(range);
+
+    char buffer[64];
+    std::snprintf(buffer, sizeof(buffer), m_format.empty() ? "%d" : m_format.c_str(), current);
+
+    if(layout_slider(this->imgui_id(), buffer, fraction, static_cast<float>(range))) {
+        auto next = m_min + static_cast<int>(std::lround(fraction * static_cast<float>(range)));
+        m_value.set_value(std::clamp(next, m_min, m_max));
     }
 }
 
@@ -58,10 +142,14 @@ template<>
 void gui::Slider<float>::layout_control(void)
 {
     auto current = m_value.value();
-    auto format = m_format.size() ? m_format.c_str() : "%.3f";
 
-    if(ImGui::SliderFloat(this->imgui_id().c_str(), &current, m_min, m_max, format)) {
-        m_value.set_value(current);
+    auto fraction = (m_max <= m_min) ? 0.0f : (current - m_min) / (m_max - m_min);
+
+    char buffer[64];
+    std::snprintf(buffer, sizeof(buffer), m_format.empty() ? "%.3f" : m_format.c_str(), static_cast<double>(current));
+
+    if(layout_slider(this->imgui_id(), buffer, fraction, 0.0f)) {
+        m_value.set_value(std::clamp(m_min + fraction * (m_max - m_min), m_min, m_max));
     }
 }
 
@@ -69,13 +157,16 @@ template<>
 void gui::Slider<unsigned>::layout_control(void)
 {
     auto current = m_value.value();
-    auto format = m_format.size() ? m_format.c_str() : "%u";
-    auto scalar = static_cast<std::uint32_t>(current);
-    auto min = static_cast<std::uint32_t>(m_min);
-    auto max = static_cast<std::uint32_t>(m_max);
 
-    if(ImGui::SliderScalar(this->imgui_id().c_str(), ImGuiDataType_U32, &scalar, &min, &max, format)) {
-        m_value.set_value(static_cast<unsigned>(scalar));
+    auto range = static_cast<std::uint32_t>(m_max) - static_cast<std::uint32_t>(m_min);
+    auto fraction = (0U == range) ? 0.0f : static_cast<float>(current - m_min) / static_cast<float>(range);
+
+    char buffer[64];
+    std::snprintf(buffer, sizeof(buffer), m_format.empty() ? "%u" : m_format.c_str(), current);
+
+    if(layout_slider(this->imgui_id(), buffer, fraction, static_cast<float>(range))) {
+        auto next = static_cast<std::uint32_t>(m_min) + static_cast<std::uint32_t>(std::lround(fraction * static_cast<float>(range)));
+        m_value.set_value(std::min(next, static_cast<std::uint32_t>(m_max)));
     }
 }
 

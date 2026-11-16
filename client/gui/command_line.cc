@@ -2,11 +2,13 @@
 
 #include "client/gui/command_line.hh"
 
+#include "client/gui/stone.hh"
 #include "client/language.hh"
 
-gui::CommandLine& gui::CommandLine::set_font(ImFont* font)
+gui::CommandLine& gui::CommandLine::set_font(ImFont* font, float size)
 {
     m_font = font;
+    m_font_size = size;
 
     return self();
 }
@@ -119,7 +121,13 @@ void gui::CommandLine::submit(void)
 void gui::CommandLine::layout(void)
 {
     if(m_font) {
-        ImGui::PushFont(m_font, m_font->LegacySize);
+        auto size = m_font->LegacySize;
+
+        if(m_font_size > 0.0f) {
+            size = m_font_size;
+        }
+
+        ImGui::PushFont(m_font, size);
     }
 
     const auto& style = ImGui::GetStyle();
@@ -149,7 +157,9 @@ void gui::CommandLine::layout(void)
     if(m_button_label.size()) {
         ImGui::SameLine();
 
-        if(ImGui::Button(m_button_label.c_str(), ImVec2(-1.0f, 0.0f))) {
+        auto button_size = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight());
+
+        if(gui::detail::stone_button(m_button_label.c_str(), m_button_label, button_size)) {
             submitted = true;
         }
     }

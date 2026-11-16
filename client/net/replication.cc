@@ -22,7 +22,7 @@ static bool accept_shadow(const packet::Cvar_ServerVars::Variable& variable)
     if(auto binding = cvar::find_var(variable.name)) {
         auto flags = binding->flags().value_or(FCVAR_NONE);
 
-        if(!binding->is_remote() && !(flags & FCVAR_REPLICATED)) {
+        if(!binding->is_remote() && 0 == (flags & FCVAR_REPLICATED)) {
             msg::log_warning("replication: server wants to set {} which is not replicated here, ignoring it", variable.name);
 
             return true;
@@ -107,7 +107,7 @@ static void on_cvar_server_cmds(const packet::Cvar_ServerCmds& packet)
         if(binding) {
             auto flags = binding->flags().value_or(FCVAR_NONE);
 
-            if(!(flags & FCVAR_RECALL)) {
+            if(0 == (flags & FCVAR_RECALL)) {
                 msg::log_warning("{}: server tried to set non-recallable command", command.name);
 
                 continue;

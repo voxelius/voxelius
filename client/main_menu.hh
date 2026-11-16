@@ -21,4 +21,9 @@ void init_late(void);
 void shutdown(void);
 } // namespace main_menu
 
+namespace main_menu
+{
+void show(void);
+} // namespace main_menu
+
 #endif /* B50F923C_FC26_4E20_B259_B53791A35A9B */

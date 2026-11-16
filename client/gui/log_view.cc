@@ -39,9 +39,10 @@ static const ImVec4& entry_color(const std::optional<msg::level_type>& level)
     }
 }
 
-gui::LogView& gui::LogView::set_font(ImFont* font)
+gui::LogView& gui::LogView::set_font(ImFont* font, float size)
 {
     m_font = font;
+    m_font_size = size;
 
     return self();
 }
@@ -160,7 +161,13 @@ void gui::LogView::layout(void)
 
     if(ImGui::BeginChild(imgui_id().c_str(), ImVec2(0.0f, 0.0f), child_flags, window_flags)) {
         if(m_font) {
-            ImGui::PushFont(m_font, m_font->LegacySize);
+            auto size = m_font->LegacySize;
+
+            if(m_font_size > 0.0f) {
+                size = m_font_size;
+            }
+
+            ImGui::PushFont(m_font, size);
         }
 
         ImGuiListClipper clipper;

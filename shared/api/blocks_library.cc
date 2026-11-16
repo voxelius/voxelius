@@ -1029,7 +1029,7 @@ static int api_is_replaceable(lua_State* L)
     }
 
     auto def = block_registry::find_definition(id);
-    lua_pushboolean(L, def != nullptr && def->replaceable);
+    lua_pushboolean(L, def && def->replaceable);
     return 1;
 }
 

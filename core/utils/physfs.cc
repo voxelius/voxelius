@@ -57,7 +57,14 @@ bool utils::read_file(std::string_view path, std::istringstream& stream)
 bool utils::write_file(std::string_view path, std::string_view buffer, bool append)
 {
     auto path_unfucked = std::string(path);
-    auto file = append ? PHYSFS_openAppend(path_unfucked.c_str()) : PHYSFS_openWrite(path_unfucked.c_str());
+    PHYSFS_File* file = nullptr;
+
+    if(append) {
+        file = PHYSFS_openAppend(path_unfucked.c_str());
+    }
+    else {
+        file = PHYSFS_openWrite(path_unfucked.c_str());
+    }
 
     if(file == nullptr) {
         msg::log_warning("{}: {}", path_unfucked, physfs_error());
@@ -73,7 +80,14 @@ bool utils::write_file(std::string_view path, std::string_view buffer, bool appe
 bool utils::write_file(std::string_view path, std::span<const std::byte> buffer, bool append)
 {
     auto path_unfucked = std::string(path);
-    auto file = append ? PHYSFS_openAppend(path_unfucked.c_str()) : PHYSFS_openWrite(path_unfucked.c_str());
+    PHYSFS_File* file = nullptr;
+
+    if(append) {
+        file = PHYSFS_openAppend(path_unfucked.c_str());
+    }
+    else {
+        file = PHYSFS_openWrite(path_unfucked.c_str());
+    }
 
     if(file == nullptr) {
         msg::log_warning("{}: {}", path_unfucked, physfs_error());

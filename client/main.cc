@@ -150,7 +150,10 @@ static void zoned_update(void)
     auto scale_y = std::max(1.0f, std::floor(static_cast<float>(height) / static_cast<float>(constant::BASE_HEIGHT)));
     auto scale_min = std::min(scale_x, scale_y);
 
-    ImGui::GetIO().FontGlobalScale = scale_min;
+    // ImGui 1.92 wants FontScaleMain instead of the legacy FontGlobalScale:
+    // only the former is visible to GetFontSize(), so widget metrics follow
+    // the text instead of staying a step behind
+    ImGui::GetStyle().FontScaleMain = scale_min;
     globals::gui_scale = static_cast<unsigned>(scale_min);
 }
 

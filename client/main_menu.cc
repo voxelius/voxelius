@@ -4,10 +4,12 @@
 
 #include "core/exception.hh"
 #include "core/res/resource.hh"
+#include "core/version.hh"
 
 #include "shared/mod_context.hh"
 #include "shared/mod_loader.hh"
 #include "shared/net/packet_session.hh"
+#include "shared/splash.hh"
 
 #include "client/console.hh"
 #include "client/constant.hh"
@@ -17,6 +19,7 @@
 #include "client/gui/menu.hh"
 #include "client/gui/popup.hh"
 #include "client/gui/screen.hh"
+#include "client/gui/title.hh"
 #include "client/language.hh"
 #include "client/net/session.hh"
 #include "client/play_menu.hh"
@@ -26,10 +29,12 @@
 gui::Screen main_menu::screen;
 gui::Background main_menu::background;
 
-static res::handle<Texture2D> s_background;
+static res::handle<Texture2D> s_title_texture;
 static gui::ChoicePopup s_popup_mods;
 static gui::ChoicePopup s_popup_quit;
 static gui::Menu s_menu;
+static gui::Title s_title;
+static std::string s_splash {};
 
 static void on_language_update(const LanguageUpdateEvent& event)
 {
@@ -47,21 +52,26 @@ static void on_keyboard_event(const SDL_KeyboardEvent& event)
             globals::gui_screen = nullptr;
         }
         else {
-            globals::gui_screen = &main_menu::screen;
+            main_menu::show();
         }
     }
 }
 
 void main_menu::init(void)
 {
-    auto id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "background.png");
-    s_background = res::load<Texture2D>(id, "textures/gui");
-    vx::throw_if_not(s_background.get());
-
-    background.set_left({ 0.000f, 0.000f, 0.000f, 0.950f });
-    background.set_right({ 0.000f, 0.000f, 0.000f, 0.750f });
-    background.set_texture(s_background->imgui);
+    background.set_left({ 0.000f, 0.000f, 0.000f, 0.550f });
+    background.set_right({ 0.000f, 0.000f, 0.000f, 0.150f });
+    background.enable_scene();
     screen.add_child(background);
+
+    auto title_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "menu_title.png");
+    s_title_texture = res::load<Texture2D>(title_id, "textures/gui");
+    vx::throw_if_not(s_title_texture.get());
+
+    s_title.set_texture(s_title_texture->imgui,
+        ImVec2(static_cast<float>(s_title_texture->width), static_cast<float>(s_title_texture->height)));
+    s_title.set_version(std::format("Voxelius {}", version::semantic));
+    screen.add_child(s_title);
 
     s_popup_mods.set_title("main_menu.mods_popup.title");
     s_popup_mods.set_message("main_menu.mods_popup.message");
@@ -82,8 +92,19 @@ void main_menu::init(void)
 
     screen.add_child(s_popup_quit);
 
-    s_menu.add_button_offline("main_menu.button.quit", [] {
-        s_popup_quit.open();
+    s_menu.set_control(ImVec2(200.0f, 20.0f));
+    s_menu.set_anchor(0.5f, 0.45f);
+
+    s_menu.add_button_ingame("main_menu.button.resume", [] {
+        globals::gui_screen = nullptr;
+    });
+
+    s_menu.add_button_offline("main_menu.button.play", [] {
+        globals::gui_screen = &play_menu::screen;
+    });
+
+    s_menu.add_button_any("main_menu.button.settings", [] {
+        globals::gui_screen = &settings::screen;
     });
 
     s_menu.add_button_ingame("main_menu.button.disconnect", [] {
@@ -92,20 +113,8 @@ void main_menu::init(void)
         globals::gui_screen = &play_menu::screen;
     });
 
-    s_menu.add_spacer_any();
-
-    s_menu.add_button_any("main_menu.button.settings", [] {
-        globals::gui_screen = &settings::screen;
-    });
-
-    s_menu.add_spacer_any(1.5f);
-
-    s_menu.add_button_ingame("main_menu.button.resume", [] {
-        globals::gui_screen = nullptr;
-    });
-
-    s_menu.add_button_offline("main_menu.button.play", [] {
-        globals::gui_screen = &play_menu::screen;
+    s_menu.add_button_offline("main_menu.button.quit", [] {
+        s_popup_quit.open();
     });
 
     screen.add_child(s_menu);
@@ -120,10 +129,20 @@ void main_menu::init_late(void)
         s_popup_mods.open();
     }
 
+    main_menu::show();
+}
+
+void main_menu::show(void)
+{
+    s_splash = splash::get();
+    s_title.set_splash(s_splash);
+
     globals::gui_screen = &screen;
 }
 
 void main_menu::shutdown(void)
 {
-    s_background.reset();
+    s_title.set_texture(0, ImVec2(0.0f, 0.0f));
+
+    s_title_texture.reset();
 }

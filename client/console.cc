@@ -23,9 +23,10 @@
 constexpr static SDL_Keycode CONSOLE_KEY = SDLK_GRAVE;
 
 constexpr static float SCREEN_HEIGHT = 1.0f;
-constexpr static float INPUT_HEIGHT = 24.0f;
+constexpr static float INPUT_HEIGHT = 14.0f;
+constexpr static float CONSOLE_FONT_SIZE = 8.0f;
 constexpr static ImVec2 PANEL_MARGIN = ImVec2(1.0f, 1.0f);
-constexpr static ImVec4 DIMMER_COLOR = ImVec4(0.000f, 0.000f, 0.000f, 0.950f);
+constexpr static ImVec4 DIMMER_COLOR = ImVec4(0.000f, 0.000f, 0.000f, 0.750f);
 
 gui::Screen console::screen;
 
@@ -194,8 +195,8 @@ void console::init(void)
 
 void console::init_late(void)
 {
-    s_log_view.set_font(fonts::unscii16);
-    s_input.set_font(fonts::unscii16);
+    s_log_view.set_font(fonts::unscii16, CONSOLE_FONT_SIZE);
+    s_input.set_font(fonts::unscii16, CONSOLE_FONT_SIZE);
 }
 
 void console::shutdown(void)

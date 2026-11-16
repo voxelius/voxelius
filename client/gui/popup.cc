@@ -4,7 +4,11 @@
 
 #include "client/fonts.hh"
 #include "client/globals.hh"
+#include "client/gui/stone.hh"
 #include "client/language.hh"
+
+constexpr static float MIN_POPUP_WIDTH = 170.0f;
+constexpr static float BUTTON_HEIGHT = 14.0f;
 
 gui::ChoicePopup& gui::ChoicePopup::set_title(std::string_view title)
 {
@@ -53,7 +57,7 @@ void gui::ChoicePopup::layout(void)
     auto window_size = ImGui::GetWindowSize();
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
-    ImGui::PushFont(fonts::unscii16, fonts::unscii16->LegacySize);
+    ImGui::PushFont(fonts::unscii8, fonts::unscii8->LegacySize);
 
     ImVec2 size {};
     size.x = m_size.x * static_cast<float>(globals::gui_scale);
@@ -63,6 +67,12 @@ void gui::ChoicePopup::layout(void)
 
     if(forced) {
         ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+    }
+    else {
+        auto min_width = MIN_POPUP_WIDTH * static_cast<float>(globals::gui_scale);
+
+        ImGui::SetNextWindowSizeConstraints(ImVec2(min_width, 0.0f),
+            ImVec2(std::numeric_limits<float>::max(), std::numeric_limits<float>::max()));
     }
 
     auto flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize;
@@ -75,7 +85,7 @@ void gui::ChoicePopup::layout(void)
         auto& style = ImGui::GetStyle();
         auto& spacing = style.ItemSpacing;
 
-        auto content_width = ImGui::CalcItemWidth();
+        auto content_width = ImGui::GetContentRegionAvail().x;
 
         if(size.x > 0.0f) {
             content_width = size.x - 2.0f * style.WindowPadding.x;
@@ -89,12 +99,12 @@ void gui::ChoicePopup::layout(void)
 
         ImVec2 button_size {};
         button_size.x = 0.5f * content_width - 0.5f * spacing.x;
-        button_size.y = 0.0;
+        button_size.y = BUTTON_HEIGHT * static_cast<float>(globals::gui_scale);
 
         for(std::size_t i = 0; i < m_choices.size(); ++i) {
             const auto& choice = m_choices[i];
 
-            if(ImGui::Button(choice.label.c_str(), button_size)) {
+            if(gui::detail::stone_button(choice.label.c_str(), choice.label, button_size)) {
                 if(choice.callback) {
                     choice.callback();
                 }
@@ -199,7 +209,7 @@ void gui::InputPopup::layout(void)
     auto window_size = ImGui::GetWindowSize();
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
-    ImGui::PushFont(fonts::unscii16, fonts::unscii16->LegacySize);
+    ImGui::PushFont(fonts::unscii8, fonts::unscii8->LegacySize);
 
     ImVec2 size {};
     size.x = m_size.x * static_cast<float>(globals::gui_scale);
@@ -209,6 +219,12 @@ void gui::InputPopup::layout(void)
 
     if(forced) {
         ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+    }
+    else {
+        auto min_width = MIN_POPUP_WIDTH * static_cast<float>(globals::gui_scale);
+
+        ImGui::SetNextWindowSizeConstraints(ImVec2(min_width, 0.0f),
+            ImVec2(std::numeric_limits<float>::max(), std::numeric_limits<float>::max()));
     }
 
     auto flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize;
@@ -221,7 +237,7 @@ void gui::InputPopup::layout(void)
         auto& style = ImGui::GetStyle();
         auto& spacing = style.ItemSpacing;
 
-        auto content_width = ImGui::CalcItemWidth();
+        auto content_width = ImGui::GetContentRegionAvail().x;
 
         if(size.x > 0.0f) {
             content_width = size.x - 2.0f * style.WindowPadding.x;
@@ -259,9 +275,9 @@ void gui::InputPopup::layout(void)
 
         ImVec2 button_size {};
         button_size.x = 0.5f * content_width - 0.5f * spacing.x;
-        button_size.y = 0.0f;
+        button_size.y = BUTTON_HEIGHT * static_cast<float>(globals::gui_scale);
 
-        if(ImGui::Button(m_cancel_label.c_str(), button_size)) {
+        if(gui::detail::stone_button(m_cancel_label.c_str(), m_cancel_label, button_size)) {
             if(m_cancel) {
                 m_cancel();
             }
@@ -271,7 +287,7 @@ void gui::InputPopup::layout(void)
 
         ImGui::SameLine();
 
-        if(ImGui::Button(m_submit_label.c_str(), button_size) || enter_pressed) {
+        if(gui::detail::stone_button(m_submit_label.c_str(), m_submit_label, button_size) || enter_pressed) {
             if(m_submit) {
                 std::vector<std::string> values;
                 values.reserve(m_fields.size());
@@ -382,7 +398,7 @@ void gui::ProgressPopup::layout(void)
     auto window_size = ImGui::GetWindowSize();
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 1.0f);
-    ImGui::PushFont(fonts::unscii16, fonts::unscii16->LegacySize);
+    ImGui::PushFont(fonts::unscii8, fonts::unscii8->LegacySize);
 
     ImVec2 size {};
     size.x = m_size.x * static_cast<float>(globals::gui_scale);
@@ -392,6 +408,12 @@ void gui::ProgressPopup::layout(void)
 
     if(forced) {
         ImGui::SetNextWindowSize(size, ImGuiCond_Always);
+    }
+    else {
+        auto min_width = MIN_POPUP_WIDTH * static_cast<float>(globals::gui_scale);
+
+        ImGui::SetNextWindowSizeConstraints(ImVec2(min_width, 0.0f),
+            ImVec2(std::numeric_limits<float>::max(), std::numeric_limits<float>::max()));
     }
 
     auto flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize;
@@ -417,7 +439,7 @@ void gui::ProgressPopup::layout(void)
         auto& style = ImGui::GetStyle();
         auto& spacing = style.ItemSpacing;
 
-        auto content_width = ImGui::CalcItemWidth();
+        auto content_width = ImGui::GetContentRegionAvail().x;
 
         if(size.x > 0.0f) {
             content_width = size.x - 2.0f * style.WindowPadding.x;
@@ -439,11 +461,12 @@ void gui::ProgressPopup::layout(void)
         if(m_cancel) {
             ImGui::NewLine();
 
+            // A lone cancel button takes the whole width
             ImVec2 button_size {};
-            button_size.x = 0.5f * content_width - 0.5f * spacing.x;
-            button_size.y = 0.0f;
+            button_size.x = content_width;
+            button_size.y = BUTTON_HEIGHT * static_cast<float>(globals::gui_scale);
 
-            if(ImGui::Button(m_cancel_label.c_str(), button_size)) {
+            if(gui::detail::stone_button(m_cancel_label.c_str(), m_cancel_label, button_size)) {
                 m_cancel();
 
                 ImGui::CloseCurrentPopup();

@@ -123,7 +123,7 @@ void player_move::update(void)
         release_all();
     }
 
-    s_gui_was_open = globals::gui_screen != nullptr;
+    s_gui_was_open = globals::gui_screen;
 
     if(!globals::registry.valid(globals::player)) {
         return;

@@ -2,13 +2,13 @@
 
 #include "client/gui/menu.hh"
 
-#include "client/fonts.hh"
 #include "client/globals.hh"
-#include "client/language.hh"
 
 constexpr static unsigned CONDITION_ANY = 0xFFFF;
 constexpr static unsigned CONDITION_INGAME = 0x0001;
 constexpr static unsigned CONDITION_OFFLINE = 0x0002;
+
+constexpr static float BUTTON_GAP = 6.0f;
 
 static bool condition_met(unsigned condition)
 {
@@ -20,26 +20,27 @@ static bool condition_met(unsigned condition)
     }
 }
 
-gui::Menu& gui::Menu::set_margin(ImVec2 margin)
+gui::Menu& gui::Menu::set_control(ImVec2 control)
 {
-    m_margin = std::move(margin);
+    m_control = control;
 
     return self();
 }
 
-gui::Menu& gui::Menu::set_control(ImVec2 control)
+gui::Menu& gui::Menu::set_anchor(float xrel, float yrel)
 {
-    m_control = std::move(control);
+    m_anchor.x = xrel;
+    m_anchor.y = yrel;
 
     return self();
 }
 
 gui::Menu& gui::Menu::add_button_any(std::string_view label, std::function<void(void)> callback)
 {
-    Button item {};
+    ButtonItem item {};
     item.condition = CONDITION_ANY;
-    item.label_key = label;
-    item.callback = std::move(callback);
+    item.widget.set_text(label);
+    item.widget.on_click(std::move(callback));
 
     m_items.emplace_back(std::move(item));
 
@@ -48,10 +49,10 @@ gui::Menu& gui::Menu::add_button_any(std::string_view label, std::function<void(
 
 gui::Menu& gui::Menu::add_button_ingame(std::string_view label, std::function<void(void)> callback)
 {
-    Button item {};
+    ButtonItem item {};
     item.condition = CONDITION_INGAME;
-    item.label_key = label;
-    item.callback = std::move(callback);
+    item.widget.set_text(label);
+    item.widget.on_click(std::move(callback));
 
     m_items.emplace_back(std::move(item));
 
@@ -60,10 +61,10 @@ gui::Menu& gui::Menu::add_button_ingame(std::string_view label, std::function<vo
 
 gui::Menu& gui::Menu::add_button_offline(std::string_view label, std::function<void(void)> callback)
 {
-    Button item {};
+    ButtonItem item {};
     item.condition = CONDITION_OFFLINE;
-    item.label_key = label;
-    item.callback = std::move(callback);
+    item.widget.set_text(label);
+    item.widget.on_click(std::move(callback));
 
     m_items.emplace_back(std::move(item));
 
@@ -72,7 +73,7 @@ gui::Menu& gui::Menu::add_button_offline(std::string_view label, std::function<v
 
 gui::Menu& gui::Menu::add_spacer_any(float height)
 {
-    Spacer item {};
+    SpacerItem item {};
     item.condition = CONDITION_ANY;
     item.height = height;
 
@@ -83,7 +84,7 @@ gui::Menu& gui::Menu::add_spacer_any(float height)
 
 gui::Menu& gui::Menu::add_spacer_ingame(float height)
 {
-    Spacer item {};
+    SpacerItem item {};
     item.condition = CONDITION_INGAME;
     item.height = height;
 
@@ -94,7 +95,7 @@ gui::Menu& gui::Menu::add_spacer_ingame(float height)
 
 gui::Menu& gui::Menu::add_spacer_offline(float height)
 {
-    Spacer item {};
+    SpacerItem item {};
     item.condition = CONDITION_OFFLINE;
     item.height = height;
 
@@ -105,61 +106,43 @@ gui::Menu& gui::Menu::add_spacer_offline(float height)
 
 void gui::Menu::layout(void)
 {
-    ImVec2 margin {};
-    margin.x = m_margin.x * static_cast<float>(globals::gui_scale);
-    margin.y = m_margin.y * static_cast<float>(globals::gui_scale);
+    auto scale = static_cast<float>(globals::gui_scale);
 
-    ImVec2 control {};
-    control.x = m_control.x * static_cast<float>(globals::gui_scale);
-    control.y = m_control.y * static_cast<float>(globals::gui_scale);
+    auto control = ImVec2(m_control.x * scale, m_control.y * scale);
+    auto gap = BUTTON_GAP * scale;
 
     auto window_size = ImGui::GetWindowSize();
 
-    ImGui::PushFont(fonts::unscii16, 16.0f);
-    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.000f, 0.000f, 0.000f, 0.000f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.500f, 0.500f, 0.500f, 0.125f));
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0.500f, 0.500f, 0.500f, 0.500f));
-    ImGui::PushStyleVarX(ImGuiStyleVar_FramePadding, 16.0f * static_cast<float>(globals::gui_scale));
-    ImGui::PushStyleVarX(ImGuiStyleVar_ButtonTextAlign, 0.0f);
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+    auto cursor = ImVec2();
+    cursor.x = window_size.x * m_anchor.x - 0.5f * control.x;
+    cursor.y = window_size.y * m_anchor.y;
 
-    ImVec2 cursor_pos {};
-    cursor_pos.x = margin.x;
-    cursor_pos.y = window_size.y - margin.y;
-    cursor_pos.y -= control.y * 1.5f;
-
-    for(const auto& item : m_items) {
-        if(auto button = std::get_if<Button>(&item)) {
-            if(condition_met(button->condition)) {
-                ImGui::SetCursorPos(cursor_pos);
-
-                if(ImGui::Button(button->label.c_str(), control)) {
-                    if(button->callback) {
-                        button->callback();
-                    }
-                }
-
-                cursor_pos.y -= control.y;
+    for(auto& item : m_items) {
+        if(auto button = std::get_if<ButtonItem>(&item)) {
+            if(!condition_met(button->condition)) {
+                continue;
             }
+
+            ImGui::SetCursorPos(cursor);
+
+            button->widget.set_size(control.x, control.y);
+            button->widget.layout();
+
+            cursor.y += control.y + gap;
         }
-        else if(auto spacer = std::get_if<Spacer>(&item)) {
+        else if(auto spacer = std::get_if<SpacerItem>(&item)) {
             if(condition_met(spacer->condition)) {
-                cursor_pos.y -= spacer->height * static_cast<float>(globals::gui_scale);
+                cursor.y += spacer->height * scale;
             }
         }
     }
-
-    ImGui::PopStyleVar(3);
-    ImGui::PopStyleColor(3);
-    ImGui::PopFont();
 }
 
 void gui::Menu::translate(void)
 {
-    for(std::size_t i = 0; i < m_items.size(); ++i) {
-        if(auto button = std::get_if<Button>(&m_items[i])) {
-            button->label = language::resolve(button->label_key);
-            button->label += std::format("{}[{}]", imgui_id(), i);
+    for(auto& item : m_items) {
+        if(auto button = std::get_if<ButtonItem>(&item)) {
+            button->widget.translate();
         }
     }
 }

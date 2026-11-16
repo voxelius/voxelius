@@ -7,7 +7,7 @@ namespace gui
 {
 class CommandLine final : public WidgetBuilder<CommandLine> {
 public:
-    CommandLine& set_font(ImFont* font);
+    CommandLine& set_font(ImFont* font, float size = 0.0f);
     CommandLine& set_button_text(std::string_view key);
     CommandLine& set_history_size(std::size_t size);
     CommandLine& on_submit(std::function<void(std::string_view)> callback);
@@ -24,6 +24,7 @@ private:
     void submit(void);
 
     ImFont* m_font { nullptr };
+    float m_font_size { 0.0f };
 
     std::string m_button_key {};
     std::string m_button_text {};

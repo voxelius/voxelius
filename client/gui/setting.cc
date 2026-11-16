@@ -5,8 +5,8 @@
 #include "client/globals.hh"
 #include "client/language.hh"
 
-constexpr static float CONTROL_FRACTION = 0.6f;
-constexpr static float ROW_PAD_X = 8.0f;
+constexpr static float CONTROL_FRACTION = 0.5f;
+constexpr static float ROW_PAD_X = 4.0f;
 
 void gui::detail::SettingWidget::layout(void)
 {
@@ -16,13 +16,36 @@ void gui::detail::SettingWidget::layout(void)
     auto content_size = ImGui::GetContentRegionAvail();
     auto row_min = ImGui::GetCursorScreenPos();
 
+    auto control_width = CONTROL_FRACTION * content_size.x - pad_x;
+    auto label_width = content_size.x - control_width - 2.0f * pad_x;
+
     auto draw_list = ImGui::GetWindowDrawList();
     draw_list->ChannelsSplit(2);
     draw_list->ChannelsSetCurrent(1);
 
     ImGui::SetCursorPosX(row_start_x + pad_x);
     ImGui::AlignTextToFramePadding();
+
+    // Long translations wrap inside their column instead of running under
+    // the control
+    ImGui::PushTextWrapPos(row_start_x + pad_x + label_width);
     ImGui::TextUnformatted(m_label.c_str());
+    ImGui::PopTextWrapPos();
+
+    // The item rect is the only place that holds where the text really
+    // landed: AlignTextToFramePadding moves it down at draw time
+    auto label_min = ImGui::GetItemRectMin();
+    auto label_max = ImGui::GetItemRectMax();
+
+    // ImGui text cannot carry a shadow, so it goes to the lower channel: the
+    // merge draws it first and the label lands on top of it
+    auto shadow_offset = static_cast<float>(globals::gui_scale);
+    auto shadow_color = ImGui::GetColorU32(ImVec4(0.000f, 0.000f, 0.000f, 0.750f));
+
+    draw_list->ChannelsSetCurrent(0);
+    draw_list->AddText(ImGui::GetFont(), ImGui::GetFontSize(), ImVec2(label_min.x + shadow_offset, label_min.y + shadow_offset),
+        shadow_color, m_label.c_str(), nullptr, label_width);
+    draw_list->ChannelsSetCurrent(1);
 
     if(m_tooltip_enabled) {
         if(ImGui::BeginItemTooltip()) {
@@ -33,15 +56,15 @@ void gui::detail::SettingWidget::layout(void)
         }
     }
 
-    auto control_width = CONTROL_FRACTION * content_size.x - pad_x;
-
+    // The control always sits on the first line of the row, even when the
+    // label wrapped to a second one
     ImGui::SetNextItemWidth(control_width);
-    ImGui::SameLine(row_start_x + content_size.x - control_width - pad_x);
+    ImGui::SetCursorScreenPos(ImVec2(row_min.x + content_size.x - control_width - pad_x, row_min.y));
 
     layout_control();
 
-    auto item_max = ImGui::GetItemRectMax();
-    auto row_max = ImVec2(row_min.x + content_size.x, item_max.y);
+    auto control_max = ImGui::GetItemRectMax();
+    auto row_max = ImVec2(row_min.x + content_size.x, std::max(label_max.y, control_max.y));
 
     const auto& style = ImGui::GetStyle();
     const auto& item_spacing = style.ItemSpacing;
@@ -57,6 +80,15 @@ void gui::detail::SettingWidget::layout(void)
     }
 
     draw_list->ChannelsMerge();
+
+    // The cursor only followed the control, so a wrapped label would be
+    // overlapped by the next row. A dummy item grows the row instead of
+    // moving the cursor by hand, which ImGui does not allow past the edge
+    auto extra = std::max(0.0f, label_max.y - control_max.y);
+
+    if(extra > 0.0f) {
+        ImGui::Dummy(ImVec2(1.0f, extra));
+    }
 }
 
 void gui::detail::SettingWidget::translate(void)

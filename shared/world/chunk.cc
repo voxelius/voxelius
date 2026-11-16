@@ -138,7 +138,9 @@ void Chunk::restore(Snapshot snapshot, std::uint64_t now)
 
 void Chunk::schedule(std::size_t index, std::uint64_t deadline, block_tick_source source)
 {
-    for(auto it = m_scheduled.begin(); it != m_scheduled.end();) {
+    auto it = m_scheduled.begin();
+
+    while(it != m_scheduled.end()) {
         if(it->second.first == index && it->second.second == source) {
             if(it->first <= deadline) {
                 return;
@@ -148,7 +150,7 @@ void Chunk::schedule(std::size_t index, std::uint64_t deadline, block_tick_sourc
             continue;
         }
 
-        ++it;
+        it = std::next(it);
     }
 
     m_scheduled.emplace(deadline, std::make_pair(index, source));

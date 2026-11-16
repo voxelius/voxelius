@@ -9,7 +9,7 @@ namespace gui
 {
 class LogView final : public WidgetBuilder<LogView> {
 public:
-    LogView& set_font(ImFont* font);
+    LogView& set_font(ImFont* font, float size = 0.0f);
     LogView& set_capacity(std::size_t capacity);
     LogView& set_padding(ImVec2 padding);
 
@@ -29,7 +29,8 @@ private:
     void push_lines(std::optional<msg::level_type> level, std::string_view text);
 
     ImFont* m_font { nullptr };
-    ImVec2 m_padding { 6.0f, 4.0f };
+    float m_font_size { 0.0f };
+    ImVec2 m_padding { 3.0f, 2.0f };
     std::size_t m_capacity { 1024 };
 
     std::mutex m_mutex {};

@@ -284,7 +284,7 @@ void ZvoxFile::build_free_ranges(void)
     std::vector<std::pair<std::uint64_t, std::uint64_t>> used;
 
     for(std::size_t i = 0; i < constant::REGION_VOLUME; ++i) {
-        if(m_lengths[i] != 0) {
+        if(m_lengths[i]) {
             used.emplace_back(m_offsets[i], m_lengths[i]);
         }
     }

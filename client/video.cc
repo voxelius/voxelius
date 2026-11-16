@@ -85,9 +85,9 @@ static void cache_fullscreen_modes(void)
     for(int i = 0; i < mode_count; ++i) {
         const auto& mode = *modes[i];
 
-        // Only allow video modes that are at least as large as the base
-        // resolution, otherwise the UI has nowhere sane to scale down to
-        if(mode.w >= constant::BASE_WIDTH && mode.h >= constant::BASE_HEIGHT) {
+        // Only allow video modes the window is allowed to shrink to,
+        // otherwise the UI has nowhere sane to scale down to
+        if(mode.w >= constant::MIN_WIDTH && mode.h >= constant::MIN_HEIGHT) {
             s_fullscreen_modes.push_back(mode);
         }
     }
@@ -124,7 +124,7 @@ static void on_sdl_key(const SDL_KeyboardEvent& event)
 
 void video::init(void)
 {
-    s_last_windowed_size = Eigen::Vector2i(constant::BASE_WIDTH, constant::BASE_HEIGHT);
+    s_last_windowed_size = Eigen::Vector2i(constant::MIN_WIDTH, constant::MIN_HEIGHT);
 
     auto& vsync_binding = cvar::bind_var(s_enable_vsync, "r_vsync");
     vsync_binding.set_help("Enable vertical synchronization");
@@ -155,11 +155,11 @@ void video::init(void)
     pick_display();
     cache_fullscreen_modes();
 
-    globals::window = SDL_CreateWindow("client", constant::BASE_WIDTH, constant::BASE_HEIGHT,
+    globals::window = SDL_CreateWindow("client", constant::MIN_WIDTH, constant::MIN_HEIGHT,
         SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL);
     vx::throw_if_not_fmt(globals::window, "SDL_CreateWindow failed: {}", SDL_GetError());
 
-    SDL_SetWindowMinimumSize(globals::window, constant::BASE_WIDTH, constant::BASE_HEIGHT);
+    SDL_SetWindowMinimumSize(globals::window, constant::MIN_WIDTH, constant::MIN_HEIGHT);
 
     globals::dispatcher.sink<SDL_WindowEvent>().connect<&on_sdl_window_event>();
     globals::dispatcher.sink<SDL_KeyboardEvent>().connect<&on_sdl_key>();
@@ -229,7 +229,13 @@ void video::query_current_mode(int& width, int& height, int& rate, bool& fullscr
     height = globals::height;
 
     auto mode = SDL_GetWindowFullscreenMode(globals::window);
-    rate = mode ? static_cast<int>(mode->refresh_rate) : 0;
+
+    rate = 0;
+
+    if(mode) {
+        rate = static_cast<int>(mode->refresh_rate);
+    }
+
     fullscreen = static_cast<bool>(mode);
 }
 
@@ -240,8 +246,8 @@ const std::vector<SDL_DisplayMode>& video::query_fullscreen_modes(void)
 
 void video::request_fullscreen(int width, int height, int rate)
 {
-    assert(width >= constant::BASE_WIDTH);
-    assert(height >= constant::BASE_HEIGHT);
+    assert(width >= constant::MIN_WIDTH);
+    assert(height >= constant::MIN_HEIGHT);
 
     std::size_t best_index = 0;
     auto best_score = std::numeric_limits<int>::max();

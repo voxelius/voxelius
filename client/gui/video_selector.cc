@@ -2,6 +2,7 @@
 
 #include "client/gui/video_selector.hh"
 
+#include "client/gui/stone.hh"
 #include "client/language.hh"
 #include "client/video.hh"
 
@@ -81,7 +82,18 @@ void gui::VideoSelector::layout_control(void)
         }
     }
 
-    if(ImGui::BeginCombo(imgui_id().c_str(), m_choice_labels[current_index].c_str())) {
+    auto size = ImVec2(ImGui::CalcItemWidth(), ImGui::GetFrameHeight());
+    auto& control_id = imgui_id();
+
+    if(gui::detail::stone_combo(control_id.c_str(), m_choice_labels[current_index], size)) {
+        ImGui::OpenPopup(control_id.c_str());
+    }
+
+    auto item_min = ImGui::GetItemRectMin();
+    auto item_max = ImGui::GetItemRectMax();
+    auto open = gui::detail::stone_popup_begin(control_id.c_str(), item_min, item_max);
+
+    if(open) {
         if(ImGui::Selectable(m_choice_labels[0].c_str(), current_index == 0)) {
             if(current_index) {
                 m_pending = true;
@@ -111,9 +123,9 @@ void gui::VideoSelector::layout_control(void)
                 }
             }
         }
-
-        ImGui::EndCombo();
     }
+
+    gui::detail::stone_popup_end(open);
 }
 
 void gui::VideoSelector::translate_control(void)

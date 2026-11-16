@@ -15,7 +15,7 @@ public:
 
 private:
     ImVec2 m_margin { 0.0f, 0.0f };
-    float m_scroll_speed { 64.0f };
+    float m_scroll_speed { 32.0f };
     bool m_background { false };
 };
 } // namespace gui

@@ -48,4 +48,8 @@ void fonts::load(void)
 
     fonts::unscii16 = load_font(unscii16_path, 16.0f, s_unscii16_data, io);
     fonts::unscii8 = load_font(unscii8_path, 8.0f, s_unscii8_data, io);
+
+    // Everything that does not push a font is UI text, so the small face is
+    // the default; FontScaleMain turns it into the size the window wants
+    io.FontDefault = fonts::unscii8;
 }

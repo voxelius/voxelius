@@ -123,6 +123,11 @@ void gui::VerticalStack::layout(void)
 
     expanding_height = std::max(expanding_height, 1.0f);
 
+    // A child item resets the cursor to the window edge, so every row is
+    // pinned back to the column the stack started at
+    auto origin = ImGui::GetCursorScreenPos();
+    auto cursor_y = origin.y;
+
     for(std::size_t i = 0; i < m_items.size(); ++i) {
         const auto& item = m_items[i];
 
@@ -131,6 +136,8 @@ void gui::VerticalStack::layout(void)
         if(item.policy == FIXED) {
             height = item.fixed_height * static_cast<float>(globals::gui_scale);
         }
+
+        ImGui::SetCursorScreenPos(ImVec2(origin.x, cursor_y));
 
         ImGui::PushID(static_cast<int>(i));
 
@@ -142,6 +149,8 @@ void gui::VerticalStack::layout(void)
 
         ImGui::EndChild();
         ImGui::PopID();
+
+        cursor_y += height + style.ItemSpacing.y;
     }
 }
 

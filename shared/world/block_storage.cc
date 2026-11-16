@@ -509,7 +509,14 @@ void BlockStorage::set(std::size_t index, block_id_type id)
             return;
         }
 
-        auto new_slot = slot.has_value() ? slot.value() : add_slot(p8->palette, id);
+        std::size_t new_slot = 0;
+
+        if(slot.has_value()) {
+            new_slot = slot.value();
+        }
+        else {
+            new_slot = add_slot(p8->palette, id);
+        }
 
         p8->palette[p8->indices[index]].second -= 1;
         p8->indices[index] = static_cast<std::uint8_t>(new_slot);
@@ -520,7 +527,14 @@ void BlockStorage::set(std::size_t index, block_id_type id)
 
     if(auto p16 = std::get_if<Palette16>(&m_variant)) {
         auto slot = find_slot(p16->palette, id);
-        auto new_slot = slot.has_value() ? slot.value() : add_slot(p16->palette, id);
+        std::size_t new_slot = 0;
+
+        if(slot.has_value()) {
+            new_slot = slot.value();
+        }
+        else {
+            new_slot = add_slot(p16->palette, id);
+        }
 
         p16->palette[p16->indices[index]].second -= 1;
         p16->indices[index] = static_cast<std::uint16_t>(new_slot);

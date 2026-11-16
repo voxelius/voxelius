@@ -10,6 +10,7 @@
 #include "shared/constant.hh"
 
 #include "client/globals.hh"
+#include "client/gui/stone.hh"
 #include "client/input/buttons.hh"
 #include "client/res/texture2D.hh"
 
@@ -161,7 +162,7 @@ void gui::ButtonBind::layout_control(void)
     ImGui::SameLine();
     ImGui::SetCursorPosY(cursor.y);
 
-    if(ImGui::Button(label, ImVec2(control_width - icon_stride, 0.0f))) {
+    if(gui::detail::stone_button(label, label, ImVec2(control_width - icon_stride, ImGui::GetFrameHeight()))) {
         ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NavEnableKeyboard;
 
         buttons::is_capturing = true;

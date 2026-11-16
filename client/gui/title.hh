@@ -7,14 +7,23 @@ namespace gui
 {
 class Title final : public WidgetBuilder<Title> {
 public:
-    Title& set_text(std::string_view key);
+    Title& set_texture(ImTextureID texture, ImVec2 size);
+    Title& set_splash(std::string_view text);
+    Title& set_version(std::string_view text);
+    Title& set_top(float top);
+    Title& set_width(float width);
 
     virtual void layout(void) override;
-    virtual void translate(void) override;
 
 private:
-    std::string m_key {};
-    std::string m_text {};
+    void layout_header(ImVec2 window_size, ImDrawList* draw_list, float shadow_offset);
+
+    ImTextureID m_texture { 0 };
+    ImVec2 m_texture_size { 0.0f, 0.0f };
+    std::string m_splash {};
+    std::string m_version {};
+    float m_top { 0.06f };
+    float m_width { 0.73f };
 };
 } // namespace gui
 

@@ -107,6 +107,27 @@ differently.
 - Mark a class or structure `final` unless it is a base.
 - A function with no parameters writes `(void)`.
 - Put the body of a `constexpr` function in the header, right after its declaration.
+- Do not repeat a `const` that the initializer already carries. When a function returns a const reference, `auto&` is enough:
+  `auto& palette = style::palette();`, not `const auto&`. Keep `const auto&` when the reference binds a temporary.
+- Never compare against zero or `nullptr` from the negative side: no `!= 0`, `!= nullptr`, `0 !=` or `nullptr !=`. Test the value itself:
+  `if(count)`, `if(ptr)`, `bool taken = *prev;`. `== 0` and `== nullptr` stay, and so does negating a call that only reports failure:
+  `if(!load(path))`.
+- Test a bitmask against zero explicitly: `if(0 == (flags & FLAG))`, not `if(!(flags & FLAG))`.
+- Use a ternary only for a short pick between constants, written `cond ? a : b` with spaces around both operators. When either side
+  holds a call, a dereference or another non-trivial operand, write `if`/`else`.
+- Never write a standalone `++x` or `x--` statement. Outside a `for` header write `x += 1` or `x -= 1`; an iterator advances with
+  `std::next(it)`.
+- A `for` header has all three parts or none (`for(;;)`). A loop that fills two of them is a `while`, with the step at the end of the
+  body.
+- A `switch` case does not open a scope. Move a body that needs locals into a function.
+- Do not dereference the result of a call in place (`registry().find(id)->name`); put the result in a named local first. Do not put a
+  call in the middle of another call's arguments or nest calls deeper than one level; a call as the only or the last argument is fine.
+- Keep a condition to three operands joined by `&&` or `||`, on one line. Name the parts in `bool` locals, or split the test into
+  several `if` blocks that each return or continue.
+- Do not initialize a structure with its fields on one line. Either list the designated fields one per line, with a comma after the
+  last one so clang-format keeps them apart, or start from `{}` and assign the fields after it. File-scope tables keep their
+  initializers.
+- Give a non-trivial size or index expression a name instead of writing it inline.
 - Close a namespace with `} // namespace name`. clang-format enforces the comment.
 - An intentionally empty body holds `// empty`.
 
@@ -117,6 +138,7 @@ differently.
 |Files|`snake_case`|`shared/block_storage.cc`|
 |Namespaces|`snake_case`|`namespace block_storage`|
 |Classes and structures|`PascalCase`|`class ReadBuffer`|
+|Enumerations|`snake_case`|`input_device`, `packet_type`|
 |Functions and methods|`snake_case`|`block_registry::name_of()`|
 |Public fields and members|`snake_case`|`BlockDefinition::model_offset`|
 |Private fields and members|`m_snake_case`|`Chunk::m_blocks`|

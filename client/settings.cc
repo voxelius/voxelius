@@ -6,13 +6,12 @@
 #include "client/gui/background.hh"
 #include "client/gui/button_bind.hh"
 #include "client/gui/container.hh"
-#include "client/gui/dimmer.hh"
 #include "client/gui/panel.hh"
 #include "client/gui/popup.hh"
+#include "client/gui/rail.hh"
 #include "client/gui/screen.hh"
 #include "client/gui/scroller.hh"
 #include "client/gui/separator.hh"
-#include "client/gui/tabs.hh"
 #include "client/language.hh"
 #include "client/main_menu.hh"
 
@@ -39,16 +38,14 @@ static gui::Separator s_header_sound_levels;
 static gui::Separator s_header_controls_gameplay;
 static gui::Separator s_header_controls_miscellaneous;
 
-static gui::Dimmer s_dimmer;
-static gui::Tabs s_tabs;
+static gui::Rail s_rail;
 static gui::Panel s_body;
 
 static gui::ChoicePopup s_video_mode_popup;
 static std::optional<bool> s_video_mode_decision;
 static bool s_video_mode_prompted;
 
-constexpr static float ROW_HEIGHT = 24.0f;
-constexpr static float BODY_MARGIN = 32.0f;
+constexpr static float BODY_MARGIN = 16.0f;
 
 static void on_language_update(const LanguageUpdateEvent& event)
 {
@@ -63,7 +60,7 @@ static void on_keyboard_event(const SDL_KeyboardEvent& event)
     change_screen = change_screen && gui::ButtonBind::current == nullptr;
 
     if(change_screen) {
-        globals::gui_screen = &main_menu::screen;
+        main_menu::show();
     }
 }
 
@@ -88,10 +85,10 @@ std::optional<bool> settings::detail::video_mode_popup(const std::optional<SDL_D
 void settings::init(void)
 {
     screen.add_child(main_menu::background);
-    screen.add_child(s_dimmer);
     screen.add_child(s_body);
 
     s_body.set_margin(ImVec2(BODY_MARGIN, BODY_MARGIN));
+    s_body.enable_background();
 
     s_header_video_gui.set_text("settings.label.gui");
     s_header_sound_levels.set_text("settings.label.levels");
@@ -116,18 +113,17 @@ void settings::init(void)
     s_scroller_controls.add_child(s_header_controls_miscellaneous, 3);
     s_scroller_controls.add_child(controls_miscellaneous, 4);
 
-    s_tabs.add_tab("settings.location.general", s_scroller_general, 0);
-    s_tabs.add_tab("settings.location.video", s_scroller_video, 1);
-    s_tabs.add_tab("settings.location.audio", s_scroller_audio, 2);
-    s_tabs.add_tab("settings.location.controls", s_scroller_controls, 3);
-    s_tabs.add_tab("settings.location.mouse", s_scroller_mouse, 4);
+    s_rail.add_page("settings.location.general", s_scroller_general, 0);
+    s_rail.add_page("settings.location.video", s_scroller_video, 1);
+    s_rail.add_page("settings.location.audio", s_scroller_audio, 2);
+    s_rail.add_page("settings.location.controls", s_scroller_controls, 3);
+    s_rail.add_page("settings.location.mouse", s_scroller_mouse, 4);
 
-    s_tabs.set_bar_height(ROW_HEIGHT);
-    s_tabs.set_callback([] {
-        globals::gui_screen = &main_menu::screen;
+    s_rail.set_callback([] {
+        main_menu::show();
     });
 
-    s_body.add_child(s_tabs);
+    s_body.add_child(s_rail);
 
     s_video_mode_popup.set_title("settings.popup.video_change.title");
     s_video_mode_popup.set_message("settings.popup.video_change.text");

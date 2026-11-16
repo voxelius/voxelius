@@ -75,7 +75,7 @@ static void process_entity(entt::entity entity, DirtyMarker& dirty)
         if(auto transform = globals::registry.try_get<Transform>(entity)) {
             interest::broadcast(packet, transform->chunk, except);
         }
-        else if(except != nullptr) {
+        else if(except) {
             protocol::broadcast(packet, globals::host, except);
         }
         else {

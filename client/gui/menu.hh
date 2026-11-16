@@ -1,14 +1,15 @@
 #ifndef D4DC6B19_4D75_4DEC_A0D7_3667F4B7E67D
 #define D4DC6B19_4D75_4DEC_A0D7_3667F4B7E67D
 
+#include "client/gui/button.hh"
 #include "client/gui/widget.hh"
 
 namespace gui
 {
 class Menu final : public WidgetBuilder<Menu> {
 public:
-    Menu& set_margin(ImVec2 margin);
     Menu& set_control(ImVec2 control);
+    Menu& set_anchor(float xrel, float yrel);
 
     Menu& add_button_any(std::string_view label, std::function<void(void)> callback = {});
     Menu& add_button_ingame(std::string_view label, std::function<void(void)> callback = {});
@@ -22,21 +23,19 @@ public:
     virtual void translate(void) override;
 
 private:
-    struct Button final {
+    struct ButtonItem final {
         unsigned condition;
-        std::string label_key;
-        std::string label;
-        std::function<void(void)> callback;
+        Button widget;
     };
 
-    struct Spacer final {
+    struct SpacerItem final {
         unsigned condition;
         float height;
     };
 
-    ImVec2 m_margin { 8.0f, 8.0f };
-    ImVec2 m_control { 256.0f, 32.0f };
-    std::vector<std::variant<Button, Spacer>> m_items {};
+    ImVec2 m_control { 128.0f, 16.0f };
+    ImVec2 m_anchor { 0.5f, 0.45f };
+    std::vector<std::variant<ButtonItem, SpacerItem>> m_items {};
 };
 } // namespace gui
 

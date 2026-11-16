@@ -71,9 +71,25 @@ void vx::teardown(void)
 - Mark classes and structures `final` unless they are meant as a base.
 - Functions and methods with zero arguments use C-style `void` inside the parentheses.
 - Place `constexpr` function bodies in the header, just after the declarations.
+- Do not repeat a `const` the initializer already carries. When a function returns a const reference, `auto&` is enough and
+  `const auto&` is noise.
 - C++ headers use `.hh`. C++ sources use `.cc`.
 - Profanity in source code is allowed. I own the code and can comment as I choose.
 - Use standard `assert` for debug-time checks. Use `vx::throw_if_xxxx` when the game should crash on failure.
+- Never compare against zero or `nullptr` from the negative side (`!= 0`, `!= nullptr`, `0 !=`, `nullptr !=`). Test the value itself:
+  `if(count)`, `if(ptr)`, `bool taken = *prev;`. `== 0` and `== nullptr` stay, and so does negating a call that only reports failure.
+- Test a bitmask against zero explicitly: `if(0 == (flags & FLAG))`, not `if(!(flags & FLAG))`.
+- Use a ternary only for a short pick between constants, written `cond ? a : b` with spaces around both operators. A call, a
+  dereference or another non-trivial operand on either side means `if`/`else`.
+- No standalone `++x` or `x--` statement: write `x += 1` or `x -= 1`. An iterator advances with `std::next(it)`.
+- A `for` header has all three parts or none. A loop that fills two of them is a `while` with the step at the end of its body.
+- A `switch` case does not open a scope; move a body that needs locals into a function.
+- Do not dereference a call result in place, put it in a named local first. Do not nest calls deeper than one level or put a call in the
+  middle of another call's arguments; a call as the only or the last argument is fine.
+- Keep a condition to three operands joined by `&&` or `||`, on one line. Name the parts in `bool` locals or split the test.
+- Do not initialize a structure with its fields on one line: designated fields one per line with a trailing comma, or `{}` and assign
+  after. File-scope tables keep their initializers.
+- Give a non-trivial size or index expression a name instead of writing it inline.
 
 ## Include guards
 
