@@ -8,6 +8,7 @@
 #include "shared/globals.hh"
 #include "shared/utils/lua.hh"
 
+template<>
 std::any Component<Head>::prepare(lua_State* L, int config_idx)
 {
     auto offset = utils::opt_fvec<3>(L, config_idx, { 0.0, 0.0, 0.0 });
@@ -19,6 +20,7 @@ std::any Component<Head>::prepare(lua_State* L, int config_idx)
     return Eigen::Vector3f(offset.value().cast<float>());
 }
 
+template<>
 void Component<Head>::attach(entt::entity entity, const std::any& config)
 {
     assert(std::any_cast<const Eigen::Vector3f>(&config));
@@ -30,6 +32,7 @@ void Component<Head>::attach(entt::entity entity, const std::any& config)
     globals::registry.emplace_or_replace<Head>(entity, std::move(head));
 }
 
+template<>
 bool Component<Head>::patch(entt::entity entity, lua_State* L, int kv_idx)
 {
     auto& current = globals::registry.get<Head>(entity);
@@ -46,12 +49,14 @@ bool Component<Head>::patch(entt::entity entity, lua_State* L, int kv_idx)
     return true;
 }
 
+template<>
 void Component<Head>::encode_net(entt::entity entity, WriteBuffer& buffer)
 {
     const auto& head = globals::registry.get<Head>(entity);
     buffer.write_vector<float, 3>(head.angles);
 }
 
+template<>
 void Component<Head>::decode_net(entt::entity entity, ReadBuffer& buffer)
 {
     globals::registry.patch<Head>(entity, [&](Head& head) {
@@ -59,6 +64,7 @@ void Component<Head>::decode_net(entt::entity entity, ReadBuffer& buffer)
     });
 }
 
+template<>
 void Component<Head>::encode_dat(entt::entity entity, WriteBuffer& buffer)
 {
     const auto& head = globals::registry.get<Head>(entity);
@@ -66,6 +72,7 @@ void Component<Head>::encode_dat(entt::entity entity, WriteBuffer& buffer)
     buffer.write_vector<float, 3>(head.offset);
 }
 
+template<>
 void Component<Head>::decode_dat(entt::entity entity, ReadBuffer& buffer)
 {
     globals::registry.patch<Head>(entity, [&](Head& head) {
@@ -74,7 +81,8 @@ void Component<Head>::decode_dat(entt::entity entity, ReadBuffer& buffer)
     });
 }
 
-void component_traits<Head>::interpolate(entt::entity entity, float alpha)
+template<>
+void Component<Head>::interpolate(entt::entity entity, float alpha)
 {
     auto* current = globals::registry.try_get<Head>(entity);
     auto* previous = globals::registry.try_get<Head_Prev>(entity);

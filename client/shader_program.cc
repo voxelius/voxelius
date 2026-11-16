@@ -18,7 +18,7 @@ static void parse_source(std::istringstream stream, std::vector<std::string>& li
         unsigned macro_index = {};
         char macro_name[128] = {};
 
-        if(std::sscanf(line.c_str(), " # pragma variant %u %127[^, \"\t\r\n]", &macro_index, &macro_name) == 2) {
+        if(std::sscanf(line.c_str(), " # pragma variant %u %127[^, \"\t\r\n]", &macro_index, macro_name) == 2) {
             if(macros.size() <= macro_index) {
                 macros.resize(macro_index + 1U);
             }

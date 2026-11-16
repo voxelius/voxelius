@@ -29,11 +29,13 @@ constexpr inline static bool update_component(unsigned dim, Transform& component
     return false;
 }
 
+template<>
 std::any Component<Transform>::prepare(lua_State* L, int config_idx)
 {
     return std::monostate {};
 }
 
+template<>
 void Component<Transform>::attach(entt::entity entity, const std::any& config)
 {
     Transform transform {};
@@ -44,6 +46,7 @@ void Component<Transform>::attach(entt::entity entity, const std::any& config)
     globals::registry.emplace_or_replace<Transform>(entity, std::move(transform));
 }
 
+template<>
 bool Component<Transform>::patch(entt::entity entity, lua_State* L, int kv_idx)
 {
     auto& current = globals::registry.get<Transform>(entity);
@@ -70,6 +73,7 @@ bool Component<Transform>::patch(entt::entity entity, lua_State* L, int kv_idx)
     return true;
 }
 
+template<>
 void Component<Transform>::encode_net(entt::entity entity, WriteBuffer& buffer)
 {
     const auto& transform = globals::registry.get<Transform>(entity);
@@ -78,6 +82,7 @@ void Component<Transform>::encode_net(entt::entity entity, WriteBuffer& buffer)
     buffer.write_vector<float, 3>(transform.angles);
 }
 
+template<>
 void Component<Transform>::decode_net(entt::entity entity, ReadBuffer& buffer)
 {
     globals::registry.patch<Transform>(entity, [&](Transform& transform) {
@@ -87,17 +92,20 @@ void Component<Transform>::decode_net(entt::entity entity, ReadBuffer& buffer)
     });
 }
 
+template<>
 void Component<Transform>::encode_dat(entt::entity entity, WriteBuffer& buffer)
 {
     encode_net(entity, buffer);
 }
 
+template<>
 void Component<Transform>::decode_dat(entt::entity entity, ReadBuffer& buffer)
 {
     decode_net(entity, buffer);
 }
 
-void component_traits<Transform>::interpolate(entt::entity entity, float alpha)
+template<>
+void Component<Transform>::interpolate(entt::entity entity, float alpha)
 {
     auto* current = globals::registry.try_get<Transform>(entity);
     auto* previous = globals::registry.try_get<Transform_Prev>(entity);

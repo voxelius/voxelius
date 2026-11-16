@@ -35,6 +35,7 @@ static std::optional<unsigned> value_from_string(std::string_view str)
     return std::nullopt;
 }
 
+template<>
 std::any Component<MoveMode>::prepare(lua_State* L, int config_idx)
 {
     auto value_str = utils::opt_string(L, config_idx, "value", value_to_string(MoveMode::WALK));
@@ -52,6 +53,7 @@ std::any Component<MoveMode>::prepare(lua_State* L, int config_idx)
     return value.value();
 }
 
+template<>
 void Component<MoveMode>::attach(entt::entity entity, const std::any& config)
 {
     assert(std::any_cast<const unsigned>(&config));
@@ -62,6 +64,7 @@ void Component<MoveMode>::attach(entt::entity entity, const std::any& config)
     globals::registry.emplace_or_replace<MoveMode>(entity, std::move(move_mode));
 }
 
+template<>
 bool Component<MoveMode>::patch(entt::entity entity, lua_State* L, int kv_idx)
 {
     auto& current = globals::registry.get<MoveMode>(entity);
@@ -88,12 +91,14 @@ bool Component<MoveMode>::patch(entt::entity entity, lua_State* L, int kv_idx)
     return true;
 }
 
+template<>
 void Component<MoveMode>::encode_net(entt::entity entity, WriteBuffer& buffer)
 {
     const auto& move_mode = globals::registry.get<MoveMode>(entity);
     buffer.write<std::uint8_t>(static_cast<std::uint8_t>(move_mode.value));
 }
 
+template<>
 void Component<MoveMode>::decode_net(entt::entity entity, ReadBuffer& buffer)
 {
     globals::registry.patch<MoveMode>(entity, [&](MoveMode& move_mode) {
@@ -101,11 +106,13 @@ void Component<MoveMode>::decode_net(entt::entity entity, ReadBuffer& buffer)
     });
 }
 
+template<>
 void Component<MoveMode>::encode_dat(entt::entity entity, WriteBuffer& buffer)
 {
     encode_net(entity, buffer);
 }
 
+template<>
 void Component<MoveMode>::decode_dat(entt::entity entity, ReadBuffer& buffer)
 {
     decode_net(entity, buffer);

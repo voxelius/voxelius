@@ -50,6 +50,9 @@ void host::fixed_update_late(void)
                 globals::peer = nullptr;
                 globals::dispatcher.trigger(HostDisconnectEvent(std::move(event)));
                 break;
+
+            case ENET_EVENT_TYPE_NONE:
+                break; // shut up clang
         }
     }
 }

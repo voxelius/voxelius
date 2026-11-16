@@ -89,8 +89,8 @@ component_id_type component_map::add(std::string_view name)
     functions.encode_dat = &Component<T>::encode_dat;
     functions.decode_dat = &Component<T>::decode_dat;
 
-    if constexpr(requires { &component_traits<T>::interpolate; }) {
-        functions.interpolate = &component_traits<T>::interpolate;
+    if constexpr(requires { &Component<T>::interpolate; }) {
+        functions.interpolate = &Component<T>::interpolate;
     }
 
     return detail::add(typeid(T), std::move(name), std::move(functions));

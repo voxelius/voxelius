@@ -32,6 +32,9 @@ static const Texture2D* icon_for(std::optional<input_device> device)
 
             case input_device::MWHEEL:
                 return s_icon_mwheel.get();
+
+            case input_device::GAMEPAD:
+                return s_icon_missing.get(); // TODO: make a gamepad icon
         }
     }
 

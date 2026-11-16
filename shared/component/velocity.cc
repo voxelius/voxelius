@@ -11,11 +11,13 @@
 #include "shared/globals.hh"
 #include "shared/utils/lua.hh"
 
+template<>
 std::any Component<Velocity>::prepare(lua_State* L, int config_idx)
 {
     return std::monostate {};
 }
 
+template<>
 void Component<Velocity>::attach(entt::entity entity, const std::any& config)
 {
     Velocity velocity {};
@@ -24,6 +26,7 @@ void Component<Velocity>::attach(entt::entity entity, const std::any& config)
     globals::registry.emplace_or_replace<Velocity>(entity, std::move(velocity));
 }
 
+template<>
 bool Component<Velocity>::patch(entt::entity entity, lua_State* L, int kv_idx)
 {
     auto& current = globals::registry.get<Velocity>(entity);
@@ -40,12 +43,14 @@ bool Component<Velocity>::patch(entt::entity entity, lua_State* L, int kv_idx)
     return true;
 }
 
+template<>
 void Component<Velocity>::encode_net(entt::entity entity, WriteBuffer& buffer)
 {
     const auto& velocity = globals::registry.get<Velocity>(entity);
     buffer.write_vector<float, 3>(velocity.value);
 }
 
+template<>
 void Component<Velocity>::decode_net(entt::entity entity, ReadBuffer& buffer)
 {
     globals::registry.patch<Velocity>(entity, [&](Velocity& velocity) {
@@ -53,17 +58,20 @@ void Component<Velocity>::decode_net(entt::entity entity, ReadBuffer& buffer)
     });
 }
 
+template<>
 void Component<Velocity>::encode_dat(entt::entity entity, WriteBuffer& buffer)
 {
     encode_net(entity, buffer);
 }
 
+template<>
 void Component<Velocity>::decode_dat(entt::entity entity, ReadBuffer& buffer)
 {
     decode_net(entity, buffer);
 }
 
-void component_traits<Velocity>::interpolate(entt::entity entity, float alpha)
+template<>
+void Component<Velocity>::interpolate(entt::entity entity, float alpha)
 {
     auto* current = globals::registry.try_get<Velocity>(entity);
     auto* previous = globals::registry.try_get<Velocity_Prev>(entity);

@@ -408,7 +408,14 @@ void block_atlas::init_late(void)
 
         auto& def = fluid_definitions[id];
         auto fluid_name = fluid_registry::name_of(id);
-        auto fluid_label = fluid_name.has_value() ? fluid_name->full_string() : std::format("#{}", id);
+        std::string fluid_label;
+
+        if(fluid_name.has_value()) {
+            fluid_label = std::string(fluid_name->full_string());
+        }
+        else {
+            fluid_label = std::format("#{}", id);
+        }
 
         auto albedo_still = block_atlas::load(def.albedo_still);
 

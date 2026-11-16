@@ -60,9 +60,9 @@ void fluid_registry::commit(ModContext& ctx)
         fluid_offset = static_cast<fluid_id_type>(s_definitions.size()) - 1;
     }
 
-    for(const auto& it : names) {
-        auto& name = it.first;
-        auto global_id = it.second + fluid_offset;
+    for(const auto& entry : names) {
+        auto& name = entry.first;
+        auto global_id = entry.second + fluid_offset;
         auto [it, inserted] = s_names.try_emplace(name, global_id);
 
         if(!inserted) {

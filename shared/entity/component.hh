@@ -14,11 +14,6 @@ struct ComponentTable final {
 };
 
 template<typename T>
-struct component_traits final {
-    static void interpolate(entt::entity entity, float alpha) = delete;
-};
-
-template<typename T>
 struct Component final {
     static std::any prepare(lua_State* L, int config_idx);
     static void attach(entt::entity entity, const std::any& config);
@@ -27,6 +22,7 @@ struct Component final {
     static void decode_net(entt::entity entity, ReadBuffer& buffer);
     static void encode_net(entt::entity entity, WriteBuffer& buffer);
     static void decode_dat(entt::entity entity, ReadBuffer& buffer);
+    static void interpolate(entt::entity entity, float alpha) = delete;
 };
 
 #endif /* A0C7CDBF_AEB2_4D28_AC4D_1B1D7550C5AA */

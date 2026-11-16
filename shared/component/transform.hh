@@ -16,9 +16,4 @@ struct Transform {
 struct Transform_Intr final : public Transform {};
 struct Transform_Prev final : public Transform {};
 
-template<>
-struct component_traits<Transform> final {
-    static void interpolate(entt::entity entity, float alpha);
-};
-
 #endif /* C61C83B0_E6D3_4A4F_B49E_930C332718D3 */

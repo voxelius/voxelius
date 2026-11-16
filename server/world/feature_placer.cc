@@ -74,6 +74,9 @@ static const std::vector<FeatureInstance>& collect_cached(biome_realm realm, con
 static Eigen::Vector3i rotate_vector(const Eigen::Vector3i& vector, block_face facing)
 {
     switch(facing) {
+        case BLOCK_FACE_NORTH:
+            return vector;
+
         case BLOCK_FACE_SOUTH:
             return Eigen::Vector3i(-vector.x(), vector.y(), -vector.z());
 
@@ -82,6 +85,10 @@ static Eigen::Vector3i rotate_vector(const Eigen::Vector3i& vector, block_face f
 
         case BLOCK_FACE_WEST:
             return Eigen::Vector3i(-vector.z(), vector.y(), vector.x());
+
+        case BLOCK_FACE_TOP:
+        case BLOCK_FACE_BOTTOM:
+            return vector; // features are only rotated around the vertical axis
     }
 
     return vector;

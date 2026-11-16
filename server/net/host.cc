@@ -91,6 +91,12 @@ void host::fixed_update_late(void)
             case ENET_EVENT_TYPE_DISCONNECT:
                 sessions::destroy(sessions::find(event.peer));
                 break;
+
+            case ENET_EVENT_TYPE_CONNECT:
+                break; // shut up clang
+
+            case ENET_EVENT_TYPE_NONE:
+                break; // shut up clang
         }
     }
 }

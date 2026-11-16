@@ -13,9 +13,4 @@ struct Velocity {
 struct Velocity_Intr final : public Velocity {};
 struct Velocity_Prev final : public Velocity {};
 
-template<>
-struct component_traits<Velocity> final {
-    static void interpolate(entt::entity entity, float alpha);
-};
-
 #endif /* B3676B99_D6A9_4E82_9B2C_24D47D79D6FC */

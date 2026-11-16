@@ -23,6 +23,14 @@ static ColumnSlice generate_slice(biome_realm realm, const ChunkPosXZ& pos)
 
         case BIOME_REALM_SKY:
             return realm_sky::probe(pos);
+
+        case BIOME_REALM_UNDERGROUND:
+        case BIOME_REALM_THE_DEPTHS:
+        case BIOME_REALM_VOID:
+            break; // these realms have no heightmap yet
+
+        case BIOME_REALM_COUNT:
+            break; // shut up clang
     }
 
     return {};

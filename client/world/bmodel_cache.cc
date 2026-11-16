@@ -66,6 +66,9 @@ static Eigen::Matrix3f facing_rotation(block_face facing)
     constexpr auto pi = std::numbers::pi_v<float>;
 
     switch(facing) {
+        case BLOCK_FACE_NORTH:
+            return Eigen::Matrix3f::Identity();
+
         case BLOCK_FACE_SOUTH:
             return Eigen::AngleAxisf(pi, Eigen::Vector3f::UnitY()).toRotationMatrix();
 

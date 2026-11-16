@@ -21,9 +21,9 @@ constexpr float degrees(float radians);
 
 namespace utils
 {
-template<typename T, std::size_t N>
+template<typename T, int N>
 constexpr Eigen::Vector<T, N> radians(const Eigen::Vector<T, N>& degrees);
-template<typename T, std::size_t N>
+template<typename T, int N>
 constexpr Eigen::Vector<T, N> degrees(const Eigen::Vector<T, N>& radians);
 } // namespace utils
 
@@ -37,13 +37,13 @@ constexpr float utils::degrees(float radians)
     return radians * 180.0f / std::numbers::pi_v<float>;
 }
 
-template<typename T, std::size_t N>
+template<typename T, int N>
 constexpr Eigen::Vector<T, N> utils::radians(const Eigen::Vector<T, N>& degrees)
 {
     return degrees * static_cast<T>(std::numbers::pi_v<float> / 180.0f);
 }
 
-template<typename T, std::size_t N>
+template<typename T, int N>
 constexpr Eigen::Vector<T, N> utils::degrees(const Eigen::Vector<T, N>& radians)
 {
     return radians * static_cast<T>(180.0f / std::numbers::pi_v<float>);

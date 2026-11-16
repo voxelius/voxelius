@@ -130,6 +130,9 @@ std::optional<std::uint32_t> input::parse_button_code(input_device device, std::
     }
 
     switch(device) {
+        case input_device::MOUSE:
+            return std::nullopt; // handled above
+
         case input_device::KEYBOARD:
             return parse_scancode(normalized);
 
@@ -153,6 +156,11 @@ std::optional<std::uint32_t> input::parse_axis_code(input_device device, std::st
 
         case input_device::GAMEPAD:
             return lookup_name(GAMEPAD_AXES, normalized);
+
+        case input_device::KEYBOARD:
+        case input_device::MWHEEL:
+            // these devices have no axes
+            break;
     }
 
     return std::nullopt;
@@ -181,6 +189,11 @@ std::string input::format_button_code(input_device device, std::uint32_t code)
     }
 
     switch(device) {
+        case input_device::KEYBOARD:
+        case input_device::MOUSE:
+            // handled above
+            break;
+
         case input_device::MWHEEL:
             return lookup_code(MWHEEL_BUTTONS, code);
 
@@ -199,6 +212,11 @@ std::string input::format_axis_code(input_device device, std::uint32_t code)
 
         case input_device::GAMEPAD:
             return lookup_code(GAMEPAD_AXES, code);
+
+        case input_device::KEYBOARD:
+        case input_device::MWHEEL:
+            // these devices have no axes
+            break;
     }
 
     return {};
@@ -256,6 +274,11 @@ std::string_view input::format_axis_cmd(input_device device)
 
         case input_device::GAMEPAD:
             return "gaxis";
+
+        case input_device::KEYBOARD:
+        case input_device::MWHEEL:
+            // these devices have no axis command
+            break;
     }
 
     return {};

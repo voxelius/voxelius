@@ -26,6 +26,14 @@ bool terrain::generate(const ChunkPos& pos, BlockStorage& blocks, BiomeSlice& bi
             realm_sky::generate(blocks, biomes, pos);
             generated = true;
             break;
+
+        case BIOME_REALM_UNDERGROUND:
+        case BIOME_REALM_THE_DEPTHS:
+        case BIOME_REALM_VOID:
+            break; // these realms are not generated yet
+
+        case BIOME_REALM_COUNT:
+            break; // shut up clang
     }
 
     // TODO: if generated, carve caves
