@@ -19,6 +19,7 @@ gui::ButtonBind* gui::ButtonBind::current = nullptr;
 static res::handle<Texture2D> s_icon_kbutton;
 static res::handle<Texture2D> s_icon_mbutton;
 static res::handle<Texture2D> s_icon_mwheel;
+static res::handle<Texture2D> s_icon_gbutton;
 static res::handle<Texture2D> s_icon_missing;
 
 static const Texture2D* icon_for(std::optional<input_device> device)
@@ -35,7 +36,7 @@ static const Texture2D* icon_for(std::optional<input_device> device)
                 return s_icon_mwheel.get();
 
             case input_device::GAMEPAD:
-                return s_icon_missing.get(); // TODO: make a gamepad icon
+                return s_icon_gbutton.get();
         }
     }
 
@@ -57,6 +58,7 @@ void gui::ButtonBind::init(void)
     s_icon_kbutton = load_icon("bind_kbutton.png");
     s_icon_mbutton = load_icon("bind_mbutton.png");
     s_icon_mwheel = load_icon("bind_mwheel.png");
+    s_icon_gbutton = load_icon("bind_gbutton.png");
     s_icon_missing = load_icon("bind_missing.png");
 
     globals::dispatcher.sink<SDL_KeyboardEvent>().connect<&gui::ButtonBind::on_keyboard_event>();
@@ -67,6 +69,7 @@ void gui::ButtonBind::init(void)
 void gui::ButtonBind::shutdown(void)
 {
     s_icon_missing.reset();
+    s_icon_gbutton.reset();
     s_icon_mwheel.reset();
     s_icon_mbutton.reset();
     s_icon_kbutton.reset();
@@ -138,7 +141,10 @@ void gui::ButtonBind::layout_control(void)
     auto& item_spacing = ImGui::GetStyle().ItemSpacing;
 
     auto icon = icon_for(device);
-    auto icon_height = ImGui::GetTextLineHeight();
+
+    // The textures are drawn at the height of the stone button, so the
+    // bind row lines up with the other controls instead of the text
+    auto icon_height = ImGui::GetFrameHeight();
     auto icon_width = icon_height * static_cast<float>(icon->width) / static_cast<float>(icon->height);
     auto icon_stride = icon_width + item_spacing.x;
 
