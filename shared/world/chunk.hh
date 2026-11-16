@@ -33,6 +33,7 @@ public:
     block_light_type get_light(const LocalPos& pos, light_channel channel) const;
 
     void set_light(std::size_t index, light_channel channel, block_light_type value);
+    void set_packed_light(std::size_t index, std::uint8_t value);
     void set_light(LightStorage light);
     void clear_light(void);
 

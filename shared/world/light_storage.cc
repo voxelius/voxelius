@@ -4,19 +4,25 @@
 
 #include "core/buffer.hh"
 
+// Sky light is mostly full and block light mostly empty, so the array shrinks
+// by an order of magnitude. Whole arrays go through the buffer compressor, so
+// it costs less than the blocks do once those are packed into a palette.
 void LightStorage::encode_net(const LightStorage& storage, WriteBuffer& buffer)
 {
-    encode_dat(storage, buffer);
+    buffer.write_compressed(std::as_bytes(std::span(storage.m_cells)));
 }
 
 void LightStorage::decode_net(LightStorage& storage, ReadBuffer& buffer)
 {
-    if(!buffer.has_records(1, constant::CHUNK_VOLUME)) {
-        storage.fill(0x00);
+    storage.fill(0x00);
+
+    auto raw = buffer.read_compressed();
+
+    if(raw.size() != constant::CHUNK_VOLUME) {
         return;
     }
 
-    decode_dat(storage, buffer);
+    std::memcpy(storage.m_cells.data(), raw.data(), constant::CHUNK_VOLUME);
 }
 
 void LightStorage::encode_dat(const LightStorage& storage, WriteBuffer& buffer)

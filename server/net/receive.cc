@@ -18,6 +18,7 @@
 #include "shared/world/biome_map.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/chunk.hh"
+#include "shared/world/lighting.hh"
 #include "shared/world/world.hh"
 
 #include "server/globals.hh"
@@ -28,6 +29,7 @@
 
 static vx::hash_map<ChunkPos, std::vector<ENetPeer*>> s_waiting_peers;
 static vx::hash_set<ChunkPos> s_sent_chunks;
+static std::vector<packet::World_Light::Entry> s_pending_light;
 static cvar::Number<float> s_reach_distance { 8.0f, 0.0f, 32.0f };
 
 struct PendingChunkSend final {
@@ -36,6 +38,10 @@ struct PendingChunkSend final {
 };
 
 constexpr static std::size_t CHUNK_SEND_BUDGET = 64;
+
+// A batch is capped so a tick that relights half the view distance does not
+// turn into one giant datagram.
+constexpr static std::size_t LIGHT_BATCH_BYTES = 32768;
 
 static std::deque<PendingChunkSend> s_send_queue;
 static vx::hash_map<ENetPeer*, vx::hash_set<ChunkPos>> s_send_queued;
@@ -130,15 +136,11 @@ static void on_world_request(const packet::World_Request& packet)
 
     auto chunk = world::find_chunk(packet.cpos);
 
-    // Only the realm the player is actually in needs its whole column
-    // loaded for lighting. A surface player seeing sky islands above
-    // should not generate 32 chunks per column for them.
-    if(utils::realm(transform.chunk.y()) == utils::realm(packet.cpos.y())) {
-        chunk_loader::request_column(packet.cpos);
-    }
-    else {
-        chunk_loader::request(packet.cpos);
-    }
+    // Chunks are loaded one at a time rather than a whole realm column at
+    // once. The light fill treats a missing chunk above as open sky and the
+    // chunk is relit as soon as that neighbour arrives, so a column only
+    // pre-generated chunks nobody asked for.
+    chunk_loader::request(packet.cpos);
 
     if(chunk) {
         enqueue_send(packet.peer, packet.cpos);
@@ -155,6 +157,10 @@ static void on_chunk_ready(const ChunkReadyEvent& event)
 
 static void on_chunk_light(const ChunkLightUpdateEvent& event)
 {
+    // Drain the change set even when nothing is sent: a stale entry must not
+    // carry over into the next tick.
+    auto change = lighting::take_change(event.pos());
+
     if(0 == s_sent_chunks.count(event.pos())) {
         // No client knows this chunk yet; it will be sent with fresh
         // light in World_Blocks.
@@ -167,11 +173,29 @@ static void on_chunk_light(const ChunkLightUpdateEvent& event)
         return;
     }
 
-    packet::World_Light light_packet {};
-    light_packet.cpos = event.pos();
-    light_packet.light = chunk->light();
+    packet::World_Light::Entry entry;
 
-    interest::broadcast(light_packet, event.pos(), nullptr);
+    entry.cpos = event.pos();
+
+    if(change.full) {
+        entry.full = true;
+        entry.light = chunk->light();
+    }
+    else {
+        if(change.indices.empty()) {
+            return;
+        }
+
+        entry.full = false;
+        entry.indices = std::move(change.indices);
+        entry.values.reserve(entry.indices.size());
+
+        for(auto index : entry.indices) {
+            entry.values.push_back(chunk->light().get_packed(index));
+        }
+    }
+
+    s_pending_light.push_back(std::move(entry));
 }
 
 static void on_chunk_remove(const ChunkRemoveEvent& event)
@@ -319,14 +343,41 @@ static void on_player_move_data(const packet::Player_MoveData& packet)
     globals::registry.emplace_or_replace<SimulatedMoveData>(session->player, std::move(sim_data));
 }
 
+// ENet transmits a reliable packet only while its window has room, and that
+// window shrinks when the round trip grows. Handing it more than the window
+// holds does not send faster: it builds a queue, the queue delay inflates the
+// round trip, the throttle drops, the window shrinks further and throughput
+// collapses. So a chunk waits here until the window can take it.
+static bool peer_window_full(const ENetPeer* peer)
+{
+    auto window = (peer->packetThrottle * peer->windowSize) / ENET_PEER_PACKET_THROTTLE_SCALE;
+
+    return peer->reliableDataInTransit >= std::max(window, static_cast<enet_uint32>(peer->mtu));
+}
+
 static void process_send_queue(void)
 {
+    static std::deque<PendingChunkSend> deferred;
+
     std::size_t sent = 0;
+
+    deferred.clear();
 
     while(!s_send_queue.empty() && sent < CHUNK_SEND_BUDGET) {
         auto request = s_send_queue.front();
 
         s_send_queue.pop_front();
+
+        if(request.peer == nullptr) {
+            continue;
+        }
+
+        if(peer_window_full(request.peer)) {
+            // Keep it for the next tick without blocking the peers that can
+            // still take data.
+            deferred.push_back(std::move(request));
+            continue;
+        }
 
         auto queued = s_send_queued.find(request.peer);
 
@@ -341,6 +392,63 @@ static void process_send_queue(void)
         send_chunk_now(request.peer, request.cpos);
         sent += 1;
     }
+
+    s_send_queue.insert(s_send_queue.end(), deferred.begin(), deferred.end());
+}
+
+static std::size_t light_entry_size(const packet::World_Light::Entry& entry)
+{
+    constexpr auto HEADER = 3 * sizeof(std::int32_t) + sizeof(std::uint8_t);
+
+    if(entry.full) {
+        return HEADER + entry.light.data().size();
+    }
+
+    constexpr auto CELL = sizeof(std::uint16_t) + sizeof(std::uint8_t);
+
+    return HEADER + sizeof(std::uint16_t) + entry.indices.size() * CELL;
+}
+
+// One packet per peer per tick instead of one per changed chunk. The fill can
+// touch dozens of chunks in a tick, and each of those used to be its own small
+// datagram.
+static void flush_light_updates(void)
+{
+    if(s_pending_light.empty()) {
+        return;
+    }
+
+    for(auto& session : sessions::all()) {
+        if(session.peer == nullptr) {
+            continue;
+        }
+
+        packet::World_Light packet;
+        std::size_t size = 0;
+
+        for(const auto& entry : s_pending_light) {
+            if(!session.view_box.contains(entry.cpos)) {
+                continue;
+            }
+
+            auto entry_size = light_entry_size(entry);
+
+            if(size > 0 && size + entry_size > LIGHT_BATCH_BYTES) {
+                protocol::send(packet, session.peer);
+                packet.entries.clear();
+                size = 0;
+            }
+
+            size += entry_size;
+            packet.entries.push_back(entry);
+        }
+
+        if(!packet.entries.empty()) {
+            protocol::send(packet, session.peer);
+        }
+    }
+
+    s_pending_light.clear();
 }
 
 void receive::fixed_update_late(void)
@@ -360,8 +468,9 @@ void receive::fixed_update_late(void)
         }
     }
 
-    // Light packets were queued during the fixed update, before this
-    // budgeted chunk batch, so they are not stuck behind the world load.
+    // Light goes out before the budgeted chunk batch, so it is not stuck
+    // behind the world load.
+    flush_light_updates();
     process_send_queue();
 }
 

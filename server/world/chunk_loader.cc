@@ -308,36 +308,6 @@ void chunk_loader::request(const ChunkPos& pos)
     threading::submit<LoadTask>(pos);
 }
 
-void chunk_loader::request_column(const ChunkPos& pos)
-{
-    auto realm = utils::realm(pos.y());
-    auto min_chunk_y = 0;
-    auto max_chunk_y = 0;
-
-    switch(realm) {
-        case BIOME_REALM_SURFACE:
-            min_chunk_y = constant::SURFACE_MIN_CHUNK_Y;
-            max_chunk_y = constant::SURFACE_MAX_CHUNK_Y;
-            break;
-
-        case BIOME_REALM_SKY:
-            min_chunk_y = constant::SKY_MIN_CHUNK_Y;
-            max_chunk_y = constant::SKY_MAX_CHUNK_Y;
-            break;
-
-        case BIOME_REALM_UNDERGROUND:
-        case BIOME_REALM_THE_DEPTHS:
-        case BIOME_REALM_VOID:
-        case BIOME_REALM_COUNT:
-            request(pos);
-            return;
-    }
-
-    for(auto y = min_chunk_y; y <= max_chunk_y; y += 1) {
-        request(ChunkPos(pos.x(), y, pos.z()));
-    }
-}
-
 bool chunk_loader::pending(const ChunkPos& pos)
 {
     return s_pending.contains(pos) || s_saving.contains(pos);

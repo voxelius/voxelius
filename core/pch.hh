@@ -62,9 +62,6 @@
 
 #include <entt/entt.hpp>
 
-#include <lz4.h>
-#include <lz4hc.h>
-
 #include <miniz.h>
 
 #include <parson.h>

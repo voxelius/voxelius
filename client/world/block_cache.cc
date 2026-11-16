@@ -38,7 +38,8 @@ void BlockCache::init(const ChunkPos& cpos)
         }
     }
 
-    std::array<block_id_type, constant::CHUNK_VOLUME> flat {};
+    constexpr auto chunk_size = static_cast<std::int32_t>(constant::CHUNK_SIZE);
+    constexpr auto cache_size = static_cast<std::int32_t>(SIZE);
 
     for(ChunkPos::value_type dz = -1; dz <= 1; dz += 1) {
         for(ChunkPos::value_type dy = -1; dy <= 1; dy += 1) {
@@ -49,32 +50,36 @@ void BlockCache::init(const ChunkPos& cpos)
                     continue;
                 }
 
-                chunk->blocks().flatten(flat);
-
+                auto& blocks = chunk->blocks();
                 auto light = chunk->light().data();
 
-                for(LocalPos::value_type lz = 0; lz < CHUNK_SIZE_I16; lz += 1) {
-                    for(LocalPos::value_type ly = 0; ly < CHUNK_SIZE_I16; ly += 1) {
-                        for(LocalPos::value_type lx = 0; lx < CHUNK_SIZE_I16; lx += 1) {
-                            auto hx = static_cast<std::int32_t>(lx) + PADDING + static_cast<std::int32_t>(dx * CHUNK_SIZE_I16);
-                            auto hy = static_cast<std::int32_t>(ly) + PADDING + static_cast<std::int32_t>(dy * CHUNK_SIZE_I16);
-                            auto hz = static_cast<std::int32_t>(lz) + PADDING + static_cast<std::int32_t>(dz * CHUNK_SIZE_I16);
+                // A neighbour only contributes the slice that lands inside the
+                // cache, so clip the range instead of walking its whole volume
+                // and throwing most of it away.
+                auto hx_begin = static_cast<std::int32_t>(dx) * chunk_size + PADDING;
+                auto hy_begin = static_cast<std::int32_t>(dy) * chunk_size + PADDING;
+                auto hz_begin = static_cast<std::int32_t>(dz) * chunk_size + PADDING;
 
-                            if(hx < 0 || hy < 0 || hz < 0) {
-                                continue;
-                            }
+                auto lx_begin = std::max<std::int32_t>(0, -hx_begin);
+                auto ly_begin = std::max<std::int32_t>(0, -hy_begin);
+                auto lz_begin = std::max<std::int32_t>(0, -hz_begin);
 
-                            auto hx_sz = static_cast<std::size_t>(hx);
-                            auto hy_sz = static_cast<std::size_t>(hy);
-                            auto hz_sz = static_cast<std::size_t>(hz);
+                auto lx_end = std::min<std::int32_t>(chunk_size, cache_size - hx_begin);
+                auto ly_end = std::min<std::int32_t>(chunk_size, cache_size - hy_begin);
+                auto lz_end = std::min<std::int32_t>(chunk_size, cache_size - hz_begin);
 
-                            if(hx_sz >= SIZE || hy_sz >= SIZE || hz_sz >= SIZE) {
-                                continue;
-                            }
+                if(lx_begin >= lx_end || ly_begin >= ly_end || lz_begin >= lz_end) {
+                    continue;
+                }
 
-                            auto c_index = cache_index(hx_sz, hy_sz, hz_sz, SIZE);
+                for(auto lz = lz_begin; lz < lz_end; lz += 1) {
+                    for(auto ly = ly_begin; ly < ly_end; ly += 1) {
+                        for(auto lx = lx_begin; lx < lx_end; lx += 1) {
                             auto f_index = utils::to_index(LocalPos(lx, ly, lz));
-                            m_blocks[c_index] = flat[f_index];
+                            auto c_index = cache_index(static_cast<std::size_t>(hx_begin + lx), static_cast<std::size_t>(hy_begin + ly),
+                                static_cast<std::size_t>(hz_begin + lz), SIZE);
+
+                            m_blocks[c_index] = blocks.get(f_index);
                             m_light[c_index] = light[f_index];
                         }
                     }

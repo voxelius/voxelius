@@ -322,13 +322,14 @@ static void bind_pipeline_state(unsigned fog_model)
 
     auto& vproj = camera::instance.view_projection();
     auto animation_timer = static_cast<std::uint32_t>(globals::current_tick >> 1);
+    Eigen::Vector3f sky_light_color = SKY_LIGHT_COLOR * fog::daylight.value();
 
     glUseProgram(s_program.handle);
     glUniformMatrix4fv(s_program.uniforms[su_ViewProjection].location, 1, GL_FALSE, vproj.data());
     glUniform1ui(s_program.uniforms[su_AnimationTimer].location, animation_timer);
     glUniform1f(s_program.uniforms[su_ViewDistance].location, fog::distance);
     glUniform3fv(s_program.uniforms[su_FogColor].location, 1, fog::color.data());
-    glUniform3fv(s_program.uniforms[su_SkyColor].location, 1, SKY_LIGHT_COLOR.data());
+    glUniform3fv(s_program.uniforms[su_SkyColor].location, 1, sky_light_color.data());
     glUniform3fv(s_program.uniforms[su_BlockColor].location, 1, BLOCK_LIGHT_COLOR.data());
     glUniform1f(s_program.uniforms[su_Ambient].location, AMBIENT_LIGHT);
     glUniform3fv(s_program.uniforms[su_CameraLocal].location, 1, camera::local.data());

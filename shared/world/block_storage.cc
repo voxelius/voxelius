@@ -11,9 +11,6 @@ constexpr static std::uint32_t TAG_UNIFORM = 0x85787370;   // UNIF
 constexpr static std::uint32_t TAG_PALETTE8 = 0x80657666;  // PALB
 constexpr static std::uint32_t TAG_PALETTE16 = 0x80657687; // PALW
 
-constexpr static std::uint8_t COMPRESSION_NONE = 0;
-constexpr static std::uint8_t COMPRESSION_ZLIB = 1;
-
 static void encode_block_id(block_id_type id, WriteBuffer& buffer)
 {
     if(auto family = block_registry::find_family_of(id)) {
@@ -95,54 +92,15 @@ void BlockStorage::encode_net(const BlockStorage& storage, WriteBuffer& buffer)
         encode_net(p16, raw);
     }
 
-    auto raw_size = static_cast<mz_ulong>(raw.size());
-    auto raw_bound = mz_compressBound(raw_size);
-
-    auto compressed_size = raw_bound;
-    std::vector<std::byte> compressed;
-    compressed.resize(raw_bound);
-
-    auto raw_data = reinterpret_cast<const unsigned char*>(raw.data());
-    auto compressed_data = reinterpret_cast<unsigned char*>(compressed.data());
-    auto status = mz_compress2(compressed_data, &compressed_size, raw_data, raw_size, MZ_DEFAULT_LEVEL);
-    assert(status == MZ_OK);
-
-    if(compressed_size < raw_size) {
-        buffer.write<std::uint8_t>(COMPRESSION_ZLIB);
-        buffer.write<std::uint32_t>(static_cast<std::uint32_t>(raw_size));
-        buffer.write<std::uint32_t>(static_cast<std::uint32_t>(compressed_size));
-        buffer.write_bytes(std::span<const std::byte>(compressed.data(), compressed_size));
-    }
-    else {
-        buffer.write<std::uint8_t>(COMPRESSION_NONE);
-        buffer.write<std::uint32_t>(static_cast<std::uint32_t>(raw_size));
-        buffer.write_bytes(std::span(raw.data(), raw.size()));
-    }
+    buffer.write_compressed(std::span(raw.data(), raw.size()));
 }
 
 void BlockStorage::decode_net(BlockStorage& storage, ReadBuffer& buffer)
 {
-    auto mode = buffer.read<std::uint8_t>();
-    auto raw_size = buffer.read<std::uint32_t>();
+    auto raw_bytes = buffer.read_compressed();
 
-    std::vector<std::byte> raw_bytes;
-    raw_bytes.resize(raw_size);
-
-    if(mode == COMPRESSION_ZLIB) {
-        auto compressed_size = static_cast<mz_ulong>(buffer.read<std::uint32_t>());
-
-        mz_ulong raw_size_mz = raw_size;
-        std::vector<std::byte> compressed;
-        compressed.resize(compressed_size);
-        buffer.read_bytes(compressed);
-
-        auto raw_data = reinterpret_cast<unsigned char*>(raw_bytes.data());
-        auto compressed_data = reinterpret_cast<unsigned char*>(compressed.data());
-        auto status = mz_uncompress(raw_data, &raw_size_mz, compressed_data, compressed_size);
-        assert(status == MZ_OK);
-    }
-    else {
-        buffer.read_bytes(raw_bytes);
+    if(raw_bytes.empty()) {
+        return;
     }
 
     ReadBuffer raw;

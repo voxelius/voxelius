@@ -3,7 +3,6 @@
 #include "client/net/host.hh"
 
 #include "core/exception.hh"
-#include "core/utils/enet.hh"
 
 #include "shared/net/protocol.hh"
 
@@ -12,10 +11,8 @@
 void host::init(void)
 {
     globals::peer = nullptr;
-    globals::host = enet_host_create(nullptr, 1, 1, 0, 0);
+    globals::host = enet_host_create(nullptr, 1, protocol::CHANNEL_COUNT, 0, 0);
     vx::throw_if_not(globals::host, "enet_host_create failed");
-
-    utils::enable_compression(globals::host);
 }
 
 void host::shutdown(void)
@@ -72,7 +69,7 @@ bool host::connect(std::string_view address, std::uint16_t port)
         return false;
     }
 
-    globals::peer = enet_host_connect(globals::host, &enet_address, 1, 0);
+    globals::peer = enet_host_connect(globals::host, &enet_address, protocol::CHANNEL_COUNT, 0);
 
     return static_cast<bool>(globals::peer);
 }

@@ -282,6 +282,7 @@ static void wrapped_main(int argc, char** argv)
     chunk_mesher::init();
 
     skybox::init();
+    fog::init();
 
     main_menu::init_late();
 

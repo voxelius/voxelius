@@ -5,16 +5,18 @@
 #include "core/cvar/boolean.hh"
 #include "core/cvar/host.hh"
 #include "core/utils/angles.hh"
-#include "core/utils/enet.hh"
 #include "core/version.hh"
 
 #include "shared/component/head.hh"
 #include "shared/component/transform.hh"
 #include "shared/component/velocity.hh"
 #include "shared/utils/coord.hh"
+#include "shared/world/world.hh"
 
 #include "client/fonts.hh"
 #include "client/globals.hh"
+#include "client/world/chunk_mesh.hh"
+#include "client/world/chunk_mesher.hh"
 
 constexpr static float TEXT_XPOS = 8.0f;
 constexpr static float TEXT_YPOS = 8.0f;
@@ -444,6 +446,16 @@ static ImVec2 layout_position(ImDrawList* draw_list, ImVec2 position, ImU32 text
 
     auto speed_line = std::format("speed: {:8.2f}", speed);
     draw_text(draw_list, speed_line, position, text, shadow);
+    position.y += ystep;
+
+    // Loaded chunks against meshed ones against what still waits for a mesh:
+    // a hole in the world is either a chunk nobody asked for or a mesh that
+    // never got built, and the three numbers tell them apart.
+    auto loaded_chunks = world::chunk_map.size();
+    auto meshed_chunks = world::chunk_registry.view<ChunkMesh>().size();
+
+    auto mesh_line = std::format("mesh:  {}/{} backlog {}", meshed_chunks, loaded_chunks, chunk_mesher::backlog());
+    draw_text(draw_list, mesh_line, position, text, shadow);
     position.y += ystep;
 
     return position;

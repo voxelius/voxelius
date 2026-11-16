@@ -38,6 +38,14 @@ extern fluid_id_type inside_fluid;
 
 namespace camera
 {
+// Horizontal unit vector of where the player looks, scaled to the given
+// number of chunks. Chunk work is ordered towards it, so while flying the
+// leading edge is fetched and meshed before the ground that is already behind.
+Eigen::Vector3f lookahead(float chunks);
+} // namespace camera
+
+namespace camera
+{
 void init(void);
 void update(void);
 } // namespace camera

@@ -28,6 +28,10 @@ public:
 
     void read_bytes(std::span<std::byte> buffer);
 
+    // Takes back what WriteBuffer::write_compressed put in. The size is carried
+    // by the buffer itself, so the caller only has to check what came out.
+    std::vector<std::byte> read_compressed(void);
+
     template<typename T>
     T read(void);
 
@@ -52,6 +56,11 @@ public:
 
     void write_buffer(const WriteBuffer& other);
     void write_bytes(std::span<const std::byte> data);
+
+    // One place for the compression every network format uses. Whole arrays go
+    // in, so the ratio is the one zlib gets over a whole chunk rather than the
+    // one a transport can get out of a 1400 byte datagram.
+    void write_compressed(std::span<const std::byte> data);
 
     template<typename T>
     void write(const T value);

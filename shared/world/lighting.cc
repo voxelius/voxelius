@@ -33,6 +33,10 @@ constexpr static std::size_t LIGHT_TASKS_PER_TICK = 64;
 constexpr static std::size_t LOCAL_BUDGET = 32768;
 constexpr static std::size_t LOCAL_MAX_QUEUED = 262144;
 
+// A delta costs 3 bytes per cell, so a chunk with more changes than this is
+// sent whole instead.
+constexpr static std::size_t MAX_CHANGE_INDICES = 1024;
+
 struct LocalLightNode final {
     std::int16_t x;
     std::int16_t y;
@@ -73,6 +77,8 @@ private:
     std::uint64_t m_generation { 0 };
     bool m_above { false };
     bool m_ready { false };
+    bool m_empty { true };
+    bool m_open_sky { false };
 };
 
 constexpr static std::array<std::array<int, 4>, 6> NEIGHBOURS = { {
@@ -91,10 +97,54 @@ static std::array<std::deque<LightNode>, 16> s_add;
 static std::deque<LightNode> s_remove;
 static std::vector<BlockPos> s_pending_relight;
 static vx::hash_set<ChunkPos> s_changed;
+static vx::hash_map<ChunkPos, lighting::LightChange> s_change;
 static std::size_t s_queued;
 
 static std::uint64_t s_generation;
 static bool s_replica;
+
+static std::size_t grid_index(int x, int y, int z)
+{
+    auto ux = static_cast<std::size_t>(x);
+    auto uy = static_cast<std::size_t>(y);
+    auto uz = static_cast<std::size_t>(z);
+    auto size = static_cast<std::size_t>(LIGHT_GRID_SIZE);
+    return ux + uy * size + uz * size * size;
+}
+
+static block_light_type channel_level(std::uint8_t packed, light_channel channel)
+{
+    if(channel == LIGHT_SKY) {
+        return static_cast<block_light_type>(packed >> 4U);
+    }
+
+    return static_cast<block_light_type>(packed & 0x0FU);
+}
+
+// The flood fill never lowers a level, so a cell that is not brighter than any
+// of its neighbours has nothing to give. Seeding only the cells that are
+// brighter turns a pass over every lit cell into a pass over the light
+// boundaries, which matters under an open sky where everything is lit.
+static bool needs_seed(const std::array<std::uint8_t, LIGHT_GRID_VOLUME>& light, int x, int y, int z, light_channel channel)
+{
+    auto level = channel_level(light[grid_index(x, y, z)], channel);
+
+    for(const auto& offset : NEIGHBOURS) {
+        auto nx = x + offset[0];
+        auto ny = y + offset[1];
+        auto nz = z + offset[2];
+
+        if(nx < 0 || nx >= LIGHT_GRID_SIZE || ny < 0 || ny >= LIGHT_GRID_SIZE || nz < 0 || nz >= LIGHT_GRID_SIZE) {
+            continue;
+        }
+
+        if(channel_level(light[grid_index(nx, ny, nz)], channel) < level) {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 static bool realm_top(ChunkPos::value_type y)
 {
@@ -124,7 +174,12 @@ static bool sky_ready(const ChunkPos& pos)
     }
 
     auto above = world::find_chunk(ChunkPos(pos.x(), pos.y() + 1, pos.z()));
-    return above != nullptr && above->has_light();
+
+    // A chunk at the top of the loaded world has nothing above it and the
+    // column pass already treats that as open sky. Waiting for a neighbour
+    // that is not loaded keeps such a chunk unlit for as long as it stays at
+    // the edge, and every chunk below it with it.
+    return above == nullptr || above->has_light();
 }
 
 static std::int64_t chunk_distance(const ChunkPos& pos)
@@ -168,6 +223,25 @@ static void mark_dirty(const ChunkPos& pos)
     if(!s_replica) {
         s_dirty.insert(pos);
     }
+}
+
+static void record_light_change(const ChunkPos& pos, std::size_t index)
+{
+    auto& change = s_change[pos];
+
+    if(change.full) {
+        return;
+    }
+
+    change.indices.push_back(static_cast<std::uint16_t>(index));
+}
+
+static void mark_full_light_change(const ChunkPos& pos)
+{
+    auto& change = s_change[pos];
+
+    change.full = true;
+    change.indices.clear();
 }
 
 static void mark_face_neighbors_dirty(const ChunkPos& pos)
@@ -229,10 +303,35 @@ ChunkLightTask::ChunkLightTask(ChunkPos pos) : m_cpos(std::move(pos)), m_generat
                             auto grid = index(gx_begin + lx, gy_begin + ly, gz_begin + lz);
                             auto local = utils::to_index(LocalPos(lx, ly, lz));
 
-                            m_blocks[grid] = chunk->get_block(local);
+                            auto id = chunk->get_block(local);
+
+                            m_blocks[grid] = id;
                             m_light[grid] = light[local];
+
+                            if(id != BLOCK_ID_NULL && 0 == dx && 0 == dy && 0 == dz) {
+                                m_empty = false;
+                            }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    // Sunlight enters through the row above the chunk, so an empty chunk is
+    // uniformly lit only when that row is already at full level. At the top
+    // of a realm the sky is open by definition.
+    m_open_sky = realm_top(m_cpos.y());
+
+    if(!m_open_sky) {
+        m_open_sky = true;
+
+        for(int z = 0; z < chunk_size; z += 1) {
+            for(int x = 0; x < chunk_size; x += 1) {
+                auto cell = m_light[grid_index(LIGHT_PADDING + x, LIGHT_PADDING + chunk_size, LIGHT_PADDING + z)];
+
+                if(channel_level(cell, LIGHT_SKY) != BLOCK_LIGHT_MAX) {
+                    m_open_sky = false;
                 }
             }
         }
@@ -248,11 +347,7 @@ ChunkLightTask::~ChunkLightTask(void)
 
 std::size_t ChunkLightTask::index(int x, int y, int z) const
 {
-    auto ux = static_cast<std::size_t>(x);
-    auto uy = static_cast<std::size_t>(y);
-    auto uz = static_cast<std::size_t>(z);
-    auto size = static_cast<std::size_t>(LIGHT_GRID_SIZE);
-    return ux + uy * size + uz * size * size;
+    return grid_index(x, y, z);
 }
 
 void ChunkLightTask::process(void)
@@ -314,19 +409,38 @@ void ChunkLightTask::process(void)
 
     std::array<std::deque<LocalLightNode>, 16> add;
 
+    // An empty chunk under an open sky is lit to the last cell, and block
+    // light can only enter it from the padding. When neither applies the
+    // whole fill is redundant.
+    if(m_empty && m_open_sky) {
+        bool any_block_light = false;
+
+        for(auto packed : light) {
+            if(0 != (packed & 0x0FU)) {
+                any_block_light = true;
+                break;
+            }
+        }
+
+        if(!any_block_light) {
+            m_result.fill(0xF0);
+            m_ready = true;
+            return;
+        }
+    }
+
     for(int y = 0; y < LIGHT_GRID_SIZE; y += 1) {
         for(int z = 0; z < LIGHT_GRID_SIZE; z += 1) {
             for(int x = 0; x < LIGHT_GRID_SIZE; x += 1) {
-                auto cell = light[index(x, y, z)];
-                auto sky = static_cast<block_light_type>(cell >> 4U);
-                auto block = static_cast<block_light_type>(cell & 0x0FU);
+                auto sky = channel_level(light[index(x, y, z)], LIGHT_SKY);
+                auto block = channel_level(light[index(x, y, z)], LIGHT_BLOCK);
 
-                if(sky) {
+                if(sky && needs_seed(light, x, y, z, LIGHT_SKY)) {
                     add[sky].push_back(LocalLightNode {
                         static_cast<std::int16_t>(x), static_cast<std::int16_t>(y), static_cast<std::int16_t>(z), sky, LIGHT_SKY });
                 }
 
-                if(block) {
+                if(block && needs_seed(light, x, y, z, LIGHT_BLOCK)) {
                     add[block].push_back(LocalLightNode {
                         static_cast<std::int16_t>(x), static_cast<std::int16_t>(y), static_cast<std::int16_t>(z), block, LIGHT_BLOCK });
                 }
@@ -418,6 +532,8 @@ void ChunkLightTask::finalize(void)
     if(!chunk->has_light() || !same_light(chunk->light(), m_result)) {
         chunk->set_light(std::move(m_result));
 
+        mark_full_light_change(m_cpos);
+
         globals::dispatcher.trigger(ChunkLightUpdateEvent(m_cpos));
 
         // A changed border is a seed for the six chunks that share a face
@@ -496,6 +612,7 @@ static void write_light(const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpo
 
     chunk->set_light(index, channel, value);
     s_changed.insert(cpos);
+    record_light_change(cpos, index);
 }
 
 static void seed_cell(const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpos, std::size_t index)
@@ -520,9 +637,13 @@ static void relight_position(const BlockPos& bpos)
             return;
         }
 
-        // The chunk has not been lit yet. Give the edit an immediate local
-        // light and queue the full recompute.
-        chunk->set_light(LightStorage {});
+        // The chunk has not been lit yet. Do not invent an all-zero array and
+        // call it valid: it would be sent to clients as real light, and every
+        // chunk below would take its zero row as the sky above it. Keeping
+        // the light invalid makes the client fall back to its own estimate
+        // until the fill below delivers the real thing.
+        chunk->clear_light();
+        mark_full_light_change(cpos);
         s_changed.insert(cpos);
         mark_dirty(cpos);
     }
@@ -714,12 +835,40 @@ void lighting::reset(void)
     s_remove.clear();
     s_pending_relight.clear();
     s_changed.clear();
+    s_change.clear();
     s_queued = 0;
 }
 
 void lighting::shutdown(void)
 {
     reset();
+}
+
+lighting::LightChange lighting::take_change(const ChunkPos& pos)
+{
+    auto it = s_change.find(pos);
+
+    if(it == s_change.cend()) {
+        return LightChange {};
+    }
+
+    auto result = std::move(it->second);
+
+    s_change.erase(it);
+
+    if(result.full) {
+        return result;
+    }
+
+    std::sort(result.indices.begin(), result.indices.end());
+    result.indices.erase(std::unique(result.indices.begin(), result.indices.end()), result.indices.end());
+
+    if(result.indices.size() > MAX_CHANGE_INDICES) {
+        result.full = true;
+        result.indices.clear();
+    }
+
+    return result;
 }
 
 block_light_type lighting::attenuation(block_id_type id)
@@ -753,6 +902,7 @@ void lighting::fixed_update(void)
     }
 
     s_changed.clear();
+    s_change.clear();
 
     if(s_replica || s_dirty.empty()) {
         return;

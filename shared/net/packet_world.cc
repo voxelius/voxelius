@@ -46,14 +46,73 @@ void packet::World_Biomes::decode(World_Biomes& packet, ReadBuffer& buffer)
 
 void packet::World_Light::encode(const World_Light& packet, WriteBuffer& buffer)
 {
-    buffer.write_vector<std::int32_t, 3>(packet.cpos.cast<std::int32_t>());
-    LightStorage::encode_net(packet.light, buffer);
+    buffer.write<std::uint16_t>(static_cast<std::uint16_t>(packet.entries.size()));
+
+    for(const auto& entry : packet.entries) {
+        buffer.write_vector<std::int32_t, 3>(entry.cpos.cast<std::int32_t>());
+        buffer.write<std::uint8_t>(entry.full ? 1 : 0);
+
+        if(entry.full) {
+            LightStorage::encode_net(entry.light, buffer);
+            continue;
+        }
+
+        buffer.write<std::uint16_t>(static_cast<std::uint16_t>(entry.indices.size()));
+
+        for(std::size_t i = 0; i < entry.indices.size(); i += 1) {
+            buffer.write<std::uint16_t>(entry.indices[i]);
+            buffer.write<std::uint8_t>(entry.values[i]);
+        }
+    }
 }
 
 void packet::World_Light::decode(World_Light& packet, ReadBuffer& buffer)
 {
-    packet.cpos = buffer.read_vector<std::int32_t, 3>().cast<ChunkPos::value_type>();
-    LightStorage::decode_net(packet.light, buffer);
+    packet.entries.clear();
+
+    if(!buffer.has_records(1, sizeof(std::uint16_t))) {
+        return;
+    }
+
+    auto count = buffer.read<std::uint16_t>();
+
+    for(std::uint16_t i = 0; i < count; i += 1) {
+        // Chunk position plus the full flag.
+        if(!buffer.has_records(1, 3 * sizeof(std::int32_t) + sizeof(std::uint8_t))) {
+            return;
+        }
+
+        Entry entry;
+
+        entry.cpos = buffer.read_vector<std::int32_t, 3>().cast<ChunkPos::value_type>();
+        entry.full = buffer.read<std::uint8_t>() != 0;
+
+        if(entry.full) {
+            LightStorage::decode_net(entry.light, buffer);
+            packet.entries.push_back(std::move(entry));
+            continue;
+        }
+
+        if(!buffer.has_records(1, sizeof(std::uint16_t))) {
+            return;
+        }
+
+        auto cells = buffer.read<std::uint16_t>();
+
+        if(!buffer.has_records(cells, sizeof(std::uint16_t) + sizeof(std::uint8_t))) {
+            return;
+        }
+
+        entry.indices.reserve(cells);
+        entry.values.reserve(cells);
+
+        for(std::uint16_t j = 0; j < cells; j += 1) {
+            entry.indices.push_back(buffer.read<std::uint16_t>());
+            entry.values.push_back(buffer.read<std::uint8_t>());
+        }
+
+        packet.entries.push_back(std::move(entry));
+    }
 }
 
 void packet::World_SetBlock::encode(const World_SetBlock& packet, WriteBuffer& buffer)

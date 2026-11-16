@@ -153,6 +153,11 @@ void Chunk::set_light(std::size_t index, light_channel channel, block_light_type
     m_light.set(index, channel, value);
 }
 
+void Chunk::set_packed_light(std::size_t index, std::uint8_t value)
+{
+    m_light.set_packed(index, value);
+}
+
 void Chunk::set_light(LightStorage light)
 {
     m_light = std::move(light);

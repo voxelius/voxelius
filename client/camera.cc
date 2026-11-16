@@ -8,6 +8,7 @@
 
 #include "shared/component/head.hh"
 #include "shared/component/transform.hh"
+#include "shared/component/velocity.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
@@ -18,6 +19,9 @@
 #include "client/gui/container.hh"
 #include "client/gui/slider.hh"
 #include "client/settings.hh"
+
+// Below this horizontal speed the loader ignores the direction of travel.
+constexpr static float MOVING_SPEED = 1.0f;
 
 cvar::Number<float> camera::vertical_fov { 70.0f, 45.0f, 110.0f };
 cvar::Number<unsigned> camera::view_distance { 8, 1, 32 };
@@ -56,6 +60,29 @@ static void reset_camera(void)
 
     s_eye_lpos.setZero();
     s_eye_bpos.setZero();
+}
+
+Eigen::Vector3f camera::lookahead(float chunks)
+{
+    auto& registry = globals::registry;
+
+    if(!registry.valid(globals::player) || !registry.all_of<Velocity_Intr>(globals::player)) {
+        return Eigen::Vector3f::Zero();
+    }
+
+    const auto& velocity = registry.get<Velocity_Intr>(globals::player);
+    auto direction = Eigen::Vector2f(velocity.value.x(), velocity.value.z());
+    auto speed = direction.norm();
+
+    // Standing still has to load what is around the player, not what happens
+    // to be in front of the camera: the two differ right after a spawn.
+    if(speed <= MOVING_SPEED) {
+        return Eigen::Vector3f::Zero();
+    }
+
+    direction /= speed;
+
+    return Eigen::Vector3f(direction.x(), 0.0f, direction.y()) * chunks;
 }
 
 void camera::init(void)

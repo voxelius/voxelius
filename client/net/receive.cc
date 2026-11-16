@@ -2,6 +2,8 @@
 
 #include "client/net/receive.hh"
 
+#include "core/msg/log.hh"
+
 #include "shared/entity/class_registry.hh"
 #include "shared/entity/component_map.hh"
 #include "shared/net/packet_entity.hh"
@@ -14,6 +16,10 @@
 
 #include "client/globals.hh"
 #include "client/net/session.hh"
+#include "client/world/chunk_visibility.hh"
+
+// Five seconds at the fixed rate; matches the server side log.
+constexpr static std::uint64_t STATS_INTERVAL = 100;
 
 static void on_entity_spawn(const packet::Entity_Spawn& packet)
 {
@@ -76,6 +82,8 @@ static void on_entity_client(const packet::Entity_Client& packet)
 
 static void on_world_blocks(const packet::World_Blocks& packet)
 {
+    chunk_visibility::note_received(packet.cpos);
+
     // A full chunk packet is authoritative: it is both the first load and
     // the resync the server sends to roll a stale client world back. Block
     // edits made after the packet was queued arrive as SetBlock on the same
@@ -106,15 +114,30 @@ static void on_world_biomes(const packet::World_Biomes& packet)
 
 static void on_world_light(const packet::World_Light& packet)
 {
-    auto chunk = world::find_chunk(packet.cpos);
+    for(const auto& entry : packet.entries) {
+        auto chunk = world::find_chunk(entry.cpos);
 
-    if(chunk == nullptr) {
-        return;
+        if(chunk == nullptr) {
+            continue;
+        }
+
+        if(entry.full) {
+            chunk->set_light(entry.light);
+        }
+        else {
+            // A delta cannot seed a chunk the client was never given light
+            // for; the server sends the whole array in that case.
+            if(!chunk->has_light()) {
+                continue;
+            }
+
+            for(std::size_t i = 0; i < entry.indices.size(); i += 1) {
+                chunk->set_packed_light(entry.indices[i], entry.values[i]);
+            }
+        }
+
+        globals::dispatcher.trigger(ChunkLightUpdateEvent(entry.cpos));
     }
-
-    chunk->set_light(packet.light);
-
-    globals::dispatcher.trigger(ChunkLightUpdateEvent(packet.cpos));
 }
 
 static void on_world_set_block(const packet::World_SetBlock& packet)
@@ -125,6 +148,19 @@ static void on_world_set_block(const packet::World_SetBlock& packet)
 static void on_world_timings(const packet::World_Timings& packet)
 {
     globals::current_tick = packet.current_tick;
+
+    static std::uint64_t last_tick;
+
+    if(globals::current_tick - last_tick < STATS_INTERVAL) {
+        return;
+    }
+
+    last_tick = globals::current_tick;
+
+    auto stats = protocol::take_received_stats();
+
+    msg::log_info("net recv: chunks={} biomes={} light={} setblock={} entities={} timings={} other={}", stats.chunks, stats.biomes,
+        stats.light, stats.set_block, stats.entities, stats.timings, stats.other);
 }
 
 static void on_session_state(const SessionStateEvent& event)

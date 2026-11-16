@@ -2,6 +2,8 @@
 
 The client and the server talk over ENet, a thin reliability layer on top of UDP. Each side reads and writes [buffers](arch-core.md#buffers). Every packet starts with a 16-bit unsigned integer that names its ID.
 
+Every packet is sent reliably. ENet sequences each channel on its own, so the world stream has a channel of its own: a burst of chunk packets does not hold back login, entity or timing packets, and the other way around. Blocks, biomes and light share that channel because a light packet is only meaningful after the chunk it belongs to, and a single sequence is what guarantees that order.
+
 A client goes through one of two exchanges after it connects: a status ping, or a full login. Both exchanges start the same way. Both end with the server closing the connection or keeping it open.
 
 ## Status pings
@@ -236,7 +238,7 @@ Sent by server as a response to `RequestChunk` or at arbitrary moments to synchr
 |----|----|----|
 |`vector3<int32>`|`cpos`|Chunk position|
 |`data`|`blocks`|Serialized and compressed block storage contents|
-|`data`|`light`|Packed light, one byte per block: skylight in the high nibble, block light in the low nibble|
+|`data`|`light`|Compressed packed light, one byte per block: skylight in the high nibble, block light in the low nibble|
 |`uint8`|`light_valid`|`1` when `light` holds computed light; `0` makes the client fall back to its own estimate until a `ChunkLight` arrives|
 
 ### `0x000A` `ChunkBiomes`
@@ -247,7 +249,14 @@ Sent by server as a response to `RequestChunk` once per realm to synchronize bio
 |----|----|----|
 |`uint32`|`realm`|Biome realm|
 |`vector2<int32>`|`cpos`|XZ-position|
-|`uint32<256>`|`biomes`|A list of biome IDs|
+|`data`|`biomes`|Compressed list of 256 biome IDs|
+
+Every compressed field is written by `WriteBuffer::write_compressed` and read
+back by `ReadBuffer::read_compressed`: a mode byte, the size the data had
+before compression, the size it takes in the buffer, then the bytes either raw
+or as their zlib stream. The whole array is compressed at once, so the ratio is
+the one the codec gets over a chunk rather than the one a transport can get out
+of a single datagram.
 
 ### `0x000B` `SetBlock`
 
@@ -326,9 +335,31 @@ Sent by server when an entity is removed
 
 ### `0x001A` `ChunkLight`
 
-Sent by server when the light of a chunk it has already synchronized changes
+Sent by server when the light of chunks it has already synchronized changes.
+One packet carries every chunk whose light changed in a tick. Each entry is
+either a delta over the cells that changed or, when most of the chunk changed,
+the whole array.
+
+|Type|Name|Description|
+|----|----|----|
+|`uint16`|`count`|Number of entries|
+|`entry[count]`|`entries`|One per changed chunk|
+
+Each entry:
 
 |Type|Name|Description|
 |----|----|----|
 |`vector3<int32>`|`cpos`|Chunk position|
-|`data`|`light`|Packed light, same layout as the `light` field of `ChunkBlocks`|
+|`uint8`|`full`|`1` when the entry carries the whole array, `0` for a delta|
+|`data`|`light`|Only with `full = 1`. Packed light, same layout as the `light` field of `ChunkBlocks`|
+|`uint16`|`cells`|Only with `full = 0`. Number of changed cells|
+|`uint16[cells]`|`indices`|Only with `full = 0`. Cell index, the same order as the `light` array|
+|`uint8[cells]`|`values`|Only with `full = 0`. New packed light of the matching cell|
+
+A delta is only applied to a chunk the client already holds light for. When
+the server replaces a whole array it always sends it whole; when the changed
+cells outnumber a quarter of the chunk it does the same instead of sending a
+delta that would be larger.
+
+A batch is split when it would exceed 32 KiB, so a tick that relights a large
+part of the view distance turns into several packets instead of one huge one.

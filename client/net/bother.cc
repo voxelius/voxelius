@@ -3,7 +3,6 @@
 #include "client/net/bother.hh"
 
 #include "core/buffer.hh"
-#include "core/utils/enet.hh"
 #include "core/version.hh"
 
 #include "shared/net/packet_status.hh"
@@ -142,8 +141,6 @@ static void thread_main(std::stop_token stop_token)
         msg::log_warning("failed to create host");
         return;
     }
-
-    utils::enable_compression(host);
 
     entt::dispatcher dispatcher;
     dispatcher.sink<packet::Status_Response>().connect<&on_status_response>();

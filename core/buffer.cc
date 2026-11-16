@@ -2,6 +2,9 @@
 
 #include "core/buffer.hh"
 
+constexpr static std::uint8_t COMPRESSION_NONE = 0;
+constexpr static std::uint8_t COMPRESSION_ZLIB = 1;
+
 ReadBuffer::ReadBuffer(const ReadBuffer& other)
 {
     reset(std::span(other.data(), other.size()));
@@ -276,6 +279,52 @@ void ReadBuffer::read_bytes(std::span<std::byte> buffer)
     m_position += buffer.size();
 }
 
+std::vector<std::byte> ReadBuffer::read_compressed(void)
+{
+    // Mode, the size the data had before compression, and the size it takes in
+    // the buffer. The second one is what tells the caller how much to allocate;
+    // without it a compressed payload cannot be restored at all.
+    if(!has_records(1, sizeof(std::uint8_t) + 2 * sizeof(std::uint32_t))) {
+        return {};
+    }
+
+    auto mode = read<std::uint8_t>();
+    auto raw_size = static_cast<std::size_t>(read<std::uint32_t>());
+    auto payload_size = static_cast<std::size_t>(read<std::uint32_t>());
+
+    if(!has_records(1, payload_size)) {
+        return {};
+    }
+
+    if(COMPRESSION_NONE == mode) {
+        if(payload_size != raw_size) {
+            return {};
+        }
+
+        std::vector<std::byte> result;
+        result.resize(raw_size);
+        read_bytes(result);
+        return result;
+    }
+
+    std::vector<std::byte> compressed;
+    compressed.resize(payload_size);
+    read_bytes(compressed);
+
+    std::vector<std::byte> result;
+    result.resize(raw_size);
+
+    auto out_size = static_cast<mz_ulong>(raw_size);
+    auto status = mz_uncompress(reinterpret_cast<unsigned char*>(result.data()), &out_size,
+        reinterpret_cast<const unsigned char*>(compressed.data()), static_cast<mz_ulong>(payload_size));
+
+    if(MZ_OK != status || out_size != raw_size) {
+        return {};
+    }
+
+    return result;
+}
+
 WriteBuffer::WriteBuffer(const WriteBuffer& other)
 {
     m_vector = other.m_vector;
@@ -443,6 +492,32 @@ template void WriteBuffer::write_vector<std::int64_t, 4>(const Eigen::Vector<std
 template void WriteBuffer::write_vector<float, 2>(const Eigen::Vector<float, 2>& value);
 template void WriteBuffer::write_vector<float, 3>(const Eigen::Vector<float, 3>& value);
 template void WriteBuffer::write_vector<float, 4>(const Eigen::Vector<float, 4>& value);
+
+void WriteBuffer::write_compressed(std::span<const std::byte> data)
+{
+    auto raw_size = static_cast<mz_ulong>(data.size());
+    auto compressed_size = mz_compressBound(raw_size);
+
+    std::vector<std::byte> compressed;
+    compressed.resize(compressed_size);
+
+    auto status = mz_compress2(reinterpret_cast<unsigned char*>(compressed.data()), &compressed_size,
+        reinterpret_cast<const unsigned char*>(data.data()), raw_size, MZ_BEST_SPEED);
+    assert(MZ_OK == status);
+
+    if(compressed_size < raw_size) {
+        write<std::uint8_t>(COMPRESSION_ZLIB);
+        write<std::uint32_t>(static_cast<std::uint32_t>(raw_size));
+        write<std::uint32_t>(static_cast<std::uint32_t>(compressed_size));
+        write_bytes(std::span(compressed.data(), static_cast<std::size_t>(compressed_size)));
+    }
+    else {
+        write<std::uint8_t>(COMPRESSION_NONE);
+        write<std::uint32_t>(static_cast<std::uint32_t>(raw_size));
+        write<std::uint32_t>(static_cast<std::uint32_t>(raw_size));
+        write_bytes(data);
+    }
+}
 
 PHYSFS_File* WriteBuffer::to_file(std::string_view path, bool append) const
 {

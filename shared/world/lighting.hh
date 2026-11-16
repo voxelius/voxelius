@@ -6,6 +6,16 @@
 
 namespace lighting
 {
+// The cells of one chunk whose light changed since the last call. A full
+// change means the whole array was replaced and a delta is not worth sending.
+struct LightChange final {
+    bool full { false };
+    std::vector<std::uint16_t> indices;
+};
+} // namespace lighting
+
+namespace lighting
+{
 void init(void);
 void shutdown(void);
 } // namespace lighting
@@ -26,6 +36,11 @@ namespace lighting
 {
 // How much light the block absorbs when it is traversed.
 block_light_type attenuation(block_id_type id);
+} // namespace lighting
+
+namespace lighting
+{
+LightChange take_change(const ChunkPos& pos);
 } // namespace lighting
 
 namespace lighting

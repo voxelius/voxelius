@@ -28,6 +28,11 @@
 
 constexpr static std::size_t MAX_SUBMIT_PER_FRAME = 32;
 
+// How far ahead of the player the mesh order is biased, in chunks. The loader
+// fetches that way, so the mesher follows, or the leading edge would still
+// wait behind the ground already flown over.
+constexpr static float LOOKAHEAD_CHUNKS = 4.0f;
+
 constexpr static std::array ALL_FACES = {
     BLOCK_FACE_NORTH,
     BLOCK_FACE_SOUTH,
@@ -87,14 +92,15 @@ static ChunkPos face_delta(block_face face)
     return ChunkPos::Zero();
 }
 
-static float mesh_queue_distance_sq(const ChunkPos& cpos)
+static float mesh_queue_distance_sq(const ChunkPos& cpos, const Eigen::Vector3f& focus)
 {
     Eigen::Vector3f position = utils::to_fvec(cpos - camera::chunk) * static_cast<float>(constant::CHUNK_SIZE);
-    Eigen::Vector3f delta = position - camera::local;
+    Eigen::Vector3f delta = position - camera::local - focus;
     return delta.squaredNorm();
 }
 
 static vx::hash_set<ChunkPos> s_pending;
+static std::size_t s_backlog;
 
 class MeshingTask final : public Task {
 public:
@@ -1186,6 +1192,11 @@ void chunk_mesher::init(void)
     globals::dispatcher.sink<ChunkLightUpdateEvent>().connect<&on_chunk_light>();
 }
 
+std::size_t chunk_mesher::backlog(void)
+{
+    return s_backlog;
+}
+
 void chunk_mesher::update(void)
 {
     static std::vector<std::tuple<entt::entity, ChunkPos, float>> batch;
@@ -1198,11 +1209,15 @@ void chunk_mesher::update(void)
 
     batch.clear();
 
+    auto focus = camera::lookahead(LOOKAHEAD_CHUNKS) * static_cast<float>(constant::CHUNK_SIZE);
+
     for(const auto [entity, chunk] : group.each()) {
         if(0 == s_pending.count(chunk.position)) {
-            batch.emplace_back(entity, chunk.position, mesh_queue_distance_sq(chunk.position));
+            batch.emplace_back(entity, chunk.position, mesh_queue_distance_sq(chunk.position, focus));
         }
     }
+
+    s_backlog = batch.size() + s_pending.size();
 
     auto submit_count = std::min(batch.size(), MAX_SUBMIT_PER_FRAME);
 
