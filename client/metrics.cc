@@ -385,7 +385,7 @@ static ImVec2 layout_network(ImDrawList* draw_list, ImVec2 position, ImU32 text,
 
     auto alert_color = IM_COL32(0xFF, 0x40, 0x40, 0xFF);
 
-    auto ping_line = std::format("ping: {:.0f} +/- {:.0f} ms / min {:.0f}", ping_ms, jitter_ms, lowest_ms);
+    auto ping_line = std::format("ping: {:.0f}~{:.0f} ms / min {:.0f}", ping_ms, jitter_ms, lowest_ms);
     draw_text(draw_list, ping_line, position, ping_color(ping_ms), shadow);
     position.y += ystep;
 
