@@ -2,9 +2,15 @@
 
 #include "client/gui/background.hh"
 
+#include "client/constant.hh"
 #include "client/globals.hh"
 
 constexpr static float CELL_DIVISOR = 48.0f;
+
+// The scene is authored against a 4:3 window: its width is taken from the
+// height times this aspect, so a wider window shows more of the same sky
+// instead of stretching it
+constexpr static float REFERENCE_ASPECT = static_cast<float>(constant::BASE_WIDTH) / static_cast<float>(constant::BASE_HEIGHT);
 
 struct HillLayer final {
     float base;
@@ -27,14 +33,17 @@ static const ImVec4 SKY_TOP = ImVec4(0.204f, 0.373f, 0.588f, 1.000f);
 static const ImVec4 SKY_BOTTOM = ImVec4(0.749f, 0.867f, 0.925f, 1.000f);
 
 // Back to front. Base and amplitude are fractions of the window height,
-// speed is in pixels per second, so the parallax needs no extra setup
+// frequency is in radians per cell and speed is in cells per second, so
+// the silhouette keeps its shape whatever the window size is
 static const HillLayer HILL_LAYERS[] = {
-    { 0.58f, 0.10f, 0.012f, 3.0f, ImVec4(0.588f, 0.690f, 0.745f, 1.0f), false },
-    { 0.66f, 0.11f, 0.018f, 5.0f, ImVec4(0.455f, 0.569f, 0.471f, 1.0f), true },
-    { 0.74f, 0.10f, 0.026f, 8.0f, ImVec4(0.298f, 0.424f, 0.322f, 1.0f), true },
-    { 0.82f, 0.08f, 0.034f, 12.0f, ImVec4(0.220f, 0.329f, 0.251f, 1.0f), true },
+    { 0.58f, 0.10f, 0.160f, 0.230f, ImVec4(0.588f, 0.690f, 0.745f, 1.0f), false },
+    { 0.66f, 0.11f, 0.230f, 0.380f, ImVec4(0.455f, 0.569f, 0.471f, 1.0f), true },
+    { 0.74f, 0.10f, 0.340f, 0.620f, ImVec4(0.298f, 0.424f, 0.322f, 1.0f), true },
+    { 0.82f, 0.08f, 0.440f, 0.920f, ImVec4(0.220f, 0.329f, 0.251f, 1.0f), true },
 };
 
+// Widths are fractions of the height times REFERENCE_ASPECT, heights and
+// positions are fractions of the window so the clouds stay clouds
 static const Cloud CLOUDS[] = {
     { 0.05f, 0.09f, 0.11f, 0.018f, 6.0f },
     { 0.38f, 0.15f, 0.07f, 0.012f, 4.0f },
@@ -64,7 +73,7 @@ static void draw_sun(ImDrawList* draw_list, ImVec2 origin, ImVec2 size)
 static void draw_clouds(ImDrawList* draw_list, ImVec2 origin, ImVec2 size, float time)
 {
     for(const auto& cloud : CLOUDS) {
-        auto width = cloud.width * size.x;
+        auto width = std::max(2.0f, cloud.width * REFERENCE_ASPECT * size.y);
         auto height = std::max(2.0f, cloud.height * size.y);
 
         auto travel = size.x + width;
@@ -93,13 +102,16 @@ static void draw_hills(ImDrawList* draw_list, ImVec2 origin, ImVec2 size, float 
     for(const auto& layer : HILL_LAYERS) {
         auto base = layer.base * size.y;
         auto amplitude = layer.amplitude * size.y;
+
+        // Sampling in cells ties the horizontal wavelength to the height,
+        // the same way the amplitude already is
         auto offset = time * layer.speed;
 
         auto cap_color = ImGui::GetColorU32(lighten(layer.color, 1.18f));
         auto body_color = ImGui::GetColorU32(layer.color);
 
         for(auto x = 0.0f; x < size.x; x += cell) {
-            auto sample = x + offset;
+            auto sample = x / cell + offset;
 
             auto y = base;
             y += amplitude * std::sin(sample * layer.frequency);
