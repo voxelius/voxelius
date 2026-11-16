@@ -11,13 +11,15 @@
 #include "shared/component/transform.hh"
 #include "shared/component/velocity.hh"
 #include "shared/globals.hh"
-#include "shared/system/pmove.hh"
 #include "shared/mod_loader.hh"
 #include "shared/res/block_collision.hh"
 #include "shared/res/block_model.hh"
 #include "shared/res/feature.hh"
+#include "shared/system/pmove.hh"
 #include "shared/world/biome_map.hh"
 #include "shared/world/block_collisions.hh"
+#include "shared/world/light_material.hh"
+#include "shared/world/lighting.hh"
 #include "shared/world/world.hh"
 
 void shared_game::init(void)
@@ -36,17 +38,23 @@ void shared_game::init(void)
 
     biome_map::init();
     mod_loader::init();
+
+    lighting::init();
 }
 
 void shared_game::init_late(void)
 {
     block_collisions::init_late();
+    light_material::init_late();
 }
 
 void shared_game::shutdown(void)
 {
+    lighting::shutdown();
+
     world::purge();
 
+    light_material::shutdown();
     block_collisions::shutdown();
 
     mod_loader::shutdown();
@@ -64,6 +72,7 @@ void shared_game::fixed_update(void)
     Velocity::fixed_update();
 
     world::fixed_update();
+    lighting::fixed_update();
 }
 
 void shared_game::fixed_update_late(void)

@@ -11,6 +11,7 @@
 #include "shared/net/protocol.hh"
 
 #include "server/globals.hh"
+#include "server/net/receive.hh"
 #include "server/net/sessions.hh"
 
 cvar::Number<unsigned> host::max_players { 8, 1, 128 };
@@ -89,6 +90,7 @@ void host::fixed_update_late(void)
                 break;
 
             case ENET_EVENT_TYPE_DISCONNECT:
+                receive::forget_peer(event.peer);
                 sessions::destroy(sessions::find(event.peer));
                 break;
 

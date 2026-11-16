@@ -37,7 +37,9 @@ Assigns a block ID in the world.
 
 ### Function: `world.get_light(bx, by, bz) -> integer`
 
-Retrieves lighting information for a block position.
+Retrieves lighting information for a block position. The value is the
+brighter of the two light channels the engine keeps: skylight and block
+light.
 
 #### Arguments
 
@@ -47,7 +49,8 @@ Retrieves lighting information for a block position.
 
 #### Return value
 
-- Luminance value of the block
+- Luminance value of the block, from `0` (dark) to `15` (fully lit)
+- `0` if the chunk is not present, or if it has not been lit yet
 
 ### Function: `world.get_state(bx, by, bz, st) -> string`
 

@@ -76,9 +76,25 @@ static void on_entity_client(const packet::Entity_Client& packet)
 
 static void on_world_blocks(const packet::World_Blocks& packet)
 {
-    auto chunk = world::create_chunk(packet.cpos);
+    // A full chunk packet is authoritative: it is both the first load and
+    // the resync the server sends to roll a stale client world back. Block
+    // edits made after the packet was queued arrive as SetBlock on the same
+    // reliable channel, so applying the whole chunk here cannot win over a
+    // newer prediction.
+    auto chunk = world::find_chunk(packet.cpos);
+
+    if(chunk == nullptr) {
+        chunk = world::create_chunk(packet.cpos);
+    }
 
     chunk->set_blocks(packet.blocks);
+
+    if(packet.light_valid) {
+        chunk->set_light(packet.light);
+    }
+    else {
+        chunk->clear_light();
+    }
 
     globals::dispatcher.trigger(ChunkUpdateEvent(packet.cpos, chunk));
 }
@@ -86,6 +102,19 @@ static void on_world_blocks(const packet::World_Blocks& packet)
 static void on_world_biomes(const packet::World_Biomes& packet)
 {
     biome_map::insert(packet.realm, packet.cpos, packet.biomes);
+}
+
+static void on_world_light(const packet::World_Light& packet)
+{
+    auto chunk = world::find_chunk(packet.cpos);
+
+    if(chunk == nullptr) {
+        return;
+    }
+
+    chunk->set_light(packet.light);
+
+    globals::dispatcher.trigger(ChunkLightUpdateEvent(packet.cpos));
 }
 
 static void on_world_set_block(const packet::World_SetBlock& packet)
@@ -114,6 +143,7 @@ void receive::init(void)
 
     globals::dispatcher.sink<packet::World_Blocks>().connect<&on_world_blocks>();
     globals::dispatcher.sink<packet::World_Biomes>().connect<&on_world_biomes>();
+    globals::dispatcher.sink<packet::World_Light>().connect<&on_world_light>();
     globals::dispatcher.sink<packet::World_SetBlock>().connect<&on_world_set_block>();
     globals::dispatcher.sink<packet::World_Timings>().connect<&on_world_timings>();
 

@@ -15,6 +15,7 @@ void fixed_update(void);
 namespace chunk_loader
 {
 void request(const ChunkPos& pos);
+void request_column(const ChunkPos& pos);
 bool pending(const ChunkPos& pos);
 } // namespace chunk_loader
 

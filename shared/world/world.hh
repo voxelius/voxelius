@@ -48,6 +48,15 @@ private:
     ChunkPos m_pos;
 };
 
+class ChunkLightUpdateEvent final {
+public:
+    explicit ChunkLightUpdateEvent(const ChunkPos& pos);
+    constexpr const ChunkPos& pos(void) const;
+
+private:
+    ChunkPos m_pos;
+};
+
 class BlockUpdateEvent final {
 public:
     explicit BlockUpdateEvent(const BlockPos& pos, block_id_type id, const std::shared_ptr<Chunk>& chunk);
@@ -185,6 +194,11 @@ constexpr const std::shared_ptr<Chunk>& ChunkReadyEvent::chunk(void) const
 }
 
 constexpr const ChunkPos& ChunkReadyEvent::pos(void) const
+{
+    return m_pos;
+}
+
+constexpr const ChunkPos& ChunkLightUpdateEvent::pos(void) const
 {
     return m_pos;
 }

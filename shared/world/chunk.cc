@@ -4,9 +4,15 @@
 
 #include "core/buffer.hh"
 
+#include "shared/utils/coord.hh"
+
 // Marks the schedule trailer so a slot saved before the trailer existed
 // decodes as blocks with no pending ticks instead of garbage.
 constexpr static std::uint32_t SCHEDULE_MAGIC = 0x4B434954; // TICK
+
+// Marks the light trailer. A chunk saved before the trailer existed
+// decodes with light_valid = false and gets a full relight once ready.
+constexpr static std::uint32_t LIGHT_MAGIC = 0x4C495448; // LITH
 
 static void serialize_schedule(const Chunk::schedule_type& schedule, WriteBuffer& buffer)
 {
@@ -64,6 +70,11 @@ void Chunk::encode_dat(const Snapshot& snapshot, WriteBuffer& buffer)
 
     buffer.write<std::uint32_t>(SCHEDULE_MAGIC);
     serialize_schedule(snapshot.scheduled, buffer);
+
+    if(snapshot.light_valid) {
+        buffer.write<std::uint32_t>(LIGHT_MAGIC);
+        LightStorage::encode_dat(snapshot.light, buffer);
+    }
 }
 
 void Chunk::decode_dat(Snapshot& snapshot, ReadBuffer& buffer)
@@ -71,16 +82,35 @@ void Chunk::decode_dat(Snapshot& snapshot, ReadBuffer& buffer)
     BlockStorage::decode_dat(snapshot.blocks, buffer);
 
     snapshot.scheduled.clear();
+    snapshot.light.fill(0x00);
+    snapshot.light_valid = false;
 
     if(!buffer.has_records(1, sizeof(std::uint32_t))) {
         return;
     }
 
-    if(buffer.read<std::uint32_t>() != SCHEDULE_MAGIC) {
+    auto magic = buffer.read<std::uint32_t>();
+
+    if(magic == SCHEDULE_MAGIC) {
+        deserialize_schedule(snapshot.scheduled, buffer);
+
+        if(!buffer.has_records(1, sizeof(std::uint32_t))) {
+            return;
+        }
+
+        magic = buffer.read<std::uint32_t>();
+    }
+
+    if(magic != LIGHT_MAGIC) {
         return;
     }
 
-    deserialize_schedule(snapshot.scheduled, buffer);
+    if(!buffer.has_records(1, constant::CHUNK_VOLUME)) {
+        return;
+    }
+
+    LightStorage::decode_dat(snapshot.light, buffer);
+    snapshot.light_valid = true;
 }
 
 block_id_type Chunk::get_block(std::size_t index) const
@@ -108,10 +138,39 @@ void Chunk::set_blocks(BlockStorage blocks)
     m_blocks = std::move(blocks);
 }
 
+block_light_type Chunk::get_light(std::size_t index, light_channel channel) const
+{
+    return m_light.get(index, channel);
+}
+
+block_light_type Chunk::get_light(const LocalPos& pos, light_channel channel) const
+{
+    return m_light.get(utils::to_index(pos), channel);
+}
+
+void Chunk::set_light(std::size_t index, light_channel channel, block_light_type value)
+{
+    m_light.set(index, channel, value);
+}
+
+void Chunk::set_light(LightStorage light)
+{
+    m_light = std::move(light);
+    m_light_valid = true;
+}
+
+void Chunk::clear_light(void)
+{
+    m_light.fill(0x00);
+    m_light_valid = false;
+}
+
 Chunk::Snapshot Chunk::snapshot(std::uint64_t now) const
 {
     Snapshot result;
     result.blocks = m_blocks;
+    result.light = m_light;
+    result.light_valid = m_light_valid;
 
     for(const auto& [deadline, entry] : m_scheduled) {
         result.scheduled.emplace(deadline > now ? deadline - now : std::uint64_t(0), entry);
@@ -123,6 +182,8 @@ Chunk::Snapshot Chunk::snapshot(std::uint64_t now) const
 void Chunk::restore(Snapshot snapshot, std::uint64_t now)
 {
     m_blocks = std::move(snapshot.blocks);
+    m_light = std::move(snapshot.light);
+    m_light_valid = snapshot.light_valid;
     m_scheduled.clear();
 
     for(const auto& [remaining, entry] : snapshot.scheduled) {

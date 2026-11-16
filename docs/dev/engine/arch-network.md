@@ -236,6 +236,8 @@ Sent by server as a response to `RequestChunk` or at arbitrary moments to synchr
 |----|----|----|
 |`vector3<int32>`|`cpos`|Chunk position|
 |`data`|`blocks`|Serialized and compressed block storage contents|
+|`data`|`light`|Packed light, one byte per block: skylight in the high nibble, block light in the low nibble|
+|`uint8`|`light_valid`|`1` when `light` holds computed light; `0` makes the client fall back to its own estimate until a `ChunkLight` arrives|
 
 ### `0x000A` `ChunkBiomes`
 
@@ -321,3 +323,12 @@ Sent by server when an entity is removed
 |Type|Name|Description|
 |----|----|----|
 |`uint64`|`id`|Entity ID|
+
+### `0x001A` `ChunkLight`
+
+Sent by server when the light of a chunk it has already synchronized changes
+
+|Type|Name|Description|
+|----|----|----|
+|`vector3<int32>`|`cpos`|Chunk position|
+|`data`|`light`|Packed light, same layout as the `light` field of `ChunkBlocks`|

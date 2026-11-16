@@ -51,6 +51,11 @@ bool BlockDefReader::try_push(const char* key) const
     return true;
 }
 
+static block_light_type clamp_light(lua_Integer value)
+{
+    return static_cast<block_light_type>(std::clamp<lua_Integer>(value, BLOCK_LIGHT_MIN, BLOCK_LIGHT_MAX));
+}
+
 static bool parse_drop_effects(lua_State* L, int when_idx, BlockDrop& drop, ModContext* ctx)
 {
     lua_getfield(L, when_idx, "effects");
@@ -426,7 +431,7 @@ static bool parse_overrides(lua_State* L, int idx, ModContext* ctx, BlockOverrid
             return false;
         }
 
-        patch.emission = static_cast<block_light_type>(value.value());
+        patch.emission = clamp_light(value.value());
         lua_pop(L, 1);
     }
 
@@ -437,7 +442,7 @@ static bool parse_overrides(lua_State* L, int idx, ModContext* ctx, BlockOverrid
             return false;
         }
 
-        patch.dissipation = static_cast<block_light_type>(value.value());
+        patch.dissipation = clamp_light(value.value());
         lua_pop(L, 1);
     }
 
@@ -713,7 +718,7 @@ static bool parse_definition(const BlockDefReader& reader, ModContext* ctx, Bloc
             return false;
         }
 
-        def.emission = static_cast<block_light_type>(value.value());
+        def.emission = clamp_light(value.value());
         lua_pop(L, 1);
     }
 
@@ -724,7 +729,7 @@ static bool parse_definition(const BlockDefReader& reader, ModContext* ctx, Bloc
             return false;
         }
 
-        def.dissipation = static_cast<block_light_type>(value.value());
+        def.dissipation = clamp_light(value.value());
         lua_pop(L, 1);
     }
 

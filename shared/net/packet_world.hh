@@ -4,6 +4,7 @@
 #include "shared/net/packet.hh"
 #include "shared/world/biome_slice.hh"
 #include "shared/world/block_storage.hh"
+#include "shared/world/light_storage.hh"
 
 struct packet::World_Request final : public packet::Base<packet::WORLD_REQUEST_CHUNK> {
     static void encode(const World_Request& packet, WriteBuffer& buffer);
@@ -18,6 +19,8 @@ struct packet::World_Blocks final : public packet::Base<packet::WORLD_CHUNK_BLOC
 
     ChunkPos cpos;
     BlockStorage blocks;
+    LightStorage light;
+    bool light_valid { false };
 };
 
 struct packet::World_Biomes final : public packet::Base<packet::WORLD_CHUNK_BIOMES> {
@@ -27,6 +30,14 @@ struct packet::World_Biomes final : public packet::Base<packet::WORLD_CHUNK_BIOM
     biome_realm realm;
     ChunkPosXZ cpos;
     BiomeSlice biomes;
+};
+
+struct packet::World_Light final : public packet::Base<packet::WORLD_CHUNK_LIGHT> {
+    static void encode(const World_Light& packet, WriteBuffer& buffer);
+    static void decode(World_Light& packet, ReadBuffer& buffer);
+
+    ChunkPos cpos;
+    LightStorage light;
 };
 
 struct packet::World_SetBlock final : public packet::Base<packet::WORLD_SET_BLOCK> {

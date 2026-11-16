@@ -20,6 +20,7 @@
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
+#include "shared/world/lighting.hh"
 #include "shared/world/tint_registry.hh"
 #include "shared/world/world.hh"
 
@@ -76,6 +77,7 @@ static void handle_disconnect(std::uint32_t reason)
     globals::player = entt::null;
     biome_map::purge();
     world::purge();
+    lighting::reset();
 
     video::update_window_title();
 }

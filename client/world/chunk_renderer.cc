@@ -42,6 +42,11 @@ constexpr static unsigned FOG_MODEL = 0;
 //  4096                77.742
 constexpr static std::size_t BATCH_MAX_PARTS = 1024;
 
+constexpr static float AMBIENT_LIGHT = 0.03f;
+
+static const Eigen::Vector3f SKY_LIGHT_COLOR { 1.0f, 1.0f, 1.0f };
+static const Eigen::Vector3f BLOCK_LIGHT_COLOR { 1.0f, 0.86f, 0.66f };
+
 static cvar::Number<unsigned> s_fog_model { 0, 0, 2 };
 static gui::StepperUnsigned s_fog_model_gui;
 
@@ -50,6 +55,9 @@ static std::size_t su_ViewProjection;
 static std::size_t su_AnimationTimer;
 static std::size_t su_ViewDistance;
 static std::size_t su_FogColor;
+static std::size_t su_SkyColor;
+static std::size_t su_BlockColor;
+static std::size_t su_Ambient;
 static std::size_t su_CameraLocal;
 static std::size_t su_AtlasTexture;
 static std::size_t su_AtlasStrips;
@@ -320,6 +328,9 @@ static void bind_pipeline_state(unsigned fog_model)
     glUniform1ui(s_program.uniforms[su_AnimationTimer].location, animation_timer);
     glUniform1f(s_program.uniforms[su_ViewDistance].location, fog::distance);
     glUniform3fv(s_program.uniforms[su_FogColor].location, 1, fog::color.data());
+    glUniform3fv(s_program.uniforms[su_SkyColor].location, 1, SKY_LIGHT_COLOR.data());
+    glUniform3fv(s_program.uniforms[su_BlockColor].location, 1, BLOCK_LIGHT_COLOR.data());
+    glUniform1f(s_program.uniforms[su_Ambient].location, AMBIENT_LIGHT);
     glUniform3fv(s_program.uniforms[su_CameraLocal].location, 1, camera::local.data());
 
     glActiveTexture(GL_TEXTURE0);
@@ -363,6 +374,9 @@ void chunk_renderer::init(void)
     su_AnimationTimer = s_program.add_uniform("u_AnimationTimer");
     su_ViewDistance = s_program.add_uniform("u_ViewDistance");
     su_FogColor = s_program.add_uniform("u_FogColor");
+    su_SkyColor = s_program.add_uniform("u_SkyColor");
+    su_BlockColor = s_program.add_uniform("u_BlockColor");
+    su_Ambient = s_program.add_uniform("u_Ambient");
     su_CameraLocal = s_program.add_uniform("u_CameraLocal");
     su_AtlasTexture = s_program.add_uniform("u_AtlasTexture");
     su_AtlasStrips = s_program.add_uniform("u_AtlasStrips");

@@ -31,6 +31,11 @@ ChunkReadyEvent::ChunkReadyEvent(const ChunkPos& pos, const std::shared_ptr<Chun
     // empty
 }
 
+ChunkLightUpdateEvent::ChunkLightUpdateEvent(const ChunkPos& pos) : m_pos(pos)
+{
+    // empty
+}
+
 BlockUpdateEvent::BlockUpdateEvent(const BlockPos& pos, block_id_type id, const std::shared_ptr<Chunk>& chunk)
     : m_chunk(chunk), m_id(id), m_bpos(pos), m_cpos(utils::to_chunk(pos)), m_lpos(utils::to_local(pos))
 {
@@ -179,7 +184,14 @@ bool world::set_block(const BlockPos& pos, block_id_type id)
 
 block_light_type world::get_light(const ChunkPos& cpos, const LocalPos& lpos)
 {
-    return BLOCK_LIGHT_MIN; // TODO: lightmaps
+    if(auto chunk = find_chunk(cpos)) {
+        auto index = utils::to_index(lpos);
+        auto sky = chunk->get_light(index, LIGHT_SKY);
+        auto block = chunk->get_light(index, LIGHT_BLOCK);
+        return std::max(sky, block);
+    }
+
+    return BLOCK_LIGHT_MIN;
 }
 
 block_light_type world::get_light(const BlockPos& pos)

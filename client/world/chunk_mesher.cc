@@ -136,6 +136,12 @@ private:
     ChunkPos m_cpos;
 };
 
+struct CornerSamples final {
+    LocalPos side1;
+    LocalPos side2;
+    LocalPos corner;
+};
+
 static float shade_factor(const Eigen::Vector3f& normal)
 {
     auto ax = std::abs(normal.x());
@@ -159,9 +165,49 @@ static float shade_factor(const Eigen::Vector3f& normal)
     }
 }
 
+static CornerSamples sample_corner(const LocalPos& lpos, block_face face, const Eigen::Vector3f& vertex)
+{
+    auto delta = face_delta(face);
+    LocalPos::value_type nx = lpos.x() + delta.x();
+    LocalPos::value_type ny = lpos.y() + delta.y();
+    LocalPos::value_type nz = lpos.z() + delta.z();
+
+    LocalPos::value_type dx = vertex.x() > 0.5f ? 1 : -1;
+    LocalPos::value_type dy = vertex.y() > 0.5f ? 1 : -1;
+    LocalPos::value_type dz = vertex.z() > 0.5f ? 1 : -1;
+
+    auto s1x = nx;
+    auto s1y = ny;
+    auto s1z = nz;
+
+    auto s2x = nx;
+    auto s2y = ny;
+    auto s2z = nz;
+
+    if(delta.x()) {
+        s1y += dy;
+        s2z += dz;
+    }
+    else if(delta.y()) {
+        s1x += dx;
+        s2z += dz;
+    }
+    else {
+        s1x += dx;
+        s2y += dy;
+    }
+
+    CornerSamples samples;
+    samples.side1 = LocalPos(s1x, s1y, s1z);
+    samples.side2 = LocalPos(s2x, s2y, s2z);
+    samples.corner = LocalPos(s1x + s2x - nx, s1y + s2y - ny, s1z + s2z - nz);
+    return samples;
+}
+
 static void emit_quad_vertices(std::vector<ChunkMesh_Vertex>& out, const std::array<Eigen::Vector3f, 4>& positions_16ths,
     const std::array<Eigen::Vector2f, 4>& uvs, const std::array<std::uint32_t, 4>& ao_values, std::uint32_t data_3, float shade,
-    bool animated, bool flip_quad, const Eigen::Vector3f& tint_rgb, std::uint32_t mask_frame)
+    bool animated, bool flip_quad, const Eigen::Vector3f& tint_rgb, block_light_type sky_light, block_light_type block_light,
+    std::uint32_t mask_frame)
 {
     std::array<int, 4> order;
 
@@ -183,7 +229,7 @@ static void emit_quad_vertices(std::vector<ChunkMesh_Vertex>& out, const std::ar
         vertex.data_1 = ChunkMesh_Vertex::pack_1(positions_16ths[corner]);
         vertex.data_2 = ChunkMesh_Vertex::pack_2(uvs[corner], mask_frame);
         vertex.data_3 = data_3;
-        vertex.data_4 = ChunkMesh_Vertex::pack_4(ao_values[corner], shade, animated, tint_rgb);
+        vertex.data_4 = ChunkMesh_Vertex::pack_4(ao_values[corner], shade, animated, tint_rgb, sky_light, block_light);
         out.push_back(vertex);
     }
 }
@@ -285,43 +331,11 @@ void MeshingTask::finalize(void)
 
 std::uint32_t MeshingTask::calculate_ao(const LocalPos& lpos, block_face face, const Eigen::Vector3f& vertex) const
 {
-    auto delta = face_delta(face);
-    LocalPos::value_type nx = lpos.x() + delta.x();
-    LocalPos::value_type ny = lpos.y() + delta.y();
-    LocalPos::value_type nz = lpos.z() + delta.z();
+    auto samples = sample_corner(lpos, face, vertex);
 
-    LocalPos::value_type dx = vertex.x() > 0.5f ? 1 : -1;
-    LocalPos::value_type dy = vertex.y() > 0.5f ? 1 : -1;
-    LocalPos::value_type dz = vertex.z() > 0.5f ? 1 : -1;
-
-    auto s1x = nx;
-    auto s1y = ny;
-    auto s1z = nz;
-
-    auto s2x = nx;
-    auto s2y = ny;
-    auto s2z = nz;
-
-    if(delta.x()) {
-        s1y += dy;
-        s2z += dz;
-    }
-    else if(delta.y()) {
-        s1x += dx;
-        s2z += dz;
-    }
-    else {
-        s1x += dx;
-        s2y += dy;
-    }
-
-    auto cx = s1x + s2x - nx;
-    auto cy = s1y + s2y - ny;
-    auto cz = s1z + s2z - nz;
-
-    auto oc_s1 = is_occluder(LocalPos(s1x, s1y, s1z), face);
-    auto oc_s2 = is_occluder(LocalPos(s2x, s2y, s2z), face);
-    auto oc_c = is_occluder(LocalPos(cx, cy, cz), face);
+    auto oc_s1 = is_occluder(samples.side1, face);
+    auto oc_s2 = is_occluder(samples.side2, face);
+    auto oc_c = is_occluder(samples.corner, face);
 
     if(oc_s1 && oc_s2)
         return 0;
@@ -440,6 +454,15 @@ void MeshingTask::emit_block_quads(std::vector<ChunkMesh_Vertex>& out, std::span
             }
         }
 
+        auto light_pos = lpos;
+
+        if(face.has_value()) {
+            light_pos = lpos + face_delta(face.value());
+        }
+
+        auto sky_light = m_cache.get_light(light_pos, LIGHT_SKY);
+        auto block_light = m_cache.get_light(light_pos, LIGHT_BLOCK);
+
         auto shade = 1.0f;
 
         if(quad.shade) {
@@ -452,10 +475,12 @@ void MeshingTask::emit_block_quads(std::vector<ChunkMesh_Vertex>& out, std::span
         auto data_3 = ChunkMesh_Vertex::pack_3(quad.albedo_strip, frame_offset);
 
         if(ao_values[0] + ao_values[2] < ao_values[1] + ao_values[3]) {
-            emit_quad_vertices(out, positions_16ths, quad.uvs, ao_values, data_3, shade, quad.animated, true, tint_rgb, quad.mask_frame);
+            emit_quad_vertices(out, positions_16ths, quad.uvs, ao_values, data_3, shade, quad.animated, true, tint_rgb, sky_light,
+                block_light, quad.mask_frame);
         }
         else {
-            emit_quad_vertices(out, positions_16ths, quad.uvs, ao_values, data_3, shade, quad.animated, false, tint_rgb, quad.mask_frame);
+            emit_quad_vertices(out, positions_16ths, quad.uvs, ao_values, data_3, shade, quad.animated, false, tint_rgb, sky_light,
+                block_light, quad.mask_frame);
         }
     }
 }
@@ -726,11 +751,15 @@ void MeshingTask::emit_fluid_face(std::vector<ChunkMesh_Vertex>& out, const Loca
     auto data_3 = ChunkMesh_Vertex::pack_3(strip_index, 0);
     auto tint_rgb = resolve_tint(lpos, tint);
 
+    auto light_pos = lpos + face_delta(face);
+    auto sky_light = m_cache.get_light(light_pos, LIGHT_SKY);
+    auto block_light = m_cache.get_light(light_pos, LIGHT_BLOCK);
+
     if(positions[0].y() + positions[2].y() < positions[1].y() + positions[3].y()) {
-        emit_quad_vertices(out, positions_16ths, uvs, ao_values, data_3, 1.0f, true, true, tint_rgb, mask_frame);
+        emit_quad_vertices(out, positions_16ths, uvs, ao_values, data_3, 1.0f, true, true, tint_rgb, sky_light, block_light, mask_frame);
     }
     else {
-        emit_quad_vertices(out, positions_16ths, uvs, ao_values, data_3, 1.0f, true, false, tint_rgb, mask_frame);
+        emit_quad_vertices(out, positions_16ths, uvs, ao_values, data_3, 1.0f, true, false, tint_rgb, sky_light, block_light, mask_frame);
     }
 }
 
@@ -1079,6 +1108,16 @@ static void mark_neighbors_dirty(const ChunkPos& cpos)
     }
 }
 
+static void mark_face_neighbors_dirty(const ChunkPos& cpos)
+{
+    mark_dirty(cpos + ChunkPos(1, 0, 0));
+    mark_dirty(cpos + ChunkPos(-1, 0, 0));
+    mark_dirty(cpos + ChunkPos(0, 1, 0));
+    mark_dirty(cpos + ChunkPos(0, -1, 0));
+    mark_dirty(cpos + ChunkPos(0, 0, 1));
+    mark_dirty(cpos + ChunkPos(0, 0, -1));
+}
+
 static void mark_border_neighbors_dirty(const ChunkPos& cpos, const LocalPos& lpos)
 {
     for(ChunkPos::value_type dz = -1; dz <= 1; ++dz) {
@@ -1130,12 +1169,21 @@ static void on_block_update(const BlockUpdateEvent& event)
     mark_border_neighbors_dirty(event.cpos(), event.lpos());
 }
 
+static void on_chunk_light(const ChunkLightUpdateEvent& event)
+{
+    // Light is sampled per face cell now, so only face neighbours need
+    // their mesh rebuilt.
+    mark_dirty(event.pos());
+    mark_face_neighbors_dirty(event.pos());
+}
+
 void chunk_mesher::init(void)
 {
     globals::dispatcher.sink<ChunkCreateEvent>().connect<&on_chunk_create>();
     globals::dispatcher.sink<ChunkUpdateEvent>().connect<&on_chunk_update>();
     globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
     globals::dispatcher.sink<BlockUpdateEvent>().connect<&on_block_update>();
+    globals::dispatcher.sink<ChunkLightUpdateEvent>().connect<&on_chunk_light>();
 }
 
 void chunk_mesher::update(void)

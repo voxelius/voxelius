@@ -40,8 +40,8 @@ static void place_block(void)
     const auto& hit = std::get<physics::BlockHit>(player_target::hit);
 
     // TODO: hardcoded placed block until an inventory/hotbar system exists
-    auto family = block_registry::find_family(Identifier::from_string("builtin:water"));
-    auto block = family ? family->default_variant : block_registry::find(Identifier::from_string("builtin:water"));
+    auto family = block_registry::find_family(Identifier::from_string("builtin:emitter"));
+    auto block = family ? family->default_variant : block_registry::find(Identifier::from_string("builtin:emitter"));
     utils::block_place(hit, globals::player, block);
 
     if(globals::peer) {

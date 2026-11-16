@@ -4,6 +4,7 @@
 
 #include "shared/utils/coord.hh"
 #include "shared/world/chunk.hh"
+#include "shared/world/lighting.hh"
 #include "shared/world/world.hh"
 
 static std::size_t cache_index(std::size_t x, std::size_t y, std::size_t z, std::size_t size)
@@ -11,9 +12,16 @@ static std::size_t cache_index(std::size_t x, std::size_t y, std::size_t z, std:
     return x + y * size + z * size * size;
 }
 
+constexpr static std::int32_t CHUNK_TOP_LOCAL_Y = static_cast<std::int32_t>(constant::CHUNK_SIZE) - 1;
+
+// The engine has no sea level yet. It only affects the guess for chunks
+// whose top layer lies below it, so one number in one place is enough.
+constexpr static std::int32_t ESTIMATED_SEA_LEVEL = 0;
+
 void BlockCache::init(const ChunkPos& cpos)
 {
     m_blocks.fill(BLOCK_ID_NULL);
+    m_light.fill(0x00);
 
     std::shared_ptr<const Chunk> chunks[3][3][3] = {};
 
@@ -43,6 +51,8 @@ void BlockCache::init(const ChunkPos& cpos)
 
                 chunk->blocks().flatten(flat);
 
+                auto light = chunk->light().data();
+
                 for(LocalPos::value_type lz = 0; lz < CHUNK_SIZE_I16; lz += 1) {
                     for(LocalPos::value_type ly = 0; ly < CHUNK_SIZE_I16; ly += 1) {
                         for(LocalPos::value_type lx = 0; lx < CHUNK_SIZE_I16; lx += 1) {
@@ -65,8 +75,129 @@ void BlockCache::init(const ChunkPos& cpos)
                             auto c_index = cache_index(hx_sz, hy_sz, hz_sz, SIZE);
                             auto f_index = utils::to_index(LocalPos(lx, ly, lz));
                             m_blocks[c_index] = flat[f_index];
+                            m_light[c_index] = light[f_index];
                         }
                     }
+                }
+            }
+        }
+    }
+
+    // Until the authoritative light arrives, approximate the sky for every
+    // chunk around this one. A face samples the light of the cell outside
+    // the block, so estimating only the center chunk leaves a black seam on
+    // every chunk border.
+    auto estimate_from_top = [&](ChunkPos::value_type dx, ChunkPos::value_type dy, ChunkPos::value_type dz) {
+        auto top_y = static_cast<std::int32_t>(cpos.y() + dy) * static_cast<std::int32_t>(CHUNK_SIZE_I16) + CHUNK_TOP_LOCAL_Y;
+
+        for(std::int32_t z = 0; z < CHUNK_SIZE_I16; z += 1) {
+            for(std::int32_t x = 0; x < CHUNK_SIZE_I16; x += 1) {
+                auto hx = static_cast<std::int32_t>(PADDING) + dx * CHUNK_SIZE_I16 + x;
+                auto hz = static_cast<std::int32_t>(PADDING) + dz * CHUNK_SIZE_I16 + z;
+
+                if(hx < 0 || hx >= static_cast<std::int32_t>(SIZE)) {
+                    continue;
+                }
+
+                if(hz < 0 || hz >= static_cast<std::int32_t>(SIZE)) {
+                    continue;
+                }
+
+                auto top_index = cache_index(static_cast<std::size_t>(hx),
+                    static_cast<std::size_t>(PADDING + dy * CHUNK_SIZE_I16 + CHUNK_TOP_LOCAL_Y), static_cast<std::size_t>(hz), SIZE);
+                auto top_id = m_blocks[static_cast<std::size_t>(top_index)];
+                auto opacity = lighting::attenuation(top_id);
+
+                block_light_type level = BLOCK_LIGHT_MAX;
+
+                if(top_id == BLOCK_ID_NULL) {
+                    level = BLOCK_LIGHT_MAX;
+                }
+                else if(opacity >= BLOCK_LIGHT_MAX) {
+                    level = BLOCK_LIGHT_MIN;
+                }
+                else if(top_y < ESTIMATED_SEA_LEVEL) {
+                    auto depth = static_cast<unsigned>(ESTIMATED_SEA_LEVEL - 1 - top_y);
+                    auto consumed = depth * opacity;
+
+                    level = (consumed >= BLOCK_LIGHT_MAX) ? BLOCK_LIGHT_MIN : static_cast<block_light_type>(BLOCK_LIGHT_MAX - consumed);
+                }
+
+                for(std::int32_t y = CHUNK_TOP_LOCAL_Y; y >= 0; y -= 1) {
+                    auto hy = static_cast<std::int32_t>(PADDING) + dy * CHUNK_SIZE_I16 + y;
+
+                    if(hy < 0) {
+                        break;
+                    }
+
+                    auto index = cache_index(static_cast<std::size_t>(hx), static_cast<std::size_t>(hy), static_cast<std::size_t>(hz),
+                        SIZE);
+                    auto attenuation = lighting::attenuation(m_blocks[index]);
+
+                    if(attenuation == BLOCK_LIGHT_MIN) {
+                        // Sunlight falls straight down through open air.
+                    }
+                    else if(attenuation >= level) {
+                        level = BLOCK_LIGHT_MIN;
+                    }
+                    else {
+                        level = static_cast<block_light_type>(level - attenuation);
+                    }
+
+                    m_light[index] = static_cast<std::uint8_t>((m_light[index] & 0x0FU) | (level << 4U));
+                }
+            }
+        }
+    };
+
+    // The chunk above only contributes its lowest cells to this cache, so its
+    // own top layer is unknown here. Assume an open sky above the column.
+    auto estimate_open_above = [&](ChunkPos::value_type dx, ChunkPos::value_type dz) {
+        for(std::int32_t z = 0; z < CHUNK_SIZE_I16; z += 1) {
+            for(std::int32_t x = 0; x < CHUNK_SIZE_I16; x += 1) {
+                auto hx = static_cast<std::int32_t>(PADDING) + dx * CHUNK_SIZE_I16 + x;
+                auto hz = static_cast<std::int32_t>(PADDING) + dz * CHUNK_SIZE_I16 + z;
+
+                if(hx < 0 || hx >= static_cast<std::int32_t>(SIZE)) {
+                    continue;
+                }
+
+                if(hz < 0 || hz >= static_cast<std::int32_t>(SIZE)) {
+                    continue;
+                }
+
+                for(std::int32_t y = 0; y < CHUNK_SIZE_I16; y += 1) {
+                    auto hy = static_cast<std::int32_t>(PADDING) + CHUNK_SIZE_I16 + y;
+
+                    if(hy >= static_cast<std::int32_t>(SIZE)) {
+                        break;
+                    }
+
+                    auto index = cache_index(static_cast<std::size_t>(hx), static_cast<std::size_t>(hy), static_cast<std::size_t>(hz),
+                        SIZE);
+                    auto opacity = lighting::attenuation(m_blocks[index]);
+                    auto level = (opacity >= BLOCK_LIGHT_MAX) ? BLOCK_LIGHT_MIN : static_cast<block_light_type>(BLOCK_LIGHT_MAX - opacity);
+
+                    m_light[index] = static_cast<std::uint8_t>((m_light[index] & 0x0FU) | (level << 4U));
+                }
+            }
+        }
+    };
+
+    for(ChunkPos::value_type dz = -1; dz <= 1; dz += 1) {
+        for(ChunkPos::value_type dx = -1; dx <= 1; dx += 1) {
+            for(ChunkPos::value_type dy = -1; dy <= 1; dy += 1) {
+                auto& chunk = chunks[dx + 1][dy + 1][dz + 1];
+
+                if(chunk == nullptr || chunk->has_light()) {
+                    continue;
+                }
+
+                if(dy > 0) {
+                    estimate_open_above(dx, dz);
+                }
+                else {
+                    estimate_from_top(dx, dy, dz);
                 }
             }
         }
@@ -86,4 +217,24 @@ block_id_type BlockCache::get(const LocalPos& lpos) const
     auto c_index = cache_index(hx, hy, hz, SIZE);
 
     return m_blocks[c_index];
+}
+
+block_light_type BlockCache::get_light(const LocalPos& lpos, light_channel channel) const
+{
+    auto hx = static_cast<std::size_t>(PADDING + lpos.x());
+    auto hy = static_cast<std::size_t>(PADDING + lpos.y());
+    auto hz = static_cast<std::size_t>(PADDING + lpos.z());
+
+    if(hx >= SIZE || hy >= SIZE || hz >= SIZE) {
+        return BLOCK_LIGHT_MIN;
+    }
+
+    auto c_index = cache_index(hx, hy, hz, SIZE);
+    auto packed = m_light[c_index];
+
+    if(channel == LIGHT_SKY) {
+        return static_cast<block_light_type>(packed >> 4U);
+    }
+
+    return static_cast<block_light_type>(packed & 0x0FU);
 }

@@ -14,6 +14,7 @@
 #include "shared/utils/coord.hh"
 #include "shared/utils/world.hh"
 #include "shared/world/block_registry.hh"
+#include "shared/world/lighting.hh"
 
 #include "client/camera.hh"
 #include "client/globals.hh"
@@ -26,6 +27,9 @@
 
 void client_game::init(void)
 {
+    // The server owns the light; the client only applies what it receives.
+    lighting::set_replica(true);
+
     gamerules::init(false);
 
     interpolation::init();

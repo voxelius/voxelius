@@ -27,10 +27,49 @@
 #include "server/world/chunk_loader.hh"
 
 static vx::hash_map<ChunkPos, std::vector<ENetPeer*>> s_waiting_peers;
+static vx::hash_set<ChunkPos> s_sent_chunks;
 static cvar::Number<float> s_reach_distance { 8.0f, 0.0f, 32.0f };
 
-static void send_chunk(ENetPeer* peer, const ChunkPos& cpos, const std::shared_ptr<Chunk>& chunk)
+struct PendingChunkSend final {
+    ENetPeer* peer;
+    ChunkPos cpos;
+};
+
+constexpr static std::size_t CHUNK_SEND_BUDGET = 64;
+
+static std::deque<PendingChunkSend> s_send_queue;
+static vx::hash_map<ENetPeer*, vx::hash_set<ChunkPos>> s_send_queued;
+
+static void enqueue_send(ENetPeer* peer, const ChunkPos& cpos)
 {
+    auto& queued = s_send_queued[peer];
+
+    if(queued.insert(cpos).second) {
+        s_send_queue.push_back(PendingChunkSend { peer, cpos });
+    }
+}
+
+static void enqueue_peer(const ChunkPos& cpos, ENetPeer* peer)
+{
+    auto& waiting = s_waiting_peers[cpos];
+
+    if(std::find(waiting.begin(), waiting.end(), peer) == waiting.end()) {
+        waiting.push_back(peer);
+    }
+}
+
+static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos)
+{
+    auto chunk = world::find_chunk(cpos);
+
+    if(chunk == nullptr) {
+        // The chunk was unloaded between queueing and sending. Ask for it
+        // again instead of dropping the peer's request on the floor.
+        enqueue_peer(cpos, peer);
+        chunk_loader::request(cpos);
+        return;
+    }
+
     auto realm = utils::realm(cpos.y());
 
     if(realm != BIOME_REALM_VOID) {
@@ -44,7 +83,33 @@ static void send_chunk(ENetPeer* peer, const ChunkPos& cpos, const std::shared_p
     packet::World_Blocks blocks_packet;
     blocks_packet.cpos = cpos;
     blocks_packet.blocks = chunk->blocks();
+    blocks_packet.light = chunk->light();
+    blocks_packet.light_valid = chunk->has_light();
     protocol::send(blocks_packet, peer);
+
+    s_sent_chunks.insert(cpos);
+}
+
+static void send_waiting(const ChunkPos& cpos)
+{
+    auto it = s_waiting_peers.find(cpos);
+
+    if(it == s_waiting_peers.end()) {
+        return;
+    }
+
+    auto chunk = world::find_chunk(cpos);
+
+    if(chunk == nullptr) {
+        // Still loading/generating; retry on the next sweep.
+        return;
+    }
+
+    for(auto peer : it->second) {
+        enqueue_send(peer, cpos);
+    }
+
+    s_waiting_peers.erase(it);
 }
 
 static void on_world_request(const packet::World_Request& packet)
@@ -63,29 +128,55 @@ static void on_world_request(const packet::World_Request& packet)
         return;
     }
 
-    if(auto chunk = world::find_chunk(packet.cpos)) {
-        send_chunk(packet.peer, packet.cpos, chunk);
+    auto chunk = world::find_chunk(packet.cpos);
+
+    // Only the realm the player is actually in needs its whole column
+    // loaded for lighting. A surface player seeing sky islands above
+    // should not generate 32 chunks per column for them.
+    if(utils::realm(transform.chunk.y()) == utils::realm(packet.cpos.y())) {
+        chunk_loader::request_column(packet.cpos);
+    }
+    else {
+        chunk_loader::request(packet.cpos);
+    }
+
+    if(chunk) {
+        enqueue_send(packet.peer, packet.cpos);
         return;
     }
 
-    s_waiting_peers[packet.cpos].push_back(packet.peer);
-
-    chunk_loader::request(packet.cpos);
+    enqueue_peer(packet.cpos, packet.peer);
 }
 
 static void on_chunk_ready(const ChunkReadyEvent& event)
 {
-    auto it = s_waiting_peers.find(event.pos());
+    send_waiting(event.pos());
+}
 
-    if(it == s_waiting_peers.end()) {
+static void on_chunk_light(const ChunkLightUpdateEvent& event)
+{
+    if(0 == s_sent_chunks.count(event.pos())) {
+        // No client knows this chunk yet; it will be sent with fresh
+        // light in World_Blocks.
         return;
     }
 
-    for(auto peer : it->second) {
-        send_chunk(peer, event.pos(), event.chunk());
+    auto chunk = world::find_chunk(event.pos());
+
+    if(chunk == nullptr || !chunk->has_light()) {
+        return;
     }
 
-    s_waiting_peers.erase(it);
+    packet::World_Light light_packet {};
+    light_packet.cpos = event.pos();
+    light_packet.light = chunk->light();
+
+    interest::broadcast(light_packet, event.pos(), nullptr);
+}
+
+static void on_chunk_remove(const ChunkRemoveEvent& event)
+{
+    s_sent_chunks.erase(event.pos());
 }
 
 static void on_player_attack_e(const packet::Player_AttackE& packet)
@@ -112,12 +203,7 @@ static void send_correction(ENetPeer* peer, const BlockPos& bpos)
     if(chunk == nullptr) {
         // The client kept a chunk the server no longer has. Resending the
         // whole chunk rolls back every prediction made against it.
-        auto& waiting = s_waiting_peers[cpos];
-
-        if(std::find(waiting.begin(), waiting.end(), peer) == waiting.end()) {
-            waiting.push_back(peer);
-        }
-
+        enqueue_peer(cpos, peer);
         chunk_loader::request(cpos);
         return;
     }
@@ -207,9 +293,10 @@ static void on_player_interact_b(const packet::Player_InteractB& packet)
     hit.normal = packet.normal;
     hit.point = packet.point;
 
-    // TODO: hardcoded placed block until an inventory/hotbar system exists
-    auto family = block_registry::find_family(Identifier::from_string("builtin:water"));
-    auto block = family ? family->default_variant : block_registry::find(Identifier::from_string("builtin:water"));
+    // TODO: hardcoded placed block until an inventory/hotbar system exists.
+    // Keep it in sync with client/system/player_target.cc.
+    auto family = block_registry::find_family(Identifier::from_string("builtin:emitter"));
+    auto block = family ? family->default_variant : block_registry::find(Identifier::from_string("builtin:emitter"));
 
     utils::block_place(hit, session->player, block);
 }
@@ -232,6 +319,77 @@ static void on_player_move_data(const packet::Player_MoveData& packet)
     globals::registry.emplace_or_replace<SimulatedMoveData>(session->player, std::move(sim_data));
 }
 
+static void process_send_queue(void)
+{
+    std::size_t sent = 0;
+
+    while(!s_send_queue.empty() && sent < CHUNK_SEND_BUDGET) {
+        auto request = s_send_queue.front();
+
+        s_send_queue.pop_front();
+
+        auto queued = s_send_queued.find(request.peer);
+
+        if(queued != s_send_queued.cend()) {
+            queued->second.erase(request.cpos);
+
+            if(queued->second.empty()) {
+                s_send_queued.erase(queued);
+            }
+        }
+
+        send_chunk_now(request.peer, request.cpos);
+        sent += 1;
+    }
+}
+
+void receive::fixed_update_late(void)
+{
+    ZoneScoped;
+
+    if(!s_waiting_peers.empty()) {
+        std::vector<ChunkPos> keys;
+        keys.reserve(s_waiting_peers.size());
+
+        for(const auto& it : s_waiting_peers) {
+            keys.push_back(it.first);
+        }
+
+        for(const auto& cpos : keys) {
+            send_waiting(cpos);
+        }
+    }
+
+    // Light packets were queued during the fixed update, before this
+    // budgeted chunk batch, so they are not stuck behind the world load.
+    process_send_queue();
+}
+
+void receive::forget_peer(ENetPeer* peer)
+{
+    std::erase_if(s_send_queue, [peer](const PendingChunkSend& request) {
+        return request.peer == peer;
+    });
+
+    s_send_queued.erase(peer);
+
+    std::vector<ChunkPos> empty;
+
+    for(auto& it : s_waiting_peers) {
+        auto& peers = it.second;
+
+        peers.erase(std::remove(peers.begin(), peers.end(), peer), peers.end());
+
+        if(peers.empty()) {
+            empty.push_back(it.first);
+        }
+    }
+
+    for(const auto& cpos : empty) {
+        s_waiting_peers.erase(cpos);
+    }
+}
+
 void receive::init(void)
 {
     auto& gr_reach_distance_binding = cvar::bind_var(s_reach_distance, "gr_reach_distance");
@@ -247,4 +405,6 @@ void receive::init(void)
     globals::dispatcher.sink<packet::Player_MoveData>().connect<&on_player_move_data>();
 
     globals::dispatcher.sink<ChunkReadyEvent>().connect<&on_chunk_ready>();
+    globals::dispatcher.sink<ChunkLightUpdateEvent>().connect<&on_chunk_light>();
+    globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
 }

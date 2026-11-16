@@ -184,7 +184,9 @@ Every translation unit keeps the same top-level order:
 - Static functions go in dependency order, callees first, so a static prototype is only necessary for mutual recursion.
 - A table of callbacks or a registration list goes right after the last function it points to.
 - Function-like macros and `static_assert`s stay next to what they belong to.
-- Headers follow the same order; a `constexpr` body stays right after its declaration as "Language" says.
+- Headers follow the same order. A header is a translation unit too: includes, forward declarations, constants, types, read-only data,
+  globals, then function declarations and out-of-line definitions. A header that only declares functions still keeps its constants above
+  them. A `constexpr` body stays right after its declaration as "Language" says.
 
 ### Comments
 

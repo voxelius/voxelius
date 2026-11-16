@@ -16,7 +16,7 @@ blocks.add("glass", {
   touch = blocks.TOUCH_SOLID,
 
   emission = 0,
-  dissipation = 15,
+  dissipation = 0,
 
   drops = {
     {

@@ -32,6 +32,7 @@ enum packet_type : std::uint16_t {
     CVAR_SERVER_CMDS,
     CVAR_COMMAND,
     MSG_LOG,
+    WORLD_CHUNK_LIGHT,
 };
 } // namespace packet
 
@@ -69,6 +70,7 @@ namespace packet
 struct World_Request;
 struct World_Blocks;
 struct World_Biomes;
+struct World_Light;
 struct World_SetBlock;
 struct World_Timings;
 } // namespace packet

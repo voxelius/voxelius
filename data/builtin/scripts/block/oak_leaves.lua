@@ -18,5 +18,5 @@ blocks.add("oak_leaves", {
   tags = { blocks.TAG_SFOIL },
 
   emission = 0,
-  dissipation = 14,
+  dissipation = 2,
 })

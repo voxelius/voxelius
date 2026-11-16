@@ -4,6 +4,7 @@
 #include "shared/constant.hh"
 #include "shared/coord.hh"
 #include "shared/world/block.hh"
+#include "shared/world/light_storage.hh"
 
 class BlockCache final {
 public:
@@ -16,9 +17,11 @@ public:
     void init(const ChunkPos& cpos);
 
     block_id_type get(const LocalPos& lpos) const;
+    block_light_type get_light(const LocalPos& lpos, light_channel channel) const;
 
 private:
     std::array<block_id_type, VOLUME> m_blocks;
+    std::array<std::uint8_t, VOLUME> m_light;
 };
 
 #endif /* C74D9A9B_567F_492D_871F_CDC652184709 */

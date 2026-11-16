@@ -45,15 +45,19 @@ std::uint32_t ChunkMesh_Vertex::pack_3(std::uint32_t albedo_strip, std::uint32_t
     return result;
 }
 
-std::uint32_t ChunkMesh_Vertex::pack_4(std::uint32_t ao, float shade, bool animated, const Eigen::Vector3f& tint_rgb)
+std::uint32_t ChunkMesh_Vertex::pack_4(std::uint32_t ao, float shade, bool animated, const Eigen::Vector3f& tint_rgb,
+    block_light_type sky_light, block_light_type block_light)
 {
     auto r = static_cast<std::uint32_t>(std::lround(std::clamp(tint_rgb.x(), 0.0f, 1.0f) * 31.0f)) & 0x1FU;
     auto g = static_cast<std::uint32_t>(std::lround(std::clamp(tint_rgb.y(), 0.0f, 1.0f) * 63.0f)) & 0x3FU;
     auto b = static_cast<std::uint32_t>(std::lround(std::clamp(tint_rgb.z(), 0.0f, 1.0f) * 31.0f)) & 0x1FU;
+    auto s = static_cast<std::uint32_t>(std::lround(std::clamp(shade, 0.0f, 1.0f) * 31.0f)) & 0x1FU;
 
     std::uint32_t result = 0;
     result |= ao & 0x03U;
-    result |= pack_unorm8(shade) << 8U;
+    result |= (static_cast<std::uint32_t>(sky_light) & 0x0FU) << 3U;
+    result |= (static_cast<std::uint32_t>(block_light) & 0x0FU) << 7U;
+    result |= s << 11U;
     result |= r << 16U;
     result |= g << 21U;
     result |= b << 27U;

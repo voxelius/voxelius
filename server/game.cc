@@ -8,11 +8,14 @@
 #include "shared/globals.hh"
 #include "shared/system/pmove.hh"
 #include "shared/utils/entity.hh"
+#include "shared/world/lighting.hh"
 
 #include "server/system/pmove_validator.hh"
 
 void server_game::init(void)
 {
+    lighting::set_replica(false);
+
     gamerules::init(true);
 
     pmove_validator::init();

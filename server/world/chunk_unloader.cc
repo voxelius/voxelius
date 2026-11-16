@@ -51,10 +51,22 @@ void chunk_unloader::fixed_update_late(void)
         auto inside_view = false;
 
         for(const auto& box : boxes) {
-            if(box.contains(component.position)) {
-                inside_view = true;
-                break;
+            auto& min = box.min();
+            auto& max = box.max();
+            auto& pos = component.position;
+
+            // Keep whole columns alive while their XZ position is in view;
+            // light needs every chunk of the realm, not only the visible ones.
+            if(pos.x() < min.x() || pos.x() > max.x()) {
+                continue;
             }
+
+            if(pos.z() < min.z() || pos.z() > max.z()) {
+                continue;
+            }
+
+            inside_view = true;
+            break;
         }
 
         if(!inside_view) {

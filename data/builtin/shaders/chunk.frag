@@ -7,12 +7,17 @@ flat in uint vs_MaskFrame;
 flat in vec3 vs_TintColor;
 in float vs_Shade;
 in float vs_AO;
+in float vs_SkyLight;
+in float vs_BlockLight;
 in vec3 vs_ViewPos;
 
 out vec4 frag_Target;
 
 uniform vec3 u_FogColor;
 uniform float u_ViewDistance;
+uniform vec3 u_SkyColor;
+uniform vec3 u_BlockColor;
+uniform float u_Ambient;
 uniform sampler2DArray u_AtlasTexture;
 uniform samplerBuffer u_AtlasFrames;
 
@@ -46,7 +51,8 @@ void main(void)
     vec4 mask_color = texture(u_AtlasTexture, vec3(mask_uv, float(mask_frame.layer)));
 
     vec3 tint = mix(vec3(1.0), vs_TintColor, mask_color.r);
-    vec3 shaded = albedo_color.rgb * vs_Shade * vs_AO * tint;
+    vec3 light = max(vec3(u_Ambient), max(u_SkyColor * vs_SkyLight, u_BlockColor * vs_BlockLight));
+    vec3 shaded = albedo_color.rgb * vs_Shade * vs_AO * tint * light;
 
     frag_Target.rgb = shaded;
     frag_Target.a = albedo_color.a;

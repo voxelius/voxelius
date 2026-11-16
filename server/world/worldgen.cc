@@ -1,8 +1,7 @@
 #include "server/pch.hh"
 
-#include "server/world/worldgen.hh"
-
 #include "core/threading.hh"
+#include "server/world/worldgen.hh"
 
 #include "shared/globals.hh"
 #include "shared/utils/biome.hh"

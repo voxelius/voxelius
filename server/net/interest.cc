@@ -113,6 +113,7 @@ void interest::broadcast(const T& packet, const ChunkPos& origin, ENetPeer* exce
 }
 
 template void interest::broadcast<packet::World_SetBlock>(const packet::World_SetBlock& packet, const ChunkPos& origin, ENetPeer* except);
+template void interest::broadcast<packet::World_Light>(const packet::World_Light& packet, const ChunkPos& origin, ENetPeer* except);
 template void interest::broadcast<packet::Entity_Spawn>(const packet::Entity_Spawn& packet, const ChunkPos& origin, ENetPeer* except);
 template void interest::broadcast<packet::Entity_Patch>(const packet::Entity_Patch& packet, const ChunkPos& origin, ENetPeer* except);
 template void interest::broadcast<packet::Entity_Remove>(const packet::Entity_Remove& packet, const ChunkPos& origin, ENetPeer* except);

@@ -40,3 +40,5 @@ dofile("biome/surface_plains.lua")
 
 dofile("entity/player.lua")
 dofile("entity/test.lua")
+
+dofile("block/emitter.lua")

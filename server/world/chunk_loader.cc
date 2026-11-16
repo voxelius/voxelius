@@ -5,6 +5,7 @@
 #include "core/buffer.hh"
 #include "core/threading.hh"
 
+#include "shared/constant.hh"
 #include "shared/globals.hh"
 #include "shared/utils/biome.hh"
 #include "shared/world/chunk.hh"
@@ -179,6 +180,15 @@ static void on_block_update(const BlockUpdateEvent& event)
     world::chunk_registry.emplace_or_replace<ChunkDirtyMarker>(event.chunk()->entity());
 }
 
+static void on_chunk_light(const ChunkLightUpdateEvent& event)
+{
+    // The light lives in the chunk snapshot, so a chunk whose light changed
+    // has to be saved even when its blocks did not.
+    if(auto chunk = world::find_chunk(event.pos())) {
+        world::chunk_registry.emplace_or_replace<ChunkDirtyMarker>(chunk->entity());
+    }
+}
+
 RegionEntry::RegionEntry(std::filesystem::path path) : region_file(std::move(path))
 {
     // empty
@@ -254,6 +264,7 @@ void chunk_loader::init(void)
 {
     globals::dispatcher.sink<ChunkUpdateEvent>().connect<&on_chunk_update>();
     globals::dispatcher.sink<BlockUpdateEvent>().connect<&on_block_update>();
+    globals::dispatcher.sink<ChunkLightUpdateEvent>().connect<&on_chunk_light>();
 }
 
 void chunk_loader::shutdown(void)
@@ -295,6 +306,36 @@ void chunk_loader::request(const ChunkPos& pos)
     s_pending.emplace(pos);
 
     threading::submit<LoadTask>(pos);
+}
+
+void chunk_loader::request_column(const ChunkPos& pos)
+{
+    auto realm = utils::realm(pos.y());
+    auto min_chunk_y = 0;
+    auto max_chunk_y = 0;
+
+    switch(realm) {
+        case BIOME_REALM_SURFACE:
+            min_chunk_y = constant::SURFACE_MIN_CHUNK_Y;
+            max_chunk_y = constant::SURFACE_MAX_CHUNK_Y;
+            break;
+
+        case BIOME_REALM_SKY:
+            min_chunk_y = constant::SKY_MIN_CHUNK_Y;
+            max_chunk_y = constant::SKY_MAX_CHUNK_Y;
+            break;
+
+        case BIOME_REALM_UNDERGROUND:
+        case BIOME_REALM_THE_DEPTHS:
+        case BIOME_REALM_VOID:
+        case BIOME_REALM_COUNT:
+            request(pos);
+            return;
+    }
+
+    for(auto y = min_chunk_y; y <= max_chunk_y; y += 1) {
+        request(ChunkPos(pos.x(), y, pos.z()));
+    }
 }
 
 bool chunk_loader::pending(const ChunkPos& pos)

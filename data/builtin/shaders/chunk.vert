@@ -14,6 +14,8 @@ flat out uint vs_MaskFrame;
 flat out vec3 vs_TintColor;
 out float vs_Shade;
 out float vs_AO;
+out float vs_SkyLight;
+out float vs_BlockLight;
 out vec3 vs_ViewPos;
 
 uniform usamplerBuffer u_AtlasStrips;
@@ -63,7 +65,17 @@ vec3 unpack_tint(uint data_4)
 
 float unpack_shade(uint data_4)
 {
-    return float((data_4 >> 8U) & 0xFFU) / 255.0;
+    return float((data_4 >> 11U) & 0x1FU) / 31.0;
+}
+
+float unpack_sky_light(uint data_4)
+{
+    return float((data_4 >> 3U) & 0x0FU) / 15.0;
+}
+
+float unpack_block_light(uint data_4)
+{
+    return float((data_4 >> 7U) & 0x0FU) / 15.0;
 }
 
 float unpack_ao(uint data_4)
@@ -109,4 +121,6 @@ void main(void)
     vs_TintColor = unpack_tint(vert_Data4);
     vs_Shade = unpack_shade(vert_Data4);
     vs_AO = unpack_ao(vert_Data4);
+    vs_SkyLight = unpack_sky_light(vert_Data4);
+    vs_BlockLight = unpack_block_light(vert_Data4);
 }

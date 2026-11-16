@@ -68,6 +68,8 @@ static void zoned_fixed_update_late(void)
     chunk_loader::fixed_update();
     chunk_unloader::fixed_update_late();
 
+    receive::fixed_update_late();
+
     transmit::fixed_update_late();
 
     threading::update();

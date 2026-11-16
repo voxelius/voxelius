@@ -162,8 +162,8 @@ Returns the numeric block ID.
 |`fluid_level`|`integer`|no|0|Fluid level if `fluid_name` is set, in 1/16ths of a block|
 |`health`|`integer`|no|`0`|Base hit points needed to break the block. Tool effects can change this|
 |`sound`|`string`|no|N/D|Sound set for this block|
-|`emission`|`integer`|no|`0`|Emission light value|
-|`dissipation`|`integer`|no|`0`|Amount of light the block absorbs as light passes through it|
+|`emission`|`integer`|no|`0`|Emission light value, from `0` to `15`. Values outside the range are clamped|
+|`dissipation`|`integer`|no|`0`|Opacity of the block, from `0` to `15`. Light loses this many levels when it passes through. Values outside the range are clamped. A `RENDER_SOLID` block with `0` dissipation is treated as fully opaque|
 |`touch`|`integer`|no|`blocks.TOUCH_SOLID`|Block touch response|
 |`touch_coeffs`|`number[3]`|no|`{1, 1, 1}`|Block touch response coefficients|
 |`tags`|`integer[]`|no|`{}`|Block tags|
