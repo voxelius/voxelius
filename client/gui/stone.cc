@@ -11,7 +11,6 @@
 #include "client/style.hh"
 
 constexpr static float NOISE_SIZE = 16.0f;
-constexpr static float NOISE_SCALE = 2.0f;
 constexpr static int NOISE_ALPHA = 96;
 
 constexpr static float POPUP_PAD = 3.0f;
@@ -59,7 +58,10 @@ void gui::detail::draw_stone_face(ImDrawList* draw_list, ImVec2 item_min, ImVec2
 
     if(noise) {
         auto tint = IM_COL32(255, 255, 255, NOISE_ALPHA);
-        auto tile_size = NOISE_SIZE * NOISE_SCALE;
+
+        // A texel of the grain is an interface pixel, the same way the
+        // bevel is, so the stone does not turn into dust on a HiDPI display
+        auto tile_size = NOISE_SIZE * static_cast<float>(globals::gui_scale);
 
         for(auto y = inner_min.y; y < inner_max.y; y += tile_size) {
             for(auto x = inner_min.x; x < inner_max.x; x += tile_size) {
