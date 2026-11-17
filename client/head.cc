@@ -10,6 +10,7 @@
 
 #include "shared/constant.hh"
 
+#include "client/camera.hh"
 #include "client/fog.hh"
 #include "client/game.hh"
 #include "client/globals.hh"
@@ -44,6 +45,9 @@ static std::size_t su_AlphaDepth;
 static std::size_t su_FluidColor;
 static std::size_t su_FluidDepth;
 static std::size_t su_CloudColor;
+static std::size_t su_CloudDepth;
+static std::size_t su_CloudRange;
+static std::size_t su_CameraRange;
 
 static cvar::Number<int> s_head_pixel_size { 1, 1, 4 };
 static gui::SliderInt s_pixel_size_gui;
@@ -157,16 +161,14 @@ static void begin_translucent(LayerTarget& layer)
 
 static void begin_cloud_layer(void)
 {
-    // Clouds get a layer of their own so the composite can lay them over
-    // the translucent and fluid passes instead of baking them into the
-    // opaque one. The layer borrows the terrain depth, so the ground hides them
-    blit_depth(s_diffuse, s_clouds);
-
+    // Clouds go into a layer of their own: the composite lays them over the
+    // translucent passes and compares their distance with the ground, so the
+    // deck still hides behind terrain even though it has a depth range of its own
     glBindFramebuffer(GL_FRAMEBUFFER, s_clouds.fbo);
     glViewport(0, 0, s_scaled_width, s_scaled_height);
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
 static void composite_layers(void)
@@ -210,6 +212,13 @@ static void composite_layers(void)
     glActiveTexture(GL_TEXTURE6);
     glBindTexture(GL_TEXTURE_2D, s_clouds.color);
     glUniform1i(s_transparency.uniforms[su_CloudColor].location, 6);
+
+    glActiveTexture(GL_TEXTURE7);
+    glBindTexture(GL_TEXTURE_2D, s_clouds.depth);
+    glUniform1i(s_transparency.uniforms[su_CloudDepth].location, 7);
+
+    glUniform2f(s_transparency.uniforms[su_CloudRange].location, cloud_renderer::z_near, cloud_renderer::z_far);
+    glUniform2f(s_transparency.uniforms[su_CameraRange].location, camera::z_near, camera::z_far);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -274,6 +283,9 @@ void head::init(void)
     su_FluidColor = s_transparency.add_uniform("u_FluidColor");
     su_FluidDepth = s_transparency.add_uniform("u_FluidDepth");
     su_CloudColor = s_transparency.add_uniform("u_CloudColor");
+    su_CloudDepth = s_transparency.add_uniform("u_CloudDepth");
+    su_CloudRange = s_transparency.add_uniform("u_CloudRange");
+    su_CameraRange = s_transparency.add_uniform("u_CameraRange");
 
     chunk_vbo::init();
     chunk_renderer::init();

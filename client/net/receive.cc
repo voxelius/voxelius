@@ -88,11 +88,10 @@ static void on_world_blocks(const packet::World_Blocks& packet)
 {
     chunk_visibility::note_received(packet.cpos);
 
-    // A full chunk packet is authoritative: it is both the first load and
-    // the resync the server sends to roll a stale client world back. Block
-    // edits made after the packet was queued arrive as SetBlock on the same
-    // reliable channel, so applying the whole chunk here cannot win over a
-    // newer prediction.
+    // A full chunk packet is authoritative: it is both the first load and the
+    // resync the server sends to roll a stale client world back. Block edits
+    // made after the packet was queued arrive as SetBlock on the same reliable
+    // channel, so applying the whole chunk here cannot win over a newer prediction
     auto chunk = world::find_chunk(packet.cpos);
 
     if(chunk == nullptr) {
@@ -129,8 +128,8 @@ static void on_world_light(const packet::World_Light& packet)
             chunk->set_light(entry.light);
         }
         else {
-            // A delta cannot seed a chunk the client was never given light
-            // for; the server sends the whole array in that case.
+            // A delta cannot seed a chunk the client was never
+            // given light, so the server sends the whole array in that case
             if(!chunk->has_light()) {
                 continue;
             }

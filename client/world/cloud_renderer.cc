@@ -6,6 +6,8 @@
 #include "core/cvar/host.hh"
 #include "core/exception.hh"
 #include "core/identifier.hh"
+#include "core/threading.hh"
+#include "core/utils/angles.hh"
 
 #include "shared/constant.hh"
 #include "shared/utils/biome.hh"
@@ -21,19 +23,34 @@
 #include "client/settings.hh"
 #include "client/shader_program.hh"
 
-constexpr static float CLOUD_VOXEL_WIDTH_BLOCKS = 8.0f; // A longer range adds voxels to the deck instead of growing them
-constexpr static float CLOUD_VOXEL_HEIGHT_BLOCKS = 4.0f;
 constexpr static int CLOUD_COLUMN_MAX_VOXELS = 8;
 constexpr static int CLOUD_COLUMN_MAX_STEP = 2;
-
 constexpr static float CLOUD_SHADE_VARIATION = 0.16f; // Enough to break a deck into blocks, small enough that no cube stands out
 
-// Whatever r_cloud_range says, the deck cannot reach further
-// than this: the cost grows with the square of the range,
-// so 32 chunks is roughly where a whole deck still builds in a frame
+// The deck is meshed in rings: a cell is this many blocks across
+// and this many tall in a ring, and the ring reaches out to this
+// radius. Each ring uses four times the cell of the one inside
+// it, so the column count grows with the radius instead of its square
+struct CloudRing final {
+    float cell;
+    float height;
+    float radius;
+};
+
+// The deck reaches no further than this, whatever r_cloud_range says; the rings tile the range below it
 constexpr static float CLOUD_MAX_RADIUS_BLOCKS = static_cast<float>(constant::CHUNK_SIZE * cloud_renderer::MAX_RANGE_CHUNKS);
 
+constexpr static CloudRing CLOUD_RINGS[] = {
+    { 8.0f, 4.0f, static_cast<float>(constant::CHUNK_SIZE * 32) },
+    { 32.0f, 8.0f, static_cast<float>(constant::CHUNK_SIZE * 96) },
+    { 128.0f, 16.0f, CLOUD_MAX_RADIUS_BLOCKS },
+};
+
+constexpr static float CLOUD_FINE_CELL_BLOCKS = CLOUD_RINGS[0].cell; // The finest ring sets the drift step a rebuild waits for
 constexpr static float WIND_EASE_PER_SECOND = 6.0f;
+constexpr static float BUILD_COOLDOWN_SECONDS = 0.2f; // A build closer than this to the previous one would not pay for itself
+constexpr static float CLOUD_NEAR_PLANE = 1.0f;
+constexpr static float CLOUD_DEPTH_MARGIN = 1024.0f;
 
 // Colour plus the alpha the layer asks for, kept as three
 // floats and a scalar: Eigen over-aligns a Vector4f to
@@ -64,11 +81,15 @@ struct CloudWindow final {
     std::size_t depth;
 };
 
-// One layer of one weather type, with everything the mesher needs worked out once
+// One layer of one weather type in one ring, with everything the mesher needs worked out once
 struct CloudDeck final {
     biome_realm realm;
     weather_type_id type;
     CloudLayer layer;
+    const WeatherRealmState* state;
+    Eigen::Vector2f anchor;
+    float cell;
+    float height;
     float scale;
     int max_levels;
     float opacity;
@@ -88,6 +109,32 @@ struct CloudGroup final {
 struct CloudBatch final {
     std::size_t offset;
     std::size_t count;
+    float fade;        // Outer edge of the deck; zero for a ring inside it, which does not fade out
+    float blend_start; // Outer edge of the ring, where it fades into the coarser one; a zero width means no fade
+    float blend_width;
+    float depth_bias; // Pushes the ring back in depth, so two rings that overlap at the same height do not fight over the pixel
+};
+
+// One build's worth of geometry; a worker
+// fills it and the main thread uploads it
+struct CloudMesh final {
+    std::vector<CloudVertex> vertices;
+    std::vector<std::uint32_t> indices;
+    std::vector<CloudBatch> batches;
+
+    // Center of the window the build was meshed around, in field
+    // coordinates; the rings and their fades are measured from it
+    Eigen::Vector2f center;
+};
+
+// Everything a worker needs: a copy of the
+// field state and the frame the window belongs to
+struct CloudInput final {
+    std::array<WeatherRealmState, NUM_BIOME_REALMS> states;
+    Eigen::Vector2f anchor;
+    Eigen::Vector3f center;
+    float radius;
+    float light;
 };
 
 static_assert(sizeof(CloudVertex) == 7 * sizeof(float), "CloudVertex must stay packed for the vertex layout");
@@ -96,29 +143,32 @@ static cvar::Number<unsigned> s_clouds { 1, 0, 1 };
 static gui::CheckBox s_clouds_gui;
 
 static ShaderProgram s_program;
-static std::size_t su_ViewProjection;
+static std::size_t su_CloudViewProjection;
 static std::size_t su_CameraOrigin;
-static std::size_t su_CameraPos;
+static std::size_t su_DeckCenter;
 static std::size_t su_WindOffset;
 static std::size_t su_FadeDistance;
+static std::size_t su_BlendRange;
+static std::size_t su_DepthBias;
 
-static GLuint s_vao;
-static GLuint s_vbo;
-static GLuint s_ibo;
+static GLuint s_vao[2];
+static GLuint s_vbo[2];
+static GLuint s_ibo[2];
 
-static std::vector<CloudVertex> s_vertices;
-static std::vector<std::uint32_t> s_indices;
-static std::vector<CloudBatch> s_batches;
+static CloudMesh s_meshes[2];
+static std::size_t s_front;
 static std::vector<CloudGroup> s_groups;
 static Eigen::Vector3f s_wind_offset { Eigen::Vector3f::Zero() };
 static Eigen::Vector3f s_last_build_offset { Eigen::Vector3f::Zero() };
 static std::uint64_t s_state_signature;
-static ChunkPos s_last_camera_chunk { ChunkPos::Zero() };
+static std::uint64_t s_generation;
+static Eigen::Vector3f s_last_build_center { Eigen::Vector3f::Zero() };
 static unsigned s_last_cloud_range { 0 };
-static float s_radius { 0.0f };
 static Eigen::Vector2f s_drift_anchor { Eigen::Vector2f::Zero() };
 static biome_realm s_anchor_realm { BIOME_REALM_SURFACE };
 static bool s_anchored { false };
+static bool s_building { false };
+static float s_build_cooldown;
 
 static Eigen::Vector3f camera_world_position(void)
 {
@@ -144,42 +194,43 @@ static CloudColumn column_at(const CloudWindow& window, const std::vector<CloudC
     return columns[column_index(window, static_cast<std::size_t>(x), static_cast<std::size_t>(z))];
 }
 
-static void push_vertex(const Eigen::Vector3f& position, const CloudColor& color)
+static void push_vertex(CloudMesh& mesh, const Eigen::Vector3f& position, const CloudColor& color)
 {
     CloudVertex vertex {};
     vertex.position = position;
     vertex.color = color;
 
-    s_vertices.push_back(vertex);
+    mesh.vertices.push_back(vertex);
 }
 
-static void push_quad(const Eigen::Vector3f& a, const Eigen::Vector3f& b, const Eigen::Vector3f& c, const Eigen::Vector3f& d,
-    const CloudColor& color)
+static void push_quad(CloudMesh& mesh, const Eigen::Vector3f& a, const Eigen::Vector3f& b, const Eigen::Vector3f& c,
+    const Eigen::Vector3f& d, const CloudColor& color)
 {
-    auto base = static_cast<std::uint32_t>(s_vertices.size());
+    auto base = static_cast<std::uint32_t>(mesh.vertices.size());
 
-    push_vertex(a, color);
-    push_vertex(b, color);
-    push_vertex(c, color);
-    push_vertex(d, color);
+    push_vertex(mesh, a, color);
+    push_vertex(mesh, b, color);
+    push_vertex(mesh, c, color);
+    push_vertex(mesh, d, color);
 
-    s_indices.push_back(base);
-    s_indices.push_back(base + 1);
-    s_indices.push_back(base + 2);
-    s_indices.push_back(base);
-    s_indices.push_back(base + 2);
-    s_indices.push_back(base + 3);
+    mesh.indices.push_back(base);
+    mesh.indices.push_back(base + 1);
+    mesh.indices.push_back(base + 2);
+    mesh.indices.push_back(base);
+    mesh.indices.push_back(base + 2);
+    mesh.indices.push_back(base + 3);
 }
 
 // The corners are given in the winding that faces outwards from the column
-static void push_side_face(const Eigen::Vector2f& a, const Eigen::Vector2f& b, float y_bottom, float y_top, const CloudColor& color)
+static void push_side_face(CloudMesh& mesh, const Eigen::Vector2f& a, const Eigen::Vector2f& b, float y_bottom, float y_top,
+    const CloudColor& color)
 {
     auto bottom_a = Eigen::Vector3f(a.x(), y_bottom, a.y());
     auto bottom_b = Eigen::Vector3f(b.x(), y_bottom, b.y());
     auto top_b = Eigen::Vector3f(b.x(), y_top, b.y());
     auto top_a = Eigen::Vector3f(a.x(), y_top, a.y());
 
-    push_quad(bottom_a, bottom_b, top_b, top_a, color);
+    push_quad(mesh, bottom_a, bottom_b, top_b, top_a, color);
 }
 
 // The vertical spans of `self` that `other` leaves
@@ -206,48 +257,77 @@ static void for_exposed_span(const CloudColumn& self, const CloudColumn& other, 
     }
 }
 
-static void push_exposed_sides(const CloudColumn& column, const CloudColumn& other, const Eigen::Vector2f& a, const Eigen::Vector2f& b,
-    float base_y, const CloudColor& color)
+static void push_exposed_sides(CloudMesh& mesh, const CloudColumn& column, const CloudColumn& other, const Eigen::Vector2f& a,
+    const Eigen::Vector2f& b, float base_y, float height, const CloudColor& color)
 {
     for_exposed_span(column, other, [&](std::int16_t from, std::int16_t to) {
-        auto y_bottom = base_y + static_cast<float>(from) * CLOUD_VOXEL_HEIGHT_BLOCKS;
-        auto y_top = base_y + static_cast<float>(to) * CLOUD_VOXEL_HEIGHT_BLOCKS;
+        auto y_bottom = base_y + static_cast<float>(from) * height;
+        auto y_top = base_y + static_cast<float>(to) * height;
 
-        push_side_face(a, b, y_bottom, y_top, color);
+        push_side_face(mesh, a, b, y_bottom, y_top, color);
     });
 }
 
-static CloudDeck make_deck(biome_realm realm, weather_type_id type, const CloudLayer& layer)
+static CloudDeck make_deck(const CloudInput& input, const CloudGroup& group, const CloudRing& ring)
 {
-    auto light = fog::daylight.value();
+    auto light = input.light;
 
     CloudDeck deck {};
-    deck.realm = realm;
-    deck.type = type;
-    deck.layer = layer;
-    deck.scale = std::max(layer.scale, 8.0f);
-    deck.max_levels = std::clamp(static_cast<int>(layer.thickness / CLOUD_VOXEL_HEIGHT_BLOCKS), 1, CLOUD_COLUMN_MAX_VOXELS);
-    deck.opacity = std::clamp(layer.opacity, 0.05f, 1.0f);
-    deck.shadow = layer.shadow_color * light;
-    deck.lit = layer.lit_color * light;
+    deck.realm = group.realm;
+    deck.type = group.type;
+    deck.layer = group.layer;
+    deck.cell = ring.cell;
+    deck.height = ring.height;
+    deck.state = &input.states[static_cast<std::size_t>(group.realm)];
+    deck.anchor = input.anchor;
+    deck.scale = std::max(group.layer.scale, 8.0f);
+    deck.max_levels = std::clamp(static_cast<int>(group.layer.thickness / deck.height), 1, CLOUD_COLUMN_MAX_VOXELS);
+    deck.opacity = std::clamp(group.layer.opacity, 0.05f, 1.0f);
+    deck.shadow = group.layer.shadow_color * light;
+    deck.lit = group.layer.lit_color * light;
     deck.side = (deck.shadow + deck.lit) * 0.5f;
 
     return deck;
 }
 
+// A coarse cell stands for the whole patch the finer ring resolves:
+// averaging its corners keeps the two rings on the same structure,
+// where a point sample would give the coarse ring a pattern the fine one never draws
+static float cell_coverage(const CloudDeck& deck, float field_x, float field_z)
+{
+    auto step = deck.cell * 0.25f;
+    auto state = *deck.state;
+
+    auto a = weather::coverage_in_field(state, deck.realm, deck.type, field_x - step, field_z - step);
+    auto b = weather::coverage_in_field(state, deck.realm, deck.type, field_x + step, field_z - step);
+    auto c = weather::coverage_in_field(state, deck.realm, deck.type, field_x - step, field_z + step);
+    auto d = weather::coverage_in_field(state, deck.realm, deck.type, field_x + step, field_z + step);
+
+    return (a + b + c + d) * 0.25f;
+}
+
+static float column_coverage(const CloudDeck& deck, float field_x, float field_z)
+{
+    if(deck.cell > CLOUD_RINGS[0].cell) {
+        return cell_coverage(deck, field_x, field_z);
+    }
+
+    return weather::coverage_in_field(*deck.state, deck.realm, deck.type, field_x, field_z);
+}
+
 static CloudColumn sample_column(const CloudDeck& deck, std::int32_t cell_x, std::int32_t cell_z)
 {
-    auto grid_x = CLOUD_VOXEL_WIDTH_BLOCKS * (static_cast<float>(cell_x) + 0.5f);
-    auto grid_z = CLOUD_VOXEL_WIDTH_BLOCKS * (static_cast<float>(cell_z) + 0.5f);
+    auto grid_x = deck.cell * (static_cast<float>(cell_x) + 0.5f);
+    auto grid_z = deck.cell * (static_cast<float>(cell_z) + 0.5f);
 
     // The field is sampled in its own frame, so a cell keeps its
     // answer at every rebuild however far the front has drifted.
     // Going through world space and subtracting the drift again
     // would round differently each time and flip cubes near a threshold
-    auto field_x = grid_x - s_drift_anchor.x();
-    auto field_z = grid_z - s_drift_anchor.y();
+    auto field_x = grid_x - deck.anchor.x();
+    auto field_z = grid_z - deck.anchor.y();
 
-    auto coverage = deck.layer.coverage * weather::coverage_in_field(deck.realm, deck.type, field_x, field_z);
+    auto coverage = column_coverage(deck, field_x, field_z) * deck.layer.coverage;
 
     if(coverage <= 0.02f) {
         return CloudColumn {};
@@ -264,8 +344,8 @@ static CloudColumn sample_column(const CloudDeck& deck, std::int32_t cell_x, std
     auto headroom = density - threshold;
 
     // The per-cell crumble breaks a thin deck into scraps and frays the rim of a mass, and leaves the inside of a dense deck clean
-    auto hash_x = static_cast<std::int32_t>(std::floor(field_x / CLOUD_VOXEL_WIDTH_BLOCKS));
-    auto hash_z = static_cast<std::int32_t>(std::floor(field_z / CLOUD_VOXEL_WIDTH_BLOCKS));
+    auto hash_x = static_cast<std::int32_t>(std::floor(field_x / deck.cell));
+    auto hash_z = static_cast<std::int32_t>(std::floor(field_z / deck.cell));
     auto open = 1.0f - std::clamp(coverage, 0.0f, 1.0f);
     auto seam = 1.0f - std::clamp(headroom / 0.18f, 0.0f, 1.0f);
     auto bias = weather::cell_random(hash_x, hash_z, deck.layer.seed + 17) - 0.5f;
@@ -296,20 +376,36 @@ static CloudColumn sample_column(const CloudDeck& deck, std::int32_t cell_x, std
     return column;
 }
 
-static void fill_columns(const CloudDeck& deck, const CloudWindow& window, std::vector<CloudColumn>& columns)
+// A ring leaves the cells inside inner to the finer ring,
+// but keeps two of its own cells past that edge: the finer
+// ring fades out over that band, so it needs the coarser one already drawn under it
+static void fill_columns(const CloudDeck& deck, const CloudWindow& window, const Eigen::Vector3f& center, float inner,
+    std::vector<CloudColumn>& columns)
 {
     for(std::size_t z = 0; z < window.depth; ++z) {
         for(std::size_t x = 0; x < window.width; ++x) {
             auto cell_x = window.min_x + static_cast<std::int32_t>(x);
             auto cell_z = window.min_z + static_cast<std::int32_t>(z);
 
+            auto cell_center_x = deck.cell * (static_cast<float>(cell_x) + 0.5f);
+            auto cell_center_z = deck.cell * (static_cast<float>(cell_z) + 0.5f);
+
+            auto handover = inner - deck.cell * 2.0f;
+            auto covered = std::abs(cell_center_x - center.x()) < handover && std::abs(cell_center_z - center.z()) < handover;
+
+            if(inner > 0.0f && covered) {
+                continue;
+            }
+
             columns[column_index(window, x, z)] = sample_column(deck, cell_x, cell_z);
         }
     }
 }
 
-static void mesh_column(const CloudDeck& deck, const CloudWindow& window, const std::vector<CloudColumn>& columns,
-    const Eigen::Vector3f& origin, std::size_t x, std::size_t z)
+// The vertices are in world space, so a build that lands after the
+// camera moved stays correct; the chunk origin is subtracted at draw time
+static void mesh_column(CloudMesh& mesh, const CloudDeck& deck, const CloudWindow& window, const std::vector<CloudColumn>& columns,
+    std::size_t x, std::size_t z)
 {
     auto column = columns[column_index(window, x, z)];
 
@@ -317,17 +413,17 @@ static void mesh_column(const CloudDeck& deck, const CloudWindow& window, const 
         return;
     }
 
-    auto base_y = deck.layer.height - origin.y();
-    auto grid_x = (static_cast<float>(window.min_x + static_cast<std::int32_t>(x)) + 0.5f) * CLOUD_VOXEL_WIDTH_BLOCKS - origin.x();
-    auto grid_z = (static_cast<float>(window.min_z + static_cast<std::int32_t>(z)) + 0.5f) * CLOUD_VOXEL_WIDTH_BLOCKS - origin.z();
+    auto base_y = deck.layer.height;
+    auto grid_x = (static_cast<float>(window.min_x + static_cast<std::int32_t>(x)) + 0.5f) * deck.cell;
+    auto grid_z = (static_cast<float>(window.min_z + static_cast<std::int32_t>(z)) + 0.5f) * deck.cell;
 
-    auto x0 = grid_x - CLOUD_VOXEL_WIDTH_BLOCKS * 0.5f;
-    auto x1 = grid_x + CLOUD_VOXEL_WIDTH_BLOCKS * 0.5f;
-    auto z0 = grid_z - CLOUD_VOXEL_WIDTH_BLOCKS * 0.5f;
-    auto z1 = grid_z + CLOUD_VOXEL_WIDTH_BLOCKS * 0.5f;
+    auto x0 = grid_x - deck.cell * 0.5f;
+    auto x1 = grid_x + deck.cell * 0.5f;
+    auto z0 = grid_z - deck.cell * 0.5f;
+    auto z1 = grid_z + deck.cell * 0.5f;
 
-    auto y_bottom = base_y + static_cast<float>(column.bottom) * CLOUD_VOXEL_HEIGHT_BLOCKS;
-    auto y_top = base_y + static_cast<float>(column.top) * CLOUD_VOXEL_HEIGHT_BLOCKS;
+    auto y_bottom = base_y + static_cast<float>(column.bottom) * deck.height;
+    auto y_top = base_y + static_cast<float>(column.top) * deck.height;
 
     CloudColor top_color {};
     top_color.rgb = deck.lit * column.shade;
@@ -348,8 +444,8 @@ static void mesh_column(const CloudDeck& deck, const CloudWindow& window, const 
     auto bottom_d = Eigen::Vector3f(x0, y_bottom, z1);
 
     // Both caps are meshed; the view culls the one that faces away
-    push_quad(top_a, top_b, top_c, top_d, top_color);
-    push_quad(bottom_a, bottom_b, bottom_c, bottom_d, bottom_color);
+    push_quad(mesh, top_a, top_b, top_c, top_d, top_color);
+    push_quad(mesh, bottom_a, bottom_b, bottom_c, bottom_d, bottom_color);
 
     auto column_x = static_cast<std::int32_t>(x);
     auto column_z = static_cast<std::int32_t>(z);
@@ -378,33 +474,18 @@ static void mesh_column(const CloudDeck& deck, const CloudWindow& window, const 
     north_color.rgb = side_color * 0.82f;
     north_color.alpha = deck.opacity;
 
-    push_exposed_sides(column, east, Eigen::Vector2f(x1, z1), Eigen::Vector2f(x1, z0), base_y, east_color);
-    push_exposed_sides(column, west, Eigen::Vector2f(x0, z0), Eigen::Vector2f(x0, z1), base_y, west_color);
-    push_exposed_sides(column, south, Eigen::Vector2f(x0, z1), Eigen::Vector2f(x1, z1), base_y, south_color);
-    push_exposed_sides(column, north, Eigen::Vector2f(x1, z0), Eigen::Vector2f(x0, z0), base_y, north_color);
+    push_exposed_sides(mesh, column, east, Eigen::Vector2f(x1, z1), Eigen::Vector2f(x1, z0), base_y, deck.height, east_color);
+    push_exposed_sides(mesh, column, west, Eigen::Vector2f(x0, z0), Eigen::Vector2f(x0, z1), base_y, deck.height, west_color);
+    push_exposed_sides(mesh, column, south, Eigen::Vector2f(x0, z1), Eigen::Vector2f(x1, z1), base_y, deck.height, south_color);
+    push_exposed_sides(mesh, column, north, Eigen::Vector2f(x1, z0), Eigen::Vector2f(x0, z0), base_y, deck.height, north_color);
 }
 
-static void mesh_layer(biome_realm realm, weather_type_id type, const CloudLayer& layer, const CloudWindow& window,
-    const Eigen::Vector3f& origin)
+static CloudWindow make_window(const Eigen::Vector3f& center, float cell, float radius)
 {
-    auto deck = make_deck(realm, type, layer);
-    auto columns = std::vector<CloudColumn>(window.width * window.depth);
-
-    fill_columns(deck, window, columns);
-
-    for(std::size_t z = 0; z < window.depth; ++z) {
-        for(std::size_t x = 0; x < window.width; ++x) {
-            mesh_column(deck, window, columns, origin, x, z);
-        }
-    }
-}
-
-static CloudWindow make_window(const Eigen::Vector3f& center, float radius)
-{
-    auto min_x = static_cast<std::int32_t>(std::floor((center.x() - radius) / CLOUD_VOXEL_WIDTH_BLOCKS));
-    auto max_x = static_cast<std::int32_t>(std::floor((center.x() + radius) / CLOUD_VOXEL_WIDTH_BLOCKS));
-    auto min_z = static_cast<std::int32_t>(std::floor((center.z() - radius) / CLOUD_VOXEL_WIDTH_BLOCKS));
-    auto max_z = static_cast<std::int32_t>(std::floor((center.z() + radius) / CLOUD_VOXEL_WIDTH_BLOCKS));
+    auto min_x = static_cast<std::int32_t>(std::floor((center.x() - radius) / cell));
+    auto max_x = static_cast<std::int32_t>(std::floor((center.x() + radius) / cell));
+    auto min_z = static_cast<std::int32_t>(std::floor((center.z() - radius) / cell));
+    auto max_z = static_cast<std::int32_t>(std::floor((center.z() + radius) / cell));
 
     CloudWindow window {};
     window.min_x = min_x;
@@ -413,6 +494,78 @@ static CloudWindow make_window(const Eigen::Vector3f& center, float radius)
     window.depth = static_cast<std::size_t>(max_z - min_z + 1);
 
     return window;
+}
+
+static void mesh_ring(CloudMesh& mesh, const CloudInput& input, const CloudGroup& group, const CloudRing& ring, float inner, float outer,
+    float fade)
+{
+    auto deck = make_deck(input, group, ring);
+    auto window = make_window(input.center, deck.cell, outer);
+    auto columns = std::vector<CloudColumn>(window.width * window.depth);
+
+    fill_columns(deck, window, input.center, inner, columns);
+
+    auto offset = mesh.indices.size();
+
+    for(std::size_t z = 0; z < window.depth; ++z) {
+        for(std::size_t x = 0; x < window.width; ++x) {
+            mesh_column(mesh, deck, window, columns, x, z);
+        }
+    }
+
+    auto count = mesh.indices.size() - offset;
+
+    if(count) {
+        // The ring dissolves over the last two cells of the coarser
+        // ring into it; the ring at the deck's edge keeps its own wide fade instead
+        auto blend_width = (outer < input.radius) ? std::min(ring.cell * 8.0f, outer - inner) : 0.0f;
+
+        CloudBatch batch {};
+        batch.offset = offset;
+        batch.count = count;
+        batch.fade = fade;
+        batch.blend_start = outer - blend_width;
+        batch.blend_width = blend_width;
+        batch.depth_bias = ring.cell * 1.0e-7f;
+
+        mesh.batches.push_back(batch);
+    }
+}
+
+// One ring of the deck that is actually built: the ring itself and the band it covers
+struct CloudSpan final {
+    const CloudRing* ring;
+    float inner;
+    float outer;
+};
+
+// The rings tile the range from the camera out to r_cloud_range,
+// and they are meshed from the coarsest to the finest: a finer ring
+// then draws over the coarse one, so the faded edge blends into it instead of showing the sky
+static void mesh_layer(CloudMesh& mesh, const CloudInput& input, const CloudGroup& group)
+{
+    std::array<CloudSpan, 3> spans {};
+    auto span_count = std::size_t { 0 };
+    auto inner = 0.0f;
+
+    for(const auto& ring : CLOUD_RINGS) {
+        auto outer = std::min(ring.radius, input.radius);
+
+        if(inner >= outer) {
+            break;
+        }
+
+        spans[span_count] = CloudSpan { &ring, inner, outer };
+        span_count += 1;
+        inner = outer;
+    }
+
+    for(auto i = span_count; i > 0; i -= 1) {
+        const auto& span = spans[i - 1];
+        auto fade = (span.outer == input.radius) ? span.outer : 0.0f;
+
+        mesh_ring(mesh, input, group, *span.ring, span.inner, span.outer, fade);
+    }
 }
 
 static void add_group(biome_realm realm, weather_type_id type, const CloudLayer& layer, float camera_y)
@@ -457,24 +610,24 @@ static void collect_groups(float camera_y)
     }
 }
 
-static void upload_mesh(void)
+static void upload_mesh(const CloudMesh& mesh, std::size_t slot)
 {
-    glBindBuffer(GL_ARRAY_BUFFER, s_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, s_vbo[slot]);
 
-    if(s_vertices.empty()) {
+    if(mesh.vertices.empty()) {
         glBufferData(GL_ARRAY_BUFFER, 0, nullptr, GL_DYNAMIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_ibo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_ibo[slot]);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, nullptr, GL_DYNAMIC_DRAW);
         return;
     }
 
-    auto vertex_bytes = static_cast<GLsizeiptr>(s_vertices.size() * sizeof(CloudVertex));
-    auto index_bytes = static_cast<GLsizeiptr>(s_indices.size() * sizeof(std::uint32_t));
+    auto vertex_bytes = static_cast<GLsizeiptr>(mesh.vertices.size() * sizeof(CloudVertex));
+    auto index_bytes = static_cast<GLsizeiptr>(mesh.indices.size() * sizeof(std::uint32_t));
 
-    glBufferData(GL_ARRAY_BUFFER, vertex_bytes, s_vertices.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertex_bytes, mesh.vertices.data(), GL_DYNAMIC_DRAW);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_ibo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_bytes, s_indices.data(), GL_DYNAMIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_ibo[slot]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_bytes, mesh.indices.data(), GL_DYNAMIC_DRAW);
 }
 
 static std::uint64_t state_signature(void)
@@ -501,7 +654,8 @@ static bool needs_rebuild(void)
         return true;
     }
 
-    if(!camera::chunk.isApprox(s_last_camera_chunk)) {
+    // The deck is in world space, so leaving a chunk does not invalidate it; only a window that slid far enough does
+    if((camera_world_position() - s_last_build_center).norm() > CLOUD_FINE_CELL_BLOCKS * 4.0f) {
         return true;
     }
 
@@ -509,7 +663,7 @@ static bool needs_rebuild(void)
     // enough for the window to slide a cell; the wind offset alone keeps
     // the deck moving in between, and the field is sampled in the
     // same frame the deck lives in, so a rebuild does not reshuffle cubes
-    if((s_wind_offset - s_last_build_offset).norm() > CLOUD_VOXEL_WIDTH_BLOCKS * 2.0f) {
+    if((s_wind_offset - s_last_build_offset).norm() > CLOUD_FINE_CELL_BLOCKS * 2.0f) {
         return true;
     }
 
@@ -539,22 +693,108 @@ static void advance_wind_offset(const WeatherRealmState& state, biome_realm real
     s_wind_offset += (target - s_wind_offset) * step;
 }
 
-static void rebuild(void)
+float cloud_renderer::z_near = CLOUD_NEAR_PLANE;
+float cloud_renderer::z_far = CLOUD_NEAR_PLANE + CLOUD_DEPTH_MARGIN;
+
+static void update_depth_range(float radius)
 {
-    s_vertices.clear();
-    s_indices.clear();
-    s_batches.clear();
-    s_groups.clear();
+    cloud_renderer::z_near = CLOUD_NEAR_PLANE;
+    cloud_renderer::z_far = radius + CLOUD_DEPTH_MARGIN;
+}
 
+// The deck gets a projection of its own: near and far cover its
+// own box, so the ground keeps a small range and a precise depth buffer
+static Eigen::Matrix4f cloud_view_projection(void)
+{
+    auto near_plane = cloud_renderer::z_near;
+    auto far_plane = cloud_renderer::z_far;
+    auto inv_tangent = 1.0f / std::tan(0.5f * utils::radians(camera::vertical_fov.value()));
+
+    Eigen::Matrix4f projection = Eigen::Matrix4f::Zero();
+    projection(0, 0) = inv_tangent / globals::aspect;
+    projection(1, 1) = inv_tangent;
+    projection(2, 2) = -far_plane / (far_plane - near_plane);
+    projection(3, 2) = -1.0f;
+    projection(2, 3) = -far_plane * near_plane / (far_plane - near_plane);
+
+    return projection * camera::instance.view();
+}
+
+// One build on the pool: the snapshot arrives by value, the geometry comes back through the task
+class CloudTask final : public Task {
+public:
+    CloudTask(CloudInput input, const std::vector<CloudGroup>& groups, CloudMesh&& scratch, std::uint64_t generation);
+    virtual ~CloudTask(void) override = default;
+    virtual void process(void) override;
+    virtual void finalize(void) override;
+
+private:
+    CloudInput m_input;
+    std::vector<CloudGroup> m_groups;
+    std::uint64_t m_generation;
+    CloudMesh m_mesh;
+};
+
+CloudTask::CloudTask(CloudInput input, const std::vector<CloudGroup>& groups, CloudMesh&& scratch, std::uint64_t generation)
+    : m_input(std::move(input)), m_groups(groups), m_mesh(std::move(scratch)), m_generation(generation)
+{
+}
+
+void CloudTask::process(void)
+{
+    ZoneScopedN("cloud_renderer::process");
+
+    m_mesh.vertices.clear();
+    m_mesh.indices.clear();
+    m_mesh.batches.clear();
+    m_mesh.center = Eigen::Vector2f(m_input.center.x(), m_input.center.z());
+
+    for(const auto& group : m_groups) {
+        if(status.load(std::memory_order_relaxed) == task_status::CANCELLED) {
+            m_mesh = CloudMesh {};
+            return;
+        }
+
+        mesh_layer(m_mesh, m_input, group);
+    }
+}
+
+void CloudTask::finalize(void)
+{
+    ZoneScopedN("cloud_renderer::finalize");
+
+    s_building = false;
+
+    // A build that started before a reset, or before a newer one, is dropped; the newer one brings the deck up to date
+    if(m_generation != s_generation) {
+        return;
+    }
+
+    // The build lands in the slot that is not on screen, so neither the mesh buffers
+    // nor the GL buffers are freed or overwritten while the previous deck is still drawn
+    s_front = 1 - s_front;
+    s_meshes[s_front] = std::move(m_mesh);
+
+    upload_mesh(s_meshes[s_front], s_front);
+}
+
+// Takes the snapshot and hands the build to the pool; the deck keeps drawing the previous mesh until it lands
+static void submit_build(void)
+{
     auto camera_position = camera_world_position();
-    auto origin = utils::to_fvec(camera::chunk);
-
     auto radius = std::min(static_cast<float>(constant::CHUNK_SIZE * camera::cloud_range.value()), CLOUD_MAX_RADIUS_BLOCKS);
-    s_radius = radius;
 
-    auto center = camera_position - s_wind_offset;
-    auto window = make_window(center, radius);
+    update_depth_range(radius);
 
+    CloudInput input {};
+    auto states = weather::states();
+    std::copy(states.begin(), states.end(), input.states.begin());
+    input.anchor = s_drift_anchor;
+    input.center = camera_position - s_wind_offset;
+    input.radius = radius;
+    input.light = fog::daylight.value();
+
+    s_groups.clear();
     collect_groups(camera_position.y());
 
     // Far decks first: clouds blend, so the order is what makes overlapping layers stack correctly
@@ -562,27 +802,22 @@ static void rebuild(void)
         return a.distance > b.distance;
     });
 
-    for(const auto& group : s_groups) {
-        auto offset = s_indices.size();
+    s_last_build_offset = s_wind_offset;
+    s_last_build_center = camera_position;
+    s_last_cloud_range = camera::cloud_range.value();
+    s_state_signature = state_signature();
+    s_build_cooldown = BUILD_COOLDOWN_SECONDS;
 
-        mesh_layer(group.realm, group.type, group.layer, window, origin);
+    s_generation += 1;
+    s_building = true;
 
-        auto count = s_indices.size() - offset;
-
-        if(count) {
-            CloudBatch batch {};
-            batch.offset = offset;
-            batch.count = count;
-
-            s_batches.push_back(batch);
-        }
-    }
-
-    upload_mesh();
+    threading::submit<CloudTask>(std::move(input), s_groups, std::move(s_meshes[1 - s_front]), s_generation);
 }
 
 void cloud_renderer::init(void)
 {
+    update_depth_range(0.0f);
+
     auto& clouds_binding = cvar::bind_var(s_clouds, "r_clouds");
     clouds_binding.set_help("Draw the cloud deck: 0 = off, 1 = on");
     clouds_binding.set_flags(FCVAR_ARCHIVE);
@@ -594,35 +829,46 @@ void cloud_renderer::init(void)
     auto cloud_ok = s_program.setup(cloud_id);
     vx::throw_if_not_fmt(cloud_ok, "{}: setup failed", cloud_id.full_string());
 
-    su_ViewProjection = s_program.add_uniform("u_ViewProjection");
+    su_CloudViewProjection = s_program.add_uniform("u_CloudViewProjection");
     su_CameraOrigin = s_program.add_uniform("u_CameraOrigin");
-    su_CameraPos = s_program.add_uniform("u_CameraPos");
+    su_DeckCenter = s_program.add_uniform("u_DeckCenter");
     su_WindOffset = s_program.add_uniform("u_WindOffset");
     su_FadeDistance = s_program.add_uniform("u_FadeDistance");
-
-    glGenVertexArrays(1, &s_vao);
-    glBindVertexArray(s_vao);
-
-    glGenBuffers(1, &s_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, s_vbo);
+    su_BlendRange = s_program.add_uniform("u_BlendRange");
+    su_DepthBias = s_program.add_uniform("u_DepthBias");
 
     auto stride = static_cast<GLsizei>(sizeof(CloudVertex));
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<const void*>(offsetof(CloudVertex, position)));
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<const void*>(offsetof(CloudVertex, color)));
-    glEnableVertexAttribArray(1);
 
-    glGenBuffers(1, &s_ibo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_ibo);
+    for(std::size_t i = 0; i < 2; ++i) {
+        glGenVertexArrays(1, &s_vao[i]);
+        glBindVertexArray(s_vao[i]);
+
+        glGenBuffers(1, &s_vbo[i]);
+        glBindBuffer(GL_ARRAY_BUFFER, s_vbo[i]);
+
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<const void*>(offsetof(CloudVertex, position)));
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<const void*>(offsetof(CloudVertex, color)));
+        glEnableVertexAttribArray(1);
+
+        glGenBuffers(1, &s_ibo[i]);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_ibo[i]);
+    }
 
     glBindVertexArray(0);
 }
 
 void cloud_renderer::shutdown(void)
 {
-    glDeleteBuffers(1, &s_ibo);
-    glDeleteBuffers(1, &s_vbo);
-    glDeleteVertexArrays(1, &s_vao);
+    // A build still in flight must not upload into buffers that are about to go away
+    s_generation += 1;
+    s_building = false;
+
+    for(std::size_t i = 0; i < 2; ++i) {
+        glDeleteBuffers(1, &s_ibo[i]);
+        glDeleteBuffers(1, &s_vbo[i]);
+        glDeleteVertexArrays(1, &s_vao[i]);
+    }
 
     s_program.destroy();
 }
@@ -641,32 +887,31 @@ void cloud_renderer::render(void)
 
     advance_wind_offset(state, realm);
 
-    if(needs_rebuild()) {
-        s_state_signature = state_signature();
-        s_last_camera_chunk = camera::chunk;
-        s_last_cloud_range = camera::cloud_range.value();
+    s_build_cooldown = std::max(s_build_cooldown - globals::window_frametime, 0.0f);
 
-        rebuild();
-
-        s_last_build_offset = s_wind_offset;
+    if(needs_rebuild() && !s_building && s_build_cooldown <= 0.0f) {
+        submit_build();
     }
 
-    if(s_batches.empty()) {
+    auto& mesh = s_meshes[s_front];
+
+    if(mesh.batches.empty()) {
         return;
     }
 
-    auto& vproj = camera::instance.view_projection();
+    auto cloud_projection = cloud_view_projection();
     auto camera_origin = utils::to_fvec(camera::chunk);
 
     vx::throw_if_not(s_program.update());
 
     glUseProgram(s_program.handle);
 
-    glUniformMatrix4fv(s_program.uniforms[su_ViewProjection].location, 1, GL_FALSE, vproj.data());
+    Eigen::Vector2f deck_center = mesh.center + Eigen::Vector2f(s_wind_offset.x(), s_wind_offset.z());
+
+    glUniformMatrix4fv(s_program.uniforms[su_CloudViewProjection].location, 1, GL_FALSE, cloud_projection.data());
     glUniform3fv(s_program.uniforms[su_CameraOrigin].location, 1, camera_origin.data());
-    glUniform3fv(s_program.uniforms[su_CameraPos].location, 1, camera_position.data());
+    glUniform2fv(s_program.uniforms[su_DeckCenter].location, 1, deck_center.data());
     glUniform3fv(s_program.uniforms[su_WindOffset].location, 1, s_wind_offset.data());
-    glUniform1f(s_program.uniforms[su_FadeDistance].location, s_radius);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
@@ -676,11 +921,16 @@ void cloud_renderer::render(void)
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-    glBindVertexArray(s_vao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_ibo);
+    glBindVertexArray(s_vao[s_front]);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_ibo[s_front]);
 
-    for(const auto& batch : s_batches) {
+    for(const auto& batch : mesh.batches) {
         auto offset = reinterpret_cast<const void*>(batch.offset * sizeof(std::uint32_t));
+
+        // Each ring has its own fade; only the one at the deck's edge dissolves
+        glUniform1f(s_program.uniforms[su_FadeDistance].location, batch.fade);
+        glUniform2f(s_program.uniforms[su_BlendRange].location, batch.blend_start, batch.blend_width);
+        glUniform1f(s_program.uniforms[su_DepthBias].location, batch.depth_bias);
         glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(batch.count), GL_UNSIGNED_INT, offset);
     }
 
@@ -689,14 +939,21 @@ void cloud_renderer::render(void)
     glDisable(GL_CULL_FACE);
     glDisable(GL_BLEND);
 
-    globals::num_draw_calls += s_batches.size();
-    globals::num_draw_vertices += s_vertices.size();
+    globals::num_draw_calls += mesh.batches.size();
+    globals::num_draw_vertices += mesh.vertices.size();
 }
 
 void cloud_renderer::reset(void)
 {
-    // The anchor belongs to the field the deck was built against; a fresh session brings a fresh field, so both are dropped
     s_anchored = false;
     s_wind_offset.setZero();
     s_last_build_offset.setZero();
+    s_generation += 1;
+    s_building = false;
+    s_front = 0;
+
+    s_meshes[0] = CloudMesh {};
+    s_meshes[1] = CloudMesh {};
+
+    upload_mesh(s_meshes[s_front], s_front);
 }

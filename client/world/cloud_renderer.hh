@@ -3,8 +3,11 @@
 
 namespace cloud_renderer
 {
-// The deck never reaches past this many chunks, whatever r_cloud_range says
-constexpr static unsigned MAX_RANGE_CHUNKS = 32;
+constexpr static unsigned MAX_RANGE_CHUNKS = 256;
+
+// The depth range the deck is drawn with; the composite compares the ground's own range against it
+extern float z_near;
+extern float z_far;
 } // namespace cloud_renderer
 
 namespace cloud_renderer

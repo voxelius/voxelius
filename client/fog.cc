@@ -41,18 +41,21 @@ void fog::update(void)
     auto target_color = skybox::sky_color;
     auto target_light = 1.0f;
 
-    if(auto def = fluid_registry::find_definition(camera::inside_fluid)) {
-        distance /= def->fog_density;
-        target_color = def->fog_color;
-    }
-
     // The storm is only visible where the front is, so take
     // the tint at the camera rather than from the realm as a whole
     auto world = utils::to_fvec(camera::chunk) + camera::local;
     auto blend = weather::blend_region(world.x(), world.y(), world.z(), 256.0f);
     auto weight = std::sqrt(std::clamp(blend.coverage, 0.0f, 1.0f));
 
-    target_color = target_color * (1.0f - weight) + blend.sky_tint * weight;
+    // Under a fluid the colour comes from the fluid itself; the weather may dim it, but the sky tint would erase it
+    if(auto def = fluid_registry::find_definition(camera::inside_fluid)) {
+        distance /= def->fog_density;
+        target_color = def->fog_color;
+    }
+    else {
+        target_color = target_color * (1.0f - weight) + blend.sky_tint * weight;
+    }
+
     target_light = 1.0f * (1.0f - weight) + blend.light_scale * weight;
 
     // The day dims the weather tint too, not only the clear sky it replaces

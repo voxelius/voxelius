@@ -129,8 +129,8 @@ float coverage(biome_realm realm, float x, float z);
 
 namespace weather
 {
-float type_weight_in_field(biome_realm realm, weather_type_id type, float fx, float fz);
-float coverage_in_field(biome_realm realm, weather_type_id type, float fx, float fz);
+float type_weight_in_field(const WeatherRealmState& state, biome_realm realm, weather_type_id type, float fx, float fz);
+float coverage_in_field(const WeatherRealmState& state, biome_realm realm, weather_type_id type, float fx, float fz);
 } // namespace weather
 
 namespace weather

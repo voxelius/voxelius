@@ -37,9 +37,8 @@ static std::uint32_t lattice_hash(std::int32_t x, std::int32_t z, std::uint32_t 
 // cell (the cloud renderer) uses them so that its sample points do
 // not depend on how far the field has drifted: subtracting
 // two large world-space floats rounds differently every time
-static float type_noise_in_field(biome_realm realm, float fx, float fz)
+static float type_noise_in_field(const WeatherRealmState& state, float fx, float fz)
 {
-    auto& state = weather::state(realm);
     auto scale = std::max(state.types.scale, 1.0f);
 
     return weather::noise_at(fx / scale, fz / scale, state.types.seed);
@@ -49,7 +48,7 @@ static float type_noise(biome_realm realm, float x, float z)
 {
     auto& state = weather::state(realm);
 
-    return type_noise_in_field(realm, x - state.types.drift.x(), z - state.types.drift.y());
+    return type_noise_in_field(state, x - state.types.drift.x(), z - state.types.drift.y());
 }
 
 static float interval_weight(biome_realm realm, weather_type_id type, float roll)
@@ -70,9 +69,8 @@ static float interval_weight(biome_realm realm, weather_type_id type, float roll
     return fade_in * fade_out;
 }
 
-static float detail_coverage_in_field(biome_realm realm, float intensity, float fx, float fz)
+static float detail_coverage_in_field(const WeatherRealmState& state, float intensity, float fx, float fz)
 {
-    auto& state = weather::state(realm);
     auto scale = std::max(state.detail.scale, 1.0f);
     auto value = weather::noise_at(fx / scale, fz / scale, state.detail.seed);
 
@@ -86,7 +84,7 @@ static float detail_coverage(biome_realm realm, float intensity, float x, float 
 {
     auto& state = weather::state(realm);
 
-    return detail_coverage_in_field(realm, intensity, x - state.detail.drift.x(), z - state.detail.drift.y());
+    return detail_coverage_in_field(state, intensity, x - state.detail.drift.x(), z - state.detail.drift.y());
 }
 
 static WeatherBlend blend_at_height(float x, float y, float z)
@@ -295,13 +293,13 @@ float weather::type_weight(biome_realm realm, weather_type_id type, float x, flo
     return interval_weight(realm, type, type_noise(realm, x, z));
 }
 
-float weather::type_weight_in_field(biome_realm realm, weather_type_id type, float fx, float fz)
+float weather::type_weight_in_field(const WeatherRealmState& state, biome_realm realm, weather_type_id type, float fx, float fz)
 {
     if(realm >= BIOME_REALM_COUNT) {
         return 0.0f;
     }
 
-    return interval_weight(realm, type, type_noise_in_field(realm, fx, fz));
+    return interval_weight(realm, type, type_noise_in_field(state, fx, fz));
 }
 
 float weather::coverage_of(biome_realm realm, weather_type_id type, float x, float z)
@@ -321,7 +319,7 @@ float weather::coverage_of(biome_realm realm, weather_type_id type, float x, flo
     return weight * detail_coverage(realm, def->intensity, x, z);
 }
 
-float weather::coverage_in_field(biome_realm realm, weather_type_id type, float fx, float fz)
+float weather::coverage_in_field(const WeatherRealmState& state, biome_realm realm, weather_type_id type, float fx, float fz)
 {
     auto def = weather_registry::find_definition(type);
 
@@ -329,13 +327,13 @@ float weather::coverage_in_field(biome_realm realm, weather_type_id type, float 
         return 0.0f;
     }
 
-    auto weight = weather::type_weight_in_field(realm, type, fx, fz);
+    auto weight = weather::type_weight_in_field(state, realm, type, fx, fz);
 
     if(weight <= 0.0f) {
         return 0.0f;
     }
 
-    return weight * detail_coverage_in_field(realm, def->intensity, fx, fz);
+    return weight * detail_coverage_in_field(state, def->intensity, fx, fz);
 }
 
 float weather::coverage(biome_realm realm, float x, float z)

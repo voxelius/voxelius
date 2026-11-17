@@ -204,7 +204,7 @@ quirk). Never restate what the code next to it does.
   protocol), or states an invariant. Drop a comment that only repeats the name.
 - Write comments approximately in ASD-STE100 Simplified Technical English: short sentences, one statement per sentence, active voice,
   present tense, common words with one meaning each.
-- Use `//` in C++, `--` in Lua and `#` in CMake and shell. Start with a capital letter and leave off the trailing period.
+- Use `//` in C++ and GLSL, `--` in Lua and `#` in CMake and shell. Start with a capital letter and leave off the trailing period.
 - A short note about a single line goes after it, if the line still fits in 140 columns.
 - Wrap a longer comment at clause boundaries. Balance the lines: match the width of the code line the comment belongs to, or split the
   text into equal parts when there is no such line or it is short. The last line must not be shorter than the line before it.

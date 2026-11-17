@@ -96,21 +96,21 @@ A world that has never been saved has no such keys, and the server draws its see
 | `shadow`, `lit` | gray | Colour of the underside and of the top |
 | `seed` | `0` | Changes the noise pattern |
 
-Layers are not planes: the client samples the noise field on an 8-block grid and
-turns each cell whose density clears the layer's coverage into a column of
-4-block-tall voxels, one or more of them. The voxel is the same size whatever
-`r_cloud_range` says, so a longer range extends the deck outwards instead of
-growing the blocks under the player; the cost grows with the square of the range,
-which is why the deck stops at 32 chunks even when the setting asks for more. A
-column stays inside the layer's
-slab, from `height` up to `height + thickness`, and its underside steps up into
-the volume here and there, so the deck is a solid body with a stepped underside
-and a bumpy top. Every column also carries its own slightly varied shade, a few
-percent off its neighbours, so a dense deck reads as blocks instead of one flat
-sheet. Only the faces the neighbours leave exposed are meshed, so a dense deck
-costs less than its area. The deck dissolves into the sky at its own edge instead
-of ending on a rim, is drawn over the translucent and fluid passes, and does not
-use the terrain fog, which would wash it out long before it is seen.
+Layers are not planes: the client samples the noise field on the grid of the ring
+it is meshing and turns each cell whose density clears the layer's coverage into a
+column of whole voxels, one or more of them. The deck is meshed in rings that tile
+the range: 8-block cells out to 32 chunks, 32-block cells out to 96, and 128-block
+cells out to 256, so a longer range extends the deck outwards instead of growing
+the blocks under the player. Rings overlap by one cell, so the seam between two of
+them never opens. A column stays inside the layer's slab, from `height` up to
+`height + thickness`, and its underside steps up into the volume here and there,
+so the deck is a solid body with a stepped underside and a bumpy top. Every
+column also carries its own slightly varied shade, a few percent off its
+neighbours, so a dense deck reads as blocks instead of one flat sheet. Only the
+faces the neighbours leave exposed are meshed, so a dense deck costs less than its
+area. The deck dissolves into the sky at its own edge instead of ending on a rim,
+reaches the composite as one more depth-sorted layer, and does not use the terrain
+fog, which would wash it out long before it is seen.
 
 ## Precipitation
 

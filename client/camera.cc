@@ -19,9 +19,8 @@
 #include "client/gui/container.hh"
 #include "client/gui/slider.hh"
 #include "client/settings.hh"
-#include "client/world/cloud_renderer.hh"
 
-// Below this horizontal speed the loader ignores the direction of travel.
+// Below this horizontal speed the loader ignores the direction of travel
 constexpr static float MOVING_SPEED = 1.0f;
 
 cvar::Number<float> camera::vertical_fov { 70.0f, 45.0f, 110.0f };
@@ -40,6 +39,9 @@ Eigen::Vector3f camera::right;
 Eigen::Vector3f camera::up;
 Eigen::Vector3f camera::local;
 ChunkPos camera::chunk;
+
+float camera::z_near = 0.01f;
+float camera::z_far = 1.0f;
 
 block_id_type camera::inside_block;
 fluid_id_type camera::inside_fluid;
@@ -77,8 +79,8 @@ Eigen::Vector3f camera::lookahead(float chunks)
     auto direction = Eigen::Vector2f(velocity.value.x(), velocity.value.z());
     auto speed = direction.norm();
 
-    // Standing still has to load what is around the player, not what happens
-    // to be in front of the camera: the two differ right after a spawn.
+    // Standing still has to load what is around the player, not what
+    // happens to be in front of the camera: the two differ right after a spawn
     if(speed <= MOVING_SPEED) {
         return Eigen::Vector3f::Zero();
     }
@@ -114,6 +116,9 @@ void camera::init(void)
     s_cloud_range_gui.bind("r_cloud_range");
     settings::video.add_child(s_cloud_range_gui, 4);
 
+    camera::z_near = 0.01f;
+    camera::z_far = 1.25f * static_cast<float>(constant::CHUNK_SIZE * view_distance.value());
+
     reset_camera();
 }
 
@@ -131,13 +136,10 @@ void camera::update(void)
     camera::chunk = transform.chunk;
     camera::local = transform.local + head.offset;
 
-    auto z_near = 0.01f;
-    // The deck stops at MAX_RANGE_CHUNKS, so the far plane follows that, not the setting
-    auto cloud_chunks = std::min(cloud_range.value(), cloud_renderer::MAX_RANGE_CHUNKS);
-    auto max_distance = std::max<unsigned>(view_distance.value(), cloud_chunks);
-    auto z_far = 1.45f * static_cast<float>(constant::CHUNK_SIZE * max_distance);
+    camera::z_near = 0.01f;
+    camera::z_far = 1.25f * static_cast<float>(constant::CHUNK_SIZE * view_distance.value());
 
-    instance.set_perspective(utils::radians(vertical_fov.value()), globals::aspect, z_near, z_far);
+    instance.set_perspective(utils::radians(vertical_fov.value()), globals::aspect, camera::z_near, camera::z_far);
     instance.set_view(camera::local, camera::angles);
     instance.update();
 
