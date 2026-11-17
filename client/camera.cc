@@ -19,15 +19,18 @@
 #include "client/gui/container.hh"
 #include "client/gui/slider.hh"
 #include "client/settings.hh"
+#include "client/world/cloud_renderer.hh"
 
 // Below this horizontal speed the loader ignores the direction of travel.
 constexpr static float MOVING_SPEED = 1.0f;
 
 cvar::Number<float> camera::vertical_fov { 70.0f, 45.0f, 110.0f };
 cvar::Number<unsigned> camera::view_distance { 8, 1, 32 };
+cvar::Number<unsigned> camera::cloud_range { 16, 8, 256 };
 
 static gui::SliderFloat s_vertical_fov_gui;
 static gui::SliderUnsigned s_view_distance_gui;
+static gui::SliderUnsigned s_cloud_range_gui;
 
 Camera camera::instance;
 
@@ -103,6 +106,14 @@ void camera::init(void)
     s_view_distance_gui.bind("r_view_distance");
     settings::video.add_child(s_view_distance_gui, 0);
 
+    auto& cloud_range_binding = cvar::bind_var(cloud_range, "r_cloud_range");
+    cloud_range_binding.set_help("Cloud render range, in chunks");
+    cloud_range_binding.set_flags(FCVAR_ARCHIVE);
+
+    s_cloud_range_gui.set_range(8, 256);
+    s_cloud_range_gui.bind("r_cloud_range");
+    settings::video.add_child(s_cloud_range_gui, 4);
+
     reset_camera();
 }
 
@@ -121,7 +132,10 @@ void camera::update(void)
     camera::local = transform.local + head.offset;
 
     auto z_near = 0.01f;
-    auto z_far = 1.25f * static_cast<float>(constant::CHUNK_SIZE * view_distance.value());
+    // The deck stops at MAX_RANGE_CHUNKS, so the far plane follows that, not the setting
+    auto cloud_chunks = std::min(cloud_range.value(), cloud_renderer::MAX_RANGE_CHUNKS);
+    auto max_distance = std::max<unsigned>(view_distance.value(), cloud_chunks);
+    auto z_far = 1.45f * static_cast<float>(constant::CHUNK_SIZE * max_distance);
 
     instance.set_perspective(utils::radians(vertical_fov.value()), globals::aspect, z_near, z_far);
     instance.set_view(camera::local, camera::angles);

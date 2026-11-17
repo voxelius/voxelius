@@ -19,6 +19,7 @@
 #include "client/shader_program.hh"
 #include "client/world/chunk_renderer.hh"
 #include "client/world/chunk_vbo.hh"
+#include "client/world/cloud_renderer.hh"
 #include "client/world/outline.hh"
 
 struct LayerTarget final {
@@ -28,6 +29,7 @@ struct LayerTarget final {
 };
 
 static LayerTarget s_diffuse;
+static LayerTarget s_clouds;
 static LayerTarget s_alpha;
 static LayerTarget s_fluid;
 
@@ -41,6 +43,7 @@ static std::size_t su_AlphaColor;
 static std::size_t su_AlphaDepth;
 static std::size_t su_FluidColor;
 static std::size_t su_FluidDepth;
+static std::size_t su_CloudColor;
 
 static cvar::Number<int> s_head_pixel_size { 1, 1, 4 };
 static gui::SliderInt s_pixel_size_gui;
@@ -99,6 +102,7 @@ static void update_framebuffer(int new_width, int new_height)
     s_scaled_height = new_height / pixel_size;
 
     create_or_resize_layer(s_diffuse, s_scaled_width, s_scaled_height);
+    create_or_resize_layer(s_clouds, s_scaled_width, s_scaled_height);
     create_or_resize_layer(s_alpha, s_scaled_width, s_scaled_height);
     create_or_resize_layer(s_fluid, s_scaled_width, s_scaled_height);
 
@@ -151,6 +155,20 @@ static void begin_translucent(LayerTarget& layer)
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
+static void begin_cloud_layer(void)
+{
+    // Clouds get a layer of their own so the composite can lay them over
+    // the translucent and fluid passes instead of baking them into the
+    // opaque one. The layer borrows the terrain depth, so the ground hides them
+    blit_depth(s_diffuse, s_clouds);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, s_clouds.fbo);
+    glViewport(0, 0, s_scaled_width, s_scaled_height);
+
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
+
 static void composite_layers(void)
 {
     vx::throw_if_not(s_transparency.update());
@@ -188,6 +206,10 @@ static void composite_layers(void)
     glActiveTexture(GL_TEXTURE5);
     glBindTexture(GL_TEXTURE_2D, s_fluid.depth);
     glUniform1i(s_transparency.uniforms[su_FluidDepth].location, 5);
+
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_2D, s_clouds.color);
+    glUniform1i(s_transparency.uniforms[su_CloudColor].location, 6);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -251,9 +273,11 @@ void head::init(void)
     su_AlphaDepth = s_transparency.add_uniform("u_AlphaDepth");
     su_FluidColor = s_transparency.add_uniform("u_FluidColor");
     su_FluidDepth = s_transparency.add_uniform("u_FluidDepth");
+    su_CloudColor = s_transparency.add_uniform("u_CloudColor");
 
     chunk_vbo::init();
     chunk_renderer::init();
+    cloud_renderer::init();
     outline::init();
 
     SDL_ShowWindow(globals::window);
@@ -269,12 +293,14 @@ void head::init_late(void)
 void head::shutdown(void)
 {
     outline::shutdown();
+    cloud_renderer::shutdown();
     chunk_renderer::shutdown();
     chunk_vbo::shutdown();
 
     s_transparency.destroy();
 
     destroy_layer(s_diffuse);
+    destroy_layer(s_clouds);
     destroy_layer(s_alpha);
     destroy_layer(s_fluid);
 
@@ -327,7 +353,11 @@ void head::render(void)
 
     client_game::render();
 
+    begin_cloud_layer();
+    cloud_renderer::render();
+
     begin_translucent(s_alpha);
+
     chunk_renderer::render_alpha();
 
     begin_translucent(s_fluid);

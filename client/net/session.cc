@@ -22,8 +22,11 @@
 #include "shared/world/fluid_registry.hh"
 #include "shared/world/lighting.hh"
 #include "shared/world/tint_registry.hh"
+#include "shared/world/weather.hh"
+#include "shared/world/weather_registry.hh"
 #include "shared/world/world.hh"
 
+#include "client/fog.hh"
 #include "client/globals.hh"
 #include "client/gui/container.hh"
 #include "client/gui/text_box.hh"
@@ -31,6 +34,7 @@
 #include "client/net/replication.hh"
 #include "client/settings.hh"
 #include "client/video.hh"
+#include "client/world/cloud_renderer.hh"
 
 constexpr static std::string_view KEYPAIR_PATH = "keypair.dat";
 
@@ -76,6 +80,9 @@ static void handle_disconnect(std::uint32_t reason)
     globals::registry.clear();
     globals::player = entt::null;
     biome_map::purge();
+    weather::reset();
+    fog::reset();
+    cloud_renderer::reset();
     world::purge();
     lighting::reset();
 
@@ -97,6 +104,7 @@ static void on_host_connect(const HostConnectEvent& event)
     request.fluids_hash = fluid_registry::checksum();
     request.tints_hash = tint_registry::checksum();
     request.ents_hash = class_registry::checksum();
+    request.weather_hash = weather_registry::checksum();
 
     auto desired_username = s_desired_username.value();
 

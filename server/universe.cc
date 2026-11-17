@@ -6,7 +6,6 @@
 #include "core/config/map.hh"
 #include "core/config/ref.hh"
 #include "core/core.hh"
-#include "core/utils/epoch.hh"
 
 #include "server/globals.hh"
 
@@ -17,6 +16,16 @@ static std::filesystem::path s_conf_path;
 
 static config::Map s_world_config;
 static config::Ref<std::uint64_t> s_seed { 0 };
+
+config::Map& universe::world_config(void)
+{
+    return s_world_config;
+}
+
+std::uint64_t universe::seed(void)
+{
+    return s_seed.value();
+}
 
 void universe::init(void)
 {
@@ -71,9 +80,4 @@ const std::filesystem::path& universe::chunk_dir(void)
 const std::filesystem::path& universe::entity_dir(void)
 {
     return s_entity_dir;
-}
-
-std::uint64_t universe::seed(void)
-{
-    return s_seed.value();
 }

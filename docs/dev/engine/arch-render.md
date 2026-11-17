@@ -18,17 +18,30 @@ A `ShaderProgram` only recompiles when a variant value actually changes. This la
 
 The client renders each frame at an internal, pixel-scaled resolution, then upscales the result to the window size. The pixel scale is the `r_pixel_size` cvar. It gives the game its blocky, low-resolution look, regardless of the window's real size.
 
-A frame renders into three separate layers, each with its own color and depth target:
+A frame renders into four separate layers, each with its own color and depth target:
 
 - **Diffuse** - opaque world geometry and the game's own UI elements (crosshair, block outlines). This layer writes both color and depth.
+- **Clouds** - the cloud decks, meshed as voxel volumes that borrow the diffuse depth so the ground hides them.
 - **Alpha** - translucent world geometry, such as leaves and glass.
 - **Fluid** - fluid surfaces, such as water and lava.
 
-The alpha and fluid layers each reuse the diffuse layer's depth buffer for depth testing. The client copies that depth buffer in before each layer renders. This way, translucent and fluid geometry test correctly against opaque geometry. Each layer still writes into its own separate color and depth targets, instead of overwriting the diffuse layer.
+The cloud, alpha and fluid layers each reuse the diffuse layer's depth buffer for depth testing. The client copies that depth buffer in before each layer renders. This way, translucent and fluid geometry test correctly against opaque geometry. Each layer still writes into its own separate color and depth targets, instead of overwriting the diffuse layer.
 
-A composite shader then draws one full-screen triangle. It reads all three layers' color and depth textures, and blends them into a single image. The client blits that image onto the real window-sized backbuffer. It uses nearest-neighbor filtering to keep the pixelated look.
+A composite shader then draws one full-screen triangle. It reads every layer's color texture, sorts the translucent and fluid layers that touched a pixel by depth and blends them from the farthest to the nearest, then lays the cloud layer over the result. The client blits that image onto the real window-sized backbuffer. It uses nearest-neighbor filtering to keep the pixelated look. The compose target is 8-bit, so the shader adds half a level of noise to its output: without it a slow fade, such as the cloud deck thinning into the fog, lands on the 255 available levels and breaks into bands, and because each channel rounds at its own step those bands pick up a green or magenta tint instead of reading as a brightness ramp.
 
 ImGui renders last, straight onto the default framebuffer, so its UI always draws on top of the game world. The client then presents the frame with a window buffer swap.
+
+## Fog and sky
+
+The sky is not geometry: the diffuse layer is cleared with the fog colour, and the terrain fades into the same colour, so the skyline and the haze always match. That one colour is the weather tint at the camera, eased over a few frames so walking into a front does not pop, and `r_daylight` multiplies the result, so dusk dims a storm as much as it dims a clear sky. See the [weather API](../modding/api-weather.md) for the tint each type carries.
+
+## Clouds and precipitation
+
+The cloud deck comes from the weather state of each realm. The client walks the noise field of every active layer on an 8-block grid and turns each cell that survives the density check into a column of 4-block-tall voxels, one or more of them. A column stays inside the layer's slab and only steps up into it, so stacked layers never fight over the same plane. The client meshes only the faces the neighbours leave exposed, into one vertex and index buffer, and a deck goes out as one `glDrawElements`. The voxel size does not depend on `r_cloud_range`, so a longer range extends the deck outwards instead of growing the blocks; that cost grows with the square of the range, which is why the renderer stops at 32 chunks even when `r_cloud_range` asks for more, and the far plane follows that cap rather than the setting. The field is sampled in the frame the deck is built in and the deck's wind offset is the field's own drift, so the cubes keep their shape while the front travels and a rebuild only changes the cells that slid in at the window's edge.
+
+The vertex shader shades nothing per fragment: the mesher bakes the face colour into the vertices, bright on top, dark underneath and shaded per direction on the sides, and each column carries its own few percent of brightness variation, so the deck reads as blocks rather than one flat sheet. The same vertex shader dissolves the deck into the sky over the outer `r_cloud_range` rather than over the terrain fog, which would wash a deck that hangs a hundred blocks up out before it is ever seen. The deck is opaque where the field is dense and writes depth, so there is no overdraw to pay for and no blending order to get wrong; only its dissolving edge is translucent. The cloud layer is drawn over the translucent and fluid passes. See the [weather API](../modding/api-weather.md) for the data side.
+
+There is no precipitation pass yet: a weather type can declare rain or snow, and the fields travel with the mod data, but nothing draws them. The next pass over weather adds the local precipitation buffer the API describes.
 
 ## Outlines
 

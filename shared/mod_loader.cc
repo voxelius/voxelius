@@ -12,6 +12,7 @@
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
 #include "shared/world/tint_registry.hh"
+#include "shared/world/weather_registry.hh"
 
 static std::vector<ModContext> s_mods;
 
@@ -177,6 +178,7 @@ void mod_loader::init(void)
         fluid_registry::commit(ctx);
         block_registry::commit(ctx);
         biome_registry::commit(ctx);
+        weather_registry::commit(ctx);
         class_registry::commit(ctx);
     }
 
@@ -194,6 +196,7 @@ void mod_loader::shutdown(void)
     s_mods.clear();
 
     class_registry::purge();
+    weather_registry::purge();
     biome_registry::purge();
     block_registry::purge();
     fluid_registry::purge();

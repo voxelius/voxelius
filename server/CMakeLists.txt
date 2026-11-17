@@ -57,6 +57,8 @@ add_executable(vserver
     "${CMAKE_CURRENT_LIST_DIR}/world/chunk_unloader.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/worldgen.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/worldgen.hh"
+    "${CMAKE_CURRENT_LIST_DIR}/world/weather_sim.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/world/weather_sim.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/zvox_file.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/zvox_file.hh"
     "${CMAKE_CURRENT_LIST_DIR}/constant.hh"

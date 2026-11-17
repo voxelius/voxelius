@@ -11,6 +11,7 @@
 #include "shared/cvar/commands.hh"
 #include "shared/game.hh"
 #include "shared/splash.hh"
+#include "shared/world/weather.hh"
 
 #include "client/camera.hh"
 #include "client/console.hh"
@@ -141,6 +142,10 @@ static void zoned_update(void)
     chunk_mesher::update();
 
     camera::update();
+
+    // The snapshot only says where the field started; the
+    // drift is advanced here, every frame, so it never steps
+    weather::advance(globals::window_frametime);
 
     fog::update();
 

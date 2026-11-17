@@ -99,6 +99,7 @@ nav:
         - Fluids: dev/modding/api-fluids.md
         - Blocks: dev/modding/api-blocks.md
         - Biomes: dev/modding/api-biomes.md
+        - Weather: dev/modding/api-weather.md
         - Entities: dev/modding/api-entities.md
         - World: dev/modding/api-world.md
       - File Formats:

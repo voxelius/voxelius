@@ -11,12 +11,15 @@
 #include "shared/net/packet_auth.hh"
 #include "shared/net/packet_entity.hh"
 #include "shared/net/packet_session.hh"
+#include "shared/net/packet_weather.hh"
 #include "shared/net/protocol.hh"
 #include "shared/utils/entity.hh"
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
 #include "shared/world/tint_registry.hh"
+#include "shared/world/weather.hh"
+#include "shared/world/weather_registry.hh"
 
 #include "server/globals.hh"
 #include "server/net/host.hh"
@@ -114,6 +117,7 @@ static void on_auth_request(const packet::Auth_Request& packet)
     checksums_match = checksums_match && packet.fluids_hash == fluid_registry::checksum();
     checksums_match = checksums_match && packet.tints_hash == tint_registry::checksum();
     checksums_match = checksums_match && packet.ents_hash == class_registry::checksum();
+    checksums_match = checksums_match && packet.weather_hash == weather_registry::checksum();
 
     if(!checksums_match) {
         packet::Session_Disconnect response {};
@@ -192,6 +196,10 @@ static void on_auth_response(const packet::Auth_Response& packet)
     protocol::send(response, packet.peer);
 
     replication::synchronize(session);
+
+    packet::Weather_RealmState weather_state {};
+    weather::fill_packet(weather_state);
+    protocol::send(weather_state, packet.peer);
 
     auto bpos = BlockPos::Zero(); // TODO: spawn positions?
     auto player = utils::spawn_player(bpos);

@@ -2,18 +2,25 @@
 
 #include "client/net/receive.hh"
 
+#include "core/cvar/context.hh"
+#include "core/cvar/host.hh"
 #include "core/msg/log.hh"
 
 #include "shared/entity/class_registry.hh"
 #include "shared/entity/component_map.hh"
 #include "shared/net/packet_entity.hh"
 #include "shared/net/packet_session.hh"
+#include "shared/net/packet_weather.hh"
 #include "shared/net/packet_world.hh"
 #include "shared/net/protocol.hh"
+#include "shared/utils/coord.hh"
 #include "shared/utils/entity.hh"
 #include "shared/world/biome_map.hh"
+#include "shared/world/weather.hh"
+#include "shared/world/weather_registry.hh"
 #include "shared/world/world.hh"
 
+#include "client/camera.hh"
 #include "client/globals.hh"
 #include "client/net/session.hh"
 #include "client/world/chunk_visibility.hh"
@@ -147,6 +154,37 @@ static void on_world_timings(const packet::World_Timings& packet)
     globals::current_tick = packet.current_tick;
 }
 
+static void on_world_weather(const packet::Weather_RealmState& packet)
+{
+    weather::apply_packet(packet);
+}
+
+static cvar::status cmd_weather_status(const cvar::Context& ctx, std::span<const std::string_view> args)
+{
+    auto world = utils::to_fvec(camera::chunk) + camera::local;
+
+    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
+        auto realm = static_cast<biome_realm>(i);
+        auto& state = weather::state(realm);
+
+        auto type = weather::type_at(realm, world.x(), world.z());
+        auto coverage = weather::coverage(realm, world.x(), world.z());
+
+        std::string_view description = "none";
+
+        if(auto name = weather_registry::name_of(type)) {
+            description = name->full_string();
+        }
+
+        auto types = std::format("({:.0f}, {:.0f})/{}", state.types.drift.x(), state.types.drift.y(), state.types.scale);
+        auto detail = std::format("({:.0f}, {:.0f})/{}", state.detail.drift.x(), state.detail.drift.y(), state.detail.scale);
+
+        msg::log_info("weather[{}]: type={} coverage={:.2f} types={} detail={}", i, description, coverage, types, detail);
+    }
+
+    return cvar::status::OK;
+}
+
 static void on_session_state(const SessionStateEvent& event)
 {
     if(SESSION_DISCONNECTED == event.state()) {
@@ -166,6 +204,11 @@ void receive::init(void)
     globals::dispatcher.sink<packet::World_Light>().connect<&on_world_light>();
     globals::dispatcher.sink<packet::World_SetBlock>().connect<&on_world_set_block>();
     globals::dispatcher.sink<packet::World_Timings>().connect<&on_world_timings>();
+    globals::dispatcher.sink<packet::Weather_RealmState>().connect<&on_world_weather>();
 
     globals::dispatcher.sink<SessionStateEvent>().connect<&on_session_state>();
+
+    auto& status_binding = cvar::bind_cmd("weather_status");
+    status_binding.set_help("Print the weather state the client currently has");
+    status_binding.connect<&cmd_weather_status>();
 }

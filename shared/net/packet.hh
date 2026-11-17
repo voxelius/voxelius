@@ -33,6 +33,7 @@ enum packet_type : std::uint16_t {
     CVAR_COMMAND,
     MSG_LOG,
     WORLD_CHUNK_LIGHT,
+    WORLD_WEATHER,
 };
 } // namespace packet
 
@@ -73,6 +74,7 @@ struct World_Biomes;
 struct World_Light;
 struct World_SetBlock;
 struct World_Timings;
+struct Weather_RealmState;
 } // namespace packet
 
 namespace packet

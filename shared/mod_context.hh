@@ -6,6 +6,7 @@
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
 #include "shared/world/tint_registry.hh"
+#include "shared/world/weather.hh"
 
 namespace config
 {
@@ -97,6 +98,12 @@ public:
     std::vector<FluidDefinition> take_fluids(void);
     vx::hash_map<Identifier, fluid_id_type> take_fluid_names(void);
 
+    weather_type_id find_weather(const Identifier& name) const;
+    weather_type_id register_weather(const Identifier& name, WeatherTypeDefinition def);
+
+    std::vector<WeatherTypeDefinition> take_weathers(void);
+    vx::hash_map<Identifier, weather_type_id> take_weather_names(void);
+
     tint_id_type find_tint(const Identifier& name) const;
     tint_id_type register_tint(const Identifier& name, TintDefinition def);
 
@@ -126,6 +133,9 @@ private:
 
     std::vector<TintDefinition> m_tints;
     vx::hash_map<Identifier, tint_id_type> m_tint_names;
+
+    std::vector<WeatherTypeDefinition> m_weathers;
+    vx::hash_map<Identifier, weather_type_id> m_weather_names;
 
     std::vector<ClassDefinition> m_classes;
     vx::hash_map<Identifier, class_id_type> m_class_names;

@@ -115,7 +115,8 @@ differently.
 - Test a bitmask against zero explicitly: `if(0 == (flags & FLAG))`, not `if(!(flags & FLAG))`.
 - Use a ternary only for a short pick between constants, written `cond ? a : b` with spaces around both operators. When either side
   holds a call, a dereference or another non-trivial operand, write `if`/`else`.
-- Never write a standalone `++x` or `x--` statement. Outside a `for` header write `x += 1` or `x -= 1`; an iterator advances with
+- Never write a standalone `++x` or `x--` statement. Advance a counter whose name is longer than one character with `x += 1` or
+  `x -= 1` (`dz`, `index`); a one-letter counter (`i`, `z`) may use `++` or `--` in a `for` header. An iterator advances with
   `std::next(it)`.
 - A `for` header has all three parts or none (`for(;;)`). A loop that fills two of them is a `while`, with the step at the end of the
   body.
@@ -190,9 +191,31 @@ Every translation unit keeps the same top-level order:
 
 ### Comments
 
-- Use `//`. Comment sparingly and explain the reason that the code does not show. Do not restate what the code does.
-- An empty body is marked `// empty`.
-- Keep the tone of the comments around you. Jokes and profanity in the existing comments are part of the history of the project.
+Code documents itself through names. A comment is worth having only when it says something the code cannot: why it is done this way and
+not the obvious way, an invariant (locking, ownership, units, range), or an outside requirement (a file format, a protocol, a hardware
+quirk). Never restate what the code next to it does.
+
+- Before you write a comment, try to make it unnecessary: rename (`free_slots` instead of `slots // A set bit means free`), move the code
+  into a function whose name says what it does, or turn the claim into a `static_assert`.
+- Do not describe the algorithm of a function above it. A precondition or an ownership rule that every caller must respect stays at the
+  declaration: in the header for a public function, at the definition for a static one. A guarantee that only some callers rely on goes at
+  those call sites, as the reason the caller is correct.
+- A constant or a field gets a comment only when it adds units or meaning that the name lacks, expands an outside name (a file format, a
+  protocol), or states an invariant. Drop a comment that only repeats the name.
+- Write comments approximately in ASD-STE100 Simplified Technical English: short sentences, one statement per sentence, active voice,
+  present tense, common words with one meaning each.
+- Use `//` in C++, `--` in Lua and `#` in CMake and shell. Start with a capital letter and leave off the trailing period.
+- A short note about a single line goes after it, if the line still fits in 140 columns.
+- Wrap a longer comment at clause boundaries. Balance the lines: match the width of the code line the comment belongs to, or split the
+  text into equal parts when there is no such line or it is short. The last line must not be shorter than the line before it.
+- Tagged comments:
+  - `TODO:` is work that nobody has planned yet.
+  - `UNDONE:` is work whose approach is known but not done.
+  - `FIXME:` is either of those where the current behavior is a bug.
+  - `NOTE:` is a remark worth the attention of the reader. Repeat it to raise the weight: `NOTENOTE:` marks something that the surrounding
+    code cannot be understood without.
+- An intentionally empty body holds `// empty`.
+- Do not leave commented-out code. The jokes and rants already in comments are part of the history of the project; leave them alone.
 
 ## Repository map
 

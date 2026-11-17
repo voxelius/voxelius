@@ -13,6 +13,7 @@ namespace camera
 {
 extern cvar::Number<float> vertical_fov;
 extern cvar::Number<unsigned> view_distance;
+extern cvar::Number<unsigned> cloud_range;
 } // namespace camera
 
 namespace camera

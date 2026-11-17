@@ -11,6 +11,7 @@
 #include "shared/world/lighting.hh"
 
 #include "server/system/pmove_validator.hh"
+#include "server/world/weather_sim.hh"
 
 void server_game::init(void)
 {
@@ -24,11 +25,14 @@ void server_game::init(void)
 void server_game::init_late(void)
 {
     utils::spawn(Identifier::from_string("builtin:test_entity"));
+
+    // Mods and the universe seed are both ready by this point.
+    weather_sim::init();
 }
 
 void server_game::shutdown(void)
 {
-    // empty
+    weather_sim::shutdown();
 }
 
 void server_game::fixed_update(void)
@@ -43,4 +47,5 @@ void server_game::fixed_update_late(void)
     ZoneScoped;
 
     pmove_validator::fixed_update_late();
+    weather_sim::fixed_update();
 }

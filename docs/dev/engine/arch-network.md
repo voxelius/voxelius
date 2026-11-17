@@ -111,6 +111,10 @@ Once the server admits a client, the client asks for chunks and reports block an
 
 The client sends `RequestChunk` for any chunk position it needs. The server answers with `ChunkBlocks`, holding that chunk's full block data. The server also sends `ChunkBlocks` on its own initiative, as a full resync.
 
+##### Weather
+
+Weather is a realm-wide state rather than a stream of entities. The server drifts two noise grids per realm (one picks the type, one the local strength) and sends `Weather_RealmState` to every admitted client once a second and once more right after admission. The packet carries four fixed records of seeds and drift, so there is nothing to delta. Both sides also advance the drift themselves every frame, so the packet only anchors the field: the client keeps its own continuous drift and snaps to the packet only when the two disagree by more than a chunk, which is what a forced front looks like. The type definitions themselves travel as part of the mod content and are covered by the login checksum.
+
 ##### Block and entity actions
 
 The client sends one of four packets depending on what it targets and what it does: `PlayerAttackE`/`PlayerInteractE` for an entity target, `PlayerAttackB`/`PlayerInteractB` for a block target. There is no single unified packet with a nullable target field.

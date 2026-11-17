@@ -26,3 +26,10 @@ biome_realm utils::realm(ChunkPos::value_type y)
 
     return BIOME_REALM_VOID;
 }
+
+biome_realm utils::realm_of_y(float by)
+{
+    auto chunk_y = static_cast<ChunkPos::value_type>(std::floor(by / static_cast<float>(constant::CHUNK_SIZE)));
+
+    return utils::realm(chunk_y);
+}
