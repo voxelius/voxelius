@@ -21,7 +21,7 @@ struct ChunkRequest final {
     unsigned distance;
 };
 
-constexpr static std::size_t REQUESTS_PER_TICK = 48;
+constexpr static std::size_t REQUESTS_PER_TICK = 128;
 
 // Requests that were sent but not answered yet. Bounding them is what keeps
 // the client from ordering more chunks than it can take in: without it the
@@ -47,7 +47,7 @@ constexpr static float LOOKAHEAD_CHUNKS = 4.0f;
 // queue it will never catch up with. The budget shrinks as the mesh queue
 // grows, so the loader settles at the mesh rate instead of stopping dead and
 // then bursting.
-constexpr static std::size_t REQUEST_BACKLOG_LIMIT = 512;
+constexpr static std::size_t REQUEST_BACKLOG_LIMIT = 2048;
 
 struct PendingRequest final {
     ChunkPos position;

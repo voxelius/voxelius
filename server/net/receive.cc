@@ -37,7 +37,7 @@ struct PendingChunkSend final {
     ChunkPos cpos;
 };
 
-constexpr static std::size_t CHUNK_SEND_BUDGET = 64;
+constexpr static std::size_t CHUNK_SEND_BUDGET = 256;
 
 // A batch is capped so a tick that relights half the view distance does not
 // turn into one giant datagram.
