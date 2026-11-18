@@ -5,21 +5,25 @@
 #include "core/identifier.hh"
 
 #include "shared/cvar/gamerules.hh"
+#include "shared/cvar/server.hh"
 #include "shared/globals.hh"
 #include "shared/system/pmove.hh"
 #include "shared/utils/entity.hh"
 #include "shared/world/lighting.hh"
 
 #include "server/system/pmove_validator.hh"
+#include "server/world/time_sim.hh"
 #include "server/world/weather_sim.hh"
 
 void server_game::init(void)
 {
     lighting::set_replica(false);
 
-    gamerules::init(true);
+    gamerules::init();
+    server_vars::init();
 
     pmove_validator::init();
+    time_sim::init();
 }
 
 void server_game::init_late(void)

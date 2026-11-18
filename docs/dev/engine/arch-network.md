@@ -97,9 +97,9 @@ The server owns every variable flagged with `FCVAR_REPLICATED`. After admission 
 
 The client keeps the server value in a shadow. A local variable with the same name must also be flagged `FCVAR_REPLICATED`; otherwise the server value is ignored and a warning is logged. A full snapshot drops stale remote variables and clears the old shadows.
 
-The server does not accept cvar values from clients. Gamerules use the `gr_` prefix; match rules will use `mp_`. The full list is in [Variables](../../manual/console/variables.md) and [Commands](../../manual/console/commands.md).
+The server accepts a cvar value from a client only when the variable is flagged `FCVAR_ADMIN` and the caller is an operator. A write to a shadowed variable is forwarded from the client console through the same `Cvar_Command` path as a command; the server applies the operator check and ignores every other remote value. Gamerules use the `gr_` prefix; match rules will use `mp_`. The full list is in [Variables](../../manual/console/variables.md) and [Commands](../../manual/console/commands.md).
 
-The command snapshot follows the same exchange. The server sends one full list to each admitted client, and the list leaves out the commands flagged `FCVAR_ADMIN` unless that client is an operator. When a live session is promoted or demoted, the server sends the list again. A dirty variable update never carries admin-flagged variables, since none of those replicate.
+The command snapshot follows the same exchange. The server sends one full list to each admitted client, and the list leaves out the commands flagged `FCVAR_ADMIN` unless that client is an operator. When a live session is promoted or demoted, the server sends the list again. A dirty variable update carries every replicated variable, including the admin-flagged ones.
 
 The snapshot packet carries a `uint8 full` flag and a `uint32 count`, then for each variable a `string name` and a `string value`. A full snapshot adds a `uint16 flags` and a `string help` for each entry.
 
@@ -111,9 +111,17 @@ Once the server admits a client, the client asks for chunks and reports block an
 
 The client sends `RequestChunk` for any chunk position it needs. The server answers with `ChunkBlocks`, holding that chunk's full block data. The server also sends `ChunkBlocks` on its own initiative, as a full resync.
 
+##### World info
+
+The server sends `World_Info` once, right after admission. It carries the universe seed, the seed the client builds its star field from and, per realm, the weather grid seeds and scales. These values never change for a world, so the periodic packets do not repeat them. The length of a day is not here: it is the replicated server variable `sv_day_length`, so a change reaches every connected client without another packet.
+
+##### Time
+
+The server owns the world clock. It increments `current_tick` and `daylight_tick` every fixed tick and sends both in `World_Timings` every tick, together with the whole `day` count (`daylight_tick / sv_day_length`). `daylight_tick` advances at the same fixed rate, but it is kept apart so the `gr_daylight_cycle` gamerule can stop the sun without stopping the world. The client runs its own smooth phase between packets and corrects towards the server; when a packet moves the clock by a second or more, which is what `time_set` does, it snaps instead of easing. There is no flag for this in the packet: the client sees the jump in the tick values it already keeps. The server writes both counters into `world.conf` on shutdown, so a restart continues the day where it was. Operators set the clock with `time_set <daylight tick>`; clients read what they see with `time_query`.
+
 ##### Weather
 
-Weather is a realm-wide state rather than a stream of entities. The server drifts two noise grids per realm (one picks the type, one the local strength) and sends `Weather_RealmState` to every admitted client once a second and once more right after admission. The packet carries four fixed records of seeds and drift, so there is nothing to delta. Both sides also advance the drift themselves every frame, so the packet only anchors the field: the client keeps its own continuous drift and snaps to the packet only when the two disagree by more than a chunk, which is what a forced front looks like. The type definitions themselves travel as part of the mod content and are covered by the login checksum.
+Weather is a realm-wide state rather than a stream of entities. The server drifts two noise grids per realm (one picks the type, one the local strength) and sends `World_Weather` to every admitted client once a second. The packet carries four drift pairs and four wind vectors; the seeds and scales arrived once in `World_Info`, so there is nothing constant to repeat. Both sides also advance the drift themselves every frame, so the packet only anchors the field: the client keeps its own continuous drift and snaps to the packet only when the two disagree by more than a chunk, which is what a forced front looks like. The replicated `gr_weather_cycle` gamerule freezes that local advance on both sides. The first weather packet of a connection is special only on the client: the client keeps a local flag and takes that drift whole, then rebuilds the cloud deck instead of sliding the old one towards it. The type definitions themselves travel as part of the mod content and are covered by the login checksum.
 
 ##### Block and entity actions
 

@@ -301,6 +301,7 @@ static bool parse_definition(lua_State* L, int def_idx, WeatherTypeDefinition& d
 {
     const std::array numbers = {
         std::make_pair("intensity", &def.intensity),
+        std::make_pair("sky_visibility", &def.sky_visibility),
         std::make_pair("light", &def.light_scale),
         std::make_pair("wind", &def.wind_speed),
         std::make_pair("strikes_per_minute", &def.strikes_per_minute),
@@ -316,6 +317,8 @@ static bool parse_definition(lua_State* L, int def_idx, WeatherTypeDefinition& d
 
         field_ptr[0] = static_cast<float>(value.value());
     }
+
+    def.sky_visibility = std::clamp(def.sky_visibility, 0.0f, 1.0f);
 
     // The weight decides how big a slice of the type grid the type owns,
     // which is the only thing that makes one weather more common than another

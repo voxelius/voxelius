@@ -7,6 +7,7 @@ uniform mat4 u_CloudViewProjection;
 uniform vec3 u_CameraOrigin;
 uniform vec2 u_DeckCenter;
 uniform vec3 u_WindOffset;
+uniform vec3 u_CloudTint;
 uniform float u_FadeDistance;
 uniform vec2 u_BlendRange;
 uniform float u_DepthBias;
@@ -42,8 +43,9 @@ void main(void)
         alpha *= 1.0 - smoothstep(u_BlendRange.x, u_BlendRange.x + u_BlendRange.y, square);
     }
 
-    // The compose step expects premultiplied colour
-    vs_Color = vec4(vert_Color.rgb * alpha, alpha);
+    // The atmosphere tints the whole deck with the setting
+    // sun; the compose step expects premultiplied colour
+    vs_Color = vec4(vert_Color.rgb * u_CloudTint * alpha, alpha);
 
     gl_Position = u_CloudViewProjection * vec4(local, 1.0);
 

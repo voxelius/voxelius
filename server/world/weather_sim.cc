@@ -3,13 +3,13 @@
 #include "server/world/weather_sim.hh"
 
 #include "core/config/map.hh"
-#include "core/cvar/boolean.hh"
 #include "core/cvar/context.hh"
 #include "core/cvar/host.hh"
 #include "core/msg/log.hh"
 
 #include "shared/component/transform.hh"
 #include "shared/constant.hh"
+#include "shared/cvar/gamerules.hh"
 #include "shared/globals.hh"
 #include "shared/utils/biome.hh"
 #include "shared/utils/coord.hh"
@@ -40,7 +40,6 @@ static_assert(NUM_BIOME_REALMS == REALM_NAMES.size());
 static std::array<float, NUM_BIOME_REALMS> s_strike_budget {};
 static std::array<Eigen::Vector2f, NUM_BIOME_REALMS> s_wind_direction {};
 static std::mt19937_64 s_random;
-static cvar::Boolean s_enabled { true };
 
 static float random_float(void)
 {
@@ -355,10 +354,6 @@ static void save_state(void)
 
 void weather_sim::init(void)
 {
-    auto& enabled_binding = cvar::bind_var(s_enabled, "sv_weather");
-    enabled_binding.set_help("Advance the weather simulation");
-    enabled_binding.set_flags(FCVAR_ARCHIVE);
-
     auto& force_binding = cvar::bind_cmd("weather_force");
     force_binding.set_help("Force a weather type near the players");
     force_binding.set_flags(FCVAR_RECALL | FCVAR_ADMIN);
@@ -381,7 +376,7 @@ void weather_sim::shutdown(void)
 
 void weather_sim::fixed_update(void)
 {
-    if(!s_enabled.value()) {
+    if(!gamerules::weather.value()) {
         return;
     }
 

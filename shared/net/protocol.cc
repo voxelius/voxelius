@@ -11,7 +11,6 @@
 #include "shared/net/packet_player.hh"
 #include "shared/net/packet_session.hh"
 #include "shared/net/packet_status.hh"
-#include "shared/net/packet_weather.hh"
 #include "shared/net/packet_world.hh"
 
 static enet_uint32 channel_of(packet::packet_type type)
@@ -81,7 +80,8 @@ void protocol::decode(entt::dispatcher& dispatcher, const ENetPacket* packet, EN
     static packet::World_Light world_chunk_light;
     static packet::World_SetBlock world_set_block;
     static packet::World_Timings world_timings;
-    static packet::Weather_RealmState world_weather;
+    static packet::World_Info world_info;
+    static packet::World_Weather world_weather;
     static packet::Cvar_ServerVars cvar_server_vars;
     static packet::Cvar_ServerCmds cvar_server_cmds;
     static packet::Cvar_Command cvar_command;
@@ -183,10 +183,16 @@ void protocol::decode(entt::dispatcher& dispatcher, const ENetPacket* packet, EN
             dispatcher.trigger(static_cast<const packet::World_Timings&>(world_timings));
             break;
 
-        case packet::Weather_RealmState::TYPE:
-            packet::Weather_RealmState::decode(world_weather, buffer);
+        case packet::World_Info::TYPE:
+            packet::World_Info::decode(world_info, buffer);
+            world_info.peer = peer;
+            dispatcher.trigger(static_cast<const packet::World_Info&>(world_info));
+            break;
+
+        case packet::World_Weather::TYPE:
+            packet::World_Weather::decode(world_weather, buffer);
             world_weather.peer = peer;
-            dispatcher.trigger(static_cast<const packet::Weather_RealmState&>(world_weather));
+            dispatcher.trigger(static_cast<const packet::World_Weather&>(world_weather));
             break;
 
         case packet::Cvar_ServerVars::TYPE:
@@ -297,7 +303,8 @@ template void protocol::broadcast<packet::World_Biomes>(const packet::World_Biom
 template void protocol::broadcast<packet::World_Light>(const packet::World_Light& packet, ENetHost* host, ENetPeer* except);
 template void protocol::broadcast<packet::World_SetBlock>(const packet::World_SetBlock& packet, ENetHost* host, ENetPeer* except);
 template void protocol::broadcast<packet::World_Timings>(const packet::World_Timings& packet, ENetHost* host, ENetPeer* except);
-template void protocol::broadcast<packet::Weather_RealmState>(const packet::Weather_RealmState& packet, ENetHost* host, ENetPeer* except);
+template void protocol::broadcast<packet::World_Info>(const packet::World_Info& packet, ENetHost* host, ENetPeer* except);
+template void protocol::broadcast<packet::World_Weather>(const packet::World_Weather& packet, ENetHost* host, ENetPeer* except);
 template void protocol::broadcast<packet::Cvar_ServerVars>(const packet::Cvar_ServerVars& packet, ENetHost* host, ENetPeer* except);
 template void protocol::broadcast<packet::Cvar_ServerCmds>(const packet::Cvar_ServerCmds& packet, ENetHost* host, ENetPeer* except);
 template void protocol::broadcast<packet::Cvar_Command>(const packet::Cvar_Command& packet, ENetHost* host, ENetPeer* except);
@@ -339,7 +346,8 @@ template void protocol::send<packet::World_Biomes>(const packet::World_Biomes& p
 template void protocol::send<packet::World_Light>(const packet::World_Light& packet, ENetPeer* peer);
 template void protocol::send<packet::World_SetBlock>(const packet::World_SetBlock& packet, ENetPeer* peer);
 template void protocol::send<packet::World_Timings>(const packet::World_Timings& packet, ENetPeer* peer);
-template void protocol::send<packet::Weather_RealmState>(const packet::Weather_RealmState& packet, ENetPeer* peer);
+template void protocol::send<packet::World_Info>(const packet::World_Info& packet, ENetPeer* peer);
+template void protocol::send<packet::World_Weather>(const packet::World_Weather& packet, ENetPeer* peer);
 template void protocol::send<packet::Cvar_ServerVars>(const packet::Cvar_ServerVars& packet, ENetPeer* peer);
 template void protocol::send<packet::Cvar_ServerCmds>(const packet::Cvar_ServerCmds& packet, ENetPeer* peer);
 template void protocol::send<packet::Cvar_Command>(const packet::Cvar_Command& packet, ENetPeer* peer);

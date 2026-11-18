@@ -10,6 +10,7 @@
 
 #include "shared/coord.hh"
 #include "shared/cvar/commands.hh"
+#include "shared/cvar/gamerules.hh"
 #include "shared/game.hh"
 #include "shared/splash.hh"
 
@@ -107,9 +108,11 @@ static void wrapped_main(int argc, char** argv)
     receive::init();
     transmit::init();
 
-    worldgen::init();
-
+    // The universe seed has to be loaded before worldgen
+    // derives its noise and feature seeds from it
     universe::init();
+
+    worldgen::init();
     chunk_loader::init();
     chunk_unloader::init();
 
@@ -170,6 +173,10 @@ static void wrapped_main(int argc, char** argv)
         last_curtime_us = globals::curtime_us;
 
         globals::current_tick += 1;
+
+        if(gamerules::daylight_cycle.value()) {
+            globals::daylight_tick += 1;
+        }
 
         zoned_fixed_update();
 

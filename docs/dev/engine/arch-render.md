@@ -31,9 +31,19 @@ A composite shader then draws one full-screen triangle. It reads every layer's c
 
 ImGui renders last, straight onto the default framebuffer, so its UI always draws on top of the game world. The client then presents the frame with a window buffer swap.
 
-## Fog and sky
+## Sky, fog and the day cycle
 
-The sky is not geometry: the diffuse layer is cleared with the fog colour, and the terrain fades into the same colour, so the skyline and the haze always match. That one colour is the weather tint at the camera, eased over a few frames so walking into a front does not pop, and `r_daylight` multiplies the result, so dusk dims a storm as much as it dims a clear sky. See the [weather API](../modding/api-weather.md) for the tint each type carries.
+The sky is a full-screen pass drawn into the diffuse layer before the opaque world, so terrain simply overwrites it. It draws a horizon-to-zenith gradient from the camera's basis vectors and darkens towards a ground colour below the horizon. A cheap Rayleigh model reddens the sunlight as the sun sinks: the air mass grows towards the horizon, blue is scattered away first, and the horizon warms with it while the zenith keeps its blue. A brightened band around the sun adds the forward-scattering glow. After the gradient the client draws the star field, the moon and the sun, all as camera-relative geometry on the same sky sphere, so the ground and the clouds still hide them.
+
+The sun and the moon are square textured quads, like the sprites the game is inspired by. The textures live in `data/builtin/textures/environment`, and `misc/generate-celestial.py` regenerates the temporary sprites. The sun is one square image: a bright core on an opaque black square with a radial glow, drawn with additive blending so only the glow reaches the sky. The moon is a four-by-two atlas of eight square phase cells, selected by `day % 8` from the timings packet; its unlit side is opaque black and its halo is transparent, and it is drawn alpha blended. They write no depth, so the cloud layer still composites over the sky and the ground still hides it.
+
+The sun's path is a circle in the east-west plane by default: it rises due east and sets due west. `r_sun_angle` tilts that whole circle, and the same rotation is applied to the stars, so a non-zero angle moves the sky as one piece. The cvar is client-side and defaults to `0`.
+
+The colours come from the world clock. The server owns `daylight_tick`, the whole-day counter and the `sv_day_length` variable, and sends the tick values with the timings while the day length reaches the client as a replicated server variable; the client advances the phase on its own clock and only corrects towards the server, so a 20 Hz packet stream does not step the sun. A packet that moves the clock by a second or more, such as after `time_set`, snaps instead of easing. Weather contributes `sky_visibility`, a per-type weight from `0` to `1`: at `0` the sky is just the type's `sky_tint`, at `1` the clear Rayleigh gradient stands, and the sun, moon and stars fade with the same weight.
+
+The warm horizon is directional: the shader mixes a neutral horizon into a sun-coloured one by the horizontal angle to the sun, so the orange stays on the sun's side and the opposite horizon keeps its cooler colour. The fog takes the same mix in the direction the camera faces. The moon is tinted with the same reddened sunlight while the twilight factor is high, and the cloud shader receives the tint as a uniform, so a sunset colours the deck without rebuilding its mesh.
+
+The diffuse layer is cleared with the fog colour, and the fog takes the horizon colour of the same sky, so the skyline and the haze always match. Under a fluid the fog switches to the fluid's own colour. Block lighting uses the same day factor, so dusk dims the world and the sky together. See the [weather API](../modding/api-weather.md) for the tint each type carries.
 
 ## Clouds and precipitation
 

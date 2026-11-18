@@ -110,6 +110,8 @@ add_executable(vclient
     "${CMAKE_CURRENT_LIST_DIR}/world/fluid_cache.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/outline.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/outline.hh"
+    "${CMAKE_CURRENT_LIST_DIR}/world/sky_renderer.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/world/sky_renderer.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/skybox.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/skybox.hh"
     "${CMAKE_CURRENT_LIST_DIR}/camera.cc"

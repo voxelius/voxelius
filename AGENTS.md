@@ -185,6 +185,9 @@ Every translation unit keeps the same top-level order:
 - Static functions go in dependency order, callees first, so a static prototype is only necessary for mutual recursion.
 - A table of callbacks or a registration list goes right after the last function it points to.
 - Function-like macros and `static_assert`s stay next to what they belong to.
+- The lifecycle functions form a group of their own, always: `init`, `init_late`, `shutdown`, `fixed_update`, `fixed_update_late`, `update`,
+  `update_late`, `render` and `layout`, in this order. A module that has only some of them keeps the same relative order. Keep setters,
+  getters and helpers out of this group, and keep the header and the translation unit in the same order.
 - Headers follow the same order. A header is a translation unit too: includes, forward declarations, constants, types, read-only data,
   globals, then function declarations and out-of-line definitions. A header that only declares functions still keeps its constants above
   them. A `constexpr` body stays right after its declaration as "Language" says.

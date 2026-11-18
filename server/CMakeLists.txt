@@ -51,6 +51,8 @@ add_executable(vserver
     "${CMAKE_CURRENT_LIST_DIR}/world/realm_surface.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/terrain.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/terrain.hh"
+    "${CMAKE_CURRENT_LIST_DIR}/world/time_sim.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/world/time_sim.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/chunk_loader.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/chunk_loader.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/chunk_unloader.cc"

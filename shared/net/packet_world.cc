@@ -130,9 +130,75 @@ void packet::World_SetBlock::decode(World_SetBlock& packet, ReadBuffer& buffer)
 void packet::World_Timings::encode(const World_Timings& packet, WriteBuffer& buffer)
 {
     buffer.write<std::uint64_t>(packet.current_tick);
+    buffer.write<std::uint64_t>(packet.daylight_tick);
+    buffer.write<std::uint64_t>(packet.day);
 }
 
 void packet::World_Timings::decode(World_Timings& packet, ReadBuffer& buffer)
 {
     packet.current_tick = buffer.read<std::uint64_t>();
+    packet.daylight_tick = buffer.read<std::uint64_t>();
+    packet.day = buffer.read<std::uint64_t>();
+}
+
+void packet::World_Info::encode(const World_Info& packet, WriteBuffer& buffer)
+{
+    buffer.write<std::uint64_t>(packet.seed);
+    buffer.write<std::uint32_t>(packet.star_seed);
+
+    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
+        buffer.write<std::uint32_t>(packet.types_seed[i]);
+    }
+
+    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
+        buffer.write<float>(packet.types_scale[i]);
+    }
+
+    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
+        buffer.write<std::uint32_t>(packet.detail_seed[i]);
+    }
+
+    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
+        buffer.write<float>(packet.detail_scale[i]);
+    }
+}
+
+void packet::World_Info::decode(World_Info& packet, ReadBuffer& buffer)
+{
+    packet.seed = buffer.read<std::uint64_t>();
+    packet.star_seed = buffer.read<std::uint32_t>();
+
+    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
+        packet.types_seed[i] = buffer.read<std::uint32_t>();
+    }
+
+    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
+        packet.types_scale[i] = buffer.read<float>();
+    }
+
+    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
+        packet.detail_seed[i] = buffer.read<std::uint32_t>();
+    }
+
+    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
+        packet.detail_scale[i] = buffer.read<float>();
+    }
+}
+
+void packet::World_Weather::encode(const World_Weather& packet, WriteBuffer& buffer)
+{
+    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
+        buffer.write_vector<float, 2>(packet.types_drift[i]);
+        buffer.write_vector<float, 2>(packet.detail_drift[i]);
+        buffer.write_vector<float, 2>(packet.wind[i]);
+    }
+}
+
+void packet::World_Weather::decode(World_Weather& packet, ReadBuffer& buffer)
+{
+    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
+        packet.types_drift[i] = buffer.read_vector<float, 2>();
+        packet.detail_drift[i] = buffer.read_vector<float, 2>();
+        packet.wind[i] = buffer.read_vector<float, 2>();
+    }
 }

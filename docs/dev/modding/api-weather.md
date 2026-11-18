@@ -1,6 +1,6 @@
 # Weather
 
-Weather in Voxelius belongs to a [realm](../engine/arch-core.md), not to an entity. The server owns one state per realm (surface, sky, underground, the depths) and sends it to every client once a second; clients reconstruct the same field from it and draw it.
+Weather in Voxelius belongs to a [realm](../engine/arch-core.md), not to an entity. The server owns one state per realm (surface, sky, underground, the depths); the seeds and scales travel once with `World_Info`, and the drift and wind follow once a second in `World_Weather`. Clients reconstruct the same field from it and draw it.
 
 ## Registering a type
 
@@ -10,6 +10,7 @@ weather.add("thunderstorm", {
 
   intensity = 1.0,
   sky_tint = { 0.14, 0.16, 0.19 },
+  sky_visibility = 0.05,
   light = 0.35,
   wind = 3.0,
 
@@ -49,7 +50,7 @@ There is no single regime per realm. Two drifting noise grids decide what the we
 - the **type grid** (1024 blocks per cell) turns a continuous noise value into a weighted mix of the registered types; every type owns a slice of the `[0, 1)` range and the slices cross-fade over a narrow band, so a type change is a gradient, not a step;
 - the **detail grid** (512 blocks per cell) decides how much of that mix is present, so a realm can hold several storms with clear sky between them.
 
-Both grids drift with the realm wind. Only the seeds, the scales and the drift travel over the network, and both sides advance the drift on their own every frame; the client only snaps to the packet when the two differ by more than a chunk, so a forced front lands where it was forced and ordinary drift never steps. The sync therefore stays at four fixed records per second.
+Both grids drift with the realm wind. The seeds and scales travel once in `World_Info`; only the drift and the wind follow over the network, once a second. Both sides advance the drift on their own every frame, and the client only snaps to a packet when the two differ by more than a chunk, so a forced front lands where it was forced and ordinary drift never steps. The server gamerule `gr_weather_cycle` stops that advance on both sides. After a connection the client takes the first weather packet whole and rebuilds the cloud deck instead of sliding the old one towards it; it tracks that locally, so the packet carries no flag for it.
 
 ## Where the weather is kept
 
@@ -67,6 +68,8 @@ weather.surface.wind_direction=[0.707 0.707]
 
 A world that has never been saved has no such keys, and the server draws its seeds and its wind from the universe seed instead. Deleting the keys, or the file, gives that world a fresh sky on the next start.
 
+The same file carries `tick` and `daylight_tick` next to `seed`. The server owns them: `daylight_tick` is the day cycle the sky follows, and both are written on shutdown so a restart continues the same day.
+
 `weather_force <realm> <type>` slides the type grid until the cell under the players resolves to the requested type and puts a strong detail value on them; somewhere else the type may be different or the sky clear.
 
 ## Fields
@@ -75,7 +78,8 @@ A world that has never been saved has no such keys, and the server draws its see
 |---|---|---|---|
 | `realms` | array | `{ REALM_SURFACE }` | Realms that may pick this type |
 | `intensity` | number | `1.0` | Overall strength, used by the front and the tint |
-| `sky_tint` | RGB | white | Target colour the sky is mixed towards; the fog takes the same colour, because the sky is drawn as the fog colour |
+| `sky_tint` | RGB | white | Colour that replaces the sky where `sky_visibility` is low; the fog takes the horizon colour of the resulting gradient |
+| `sky_visibility` | number | `1.0` | How much of the clear sky shows through, from `0` (only `sky_tint`) to `1` (the Rayleigh gradient); the sun, moon and stars fade with it |
 | `light` | number | `1.0` | Multiplies the sky light the world receives |
 | `wind` | number | `0.0` | How fast the front travels, in blocks per second |
 | `layers` | array | empty | Cloud layers, at most 4 |

@@ -22,6 +22,7 @@
 #include "client/gui/container.hh"
 #include "client/settings.hh"
 #include "client/shader_program.hh"
+#include "client/world/skybox.hh"
 
 constexpr static int CLOUD_COLUMN_MAX_VOXELS = 8;
 constexpr static int CLOUD_COLUMN_MAX_STEP = 2;
@@ -134,7 +135,6 @@ struct CloudInput final {
     Eigen::Vector2f anchor;
     Eigen::Vector3f center;
     float radius;
-    float light;
 };
 
 static_assert(sizeof(CloudVertex) == 7 * sizeof(float), "CloudVertex must stay packed for the vertex layout");
@@ -147,6 +147,7 @@ static std::size_t su_CloudViewProjection;
 static std::size_t su_CameraOrigin;
 static std::size_t su_DeckCenter;
 static std::size_t su_WindOffset;
+static std::size_t su_CloudTint;
 static std::size_t su_FadeDistance;
 static std::size_t su_BlendRange;
 static std::size_t su_DepthBias;
@@ -270,8 +271,6 @@ static void push_exposed_sides(CloudMesh& mesh, const CloudColumn& column, const
 
 static CloudDeck make_deck(const CloudInput& input, const CloudGroup& group, const CloudRing& ring)
 {
-    auto light = input.light;
-
     CloudDeck deck {};
     deck.realm = group.realm;
     deck.type = group.type;
@@ -283,8 +282,8 @@ static CloudDeck make_deck(const CloudInput& input, const CloudGroup& group, con
     deck.scale = std::max(group.layer.scale, 8.0f);
     deck.max_levels = std::clamp(static_cast<int>(group.layer.thickness / deck.height), 1, CLOUD_COLUMN_MAX_VOXELS);
     deck.opacity = std::clamp(group.layer.opacity, 0.05f, 1.0f);
-    deck.shadow = group.layer.shadow_color * light;
-    deck.lit = group.layer.lit_color * light;
+    deck.shadow = group.layer.shadow_color;
+    deck.lit = group.layer.lit_color;
     deck.side = (deck.shadow + deck.lit) * 0.5f;
 
     return deck;
@@ -736,8 +735,9 @@ private:
 };
 
 CloudTask::CloudTask(CloudInput input, const std::vector<CloudGroup>& groups, CloudMesh&& scratch, std::uint64_t generation)
-    : m_input(std::move(input)), m_groups(groups), m_mesh(std::move(scratch)), m_generation(generation)
+    : m_input(std::move(input)), m_groups(groups), m_generation(generation), m_mesh(std::move(scratch))
 {
+    // empty
 }
 
 void CloudTask::process(void)
@@ -792,7 +792,6 @@ static void submit_build(void)
     input.anchor = s_drift_anchor;
     input.center = camera_position - s_wind_offset;
     input.radius = radius;
-    input.light = fog::daylight.value();
 
     s_groups.clear();
     collect_groups(camera_position.y());
@@ -833,6 +832,7 @@ void cloud_renderer::init(void)
     su_CameraOrigin = s_program.add_uniform("u_CameraOrigin");
     su_DeckCenter = s_program.add_uniform("u_DeckCenter");
     su_WindOffset = s_program.add_uniform("u_WindOffset");
+    su_CloudTint = s_program.add_uniform("u_CloudTint");
     su_FadeDistance = s_program.add_uniform("u_FadeDistance");
     su_BlendRange = s_program.add_uniform("u_BlendRange");
     su_DepthBias = s_program.add_uniform("u_DepthBias");
@@ -901,6 +901,7 @@ void cloud_renderer::render(void)
 
     auto cloud_projection = cloud_view_projection();
     auto camera_origin = utils::to_fvec(camera::chunk);
+    Eigen::Vector3f cloud_tint = skybox::cloud_tint * fog::daylight;
 
     vx::throw_if_not(s_program.update());
 
@@ -912,6 +913,7 @@ void cloud_renderer::render(void)
     glUniform3fv(s_program.uniforms[su_CameraOrigin].location, 1, camera_origin.data());
     glUniform2fv(s_program.uniforms[su_DeckCenter].location, 1, deck_center.data());
     glUniform3fv(s_program.uniforms[su_WindOffset].location, 1, s_wind_offset.data());
+    glUniform3fv(s_program.uniforms[su_CloudTint].location, 1, cloud_tint.data());
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);

@@ -1,6 +1,7 @@
 #include "client/pch.hh"
 
 #include "core/core.hh"
+#include "core/cvar/bits.hh"
 #include "core/cvar/host.hh"
 #include "core/exception.hh"
 #include "core/res/resource.hh"
@@ -43,6 +44,7 @@
 #include "client/world/chunk_mesher.hh"
 #include "client/world/chunk_visibility.hh"
 #include "client/world/fluid_cache.hh"
+#include "client/world/sky_renderer.hh"
 #include "client/world/skybox.hh"
 
 static std::atomic_bool s_is_running;
@@ -147,6 +149,7 @@ static void zoned_update(void)
     // drift is advanced here, every frame, so it never steps
     weather::advance(globals::window_frametime);
 
+    skybox::update();
     fog::update();
 
     int width, height;
@@ -271,6 +274,7 @@ static void wrapped_main(int argc, char** argv)
     play_menu::init();
 
     client_game::init();
+    skybox::init();
 
     cvar::exec_from("client.conf");
     cvar::exec_from("client.user.conf");
@@ -287,9 +291,6 @@ static void wrapped_main(int argc, char** argv)
     shared_game::init_late();
 
     chunk_mesher::init();
-
-    skybox::init();
-    fog::init();
 
     main_menu::init_late();
 
@@ -396,12 +397,14 @@ static void wrapped_main(int argc, char** argv)
     // stop it first so that a zombie warning in hard_purge means a real leak
     threading::shutdown();
 
+    sky_renderer::release_textures();
+
     res::hard_purge();
 
     head::shutdown();
     video::shutdown();
 
-    cvar::save_values("client.conf");
+    cvar::save_values("client.conf", FCVAR_REPLICATED);
 
     core::teardown();
 }

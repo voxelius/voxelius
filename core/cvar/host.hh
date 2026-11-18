@@ -48,7 +48,10 @@ status exec(std::string_view name, std::span<const std::string_view> args, const
 namespace cvar
 {
 bool exec_from(std::string_view path);
-void save_values(std::string_view path);
+
+// A variable flagged with any bit in ignore_flags stays out of the file;
+// the client uses it to drop server-owned variables from client.conf
+void save_values(std::string_view path, flag_bits ignore_flags = FCVAR_NONE);
 } // namespace cvar
 
 namespace cvar

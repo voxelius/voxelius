@@ -3,6 +3,7 @@ weather.add("clear", {
 
   intensity = 0.22,
   sky_tint = { 0.42, 0.60, 0.92 },
+  sky_visibility = 1.0,
   light = 1.0,
   wind = 1.0,
 

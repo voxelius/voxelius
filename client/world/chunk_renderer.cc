@@ -322,7 +322,7 @@ static void bind_pipeline_state(unsigned fog_model)
 
     auto& vproj = camera::instance.view_projection();
     auto animation_timer = static_cast<std::uint32_t>(globals::current_tick >> 1);
-    auto sky_light_color = Eigen::Vector3f(SKY_LIGHT_COLOR * fog::daylight.value() * fog::light_scale);
+    auto sky_light_color = Eigen::Vector3f(SKY_LIGHT_COLOR * fog::daylight * fog::light_scale);
 
     glUseProgram(s_program.handle);
     glUniformMatrix4fv(s_program.uniforms[su_ViewProjection].location, 1, GL_FALSE, vproj.data());

@@ -22,6 +22,7 @@
 #include "client/world/chunk_vbo.hh"
 #include "client/world/cloud_renderer.hh"
 #include "client/world/outline.hh"
+#include "client/world/sky_renderer.hh"
 
 struct LayerTarget final {
     GLuint fbo { 0 };
@@ -290,6 +291,7 @@ void head::init(void)
     chunk_vbo::init();
     chunk_renderer::init();
     cloud_renderer::init();
+    sky_renderer::init();
     outline::init();
 
     SDL_ShowWindow(globals::window);
@@ -305,6 +307,7 @@ void head::init_late(void)
 void head::shutdown(void)
 {
     outline::shutdown();
+    sky_renderer::shutdown();
     cloud_renderer::shutdown();
     chunk_renderer::shutdown();
     chunk_vbo::shutdown();
@@ -359,6 +362,8 @@ void head::render(void)
     ZoneScoped;
 
     begin_diffuse();
+
+    sky_renderer::render();
 
     chunk_renderer::prepare();
     chunk_renderer::render_opaque();

@@ -3,6 +3,7 @@ weather.add("rain", {
 
   intensity = 1.0,
   sky_tint = { 0.388, 0.451, 0.541 },
+  sky_visibility = 0.10,
   light = 0.50,
   wind = 1.2,
 

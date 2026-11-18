@@ -6,11 +6,12 @@
 #include "core/cvar/host.hh"
 #include "core/msg/log.hh"
 
+#include "shared/constant.hh"
+#include "shared/cvar/server.hh"
 #include "shared/entity/class_registry.hh"
 #include "shared/entity/component_map.hh"
 #include "shared/net/packet_entity.hh"
 #include "shared/net/packet_session.hh"
-#include "shared/net/packet_weather.hh"
 #include "shared/net/packet_world.hh"
 #include "shared/net/protocol.hh"
 #include "shared/utils/coord.hh"
@@ -19,11 +20,18 @@
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
 #include "shared/world/world.hh"
+#include "shared/world/world_clock.hh"
 
 #include "client/camera.hh"
 #include "client/globals.hh"
 #include "client/net/session.hh"
 #include "client/world/chunk_visibility.hh"
+#include "client/world/cloud_renderer.hh"
+#include "client/world/skybox.hh"
+
+// The first weather packet of a connection sets the whole drift;
+// later packets only correct it, so the deck does not slide on join
+static bool s_weather_synced;
 
 static void on_entity_spawn(const packet::Entity_Spawn& packet)
 {
@@ -150,12 +158,50 @@ static void on_world_set_block(const packet::World_SetBlock& packet)
 
 static void on_world_timings(const packet::World_Timings& packet)
 {
+    auto previous_tick = globals::daylight_tick;
+    auto jump = packet.daylight_tick > previous_tick ? packet.daylight_tick - previous_tick : previous_tick - packet.daylight_tick;
+
     globals::current_tick = packet.current_tick;
+    globals::daylight_tick = packet.daylight_tick;
+    globals::day = packet.day;
+
+    // A jump of a second or more is a deliberate time_set; the
+    // ordinary one-tick step is left for the sky to interpolate
+    if(jump > constant::FIXED_TICKRATE) {
+        skybox::snap();
+    }
 }
 
-static void on_world_weather(const packet::Weather_RealmState& packet)
+static void on_world_info(const packet::World_Info& packet)
 {
-    weather::apply_packet(packet);
+    weather::apply_info(packet);
+
+    skybox::set_star_seed(packet.star_seed);
+}
+
+static void on_world_weather(const packet::World_Weather& packet)
+{
+    // The first packet after connecting replaces the drift whole, so
+    // the deck that was built from the old field must not slide to it
+    auto baseline = !s_weather_synced;
+    s_weather_synced = true;
+
+    weather::apply_packet(packet, baseline);
+
+    if(baseline) {
+        cloud_renderer::reset();
+    }
+}
+
+static cvar::status cmd_time_query(const cvar::Context& ctx, std::span<const std::string_view> args)
+{
+    auto phase = world_clock::phase(globals::daylight_tick, server_vars::day_length_ticks());
+    auto daylight = world_clock::daylight(phase);
+
+    msg::log_info("time: tick={} daylight_tick={} day={} phase={:.3f} daylight={:.2f}", globals::current_tick, globals::daylight_tick,
+        globals::day, phase, daylight);
+
+    return cvar::status::OK;
 }
 
 static cvar::status cmd_weather_status(const cvar::Context& ctx, std::span<const std::string_view> args)
@@ -188,6 +234,11 @@ static void on_session_state(const SessionStateEvent& event)
 {
     if(SESSION_DISCONNECTED == event.state()) {
         globals::player = entt::null;
+        s_weather_synced = false;
+    }
+
+    if(SESSION_AUTHENTICATING == event.state()) {
+        s_weather_synced = false;
     }
 }
 
@@ -203,11 +254,16 @@ void receive::init(void)
     globals::dispatcher.sink<packet::World_Light>().connect<&on_world_light>();
     globals::dispatcher.sink<packet::World_SetBlock>().connect<&on_world_set_block>();
     globals::dispatcher.sink<packet::World_Timings>().connect<&on_world_timings>();
-    globals::dispatcher.sink<packet::Weather_RealmState>().connect<&on_world_weather>();
+    globals::dispatcher.sink<packet::World_Info>().connect<&on_world_info>();
+    globals::dispatcher.sink<packet::World_Weather>().connect<&on_world_weather>();
 
     globals::dispatcher.sink<SessionStateEvent>().connect<&on_session_state>();
 
     auto& status_binding = cvar::bind_cmd("weather_status");
     status_binding.set_help("Print the weather state the client currently has");
     status_binding.connect<&cmd_weather_status>();
+
+    auto& time_binding = cvar::bind_cmd("time_query");
+    time_binding.set_help("Print the world clock the client currently has");
+    time_binding.connect<&cmd_time_query>();
 }

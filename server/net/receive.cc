@@ -2,9 +2,6 @@
 
 #include "server/net/receive.hh"
 
-#include "core/cvar/host.hh"
-#include "core/cvar/number.hh"
-
 #include "shared/component/transform.hh"
 #include "shared/cvar/gamerules.hh"
 #include "shared/net/packet_player.hh"
@@ -30,7 +27,6 @@
 static vx::hash_map<ChunkPos, std::vector<ENetPeer*>> s_waiting_peers;
 static vx::hash_set<ChunkPos> s_sent_chunks;
 static std::vector<packet::World_Light::Entry> s_pending_light;
-static cvar::Number<float> s_reach_distance { 8.0f, 0.0f, 32.0f };
 
 struct PendingChunkSend final {
     ENetPeer* peer;
@@ -213,7 +209,7 @@ static bool in_reach(entt::entity player, const BlockPos& bpos)
     auto& transform = globals::registry.get<Transform>(player);
     auto player_bpos = utils::to_block(transform.chunk, transform.local.cast<LocalPos::value_type>());
     auto distance = (bpos - player_bpos).cast<float>().norm();
-    return distance <= s_reach_distance.value();
+    return distance <= gamerules::reach_distance.value();
 }
 
 // The client predicts block changes locally. A rejected action must send
@@ -501,10 +497,6 @@ void receive::forget_peer(ENetPeer* peer)
 
 void receive::init(void)
 {
-    auto& gr_reach_distance_binding = cvar::bind_var(s_reach_distance, "gr_reach_distance");
-    gr_reach_distance_binding.set_help("Maximum block interaction distance");
-    gr_reach_distance_binding.set_flags(FCVAR_ARCHIVE);
-
     globals::dispatcher.sink<packet::World_Request>().connect<&on_world_request>();
 
     globals::dispatcher.sink<packet::Player_AttackE>().connect<&on_player_attack_e>();

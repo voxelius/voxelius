@@ -7,7 +7,8 @@
 
 namespace packet
 {
-struct Weather_RealmState;
+struct World_Info;
+struct World_Weather;
 } // namespace packet
 
 using weather_type_id = std::uint32_t;
@@ -60,6 +61,7 @@ struct WeatherTypeDefinition final {
     Precipitation precipitation;
 
     Eigen::Vector3f sky_tint { Eigen::Vector3f(1.0f, 1.0f, 1.0f) };
+    float sky_visibility { 1.0f }; // 1 = the clear sky shows through, 0 = only sky_tint
     float light_scale { 1.0f };
 
     float intensity { 1.0f };
@@ -93,6 +95,7 @@ struct WeatherRealmState final {
 struct WeatherBlend final {
     float coverage;
     Eigen::Vector3f sky_tint;
+    float sky_visibility { 1.0f };
     float light_scale;
 };
 
@@ -142,8 +145,14 @@ WeatherBlend blend_region(float x, float y, float z, float radius);
 
 namespace weather
 {
-void fill_packet(packet::Weather_RealmState& packet);
-void apply_packet(const packet::Weather_RealmState& packet);
+void fill_info(packet::World_Info& packet);
+void apply_info(const packet::World_Info& packet);
+} // namespace weather
+
+namespace weather
+{
+void fill_packet(packet::World_Weather& packet);
+void apply_packet(const packet::World_Weather& packet, bool baseline);
 } // namespace weather
 
 #endif /* A6B2C1D9_4E7F_4A3B_9C51_2F0D8E6B7A14 */

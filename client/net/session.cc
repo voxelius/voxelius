@@ -35,6 +35,7 @@
 #include "client/settings.hh"
 #include "client/video.hh"
 #include "client/world/cloud_renderer.hh"
+#include "client/world/skybox.hh"
 
 constexpr static std::string_view KEYPAIR_PATH = "keypair.dat";
 
@@ -82,6 +83,7 @@ static void handle_disconnect(std::uint32_t reason)
     biome_map::purge();
     weather::reset();
     fog::reset();
+    skybox::reset();
     cloud_renderer::reset();
     world::purge();
     lighting::reset();

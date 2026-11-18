@@ -3,6 +3,7 @@ weather.add("snow", {
 
   intensity = 0.7,
   sky_tint = { 0.60, 0.65, 0.75 },
+  sky_visibility = 0.55,
   light = 0.80,
   wind = 0.8,
 

@@ -3,6 +3,7 @@ weather.add("thunderstorm", {
 
   intensity = 1.0,
   sky_tint = { 0.14, 0.16, 0.19 },
+  sky_visibility = 0.05,
   light = 0.35,
   wind = 3.0,
 

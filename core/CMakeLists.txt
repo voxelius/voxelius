@@ -28,6 +28,8 @@ add_library(core STATIC
     "${CMAKE_CURRENT_LIST_DIR}/utils/crc64.hh"
     "${CMAKE_CURRENT_LIST_DIR}/utils/epoch.cc"
     "${CMAKE_CURRENT_LIST_DIR}/utils/epoch.hh"
+    "${CMAKE_CURRENT_LIST_DIR}/utils/interpolation.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/utils/interpolation.hh"
     "${CMAKE_CURRENT_LIST_DIR}/utils/json.cc"
     "${CMAKE_CURRENT_LIST_DIR}/utils/json.hh"
     "${CMAKE_CURRENT_LIST_DIR}/utils/modulo.hh"
