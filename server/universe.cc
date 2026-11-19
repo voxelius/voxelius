@@ -15,7 +15,6 @@
 static std::filesystem::path s_root_dir;
 static std::filesystem::path s_chunk_dir;
 static std::filesystem::path s_entity_dir;
-static std::filesystem::path s_lod_dir;
 static std::filesystem::path s_conf_path;
 
 static config::Map s_world_config;
@@ -42,20 +41,10 @@ void universe::init(void)
     s_root_dir = argument_path;
     s_chunk_dir = s_root_dir / "chunk";
     s_entity_dir = s_root_dir / "entity";
-    s_lod_dir = s_root_dir / "lod";
     s_conf_path = s_root_dir / "world.conf";
 
     std::filesystem::create_directories(s_chunk_dir);
     std::filesystem::create_directories(s_entity_dir);
-    std::filesystem::create_directories(s_lod_dir);
-
-    // Chunk LOD pyramids are rebuilt from the chunk data now, so this
-    // directory is no longer read. Say so once instead of deleting it.
-    std::error_code obsolete_ec;
-
-    if(std::filesystem::exists(s_lod_dir / "chunk", obsolete_ec)) {
-        msg::log_warning("{} is obsolete and no longer read; safe to delete", (s_lod_dir / "chunk").string());
-    }
 
     s_seed.bind(s_world_config, "seed");
     s_tick.bind(s_world_config, "tick");
@@ -106,9 +95,4 @@ const std::filesystem::path& universe::chunk_dir(void)
 const std::filesystem::path& universe::entity_dir(void)
 {
     return s_entity_dir;
-}
-
-const std::filesystem::path& universe::lod_dir(void)
-{
-    return s_lod_dir;
 }

@@ -16,8 +16,6 @@
 #include "shared/utils/coord.hh"
 #include "shared/utils/entity.hh"
 #include "shared/world/biome_map.hh"
-#include "shared/world/chunk_lod.hh"
-#include "shared/world/lod_tile.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
 #include "shared/world/world.hh"
@@ -27,7 +25,6 @@
 #include "client/globals.hh"
 #include "client/net/session.hh"
 #include "client/world/cloud_renderer.hh"
-#include "client/world/lod_manager.hh"
 #include "client/world/skybox.hh"
 
 // The first weather packet of a connection sets the whole drift;
@@ -155,24 +152,6 @@ static void on_world_set_block(const packet::World_SetBlock& packet)
     world::set_block(packet.bpos, packet.block);
 }
 
-static void on_world_chunk_lod(const packet::World_ChunkLod& packet)
-{
-    lod_manager::store_chunk(packet.cpos, std::make_shared<ChunkLod>(packet.lod));
-}
-
-static void on_world_lod_tile(const packet::World_LodTile& packet)
-{
-    if(packet.key.level > LOD_TILE_LEVEL_MAX) {
-        return;
-    }
-
-    if(static_cast<unsigned>(packet.key.realm) >= NUM_BIOME_REALMS) {
-        return;
-    }
-
-    lod_manager::store_tile(packet.key, std::make_shared<LodTile>(packet.tile));
-}
-
 static void on_world_timings(const packet::World_Timings& packet)
 {
     auto previous_tick = globals::daylight_tick;
@@ -272,8 +251,6 @@ void receive::init(void)
     globals::dispatcher.sink<packet::World_Biomes>().connect<&on_world_biomes>();
     globals::dispatcher.sink<packet::World_Light>().connect<&on_world_light>();
     globals::dispatcher.sink<packet::World_SetBlock>().connect<&on_world_set_block>();
-    globals::dispatcher.sink<packet::World_ChunkLod>().connect<&on_world_chunk_lod>();
-    globals::dispatcher.sink<packet::World_LodTile>().connect<&on_world_lod_tile>();
     globals::dispatcher.sink<packet::World_Timings>().connect<&on_world_timings>();
     globals::dispatcher.sink<packet::World_Info>().connect<&on_world_info>();
     globals::dispatcher.sink<packet::World_Weather>().connect<&on_world_weather>();

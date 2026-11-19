@@ -7,7 +7,6 @@
 namespace server_vars
 {
 extern cvar::Number<unsigned> day_length;
-extern cvar::Number<unsigned> lod_distance;
 } // namespace server_vars
 
 namespace server_vars

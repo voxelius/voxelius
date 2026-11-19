@@ -4,22 +4,14 @@
 #include "shared/net/packet.hh"
 #include "shared/world/biome_slice.hh"
 #include "shared/world/block_storage.hh"
-#include "shared/world/chunk_lod.hh"
 #include "shared/world/light_storage.hh"
-#include "shared/world/lod_tile.hh"
 
 struct packet::World_Request final : public packet::Base<packet::WORLD_REQUEST_CHUNK> {
-    constexpr static std::uint8_t FLAG_LOD = 1U << 0U;
-
     static void encode(const World_Request& packet, WriteBuffer& buffer);
     static void decode(World_Request& packet, ReadBuffer& buffer);
 
     ChunkAlignedBox view;
-    ChunkAlignedBox lod;
-    std::uint8_t flags { FLAG_LOD };
     std::uint16_t chunk_budget { 0 };
-    std::uint16_t lod_chunk_budget { 0 };
-    std::uint16_t lod_tile_budget { 0 };
 };
 
 struct packet::World_Blocks final : public packet::Base<packet::WORLD_CHUNK_BLOCKS> {
@@ -99,22 +91,6 @@ struct packet::World_Weather final : public packet::Base<packet::WORLD_WEATHER> 
     std::array<Eigen::Vector2f, NUM_BIOME_REALMS> types_drift;
     std::array<Eigen::Vector2f, NUM_BIOME_REALMS> detail_drift;
     std::array<Eigen::Vector2f, NUM_BIOME_REALMS> wind;
-};
-
-struct packet::World_ChunkLod final : public packet::Base<packet::WORLD_CHUNK_LOD> {
-    static void encode(const World_ChunkLod& packet, WriteBuffer& buffer);
-    static bool decode(World_ChunkLod& packet, ReadBuffer& buffer);
-
-    ChunkPos cpos;
-    ChunkLod lod;
-};
-
-struct packet::World_LodTile final : public packet::Base<packet::WORLD_LOD_TILE> {
-    static void encode(const World_LodTile& packet, WriteBuffer& buffer);
-    static bool decode(World_LodTile& packet, ReadBuffer& buffer);
-
-    LodKey key;
-    LodTile tile;
 };
 
 #endif /* BD2D77E8_727E_4B4C_83D6_92E1569F5B4D */

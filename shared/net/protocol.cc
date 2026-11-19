@@ -25,12 +25,6 @@ static enet_uint32 channel_of(packet::packet_type type)
             // only one sequence guarantees that order.
             return protocol::CHANNEL_WORLD;
 
-        case packet::WORLD_CHUNK_LOD:
-        case packet::WORLD_LOD_TILE:
-            // The far terrain does not depend on the chunk stream, so it
-            // must not hold it back while a large packet is on the wire.
-            return protocol::CHANNEL_LOD;
-
         default:
             break;
     }
@@ -88,8 +82,6 @@ void protocol::decode(entt::dispatcher& dispatcher, const ENetPacket* packet, EN
     static packet::World_Timings world_timings;
     static packet::World_Info world_info;
     static packet::World_Weather world_weather;
-    static packet::World_ChunkLod world_chunk_lod;
-    static packet::World_LodTile world_lod_tile;
     static packet::Cvar_ServerVars cvar_server_vars;
     static packet::Cvar_ServerCmds cvar_server_cmds;
     static packet::Cvar_Command cvar_command;
@@ -203,22 +195,6 @@ void protocol::decode(entt::dispatcher& dispatcher, const ENetPacket* packet, EN
             dispatcher.trigger(static_cast<const packet::World_Weather&>(world_weather));
             break;
 
-        case packet::World_ChunkLod::TYPE:
-            // A malformed payload must not reach the world: the packet object
-            // is reused, so its fields may still hold the previous one.
-            if(packet::World_ChunkLod::decode(world_chunk_lod, buffer)) {
-                world_chunk_lod.peer = peer;
-                dispatcher.trigger(static_cast<const packet::World_ChunkLod&>(world_chunk_lod));
-            }
-            break;
-
-        case packet::World_LodTile::TYPE:
-            if(packet::World_LodTile::decode(world_lod_tile, buffer)) {
-                world_lod_tile.peer = peer;
-                dispatcher.trigger(static_cast<const packet::World_LodTile&>(world_lod_tile));
-            }
-            break;
-
         case packet::Cvar_ServerVars::TYPE:
             packet::Cvar_ServerVars::decode(cvar_server_vars, buffer);
             cvar_server_vars.peer = peer;
@@ -329,8 +305,6 @@ template void protocol::broadcast<packet::World_SetBlock>(const packet::World_Se
 template void protocol::broadcast<packet::World_Timings>(const packet::World_Timings& packet, ENetHost* host, ENetPeer* except);
 template void protocol::broadcast<packet::World_Info>(const packet::World_Info& packet, ENetHost* host, ENetPeer* except);
 template void protocol::broadcast<packet::World_Weather>(const packet::World_Weather& packet, ENetHost* host, ENetPeer* except);
-template void protocol::broadcast<packet::World_ChunkLod>(const packet::World_ChunkLod& packet, ENetHost* host, ENetPeer* except);
-template void protocol::broadcast<packet::World_LodTile>(const packet::World_LodTile& packet, ENetHost* host, ENetPeer* except);
 template void protocol::broadcast<packet::Cvar_ServerVars>(const packet::Cvar_ServerVars& packet, ENetHost* host, ENetPeer* except);
 template void protocol::broadcast<packet::Cvar_ServerCmds>(const packet::Cvar_ServerCmds& packet, ENetHost* host, ENetPeer* except);
 template void protocol::broadcast<packet::Cvar_Command>(const packet::Cvar_Command& packet, ENetHost* host, ENetPeer* except);
@@ -374,8 +348,6 @@ template void protocol::send<packet::World_SetBlock>(const packet::World_SetBloc
 template void protocol::send<packet::World_Timings>(const packet::World_Timings& packet, ENetPeer* peer);
 template void protocol::send<packet::World_Info>(const packet::World_Info& packet, ENetPeer* peer);
 template void protocol::send<packet::World_Weather>(const packet::World_Weather& packet, ENetPeer* peer);
-template void protocol::send<packet::World_ChunkLod>(const packet::World_ChunkLod& packet, ENetPeer* peer);
-template void protocol::send<packet::World_LodTile>(const packet::World_LodTile& packet, ENetPeer* peer);
 template void protocol::send<packet::Cvar_ServerVars>(const packet::Cvar_ServerVars& packet, ENetPeer* peer);
 template void protocol::send<packet::Cvar_ServerCmds>(const packet::Cvar_ServerCmds& packet, ENetPeer* peer);
 template void protocol::send<packet::Cvar_Command>(const packet::Cvar_Command& packet, ENetPeer* peer);

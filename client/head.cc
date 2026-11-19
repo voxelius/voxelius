@@ -2,7 +2,6 @@
 
 #include "client/head.hh"
 
-#include "core/cmdline.hh"
 #include "core/cvar/host.hh"
 #include "core/cvar/number.hh"
 #include "core/exception.hh"
@@ -21,8 +20,6 @@
 #include "client/world/chunk_renderer.hh"
 #include "client/world/chunk_vbo.hh"
 #include "client/world/cloud_renderer.hh"
-#include "client/world/lod_chunk_renderer.hh"
-#include "client/world/lod_tile_renderer.hh"
 #include "client/world/outline.hh"
 #include "client/world/sky_renderer.hh"
 
@@ -295,8 +292,6 @@ void head::init(void)
     chunk_vbo::init();
     chunk_renderer::init();
     cloud_renderer::init();
-    lod_tile_renderer::init();
-    lod_chunk_renderer::init();
     sky_renderer::init();
     outline::init();
 
@@ -314,8 +309,6 @@ void head::shutdown(void)
 {
     outline::shutdown();
     sky_renderer::shutdown();
-    lod_chunk_renderer::shutdown();
-    lod_tile_renderer::shutdown();
     cloud_renderer::shutdown();
     chunk_renderer::shutdown();
     chunk_vbo::shutdown();
@@ -372,12 +365,6 @@ void head::render(void)
     begin_diffuse();
 
     sky_renderer::render();
-
-    lod_tile_renderer::prepare();
-    lod_tile_renderer::render();
-
-    lod_chunk_renderer::prepare();
-    lod_chunk_renderer::render();
 
     chunk_renderer::prepare();
     chunk_renderer::render_opaque();

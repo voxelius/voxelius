@@ -21,7 +21,6 @@ void generate(BlockStorage& blocks, BiomeSlice& biomes, const ChunkPos& pos);
 namespace realm_sky
 {
 ColumnSlice probe(const ChunkPosXZ& pos);
-ColumnProbe probe_column(const BlockPosXZ& pos);
 } // namespace realm_sky
 
 #endif /* CDF3046F_AD1A_4954_8B4A_00B7AFB2A2B0 */

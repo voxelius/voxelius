@@ -13,16 +13,10 @@ struct Column final {
     constexpr bool is_valid(void) const;
 
     BlockPos::value_type surface_y { UNSET }; // top surface block
-    BlockPos::value_type bottom_y { UNSET };  // Bottom block of the top solid interval
     BlockPos::value_type liquid_y { UNSET };  // top liquid block (above surface, otherwise UNSET)
 };
 
 using ColumnSlice = std::array<Column, constant::CHUNK_AREA>;
-
-struct ColumnProbe final {
-    Column column;
-    biome_id_type biome { BIOME_ID_NULL };
-};
 
 namespace heightmap
 {
@@ -33,7 +27,6 @@ namespace heightmap
 {
 const Column& probe_slow(biome_realm realm, const BlockPosXZ& pos);
 const ColumnSlice& probe(biome_realm realm, const ChunkPosXZ& pos);
-ColumnProbe probe_column(biome_realm realm, const BlockPosXZ& pos);
 } // namespace heightmap
 
 constexpr bool Column::is_valid(void) const

@@ -23,8 +23,6 @@ struct BlockOverridePatch final {
     std::optional<vx::hash_map<std::string, Identifier>> masks;
     std::optional<bool> animated;
 
-    std::optional<Eigen::Vector3f> lod_color;
-
     std::optional<Identifier> model_name;
     std::optional<Eigen::Vector3f> model_offset;
     std::optional<block_face> model_facing;

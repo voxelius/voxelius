@@ -11,7 +11,6 @@
 #include "shared/world/world.hh"
 
 #include "server/universe.hh"
-#include "server/world/chunk_lod.hh"
 #include "server/world/climate_noise.hh"
 #include "server/world/entropy_cache.hh"
 #include "server/world/feature_placer.hh"
@@ -31,7 +30,6 @@ public:
 private:
     BlockStorage m_blocks;
     std::unique_ptr<BiomeSlice> m_biomes;
-    std::shared_ptr<const ChunkLod> m_lod;
     ChunkPos m_pos;
 };
 
@@ -65,14 +63,6 @@ void WorldgenTask::process(void)
         return;
     }
 
-    // The biome slice is still local here, so the colours of the far LOD do
-    // not race the biome map insert that finalize does on the main thread.
-    auto lod = std::make_shared<ChunkLod>();
-
-    if(chunk_lod::build(m_blocks, *biomes, *lod)) {
-        m_lod = std::move(lod);
-    }
-
     m_biomes = std::move(biomes);
 }
 
@@ -95,10 +85,6 @@ void WorldgenTask::finalize(void)
         }
 
         m_biomes.reset();
-    }
-
-    if(m_lod) {
-        world::chunk_registry.emplace<ChunkLod_Component>(chunk->entity(), ChunkLod_Component { std::move(m_lod) });
     }
 
     globals::dispatcher.trigger(ChunkUpdateEvent(m_pos, chunk));

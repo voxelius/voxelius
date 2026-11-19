@@ -113,24 +113,3 @@ const Column& heightmap::probe_slow(biome_realm realm, const BlockPosXZ& pos)
     auto& slice = probe(realm, cpos);
     return slice[index];
 }
-
-ColumnProbe heightmap::probe_column(biome_realm realm, const BlockPosXZ& pos)
-{
-    switch(realm) {
-        case BIOME_REALM_SURFACE:
-            return realm_surface::probe_column(pos);
-
-        case BIOME_REALM_SKY:
-            return realm_sky::probe_column(pos);
-
-        case BIOME_REALM_UNDERGROUND:
-        case BIOME_REALM_THE_DEPTHS:
-        case BIOME_REALM_VOID:
-            break;
-
-        case BIOME_REALM_COUNT:
-            break;
-    }
-
-    return {};
-}

@@ -25,8 +25,6 @@ enum packet_type : std::uint16_t {
     WORLD_TIMINGS,
     WORLD_WEATHER,
     WORLD_INFO,
-    WORLD_CHUNK_LOD,
-    WORLD_LOD_TILE,
 
     // Console
     CVAR_SERVER_VARS,
@@ -90,8 +88,6 @@ struct World_SetBlock;
 struct World_Timings;
 struct World_Info;
 struct World_Weather;
-struct World_ChunkLod;
-struct World_LodTile;
 } // namespace packet
 
 namespace packet

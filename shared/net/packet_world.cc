@@ -8,27 +8,16 @@ void packet::World_Request::encode(const World_Request& packet, WriteBuffer& buf
 {
     buffer.write_vector<std::int32_t, 3>(packet.view.min());
     buffer.write_vector<std::int32_t, 3>(packet.view.max());
-    buffer.write_vector<std::int32_t, 3>(packet.lod.min());
-    buffer.write_vector<std::int32_t, 3>(packet.lod.max());
-    buffer.write<std::uint8_t>(packet.flags);
     buffer.write<std::uint16_t>(packet.chunk_budget);
-    buffer.write<std::uint16_t>(packet.lod_chunk_budget);
-    buffer.write<std::uint16_t>(packet.lod_tile_budget);
 }
 
 void packet::World_Request::decode(World_Request& packet, ReadBuffer& buffer)
 {
     auto view_min = buffer.read_vector<std::int32_t, 3>();
     auto view_max = buffer.read_vector<std::int32_t, 3>();
-    auto lod_min = buffer.read_vector<std::int32_t, 3>();
-    auto lod_max = buffer.read_vector<std::int32_t, 3>();
 
     packet.view = ChunkAlignedBox(view_min, view_max);
-    packet.lod = ChunkAlignedBox(lod_min, lod_max);
-    packet.flags = buffer.read<std::uint8_t>();
     packet.chunk_budget = buffer.read<std::uint16_t>();
-    packet.lod_chunk_budget = buffer.read<std::uint16_t>();
-    packet.lod_tile_budget = buffer.read<std::uint16_t>();
 }
 
 void packet::World_Blocks::encode(const World_Blocks& packet, WriteBuffer& buffer)
@@ -218,40 +207,4 @@ void packet::World_Weather::decode(World_Weather& packet, ReadBuffer& buffer)
         packet.detail_drift[i] = buffer.read_vector<float, 2>();
         packet.wind[i] = buffer.read_vector<float, 2>();
     }
-}
-
-void packet::World_ChunkLod::encode(const World_ChunkLod& packet, WriteBuffer& buffer)
-{
-    buffer.write_vector<std::int32_t, 3>(packet.cpos);
-    ChunkLod::encode(packet.lod, buffer);
-}
-
-bool packet::World_ChunkLod::decode(World_ChunkLod& packet, ReadBuffer& buffer)
-{
-    packet.cpos = buffer.read_vector<std::int32_t, 3>();
-    return ChunkLod::decode(packet.lod, buffer);
-}
-
-void packet::World_LodTile::encode(const World_LodTile& packet, WriteBuffer& buffer)
-{
-    buffer.write<std::uint16_t>(static_cast<std::uint16_t>(packet.key.realm));
-    buffer.write<std::uint8_t>(packet.key.level);
-    buffer.write<std::int32_t>(packet.key.x);
-    buffer.write<std::int32_t>(packet.key.z);
-    LodTile::encode(packet.tile, buffer);
-}
-
-bool packet::World_LodTile::decode(World_LodTile& packet, ReadBuffer& buffer)
-{
-    packet.key.realm = static_cast<biome_realm>(buffer.read<std::uint16_t>());
-    packet.key.level = buffer.read<std::uint8_t>();
-    packet.key.x = buffer.read<std::int32_t>();
-    packet.key.z = buffer.read<std::int32_t>();
-
-    if(!LodTile::decode(packet.tile, buffer)) {
-        return false;
-    }
-
-    packet.tile.key = packet.key;
-    return true;
 }

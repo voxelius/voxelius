@@ -13,7 +13,6 @@
 #include "client/gui/container.hh"
 #include "client/gui/stepper.hh"
 #include "client/settings.hh"
-#include "client/world/lod_manager.hh"
 #include "client/world/skybox.hh"
 
 constexpr static float SMOOTH_RATE = 3.0f;
@@ -44,9 +43,7 @@ static bool s_primed { false };
 
 void fog::update(void)
 {
-    auto chunk_distance = std::max(camera::view_distance.value(), static_cast<unsigned>(lod_manager::range_chunks()));
-
-    distance = static_cast<float>(constant::CHUNK_SIZE * chunk_distance);
+    distance = static_cast<float>(constant::CHUNK_SIZE * camera::view_distance.value());
 
     // The atmosphere owns the sky colour and the weather tint; the fog
     // only copies them so the terrain dissolves into the same horizon

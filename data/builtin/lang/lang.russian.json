@@ -80,7 +80,6 @@
   "settings.label.gui": "Интерфейс",
   "settings.label.world": "Мир",
   "settings.label.levels": "Уровни",
-  "settings.label.lod": "LOD",
   "settings.label.atmosphere": "Атмосфера",
 
   "settings.separator.settings": "Настройки",
@@ -95,9 +94,6 @@
   "settings.value.r_fog.1": "Простой",
   "settings.value.r_fog.2": "Красивый",
   "settings.value.r_fog": "Туман",
-  "settings.value.r_lod": "LOD дальнего ландшафта",
-  "settings.value.r_lod_range": "Дальность LOD",
-  "settings.value.r_lod_other_realms": "LOD в других слоях мира",
   "settings.value.r_clouds": "Облака",
   "settings.value.r_cloud_range": "Дальность облаков",
   "settings.value.r_sun_angle": "Угол солнца",
@@ -123,9 +119,6 @@
   "settings.tooltip.net_username": "Изменения имени вступят в силу при следующем подключении к серверу",
   "settings.tooltip.r_vsync": "Синхронизирует смену буферов с частотой обновления монитора; устраняет разрывы изображения, но заметно увеличивает задержку ввода",
   "settings.tooltip.r_software_cursor": "Рисует курсор меню программно; включите, если указатель не виден в эксклюзивном полноэкранном режиме при использовании программ вроде OBS",
-  "settings.tooltip.r_lod": "Рисует дальний ландшафт упрощёнными ячейками LOD; отключите, чтобы видеть только близкий подробный мир",
-  "settings.tooltip.r_lod_range": "Насколько далеко простирается LOD-ландшафт, в чанках; большее значение повышает нагрузку",
-  "settings.tooltip.r_lod_other_realms": "Рисует LOD для слоёв мира выше и ниже камеры; отключите, чтобы сэкономить производительность",
 
   "settings.choice.video_mode.windowed": "В окне",
 

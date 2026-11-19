@@ -291,22 +291,3 @@ ColumnSlice realm_surface::probe(const ChunkPosXZ& pos)
 
     return slice;
 }
-
-ColumnProbe realm_surface::probe_column(const BlockPosXZ& pos)
-{
-    ColumnProbe result {};
-
-    auto sample = climate_noise::sample_block(pos);
-    auto continentalness = climate::normalize_01(sample.continentalness);
-    auto erosion = climate::normalize_01(sample.erosion);
-    auto pv = climate::peaks_valleys(sample.weirdness);
-
-    auto variation = std::lerp(VARIATION_MAX, VARIATION_MIN, erosion);
-    auto base = std::lerp(BASE_MIN, BASE_MAX, continentalness);
-    base += std::lerp(PV_VALLEY_OFFSET, PV_PEAK_OFFSET, climate::normalize_01(pv));
-
-    result.column = probe_one_column(pos.x(), pos.y(), base, variation);
-    result.biome = climate::find(BIOME_REALM_SURFACE, sample);
-
-    return result;
-}

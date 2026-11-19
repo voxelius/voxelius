@@ -80,20 +80,6 @@ static Column probe_one_column(BlockPos::value_type bx, BlockPos::value_type bz,
         if(is_inside_sky_terrain(bpos, continentalness, density_bias)) {
             Column column {};
             column.surface_y = y;
-
-            auto bottom = y;
-
-            for(auto by = y - 1; by >= constant::SKY_MIN_Y; by -= 1) {
-                auto below = BlockPos(bx, by, bz);
-
-                if(!is_inside_sky_terrain(below, continentalness, density_bias)) {
-                    break;
-                }
-
-                bottom = by;
-            }
-
-            column.bottom_y = bottom;
             return column;
         }
     }
@@ -267,21 +253,4 @@ ColumnSlice realm_sky::probe(const ChunkPosXZ& pos)
     }
 
     return slice;
-}
-
-ColumnProbe realm_sky::probe_column(const BlockPosXZ& pos)
-{
-    ColumnProbe result {};
-
-    auto sample = climate_noise::sample_block(pos);
-    auto cont = climate::normalize_01(sample.continentalness);
-    auto pv_norm = climate::normalize_01(climate::peaks_valleys(sample.weirdness));
-    auto ocean_factor = std::max(0.0f, 0.3f - cont) / 0.3f;
-    auto mountain_factor = std::max(0.0f, pv_norm - 0.65f) / 0.35f;
-    auto density_bias = 0.08f * ocean_factor + 0.12f * mountain_factor;
-
-    result.column = probe_one_column(pos.x(), pos.y(), cont, density_bias);
-    result.biome = climate::find(BIOME_REALM_SKY, sample);
-
-    return result;
 }

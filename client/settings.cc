@@ -23,7 +23,6 @@ gui::Container settings::controls_gameplay;
 gui::Container settings::controls_miscellaneous;
 gui::Container settings::mouse;
 gui::Container settings::video;
-gui::Container settings::video_lod;
 gui::Container settings::video_atmosphere;
 gui::Container settings::video_gui;
 gui::Container settings::sound;
@@ -35,7 +34,6 @@ static gui::Scroller s_scroller_video;
 static gui::Scroller s_scroller_audio;
 static gui::Scroller s_scroller_controls;
 
-static gui::Separator s_header_video_lod;
 static gui::Separator s_header_video_atmosphere;
 static gui::Separator s_header_video_gui;
 static gui::Separator s_header_sound_levels;
@@ -94,7 +92,6 @@ void settings::init(void)
     s_body.set_margin(ImVec2(BODY_MARGIN, BODY_MARGIN));
     s_body.enable_background();
 
-    s_header_video_lod.set_text("settings.label.lod");
     s_header_video_atmosphere.set_text("settings.label.atmosphere");
     s_header_video_gui.set_text("settings.label.gui");
     s_header_sound_levels.set_text("settings.label.levels");
@@ -106,12 +103,10 @@ void settings::init(void)
     s_scroller_mouse.add_child(mouse, 0);
 
     s_scroller_video.add_child(video, 0);
-    s_scroller_video.add_child(s_header_video_lod, 1);
-    s_scroller_video.add_child(video_lod, 2);
-    s_scroller_video.add_child(s_header_video_atmosphere, 3);
-    s_scroller_video.add_child(video_atmosphere, 4);
-    s_scroller_video.add_child(s_header_video_gui, 5);
-    s_scroller_video.add_child(video_gui, 6);
+    s_scroller_video.add_child(s_header_video_atmosphere, 1);
+    s_scroller_video.add_child(video_atmosphere, 2);
+    s_scroller_video.add_child(s_header_video_gui, 3);
+    s_scroller_video.add_child(video_gui, 4);
 
     s_scroller_audio.add_child(sound, 0);
     s_scroller_audio.add_child(s_header_sound_levels, 1);

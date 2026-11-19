@@ -144,10 +144,6 @@ BlockDefinition BlockOverridePatch::apply(BlockDefinition base, const BlockOverr
         base.animated = patch.animated.value();
     }
 
-    if(patch.lod_color) {
-        base.lod_color = patch.lod_color.value();
-    }
-
     if(patch.model_name) {
         base.model_name = patch.model_name.value();
     }

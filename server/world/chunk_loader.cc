@@ -8,15 +8,12 @@
 #include "shared/constant.hh"
 #include "shared/globals.hh"
 #include "shared/utils/biome.hh"
-#include "shared/world/biome_map.hh"
-#include "shared/world/biome_slice.hh"
 #include "shared/world/chunk.hh"
 #include "shared/world/world.hh"
 
 #include "server/entity/entity_loader.hh"
 #include "server/universe.hh"
 #include "server/utils/region.hh"
-#include "server/world/chunk_lod.hh"
 #include "server/world/worldgen.hh"
 #include "server/world/zvox_file.hh"
 
@@ -40,10 +37,7 @@ public:
 private:
     ChunkPos m_pos;
     Chunk::Snapshot m_snapshot;
-    BiomeSlice m_biomes;
-    std::shared_ptr<const ChunkLod> m_lod;
     bool m_found { false };
-    bool m_biomes_valid { false };
 };
 
 class SaveTask final : public Task {
@@ -152,28 +146,6 @@ static void evict_stale(void)
     }
 }
 
-// The biome slice is not part of the chunk itself, and the server needs it to
-// rebuild the far LOD colours of a chunk it reads back from disk.
-static Chunk::Snapshot take_snapshot(const std::shared_ptr<Chunk>& chunk)
-{
-    auto snapshot = chunk->snapshot(globals::current_tick);
-    auto entity = chunk->entity();
-
-    if(world::chunk_registry.all_of<BiomeSlice_Component>(entity)) {
-        auto& component = world::chunk_registry.get<BiomeSlice_Component>(entity);
-        auto has_biome = std::any_of(component.ptr->cbegin(), component.ptr->cend(), [](biome_id_type id) {
-            return static_cast<bool>(id);
-        });
-
-        if(has_biome) {
-            snapshot.biomes = *component.ptr;
-            snapshot.biomes_valid = true;
-        }
-    }
-
-    return snapshot;
-}
-
 static void write_chunk(const ChunkPos& pos, const Chunk::Snapshot& snapshot)
 {
     auto realm = utils::realm(pos.y());
@@ -255,22 +227,6 @@ void LoadTask::process(void)
     if(found) {
         Chunk::decode_dat(m_snapshot, buffer);
         m_found = true;
-
-        if(m_snapshot.biomes_valid) {
-            m_biomes = m_snapshot.biomes;
-            m_biomes_valid = true;
-        }
-
-        auto biomes = std::span<const biome_id_type>();
-
-        if(m_biomes_valid) {
-            biomes = std::span<const biome_id_type>(m_biomes);
-        }
-        auto lod = std::make_shared<ChunkLod>();
-
-        if(chunk_lod::build(m_snapshot.blocks, biomes, *lod)) {
-            m_lod = std::move(lod);
-        }
     }
 }
 
@@ -281,15 +237,6 @@ void LoadTask::finalize(void)
     if(m_found) {
         auto chunk = world::create_chunk(m_pos);
         chunk->restore(std::move(m_snapshot), globals::current_tick);
-
-        if(m_biomes_valid) {
-            auto realm = utils::realm(m_pos.y());
-            biome_map::insert(realm, ChunkPosXZ(m_pos.x(), m_pos.z()), std::move(m_biomes));
-        }
-
-        if(m_lod) {
-            world::chunk_registry.emplace<ChunkLod_Component>(chunk->entity(), ChunkLod_Component { std::move(m_lod) });
-        }
 
         // Not ChunkUpdateEvent: loaded-from-disk chunks are identical
         // to what's saved and must NOT be marked ChunkDirtyMarker.
@@ -335,7 +282,7 @@ void chunk_loader::shutdown(void)
     auto view = world::chunk_registry.view<Chunk_Component, ChunkDirtyMarker>();
 
     for(auto [entity, component] : view.each()) {
-        write_chunk(component.position, take_snapshot(component.ptr));
+        write_chunk(component.position, component.ptr->snapshot(globals::current_tick));
     }
 
     std::unique_lock lock(s_cache_mutex);
@@ -385,7 +332,7 @@ bool chunk_loader::save(const ChunkPos& pos)
     if(world::chunk_registry.all_of<ChunkDirtyMarker>(entity)) {
         world::chunk_registry.remove<ChunkDirtyMarker>(entity);
         s_saving.emplace(pos);
-        threading::submit<SaveTask>(pos, take_snapshot(chunk));
+        threading::submit<SaveTask>(pos, chunk->snapshot(globals::current_tick));
         return true;
     }
 

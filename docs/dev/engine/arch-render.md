@@ -55,16 +55,6 @@ The mesher bakes the face albedo and a flat normal into the vertices: bright on 
 
 There is no precipitation pass yet: a weather type can declare rain or snow, and the fields travel with the mod data, but nothing draws them. The next pass over weather adds the local precipitation buffer the API describes.
 
-## Far terrain LOD
-
-The server builds a LOD pyramid for a chunk where its blocks appear: in the worldgen task and in the load task, from the blocks and the biome slice of the column. Level 1 decimates the chunk to 8³ cells of 2³ blocks, level 2 to 4³, level 3 to 2³ and level 4 to a single cell. Each cell stores an 8-bit palette colour plus a coverage and water byte, so the pyramid keeps cave openings, overhangs and tree canopies that a heightmap would lose. The pyramid lives as long as the chunk does and is never written to disk; a chunk read back from the save file rebuilds it, so a mod or a world change cannot leave a stale horizon behind.
-
-The far horizon, where no chunk has ever been generated, comes from heightmap tiles. A tile covers `2^(level + 1)` chunks with 32×32 columns of top-surface height, 8-bit colour and a water flag. Tiles are generated from the heightmap and live under `save/lod/tile`. Their colours depend on the block and biome registries; the registry checksums are still placeholders, so a content change that only moves colours needs `LOD_TILE_VERSION` bumped and that directory removed. The client meshes the far tiles first and draws the chunk LOD pyramids over them.
-
-The chunk LOD has its own mesher, organized like the chunk mesher: an entry per far chunk, a dirty flag, at most a few tasks per frame on the pool, and a per-entry list of quads. The renderer only concatenates the finished lists into one instance buffer per level, with a short cooldown, so an arriving packet never rebuilds the whole deck of quads. Both LOD passes use instanced quads, the same shape the chunk renderer had before block models: a static six-vertex pattern, one packed instance per exposed quad, and the origin of the chunk or tile in the same instance record. A chunk instance is twenty bytes (cell and face, RGB plus flags, and the chunk origin); a tile instance is twenty bytes too (cell and face, top and bottom Y, RGB plus flags, and the tile XZ origin).
-
-The LOD passes write depth in the diffuse layer before the full chunks, so the full chunks cover the LOD at the handover. A far chunk is hidden as soon as the full chunk under it has a mesh, and is shown again if that chunk unloads. The LOD fog fades into the horizon over the last quarter of the LOD range even when `r_fog` is off, so the world has no hard edge. `r_lod` and `r_lod_range` control the pass; `sv_lod_distance` bounds how far the server streams it.
-
 ## Outlines
 
 > **TODO:** add screenshots once the outline shapes are finalized.

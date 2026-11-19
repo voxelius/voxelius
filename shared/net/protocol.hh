@@ -13,11 +13,7 @@ constexpr static enet_uint16 PORT = 43103;
 // and the reverse holds too.
 constexpr static enet_uint32 CHANNEL_DEFAULT = 0;
 constexpr static enet_uint32 CHANNEL_WORLD = 1;
-
-// Far terrain LOD rides a channel of its own. A pyramid packet is large, and
-// the world channel has to keep its order for blocks, biomes and light.
-constexpr static enet_uint32 CHANNEL_LOD = 2;
-constexpr static enet_uint32 CHANNEL_COUNT = 3;
+constexpr static enet_uint32 CHANNEL_COUNT = 2;
 } // namespace protocol
 
 namespace protocol

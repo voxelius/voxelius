@@ -89,8 +89,6 @@ struct BlockDefinition final {
     vx::hash_map<std::string, Identifier> masks;
     bool animated;
 
-    std::optional<Eigen::Vector3f> lod_color;
-
     Identifier model_name;
     Eigen::Vector3f model_offset;
     block_face model_facing;
