@@ -6,6 +6,7 @@
 #include "shared/coord.hh"
 #include "shared/net/ed25519.hh"
 #include "shared/utils/view.hh"
+#include "shared/world/lod_tile.hh"
 
 namespace sessions
 {
@@ -40,6 +41,23 @@ struct Session final {
 
     ChunkAlignedBox view_box;
     vx::hash_set<entt::entity> known_entities;
+
+    ChunkAlignedBox stream_view_box { ChunkPos(1, 1, 1), ChunkPos(0, 0, 0) };
+    ChunkAlignedBox stream_lod_box { ChunkPos(1, 1, 1), ChunkPos(0, 0, 0) };
+    ChunkPos stream_player_chunk { ChunkPos::Zero() };
+    vx::hash_set<ChunkPos> stream_sent_chunks;
+    vx::hash_set<ChunkPos> stream_sent_lod_chunks;
+    vx::hash_set<LodKey> stream_sent_lod_tiles;
+    std::vector<ChunkPos> stream_wanted_chunks;
+    std::vector<ChunkPos> stream_wanted_lod_chunks;
+    std::vector<LodKey> stream_wanted_lod_tiles;
+    std::size_t stream_cursor_chunks { 0 };
+    std::size_t stream_cursor_lod_chunks { 0 };
+    std::size_t stream_cursor_lod_tiles { 0 };
+    std::uint16_t stream_budget_chunks { 0 };
+    std::uint16_t stream_budget_lod_chunks { 0 };
+    std::uint16_t stream_budget_lod_tiles { 0 };
+    bool stream_rebuild { true };
 
     std::uint64_t cvar_ratelimit_tick;
     float cvar_ratelimit_tokens;

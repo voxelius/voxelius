@@ -328,7 +328,7 @@ void cvar::save_values(std::string_view path, flag_bits ignore_flags)
             continue;
         }
 
-        if(ignore_flags && 0 != (flags & ignore_flags)) {
+        if(ignore_flags && (flags & ignore_flags)) {
             continue;
         }
 

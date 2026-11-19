@@ -16,6 +16,9 @@
 
 #include "client/camera.hh"
 #include "client/globals.hh"
+#include "client/gui/container.hh"
+#include "client/gui/slider.hh"
+#include "client/settings.hh"
 
 constexpr static float SMOOTH_RATE = 3.0f;
 constexpr static float MAX_STEP_TIME = 0.1f;
@@ -70,6 +73,7 @@ float skybox::star_visibility;
 std::uint32_t skybox::star_seed;
 
 static cvar::Number<float> s_sun_angle { 0.0f, -90.0f, 90.0f };
+static gui::SliderFloat s_sun_angle_gui;
 
 static float s_phase;
 static Eigen::Vector3f s_horizon;
@@ -116,6 +120,11 @@ void skybox::init(void)
     auto& sun_angle_binding = cvar::bind_var(s_sun_angle, "r_sun_angle");
     sun_angle_binding.set_help("Tilt of the sun's path in degrees; 0 rises due east and sets due west");
     sun_angle_binding.set_flags(FCVAR_ARCHIVE);
+
+    s_sun_angle_gui.set_range(-90.0f, 90.0f);
+    s_sun_angle_gui.set_format("%.0f");
+    s_sun_angle_gui.bind("r_sun_angle");
+    settings::video_atmosphere.add_child(s_sun_angle_gui, 2);
 
     reset();
 

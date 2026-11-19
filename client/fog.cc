@@ -2,15 +2,37 @@
 
 #include "client/fog.hh"
 
+#include "core/cvar/host.hh"
+#include "core/cvar/number.hh"
+
 #include "shared/world/fluid_registry.hh"
 
 #include "client/camera.hh"
 #include "client/constant.hh"
 #include "client/globals.hh"
+#include "client/gui/container.hh"
+#include "client/gui/stepper.hh"
+#include "client/settings.hh"
+#include "client/world/lod_manager.hh"
 #include "client/world/skybox.hh"
 
 constexpr static float SMOOTH_RATE = 3.0f;
 constexpr static float MAX_STEP_TIME = 0.1f;
+
+cvar::Number<unsigned> fog::model { 0, 0, 2 };
+
+static gui::StepperUnsigned s_fog_model_gui;
+
+void fog::init(void)
+{
+    auto& binding = cvar::bind_var(fog::model, "r_fog");
+    binding.set_help("Fog style: 0 = off, 1 = simple, 2 = fancy");
+    binding.set_flags(FCVAR_ARCHIVE);
+
+    s_fog_model_gui.set_range(0, 2, 1);
+    s_fog_model_gui.bind("r_fog");
+    settings::video_atmosphere.add_child(s_fog_model_gui, 3);
+}
 
 float fog::distance;
 Eigen::Vector3f fog::color;
@@ -22,7 +44,9 @@ static bool s_primed { false };
 
 void fog::update(void)
 {
-    distance = static_cast<float>(constant::CHUNK_SIZE * camera::view_distance.value());
+    auto chunk_distance = std::max(camera::view_distance.value(), static_cast<unsigned>(lod_manager::range_chunks()));
+
+    distance = static_cast<float>(constant::CHUNK_SIZE * chunk_distance);
 
     // The atmosphere owns the sky colour and the weather tint; the fog
     // only copies them so the terrain dissolves into the same horizon

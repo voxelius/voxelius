@@ -2,7 +2,7 @@
 
 The client and the server talk over ENet, a thin reliability layer on top of UDP. Each side reads and writes [buffers](arch-core.md#buffers). Every packet starts with a 16-bit unsigned integer that names its ID.
 
-Every packet is sent reliably. ENet sequences each channel on its own, so the world stream has a channel of its own: a burst of chunk packets does not hold back login, entity or timing packets, and the other way around. Blocks, biomes and light share that channel because a light packet is only meaningful after the chunk it belongs to, and a single sequence is what guarantees that order.
+Every packet is sent reliably. ENet sequences each channel on its own, so the world stream has a channel of its own: a burst of chunk packets does not hold back login, entity or timing packets, and the other way around. Blocks, biomes and light share that channel because a light packet is only meaningful after the chunk it belongs to, and a single sequence is what guarantees that order. The far terrain LOD has a third channel: a pyramid packet is large, and the chunk stream must not wait behind it.
 
 A client goes through one of two exchanges after it connects: a status ping, or a full login. Both exchanges start the same way. Both end with the server closing the connection or keeping it open.
 
@@ -109,7 +109,9 @@ Once the server admits a client, the client asks for chunks and reports block an
 
 ##### Chunk transfer
 
-The client sends `RequestChunk` for any chunk position it needs. The server answers with `ChunkBlocks`, holding that chunk's full block data. The server also sends `ChunkBlocks` on its own initiative, as a full resync.
+The client sends `RequestChunk` every fixed tick with two chunk-aligned boxes: the fully detailed view it needs and the farther region it wants rough LOD for. The server intersects both with its own view limits and sends only what the peer does not hold yet. The server answers with `ChunkBlocks`, holding that chunk's full block data, or with `ChunkLod` for a chunk in the far ring. The server also sends `ChunkBlocks` on its own initiative, as a full resync.
+
+A chunk's LOD pyramid is built where the chunk's blocks appear and lives as long as the chunk does; the far tiles come from the heightmap. The client draws a far tile where it has no data of its own and lets the chunk LOD cover the rest, so the horizon needs neither a full chunk load nor a second cache.
 
 ##### World info
 
@@ -133,7 +135,7 @@ The entity variants carry only the targeted entity. The block variants carry the
 
 Each packet starts with a 16-bit unsigned integer that names its ID. The packets are named and structured as follows:
 
-### `0x0001` `StatusRequestPacket`
+### `0x0000` `StatusRequestPacket`
 
 Request a status from server
 
@@ -143,7 +145,7 @@ Request a status from server
 |`uint32`|`minor`|Minor game version|
 |`uint32`|`patch`|Patch game version|
 
-### `0x0002` `StatusResponsePacket`
+### `0x0001` `StatusResponsePacket`
 
 Server's response to a `StatusRequestPacket`
 
@@ -164,7 +166,7 @@ Server's response to a `StatusRequestPacket`
 |`0x00000001`|Server has whitelist enabled|
 |`0x00000002`|Server enforces strict version matching|
 
-### `0x0003` `AuthRequestPacket`
+### `0x0002` `AuthRequestPacket`
 
 Request an authentication on a server
 
@@ -182,7 +184,7 @@ Request an authentication on a server
 |`uint64`|`ents_hash`|Entity registry hash|
 |`string`|`username`|Desired username|
 
-### `0x0004` `AuthChallengePacket`
+### `0x0003` `AuthChallengePacket`
 
 Server's response to `AuthRequestPacket`
 
@@ -190,7 +192,7 @@ Server's response to `AuthRequestPacket`
 |----|----|----|
 |`uint8[64]`|`nonce`|Nonce for the client to sign|
 
-### `0x0005` `AuthResponsePacket`
+### `0x0004` `AuthResponsePacket`
 
 Client's repsonse to `AuthChallengePacket`
 
@@ -198,7 +200,7 @@ Client's repsonse to `AuthChallengePacket`
 |----|----|----|
 |`uint8[64]`|`signature`|Signed nonce + UNIX minutes|
 
-### `0x0006` `AuthAdmissionPacket`
+### `0x0005` `AuthAdmissionPacket`
 
 On successful auth, server's response to `AuthResponsePacket`
 
@@ -209,7 +211,7 @@ On successful auth, server's response to `AuthResponsePacket`
 |`string`|`username`|Assigned username|
 |`uint64`|`entity`|Player entity|
 
-### `0x0007` `Disconnect`
+### `0x0006` `Disconnect`
 
 Disconnection notification. Each network side should but may not terminate the connection immediately afterwards this packet is sent
 
@@ -234,15 +236,30 @@ Disconnection notification. Each network side should but may not terminate the c
 |`0x0000000A`|Server shutdown|Server is terminating|
 |`0x0000000C`|Kicked|An operator removed the client|
 
-### `0x0008` `RequestChunk`
+### `0x0007` `RequestChunk`
 
-Sent by client to request a chunk to be generated or loaded and sent to the client over the network. Server performs view distance checks and may not respond at all
+Sent by the client every fixed tick to describe what world data it wants. The
+packet carries two chunk-aligned boxes and per-box budgets; the server intersects
+them with its view limits, stores what the peer already has, and sends only the
+difference. A box with `min > max` is empty.
 
 |Type|Name|Description|
 |----|----|----|
-|`vector3<int32>`|`cpos`|Requested chunk position|
+|`vector3<int32>`|`view_min`|Minimum chunk of the fully detailed view|
+|`vector3<int32>`|`view_max`|Maximum chunk of the fully detailed view|
+|`vector3<int32>`|`lod_min`|Minimum chunk of the LOD region|
+|`vector3<int32>`|`lod_max`|Maximum chunk of the LOD region|
+|`uint8`|`flags`|`0x01` when the client wants LOD|
+|`uint16`|`chunk_budget`|How many full chunks the server may queue now|
+|`uint16`|`lod_chunk_budget`|How many chunk LOD pyramids the server may queue now|
+|`uint16`|`lod_tile_budget`|How many heightmap LOD tiles the server may queue now|
 
-### `0x0009` `ChunkBlocks`
+The budgets carry the client's backpressure: it lowers them while its mesher
+queues more work than it can take. The sent sets live on the server and are
+filled only when a packet is handed to ENet, so a request that fails to produce
+data is retried instead of being treated as delivered.
+
+### `0x0008` `ChunkBlocks`
 
 Sent by server as a response to `RequestChunk` or at arbitrary moments to synchronize chunk contents with clients
 
@@ -253,7 +270,7 @@ Sent by server as a response to `RequestChunk` or at arbitrary moments to synchr
 |`data`|`light`|Compressed packed light, one byte per block: skylight in the high nibble, block light in the low nibble|
 |`uint8`|`light_valid`|`1` when `light` holds computed light; `0` makes the client fall back to its own estimate until a `ChunkLight` arrives|
 
-### `0x000A` `ChunkBiomes`
+### `0x0009` `ChunkBiomes`
 
 Sent by server as a response to `RequestChunk` once per realm to synchronize biome caches used for client rendering
 
@@ -270,82 +287,7 @@ or as their zlib stream. The whole array is compressed at once, so the ratio is
 the one the codec gets over a chunk rather than the one a transport can get out
 of a single datagram.
 
-### `0x000B` `SetBlock`
-
-Sent by server as a sub-chunk block update
-
-|Type|Name|Description|
-|----|----|----|
-|`vector3<int64>`|`bpos`|World-scale block position|
-|`uint32`|`block`|Resulting numeric block ID|
-
-### `0x000C` `PlayerAttackE`
-
-Sent by client to specify an attack action against an entity
-
-|Type|Name|Description|
-|----|----|----|
-|`uint64`|`target`|Targeted entity|
-
-### `0x000D` `PlayerAttackB`
-
-Sent by client to specify an attach action against a block
-
-|Type|Name|Description|
-|----|----|----|
-|`vector3<int64>`|`bpos`|Targeted block position|
-|`uint32`|`expected`|Numeric block ID the client expects at `bpos`|
-
-### `0x000E` `PlayerInteractE`
-
-Sent by client to specify an interact action against an entity
-
-> **TODO:** send over specific part of an entity's hitbox as well
-
-|Type|Name|Description|
-|----|----|----|
-|`uint64`|`target`|Targeted entity|
-
-### `0x000F` `PlayerInteractB`
-
-Sent by client to specify an interact action against a block
-
-|Type|Name|Description|
-|----|----|----|
-|`vector3<int64>`|`bpos`|Targeted block position|
-|`uint32`|`expected`|Numeric block ID the client expects at `bpos`|
-|`uint8`|`face`|Hit face used for interactions|
-|`vector3<float>`|`normal`|Hit normal|
-|`vector3<float>`|`point`|Hit point local to the block|
-
-### `0x0010` `EntitySpawn`
-
-Sent by server when an entity is spawned
-
-|Type|Name|Description|
-|----|----|----|
-|`uint64`|`id`|Entity ID|
-|`class_id_type`|`class_id`|Numeric class ID|
-
-### `0x0011` `EntityPatch`
-
-Sent by server when an entity's component is updated
-
-|Type|Name|Description|
-|----|----|----|
-|`uint64`|`id`|Entity ID|
-|`uint32`|`ncomp`|Component count|
-|`component[ncomp]`|`components`|Serialized components|
-
-### `0x0012` `EntityRemove`
-
-Sent by server when an entity is removed
-
-|Type|Name|Description|
-|----|----|----|
-|`uint64`|`id`|Entity ID|
-
-### `0x001A` `ChunkLight`
+### `0x000A` `ChunkLight`
 
 Sent by server when the light of chunks it has already synchronized changes.
 One packet carries every chunk whose light changed in a tick. Each entry is
@@ -375,3 +317,113 @@ delta that would be larger.
 
 A batch is split when it would exceed 32 KiB, so a tick that relights a large
 part of the view distance turns into several packets instead of one huge one.
+
+### `0x000B` `SetBlock`
+
+Sent by server as a sub-chunk block update
+
+|Type|Name|Description|
+|----|----|----|
+|`vector3<int64>`|`bpos`|World-scale block position|
+|`uint32`|`block`|Resulting numeric block ID|
+
+### `0x000F` `ChunkLod`
+
+Sent by the server for chunks near the fully detailed view, once the chunk
+itself is ready. The payload is a per-chunk LOD pyramid: four decimated levels
+of 8³, 4³, 2³ and 1³ cells. Each cell carries an 8-bit palette index and a
+coverage/water byte. An empty chunk is never sent.
+
+The pyramid is built where the chunk's blocks appear and lives as long as the
+chunk does; it is not stored on disk, so a mod or a world change cannot leave a
+stale horizon behind.
+
+|Type|Name|Description|
+|----|----|----|
+|`vector3<int32>`|`cpos`|Chunk position|
+|`data`|`lod`|Compressed chunk LOD pyramid|
+
+### `0x0010` `LodTile`
+
+Sent by the server for the far horizon, where no chunk LOD exists. A tile covers
+`2^(level + 1)` chunks with 32×32 heightfield columns; each column stores the top
+surface Y, an 8-bit colour and water flag. Unlike the chunk pyramids, tiles are
+generated from the heightmap and kept under `save/lod/tile`.
+
+|Type|Name|Description|
+|----|----|----|
+|`uint16`|`realm`|Biome realm|
+|`uint8`|`level`|Tile level|
+|`int32`|`x`|Tile X index|
+|`int32`|`z`|Tile Z index|
+|`data`|`tile`|Compressed heightfield tile|
+
+Both LOD packets travel on their own channel: a pyramid is large, and the world
+channel has to keep its order for blocks, biomes and light. The client draws
+the far tiles first and the chunk LOD pyramids over them.
+
+### `0x0014` `PlayerAttackE`
+
+Sent by client to specify an attack action against an entity
+
+|Type|Name|Description|
+|----|----|----|
+|`uint64`|`target`|Targeted entity|
+
+### `0x0015` `PlayerAttackB`
+
+Sent by client to specify an attach action against a block
+
+|Type|Name|Description|
+|----|----|----|
+|`vector3<int64>`|`bpos`|Targeted block position|
+|`uint32`|`expected`|Numeric block ID the client expects at `bpos`|
+
+### `0x0016` `PlayerInteractE`
+
+Sent by client to specify an interact action against an entity
+
+> **TODO:** send over specific part of an entity's hitbox as well
+
+|Type|Name|Description|
+|----|----|----|
+|`uint64`|`target`|Targeted entity|
+
+### `0x0017` `PlayerInteractB`
+
+Sent by client to specify an interact action against a block
+
+|Type|Name|Description|
+|----|----|----|
+|`vector3<int64>`|`bpos`|Targeted block position|
+|`uint32`|`expected`|Numeric block ID the client expects at `bpos`|
+|`uint8`|`face`|Hit face used for interactions|
+|`vector3<float>`|`normal`|Hit normal|
+|`vector3<float>`|`point`|Hit point local to the block|
+
+### `0x0019` `EntitySpawn`
+
+Sent by server when an entity is spawned
+
+|Type|Name|Description|
+|----|----|----|
+|`uint64`|`id`|Entity ID|
+|`class_id_type`|`class_id`|Numeric class ID|
+
+### `0x001A` `EntityPatch`
+
+Sent by server when an entity's component is updated
+
+|Type|Name|Description|
+|----|----|----|
+|`uint64`|`id`|Entity ID|
+|`uint32`|`ncomp`|Component count|
+|`component[ncomp]`|`components`|Serialized components|
+
+### `0x001B` `EntityRemove`
+
+Sent by server when an entity is removed
+
+|Type|Name|Description|
+|----|----|----|
+|`uint64`|`id`|Entity ID|

@@ -152,6 +152,7 @@ Returns the numeric block ID.
 |`albedo`|`table`|depends|`{}`|Albedo textures to attach to the block model|
 |`masks`|`table`|no|`{}`|Mask textures to attach to the block model|
 |`animated`|`boolean`|no|`false`|If true, the engine treats textures in `textures` as animation frames instead of world-position random frames|
+|`lod_color`|`number[3]`|no|N/D|Flat RGB colour, each channel 0..1, that the far LOD uses for this block. When omitted, the engine averages the top albedo texture|
 |`model_name`|`string`|depends|N/D|[Block model](format-bmodel.md) name for this variant|
 |`model_offset`|`number[3]`|depends|`{0, 0, 0}`|Offset of the resolved block model|
 |`model_facing`|`integer`|no|`blocks.FACE_NORTH`|One of `blocks.FACE_XXXX`. Sets where the model's own north face points, and rotates the whole resolved block model|

@@ -631,6 +631,19 @@ void sessions::destroy(Session* session, std::optional<std::uint32_t> reason)
         session->player = entt::null;
         session->peer = nullptr;
         session->known_entities.clear();
+        session->stream_sent_chunks.clear();
+        session->stream_sent_lod_chunks.clear();
+        session->stream_sent_lod_tiles.clear();
+        session->stream_wanted_chunks.clear();
+        session->stream_wanted_lod_chunks.clear();
+        session->stream_wanted_lod_tiles.clear();
+        session->stream_cursor_chunks = 0;
+        session->stream_cursor_lod_chunks = 0;
+        session->stream_cursor_lod_tiles = 0;
+        session->stream_budget_chunks = 0;
+        session->stream_budget_lod_chunks = 0;
+        session->stream_budget_lod_tiles = 0;
+        session->stream_rebuild = true;
         session->cvar_ratelimit_tick = 0;
         session->cvar_ratelimit_tokens = 0.0f;
 

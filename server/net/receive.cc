@@ -21,17 +21,51 @@
 #include "server/globals.hh"
 #include "server/net/interest.hh"
 #include "server/net/sessions.hh"
+#include "server/net/streaming.hh"
 #include "server/system/pmove_validator.hh"
 #include "server/world/chunk_loader.hh"
-
-static vx::hash_map<ChunkPos, std::vector<ENetPeer*>> s_waiting_peers;
-static vx::hash_set<ChunkPos> s_sent_chunks;
-static std::vector<packet::World_Light::Entry> s_pending_light;
+#include "server/world/chunk_lod.hh"
+#include "server/world/lod_tile.hh"
 
 struct PendingChunkSend final {
     ENetPeer* peer;
     ChunkPos cpos;
+    chunk_want kind;
 };
+
+struct ChunkRequest final {
+    ENetPeer* peer;
+    chunk_want kind;
+};
+
+// The same chunk can be queued as a full chunk for one peer and as a pyramid
+// for another, and a peer must be able to upgrade its own request without the
+// dedupe eating the newer one.
+struct ChunkSendKey final {
+    ChunkPos pos;
+    chunk_want kind;
+
+    bool operator==(const ChunkSendKey& other) const;
+};
+
+bool ChunkSendKey::operator==(const ChunkSendKey& other) const
+{
+    return pos == other.pos && kind == other.kind;
+}
+
+template<>
+struct std::hash<ChunkSendKey> final {
+    std::size_t operator()(const ChunkSendKey& key) const
+    {
+        auto value = std::hash<ChunkPos> {}(key.pos);
+        value ^= static_cast<std::size_t>(key.kind) + static_cast<std::size_t>(0x9E3779B97F4A7C15ULL) + (value << 6) + (value >> 2);
+        return value;
+    }
+};
+
+static vx::hash_map<ChunkPos, std::vector<ChunkRequest>> s_waiting_peers;
+static vx::hash_set<ChunkPos> s_sent_chunks;
+static std::vector<packet::World_Light::Entry> s_pending_light;
 
 constexpr static std::size_t CHUNK_SEND_BUDGET = 256;
 
@@ -40,35 +74,57 @@ constexpr static std::size_t CHUNK_SEND_BUDGET = 256;
 constexpr static std::size_t LIGHT_BATCH_BYTES = 32768;
 
 static std::deque<PendingChunkSend> s_send_queue;
-static vx::hash_map<ENetPeer*, vx::hash_set<ChunkPos>> s_send_queued;
+static vx::hash_map<ENetPeer*, vx::hash_set<ChunkSendKey>> s_send_queued;
 
-static void enqueue_send(ENetPeer* peer, const ChunkPos& cpos)
+static void enqueue_send(ENetPeer* peer, const ChunkPos& cpos, chunk_want kind)
 {
     auto& queued = s_send_queued[peer];
 
-    if(queued.insert(cpos).second) {
-        s_send_queue.push_back(PendingChunkSend { peer, cpos });
+    if(queued.insert(ChunkSendKey { cpos, kind }).second) {
+        s_send_queue.push_back(PendingChunkSend { peer, cpos, kind });
     }
 }
 
-static void enqueue_peer(const ChunkPos& cpos, ENetPeer* peer)
+static void enqueue_peer(const ChunkPos& cpos, ENetPeer* peer, chunk_want kind)
 {
     auto& waiting = s_waiting_peers[cpos];
 
-    if(std::find(waiting.begin(), waiting.end(), peer) == waiting.end()) {
-        waiting.push_back(peer);
+    auto known = std::find_if(waiting.begin(), waiting.end(), [peer, kind](const auto& request) {
+        return request.peer == peer && request.kind == kind;
+    });
+
+    if(known == waiting.end()) {
+        waiting.push_back(ChunkRequest { peer, kind });
     }
 }
 
-static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos)
+static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos, chunk_want kind)
 {
     auto chunk = world::find_chunk(cpos);
 
     if(chunk == nullptr) {
         // The chunk was unloaded between queueing and sending. Ask for it
         // again instead of dropping the peer's request on the floor.
-        enqueue_peer(cpos, peer);
+        enqueue_peer(cpos, peer, kind);
         chunk_loader::request(cpos);
+        return;
+    }
+
+    if(kind == chunk_want::LOD) {
+        if(world::chunk_registry.all_of<ChunkLod_Component>(chunk->entity())) {
+            auto& component = world::chunk_registry.get<ChunkLod_Component>(chunk->entity());
+
+            if(component.ptr) {
+                packet::World_ChunkLod lod_packet;
+                lod_packet.cpos = cpos;
+                lod_packet.lod = *component.ptr;
+                protocol::send(lod_packet, peer);
+            }
+        }
+
+        // An empty chunk has no pyramid. It is still a finished request, so
+        // the planner stops waiting for it.
+        globals::dispatcher.trigger(ChunkSentEvent(peer, cpos, kind));
         return;
     }
 
@@ -90,6 +146,8 @@ static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos)
     protocol::send(blocks_packet, peer);
 
     s_sent_chunks.insert(cpos);
+
+    globals::dispatcher.trigger(ChunkSentEvent(peer, cpos, kind));
 }
 
 static void send_waiting(const ChunkPos& cpos)
@@ -107,8 +165,8 @@ static void send_waiting(const ChunkPos& cpos)
         return;
     }
 
-    for(auto peer : it->second) {
-        enqueue_send(peer, cpos);
+    for(const auto& request : it->second) {
+        enqueue_send(request.peer, cpos, request.kind);
     }
 
     s_waiting_peers.erase(it);
@@ -122,28 +180,7 @@ static void on_world_request(const packet::World_Request& packet)
         return;
     }
 
-    auto& transform = globals::registry.get<Transform>(session->player);
-    auto delta = ChunkPos(transform.chunk - packet.cpos);
-    auto distance = static_cast<unsigned>(delta.cwiseAbs().maxCoeff());
-
-    if(distance > interest::view_distance.value()) {
-        return;
-    }
-
-    auto chunk = world::find_chunk(packet.cpos);
-
-    // Chunks are loaded one at a time rather than a whole realm column at
-    // once. The light fill treats a missing chunk above as open sky and the
-    // chunk is relit as soon as that neighbour arrives, so a column only
-    // pre-generated chunks nobody asked for.
-    chunk_loader::request(packet.cpos);
-
-    if(chunk) {
-        enqueue_send(packet.peer, packet.cpos);
-        return;
-    }
-
-    enqueue_peer(packet.cpos, packet.peer);
+    streaming::subscribe(*session, packet);
 }
 
 static void on_chunk_ready(const ChunkReadyEvent& event)
@@ -223,7 +260,7 @@ static void send_correction(ENetPeer* peer, const BlockPos& bpos)
     if(chunk == nullptr) {
         // The client kept a chunk the server no longer has. Resending the
         // whole chunk rolls back every prediction made against it.
-        enqueue_peer(cpos, peer);
+        enqueue_peer(cpos, peer, chunk_want::FULL);
         chunk_loader::request(cpos);
         return;
     }
@@ -378,14 +415,14 @@ static void process_send_queue(void)
         auto queued = s_send_queued.find(request.peer);
 
         if(queued != s_send_queued.cend()) {
-            queued->second.erase(request.cpos);
+            queued->second.erase(ChunkSendKey { request.cpos, request.kind });
 
             if(queued->second.empty()) {
                 s_send_queued.erase(queued);
             }
         }
 
-        send_chunk_now(request.peer, request.cpos);
+        send_chunk_now(request.peer, request.cpos, request.kind);
         sent += 1;
     }
 
@@ -481,11 +518,13 @@ void receive::forget_peer(ENetPeer* peer)
     std::vector<ChunkPos> empty;
 
     for(auto& it : s_waiting_peers) {
-        auto& peers = it.second;
+        auto& requests = it.second;
 
-        peers.erase(std::remove(peers.begin(), peers.end(), peer), peers.end());
+        std::erase_if(requests, [peer](const auto& request) {
+            return request.peer == peer;
+        });
 
-        if(peers.empty()) {
+        if(requests.empty()) {
             empty.push_back(it.first);
         }
     }
@@ -493,6 +532,19 @@ void receive::forget_peer(ENetPeer* peer)
     for(const auto& cpos : empty) {
         s_waiting_peers.erase(cpos);
     }
+
+    lod_tile::forget_peer(peer);
+}
+
+void receive::enqueue_chunk(ENetPeer* peer, const ChunkPos& cpos, chunk_want kind)
+{
+    if(world::find_chunk(cpos)) {
+        enqueue_send(peer, cpos, kind);
+        return;
+    }
+
+    enqueue_peer(cpos, peer, kind);
+    chunk_loader::request(cpos);
 }
 
 void receive::init(void)
@@ -508,4 +560,9 @@ void receive::init(void)
     globals::dispatcher.sink<ChunkReadyEvent>().connect<&on_chunk_ready>();
     globals::dispatcher.sink<ChunkLightUpdateEvent>().connect<&on_chunk_light>();
     globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
+}
+
+ChunkSentEvent::ChunkSentEvent(ENetPeer* peer, const ChunkPos& pos, chunk_want kind) : m_peer(peer), m_pos(pos), m_kind(kind)
+{
+    // empty
 }

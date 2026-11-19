@@ -25,13 +25,17 @@
 #include "server/net/replication.hh"
 #include "server/net/sessions.hh"
 #include "server/net/status.hh"
+#include "server/net/streaming.hh"
 #include "server/net/transmit.hh"
 #include "server/net/whitelist.hh"
 #include "server/system/collector.hh"
 #include "server/universe.hh"
 #include "server/world/chunk_loader.hh"
+#include "server/world/chunk_lod.hh"
 #include "server/world/chunk_unloader.hh"
 #include "server/world/climate.hh"
+#include "server/world/lod_color.hh"
+#include "server/world/lod_tile.hh"
 #include "server/world/worldgen.hh"
 
 static std::atomic_bool s_is_running;
@@ -68,6 +72,10 @@ static void zoned_fixed_update_late(void)
 
     chunk_loader::fixed_update();
     chunk_unloader::fixed_update_late();
+
+    streaming::fixed_update_late();
+    chunk_lod::fixed_update();
+    lod_tile::fixed_update();
 
     receive::fixed_update_late();
 
@@ -108,6 +116,8 @@ static void wrapped_main(int argc, char** argv)
     receive::init();
     transmit::init();
 
+    streaming::init();
+
     // The universe seed has to be loaded before worldgen
     // derives its noise and feature seeds from it
     universe::init();
@@ -115,6 +125,10 @@ static void wrapped_main(int argc, char** argv)
     worldgen::init();
     chunk_loader::init();
     chunk_unloader::init();
+
+    lod_color::init();
+    chunk_lod::init();
+    lod_tile::init();
 
     splash::init(SPLASH_SERVER);
 
@@ -200,6 +214,11 @@ static void wrapped_main(int argc, char** argv)
     worldgen::shutdown();
 
     chunk_loader::shutdown();
+
+    chunk_lod::shutdown();
+    lod_tile::shutdown();
+    lod_color::shutdown();
+    streaming::shutdown();
 
     sessions::shutdown();
     invites::shutdown();

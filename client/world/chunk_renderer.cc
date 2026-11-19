@@ -3,11 +3,9 @@
 #include "client/world/chunk_renderer.hh"
 
 #include "core/camera.hh"
-#include "core/cvar/host.hh"
 #include "core/cvar/number.hh"
 #include "core/exception.hh"
 #include "core/frustum.hh"
-#include "core/threading.hh"
 
 #include "shared/constant.hh"
 #include "shared/globals.hh"
@@ -19,9 +17,6 @@
 #include "client/camera.hh"
 #include "client/fog.hh"
 #include "client/globals.hh"
-#include "client/gui/container.hh"
-#include "client/gui/stepper.hh"
-#include "client/settings.hh"
 #include "client/shader_program.hh"
 #include "client/world/block_atlas.hh"
 #include "client/world/chunk_mesh.hh"
@@ -46,9 +41,6 @@ constexpr static float AMBIENT_LIGHT = 0.03f;
 
 static const Eigen::Vector3f SKY_LIGHT_COLOR { 1.0f, 1.0f, 1.0f };
 static const Eigen::Vector3f BLOCK_LIGHT_COLOR { 1.0f, 0.86f, 0.66f };
-
-static cvar::Number<unsigned> s_fog_model { 0, 0, 2 };
-static gui::StepperUnsigned s_fog_model_gui;
 
 static ShaderProgram s_program;
 static std::size_t su_ViewProjection;
@@ -278,8 +270,6 @@ static void update_sorted_chunks(void)
     s_sorted_chunks.reserve(view.size_hint());
 
     for(const auto [entity, chunk, mesh] : view.each()) {
-        (void)chunk;
-
         auto has_any = false;
         has_any = has_any || mesh.opaque.count;
         has_any = has_any || mesh.alpha.count;
@@ -358,14 +348,6 @@ static void bind_pipeline_state(unsigned fog_model)
 void chunk_renderer::init(void)
 {
     constexpr static std::size_t INITIAL_CAPACITY = 256;
-
-    auto& fog_model_binding = cvar::bind_var(s_fog_model, "r_fog");
-    fog_model_binding.set_help("Fog style: 0 = off, 1 = simple, 2 = fancy");
-    fog_model_binding.set_flags(FCVAR_ARCHIVE);
-
-    s_fog_model_gui.set_range(0, 2, 1);
-    s_fog_model_gui.bind("r_fog");
-    settings::video.add_child(s_fog_model_gui, 3);
 
     auto program_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "chunk");
     auto program_ok = s_program.setup(program_id);
@@ -492,7 +474,7 @@ void chunk_renderer::render_opaque(void)
         return;
     }
 
-    bind_pipeline_state(s_fog_model.value());
+    bind_pipeline_state(fog::model.value());
 
     auto& frustum = camera::instance.frustum();
 
@@ -523,7 +505,7 @@ void chunk_renderer::render_alpha(void)
         return;
     }
 
-    bind_pipeline_state(s_fog_model.value());
+    bind_pipeline_state(fog::model.value());
 
     auto& frustum = camera::instance.frustum();
 
@@ -559,7 +541,7 @@ void chunk_renderer::render_fluid(void)
         return;
     }
 
-    bind_pipeline_state(s_fog_model.value());
+    bind_pipeline_state(fog::model.value());
 
     auto& frustum = camera::instance.frustum();
 

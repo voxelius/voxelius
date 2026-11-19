@@ -96,8 +96,8 @@ void BlockCache::init(const ChunkPos& cpos)
     auto estimate_from_top = [&](ChunkPos::value_type dx, ChunkPos::value_type dy, ChunkPos::value_type dz) {
         auto top_y = static_cast<std::int32_t>(cpos.y() + dy) * static_cast<std::int32_t>(CHUNK_SIZE_I16) + CHUNK_TOP_LOCAL_Y;
 
-        for(std::int32_t z = 0; z < CHUNK_SIZE_I16; z += 1) {
-            for(std::int32_t x = 0; x < CHUNK_SIZE_I16; x += 1) {
+        for(std::int32_t z = 0; z < CHUNK_SIZE_I16; ++z) {
+            for(std::int32_t x = 0; x < CHUNK_SIZE_I16; ++x) {
                 auto hx = static_cast<std::int32_t>(PADDING) + dx * CHUNK_SIZE_I16 + x;
                 auto hz = static_cast<std::int32_t>(PADDING) + dz * CHUNK_SIZE_I16 + z;
 
@@ -149,8 +149,8 @@ void BlockCache::init(const ChunkPos& cpos)
     // The chunk above only contributes its lowest cells to this cache, so its
     // own top layer is unknown here. Assume an open sky above the column.
     auto estimate_open_above = [&](ChunkPos::value_type dx, ChunkPos::value_type dz) {
-        for(std::int32_t z = 0; z < CHUNK_SIZE_I16; z += 1) {
-            for(std::int32_t x = 0; x < CHUNK_SIZE_I16; x += 1) {
+        for(std::int32_t z = 0; z < CHUNK_SIZE_I16; ++z) {
+            for(std::int32_t x = 0; x < CHUNK_SIZE_I16; ++x) {
                 auto hx = static_cast<std::int32_t>(PADDING) + dx * CHUNK_SIZE_I16 + x;
                 auto hz = static_cast<std::int32_t>(PADDING) + dz * CHUNK_SIZE_I16 + z;
 
@@ -162,7 +162,7 @@ void BlockCache::init(const ChunkPos& cpos)
                     continue;
                 }
 
-                for(std::int32_t y = 0; y < CHUNK_SIZE_I16; y += 1) {
+                for(std::int32_t y = 0; y < CHUNK_SIZE_I16; ++y) {
                     auto hy = static_cast<std::int32_t>(PADDING) + CHUNK_SIZE_I16 + y;
 
                     if(hy >= static_cast<std::int32_t>(SIZE)) {

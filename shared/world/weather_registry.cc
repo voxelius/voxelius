@@ -181,7 +181,7 @@ weather_type_id weather_registry::resolve(std::string_view name)
     if(id.is_valid()) {
         auto found = weather_registry::find(id);
 
-        if(found != WEATHER_ID_NULL) {
+        if(found) {
             return found;
         }
     }
@@ -192,12 +192,12 @@ weather_type_id weather_registry::resolve(std::string_view name)
 
     auto builtin_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, name);
 
-    if(auto found = weather_registry::find(builtin_id); found != WEATHER_ID_NULL) {
+    if(auto found = weather_registry::find(builtin_id); found) {
         return found;
     }
 
     for(const auto& def : s_definitions) {
-        if(def.id != WEATHER_ID_NULL && def.name.value() == name) {
+        if(def.id && def.name.value() == name) {
             return def.id;
         }
     }
@@ -211,7 +211,7 @@ bool weather_registry::type_interval(biome_realm realm, weather_type_id type, fl
     std::uint32_t total = 0;
 
     for(const auto& def : s_definitions) {
-        if(def.id != WEATHER_ID_NULL && (def.realms_bits & bit)) {
+        if(def.id && (def.realms_bits & bit)) {
             total += std::max<std::uint32_t>(def.weight, 1);
         }
     }

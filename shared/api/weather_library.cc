@@ -435,7 +435,7 @@ static int api_sample(lua_State* L)
 
     auto def = weather_registry::find_definition(type);
 
-    if(def != nullptr && def->precipitation.kind != precipitation_kind::NONE) {
+    if(def && def->precipitation.kind != precipitation_kind::NONE) {
         lua_pushnumber(L, static_cast<lua_Number>(def->precipitation.intensity * coverage));
     }
     else {

@@ -329,7 +329,7 @@ ChunkLightTask::ChunkLightTask(ChunkPos pos) : m_cpos(std::move(pos)), m_generat
                             m_blocks[grid] = id;
                             m_light[grid] = light[local];
 
-                            if(id != BLOCK_ID_NULL && 0 == dx && 0 == dy && 0 == dz) {
+                            if(id && 0 == dx && 0 == dy && 0 == dz) {
                                 m_empty = false;
                             }
                         }
@@ -347,8 +347,8 @@ ChunkLightTask::ChunkLightTask(ChunkPos pos) : m_cpos(std::move(pos)), m_generat
     if(!m_open_sky) {
         m_open_sky = true;
 
-        for(int z = 0; z < chunk_size; z += 1) {
-            for(int x = 0; x < chunk_size; x += 1) {
+        for(int z = 0; z < chunk_size; ++z) {
+            for(int x = 0; x < chunk_size; ++x) {
                 auto cell = m_light[grid_index(LIGHT_PADDING + x, LIGHT_PADDING + chunk_size, LIGHT_PADDING + z)];
 
                 if(channel_level(cell, LIGHT_SKY) != BLOCK_LIGHT_MAX) {
@@ -386,8 +386,8 @@ void ChunkLightTask::process(void)
     // submitted; treating it as open sky keeps the chunk from going black.
     auto seed_sky = !realm_top(m_cpos.y()) && m_above;
 
-    for(int z = 0; z < chunk_size; z += 1) {
-        for(int x = 0; x < chunk_size; x += 1) {
+    for(int z = 0; z < chunk_size; ++z) {
+        for(int x = 0; x < chunk_size; ++x) {
             auto gx = LIGHT_PADDING + x;
             auto gz = LIGHT_PADDING + z;
             block_light_type level = BLOCK_LIGHT_MAX;
@@ -416,9 +416,9 @@ void ChunkLightTask::process(void)
 
     // Block light comes from the emitters inside the chunk and from the
     // neighbours' border cells that were copied into the padding.
-    for(int y = 0; y < chunk_size; y += 1) {
-        for(int z = 0; z < chunk_size; z += 1) {
-            for(int x = 0; x < chunk_size; x += 1) {
+    for(int y = 0; y < chunk_size; ++y) {
+        for(int z = 0; z < chunk_size; ++z) {
+            for(int x = 0; x < chunk_size; ++x) {
                 auto cell = index(LIGHT_PADDING + x, LIGHT_PADDING + y, LIGHT_PADDING + z);
                 auto emission = light_material::get(blocks[cell]).emission;
 
@@ -436,7 +436,7 @@ void ChunkLightTask::process(void)
         bool any_block_light = false;
 
         for(auto packed : light) {
-            if(0 != (packed & 0x0FU)) {
+            if(packed & 0x0FU) {
                 any_block_light = true;
                 break;
             }
@@ -449,9 +449,9 @@ void ChunkLightTask::process(void)
         }
     }
 
-    for(int y = 0; y < LIGHT_GRID_SIZE; y += 1) {
-        for(int z = 0; z < LIGHT_GRID_SIZE; z += 1) {
-            for(int x = 0; x < LIGHT_GRID_SIZE; x += 1) {
+    for(int y = 0; y < LIGHT_GRID_SIZE; ++y) {
+        for(int z = 0; z < LIGHT_GRID_SIZE; ++z) {
+            for(int x = 0; x < LIGHT_GRID_SIZE; ++x) {
                 auto sky = channel_level(light[index(x, y, z)], LIGHT_SKY);
                 auto block = channel_level(light[index(x, y, z)], LIGHT_BLOCK);
 
@@ -525,9 +525,9 @@ void ChunkLightTask::process(void)
 
     m_result.fill(0x00);
 
-    for(int y = 0; y < chunk_size; y += 1) {
-        for(int z = 0; z < chunk_size; z += 1) {
-            for(int x = 0; x < chunk_size; x += 1) {
+    for(int y = 0; y < chunk_size; ++y) {
+        for(int z = 0; z < chunk_size; ++z) {
+            for(int x = 0; x < chunk_size; ++x) {
                 auto grid = index(LIGHT_PADDING + x, LIGHT_PADDING + y, LIGHT_PADDING + z);
                 m_result.set_packed(utils::to_index(LocalPos(x, y, z)), light[grid]);
             }

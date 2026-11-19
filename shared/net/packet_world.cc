@@ -6,12 +6,29 @@
 
 void packet::World_Request::encode(const World_Request& packet, WriteBuffer& buffer)
 {
-    buffer.write_vector<std::int32_t, 3>(packet.cpos.cast<std::int32_t>());
+    buffer.write_vector<std::int32_t, 3>(packet.view.min());
+    buffer.write_vector<std::int32_t, 3>(packet.view.max());
+    buffer.write_vector<std::int32_t, 3>(packet.lod.min());
+    buffer.write_vector<std::int32_t, 3>(packet.lod.max());
+    buffer.write<std::uint8_t>(packet.flags);
+    buffer.write<std::uint16_t>(packet.chunk_budget);
+    buffer.write<std::uint16_t>(packet.lod_chunk_budget);
+    buffer.write<std::uint16_t>(packet.lod_tile_budget);
 }
 
 void packet::World_Request::decode(World_Request& packet, ReadBuffer& buffer)
 {
-    packet.cpos = buffer.read_vector<std::int32_t, 3>().cast<ChunkPos::value_type>();
+    auto view_min = buffer.read_vector<std::int32_t, 3>();
+    auto view_max = buffer.read_vector<std::int32_t, 3>();
+    auto lod_min = buffer.read_vector<std::int32_t, 3>();
+    auto lod_max = buffer.read_vector<std::int32_t, 3>();
+
+    packet.view = ChunkAlignedBox(view_min, view_max);
+    packet.lod = ChunkAlignedBox(lod_min, lod_max);
+    packet.flags = buffer.read<std::uint8_t>();
+    packet.chunk_budget = buffer.read<std::uint16_t>();
+    packet.lod_chunk_budget = buffer.read<std::uint16_t>();
+    packet.lod_tile_budget = buffer.read<std::uint16_t>();
 }
 
 void packet::World_Blocks::encode(const World_Blocks& packet, WriteBuffer& buffer)
@@ -27,7 +44,7 @@ void packet::World_Blocks::decode(World_Blocks& packet, ReadBuffer& buffer)
     packet.cpos = buffer.read_vector<std::int32_t, 3>().cast<ChunkPos::value_type>();
     BlockStorage::decode_net(packet.blocks, buffer);
     LightStorage::decode_net(packet.light, buffer);
-    packet.light_valid = buffer.read<std::uint8_t>() != 0;
+    packet.light_valid = buffer.read<std::uint8_t>();
 }
 
 void packet::World_Biomes::encode(const World_Biomes& packet, WriteBuffer& buffer)
@@ -59,7 +76,7 @@ void packet::World_Light::encode(const World_Light& packet, WriteBuffer& buffer)
 
         buffer.write<std::uint16_t>(static_cast<std::uint16_t>(entry.indices.size()));
 
-        for(std::size_t i = 0; i < entry.indices.size(); i += 1) {
+        for(std::size_t i = 0; i < entry.indices.size(); ++i) {
             buffer.write<std::uint16_t>(entry.indices[i]);
             buffer.write<std::uint8_t>(entry.values[i]);
         }
@@ -76,7 +93,7 @@ void packet::World_Light::decode(World_Light& packet, ReadBuffer& buffer)
 
     auto count = buffer.read<std::uint16_t>();
 
-    for(std::uint16_t i = 0; i < count; i += 1) {
+    for(std::uint16_t i = 0; i < count; ++i) {
         // Chunk position plus the full flag.
         if(!buffer.has_records(1, 3 * sizeof(std::int32_t) + sizeof(std::uint8_t))) {
             return;
@@ -85,7 +102,7 @@ void packet::World_Light::decode(World_Light& packet, ReadBuffer& buffer)
         Entry entry;
 
         entry.cpos = buffer.read_vector<std::int32_t, 3>().cast<ChunkPos::value_type>();
-        entry.full = buffer.read<std::uint8_t>() != 0;
+        entry.full = buffer.read<std::uint8_t>();
 
         if(entry.full) {
             LightStorage::decode_net(entry.light, buffer);
@@ -106,7 +123,7 @@ void packet::World_Light::decode(World_Light& packet, ReadBuffer& buffer)
         entry.indices.reserve(cells);
         entry.values.reserve(cells);
 
-        for(std::uint16_t j = 0; j < cells; j += 1) {
+        for(std::uint16_t j = 0; j < cells; ++j) {
             entry.indices.push_back(buffer.read<std::uint16_t>());
             entry.values.push_back(buffer.read<std::uint8_t>());
         }
@@ -201,4 +218,40 @@ void packet::World_Weather::decode(World_Weather& packet, ReadBuffer& buffer)
         packet.detail_drift[i] = buffer.read_vector<float, 2>();
         packet.wind[i] = buffer.read_vector<float, 2>();
     }
+}
+
+void packet::World_ChunkLod::encode(const World_ChunkLod& packet, WriteBuffer& buffer)
+{
+    buffer.write_vector<std::int32_t, 3>(packet.cpos);
+    ChunkLod::encode(packet.lod, buffer);
+}
+
+bool packet::World_ChunkLod::decode(World_ChunkLod& packet, ReadBuffer& buffer)
+{
+    packet.cpos = buffer.read_vector<std::int32_t, 3>();
+    return ChunkLod::decode(packet.lod, buffer);
+}
+
+void packet::World_LodTile::encode(const World_LodTile& packet, WriteBuffer& buffer)
+{
+    buffer.write<std::uint16_t>(static_cast<std::uint16_t>(packet.key.realm));
+    buffer.write<std::uint8_t>(packet.key.level);
+    buffer.write<std::int32_t>(packet.key.x);
+    buffer.write<std::int32_t>(packet.key.z);
+    LodTile::encode(packet.tile, buffer);
+}
+
+bool packet::World_LodTile::decode(World_LodTile& packet, ReadBuffer& buffer)
+{
+    packet.key.realm = static_cast<biome_realm>(buffer.read<std::uint16_t>());
+    packet.key.level = buffer.read<std::uint8_t>();
+    packet.key.x = buffer.read<std::int32_t>();
+    packet.key.z = buffer.read<std::int32_t>();
+
+    if(!LodTile::decode(packet.tile, buffer)) {
+        return false;
+    }
+
+    packet.tile.key = packet.key;
+    return true;
 }

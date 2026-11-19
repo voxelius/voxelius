@@ -19,6 +19,7 @@
 #include "client/gui/container.hh"
 #include "client/gui/slider.hh"
 #include "client/settings.hh"
+#include "client/world/lod_manager.hh"
 
 // Below this horizontal speed the loader ignores the direction of travel
 constexpr static float MOVING_SPEED = 1.0f;
@@ -48,6 +49,19 @@ fluid_id_type camera::inside_fluid;
 
 static LocalPos s_eye_lpos;
 static BlockPos s_eye_bpos;
+
+static float far_distance(void)
+{
+    auto chunk_distance = std::max(camera::view_distance.value(), static_cast<unsigned>(lod_manager::range_chunks()));
+    return 1.25f * static_cast<float>(constant::CHUNK_SIZE * chunk_distance);
+}
+
+static float near_distance(void)
+{
+    // An extended horizon would lose too much depth precision behind a
+    // centimetre near plane; collision keeps the camera well outside this.
+    return lod_manager::range_chunks() > 0 ? 0.1f : 0.01f;
+}
 
 static void reset_camera(void)
 {
@@ -106,7 +120,7 @@ void camera::init(void)
 
     s_view_distance_gui.set_range(1, 32);
     s_view_distance_gui.bind("r_view_distance");
-    settings::video.add_child(s_view_distance_gui, 0);
+    settings::video_lod.add_child(s_view_distance_gui, 0);
 
     auto& cloud_range_binding = cvar::bind_var(cloud_range, "r_cloud_range");
     cloud_range_binding.set_help("Cloud render range, in chunks");
@@ -114,10 +128,10 @@ void camera::init(void)
 
     s_cloud_range_gui.set_range(8, 256);
     s_cloud_range_gui.bind("r_cloud_range");
-    settings::video.add_child(s_cloud_range_gui, 4);
+    settings::video_atmosphere.add_child(s_cloud_range_gui, 0);
 
-    camera::z_near = 0.01f;
-    camera::z_far = 1.25f * static_cast<float>(constant::CHUNK_SIZE * view_distance.value());
+    camera::z_near = near_distance();
+    camera::z_far = far_distance();
 
     reset_camera();
 }
@@ -136,8 +150,8 @@ void camera::update(void)
     camera::chunk = transform.chunk;
     camera::local = transform.local + head.offset;
 
-    camera::z_near = 0.01f;
-    camera::z_far = 1.25f * static_cast<float>(constant::CHUNK_SIZE * view_distance.value());
+    camera::z_near = near_distance();
+    camera::z_far = far_distance();
 
     instance.set_perspective(utils::radians(vertical_fov.value()), globals::aspect, camera::z_near, camera::z_far);
     instance.set_view(camera::local, camera::angles);

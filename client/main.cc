@@ -44,6 +44,8 @@
 #include "client/world/chunk_mesher.hh"
 #include "client/world/chunk_visibility.hh"
 #include "client/world/fluid_cache.hh"
+#include "client/world/lod_chunk_mesher.hh"
+#include "client/world/lod_manager.hh"
 #include "client/world/sky_renderer.hh"
 #include "client/world/skybox.hh"
 
@@ -142,6 +144,7 @@ static void zoned_update(void)
     client_game::update();
 
     chunk_mesher::update();
+    lod_chunk_mesher::update();
 
     camera::update();
 
@@ -274,6 +277,7 @@ static void wrapped_main(int argc, char** argv)
     play_menu::init();
 
     client_game::init();
+    lod_manager::init();
     skybox::init();
 
     cvar::exec_from("client.conf");
@@ -291,6 +295,7 @@ static void wrapped_main(int argc, char** argv)
     shared_game::init_late();
 
     chunk_mesher::init();
+    lod_chunk_mesher::init();
 
     main_menu::init_late();
 
@@ -381,6 +386,9 @@ static void wrapped_main(int argc, char** argv)
     main_menu::shutdown();
 
     client_game::shutdown();
+
+    lod_chunk_mesher::shutdown();
+    lod_manager::shutdown();
 
     // TODO: game_ui::shutdown();
 

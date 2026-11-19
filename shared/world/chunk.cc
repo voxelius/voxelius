@@ -14,6 +14,10 @@ constexpr static std::uint32_t SCHEDULE_MAGIC = 0x4B434954; // TICK
 // decodes with light_valid = false and gets a full relight once ready.
 constexpr static std::uint32_t LIGHT_MAGIC = 0x4C495448; // LITH
 
+// Marks the biome trailer. The server derives the far LOD colours from the
+// biomes of the column, so a chunk read back from disk has to carry them.
+constexpr static std::uint32_t BIOMES_MAGIC = 0x4D4F4942; // BIOM
+
 static void serialize_schedule(const Chunk::schedule_type& schedule, WriteBuffer& buffer)
 {
     buffer.write<std::uint32_t>(static_cast<std::uint32_t>(schedule.size()));
@@ -75,6 +79,11 @@ void Chunk::encode_dat(const Snapshot& snapshot, WriteBuffer& buffer)
         buffer.write<std::uint32_t>(LIGHT_MAGIC);
         LightStorage::encode_dat(snapshot.light, buffer);
     }
+
+    if(snapshot.biomes_valid) {
+        buffer.write<std::uint32_t>(BIOMES_MAGIC);
+        BiomeSlice::encode(snapshot.biomes, buffer);
+    }
 }
 
 void Chunk::decode_dat(Snapshot& snapshot, ReadBuffer& buffer)
@@ -84,6 +93,8 @@ void Chunk::decode_dat(Snapshot& snapshot, ReadBuffer& buffer)
     snapshot.scheduled.clear();
     snapshot.light.fill(0x00);
     snapshot.light_valid = false;
+    snapshot.biomes.fill(BIOME_ID_NULL);
+    snapshot.biomes_valid = false;
 
     if(!buffer.has_records(1, sizeof(std::uint32_t))) {
         return;
@@ -101,16 +112,35 @@ void Chunk::decode_dat(Snapshot& snapshot, ReadBuffer& buffer)
         magic = buffer.read<std::uint32_t>();
     }
 
-    if(magic != LIGHT_MAGIC) {
-        return;
-    }
+    // The trailers are independent: a chunk saved before the biome trailer
+    // existed still carries its light, and the reverse holds too.
+    for(;;) {
+        if(magic == LIGHT_MAGIC) {
+            if(!buffer.has_records(1, constant::CHUNK_VOLUME)) {
+                return;
+            }
 
-    if(!buffer.has_records(1, constant::CHUNK_VOLUME)) {
-        return;
-    }
+            LightStorage::decode_dat(snapshot.light, buffer);
+            snapshot.light_valid = true;
+        }
+        else if(magic == BIOMES_MAGIC) {
+            if(!buffer.has_records(1, sizeof(std::uint8_t) + 2 * sizeof(std::uint32_t))) {
+                return;
+            }
 
-    LightStorage::decode_dat(snapshot.light, buffer);
-    snapshot.light_valid = true;
+            BiomeSlice::decode(snapshot.biomes, buffer);
+            snapshot.biomes_valid = true;
+        }
+        else {
+            return;
+        }
+
+        if(!buffer.has_records(1, sizeof(std::uint32_t))) {
+            return;
+        }
+
+        magic = buffer.read<std::uint32_t>();
+    }
 }
 
 block_id_type Chunk::get_block(std::size_t index) const

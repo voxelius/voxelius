@@ -1,6 +1,7 @@
 #ifndef EE0E3E20_655A_4D1C_89FB_25C924073EAC
 #define EE0E3E20_655A_4D1C_89FB_25C924073EAC
 
+#include "shared/world/biome_slice.hh"
 #include "shared/world/block_storage.hh"
 #include "shared/world/light_storage.hh"
 
@@ -12,6 +13,8 @@ public:
         BlockStorage blocks;
         LightStorage light;
         bool light_valid { false };
+        BiomeSlice biomes;
+        bool biomes_valid { false };
         schedule_type scheduled; // deadlines are relative to the tick the snapshot was taken on
     };
 
