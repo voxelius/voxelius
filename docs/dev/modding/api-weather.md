@@ -14,15 +14,15 @@ weather.add("thunderstorm", {
   light = 0.35,
   wind = 3.0,
 
-  layers = {
-    {
-      height = 188,
-      scale = 144,
-      coverage = 0.95,
-      shadow = { 0.10, 0.11, 0.13 },
-      lit = { 0.17, 0.18, 0.20 },
-      seed = 19,
-    },
+  cloud = {
+    height = 160,
+    thickness = 64,
+    opacity = 0.95,
+    scale = 112,
+    coverage = 1.0,
+    shadow = { 0.84, 0.85, 0.88 },
+    lit = { 0.97, 0.98, 1.00 },
+    seed = 19,
   },
 
   precipitation = {
@@ -82,13 +82,13 @@ The same file carries `tick` and `daylight_tick` next to `seed`. The server owns
 | `sky_visibility` | number | `1.0` | How much of the clear sky shows through, from `0` (only `sky_tint`) to `1` (the Rayleigh gradient); the sun, moon and stars fade with it |
 | `light` | number | `1.0` | Multiplies the sky light the world receives |
 | `wind` | number | `0.0` | How fast the front travels, in blocks per second |
-| `layers` | array | empty | Cloud layers, at most 4 |
+| `cloud` | table | none | The cloud body of the type; a zero coverage leaves the sky clear |
 | `precipitation` | table | none | Local precipitation; declared and synced, not drawn yet |
 | `weight` | number | `1` | Relative size of this type's slice of the type grid, so a bigger weight means the type covers more of the world |
 | `strikes_per_minute` | number | `0.0` | How often the type strikes |
 | `strike_radius` | blocks | `96.0` | Strike scatter around a player |
 
-### Cloud layers
+### Cloud body
 
 | Field | Default | Meaning |
 |---|---|---|
@@ -100,21 +100,26 @@ The same file carries `tick` and `daylight_tick` next to `seed`. The server owns
 | `shadow`, `lit` | gray | Colour of the underside and of the top |
 | `seed` | `0` | Changes the noise pattern |
 
-Layers are not planes: the client samples the noise field on the grid of the ring
-it is meshing and turns each cell whose density clears the layer's coverage into a
-column of whole voxels, one or more of them. The deck is meshed in rings that tile
-the range: 8-block cells out to 32 chunks, 32-block cells out to 96, and 128-block
-cells out to 256, so a longer range extends the deck outwards instead of growing
-the blocks under the player. Rings overlap by one cell, so the seam between two of
-them never opens. A column stays inside the layer's slab, from `height` up to
-`height + thickness`, and its underside steps up into the volume here and there,
-so the deck is a solid body with a stepped underside and a bumpy top. Every
-column also carries its own slightly varied shade, a few percent off its
-neighbours, so a dense deck reads as blocks instead of one flat sheet. Only the
-faces the neighbours leave exposed are meshed, so a dense deck costs less than its
-area. The deck dissolves into the sky at its own edge instead of ending on a rim,
-reaches the composite as one more depth-sorted layer, and does not use the terrain
-fog, which would wash it out long before it is seen.
+A type has one cloud body, not a stack of layers: a storm and a clear sky
+differ in `height`, `thickness` and `coverage`, not in how many slabs they
+declare. The body is not a plane: the client samples the noise field on the
+grid of the ring it is meshing and turns each cell whose density clears the
+body's coverage into a column of whole voxels, one or more of them. A dense
+front grows the column towards `thickness` and the shell noise breaks its top
+into heaps, so a storm fills its volume while a thin type stays a sheet. The
+deck is meshed in rings that tile the range: 8-block cells out to 32 chunks,
+32-block cells out to 96, and 128-block cells out to 256, so a longer range
+extends the deck outwards instead of growing the blocks under the player.
+Rings overlap by one cell, so the seam between two of them never opens. A
+column stays inside the body's slab, from `height` up to `height + thickness`.
+Every column also carries its own slightly varied shade, a few percent off its
+neighbours, so a dense deck reads as blocks instead of one flat sheet. The
+client lights the body from the sun and the sky; `shadow` and `lit` are the
+albedo of the underside and the top, not the final colour, and the fog takes
+over with distance. Only the faces the neighbours leave exposed are meshed, so
+a dense deck costs less than its area. The deck dissolves into the sky at its
+own edge instead of ending on a rim and reaches the composite as one more
+depth-sorted layer.
 
 ## Precipitation
 

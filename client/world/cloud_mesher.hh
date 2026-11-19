@@ -13,6 +13,7 @@ struct CloudColor final {
 
 struct CloudVertex final {
     Eigen::Vector3f position;
+    Eigen::Vector3f normal;
     CloudColor color;
 };
 

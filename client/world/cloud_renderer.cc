@@ -38,7 +38,12 @@ static std::size_t su_CloudViewProjection;
 static std::size_t su_CameraOrigin;
 static std::size_t su_DeckCenter;
 static std::size_t su_WindOffset;
-static std::size_t su_CloudTint;
+static std::size_t su_SunDirection;
+static std::size_t su_SunColor;
+static std::size_t su_SkyColor;
+static std::size_t su_HazeColor;
+static std::size_t su_HazeRange;
+static std::size_t su_CameraPosition;
 static std::size_t su_FadeDistance;
 static std::size_t su_BlendRange;
 static std::size_t su_DepthBias;
@@ -299,7 +304,12 @@ void cloud_renderer::init(void)
     su_CameraOrigin = s_program.add_uniform("u_CameraOrigin");
     su_DeckCenter = s_program.add_uniform("u_DeckCenter");
     su_WindOffset = s_program.add_uniform("u_WindOffset");
-    su_CloudTint = s_program.add_uniform("u_CloudTint");
+    su_SunDirection = s_program.add_uniform("u_SunDirection");
+    su_SunColor = s_program.add_uniform("u_SunColor");
+    su_SkyColor = s_program.add_uniform("u_SkyColor");
+    su_HazeColor = s_program.add_uniform("u_HazeColor");
+    su_HazeRange = s_program.add_uniform("u_HazeRange");
+    su_CameraPosition = s_program.add_uniform("u_CameraPosition");
     su_FadeDistance = s_program.add_uniform("u_FadeDistance");
     su_BlendRange = s_program.add_uniform("u_BlendRange");
     su_DepthBias = s_program.add_uniform("u_DepthBias");
@@ -315,8 +325,10 @@ void cloud_renderer::init(void)
 
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<const void*>(offsetof(CloudVertex, position)));
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<const void*>(offsetof(CloudVertex, color)));
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<const void*>(offsetof(CloudVertex, normal)));
         glEnableVertexAttribArray(1);
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<const void*>(offsetof(CloudVertex, color)));
+        glEnableVertexAttribArray(2);
 
         glGenBuffers(1, &s_ibo[i]);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_ibo[i]);
@@ -378,7 +390,15 @@ void cloud_renderer::render(void)
 
     auto cloud_projection = cloud_view_projection();
     auto camera_origin = utils::to_fvec(camera::chunk);
-    Eigen::Vector3f cloud_tint = skybox::cloud_tint * fog::daylight;
+    auto camera_position = camera_world_position();
+
+    auto sun_direction = skybox::sun_direction;
+    auto sun_color = Eigen::Vector3f(skybox::sun_tint * (skybox::sun_strength * 1.5f));
+    auto sky_color = Eigen::Vector3f((skybox::zenith_color + skybox::horizon_color) * 0.5f);
+    auto haze_color = Eigen::Vector3f(fog::color * 0.55f + Eigen::Vector3f(0.80f, 0.82f, 0.86f) * (0.45f * fog::daylight));
+
+    auto haze_end = std::max(cloud_renderer::z_far - CLOUD_DEPTH_MARGIN, 1.0f);
+    auto haze_start = haze_end * 0.35f;
 
     vx::throw_if_not(s_program.update());
 
@@ -386,7 +406,12 @@ void cloud_renderer::render(void)
 
     glUniformMatrix4fv(s_program.uniforms[su_CloudViewProjection].location, 1, GL_FALSE, cloud_projection.data());
     glUniform3fv(s_program.uniforms[su_CameraOrigin].location, 1, camera_origin.data());
-    glUniform3fv(s_program.uniforms[su_CloudTint].location, 1, cloud_tint.data());
+    glUniform3fv(s_program.uniforms[su_SunDirection].location, 1, sun_direction.data());
+    glUniform3fv(s_program.uniforms[su_SunColor].location, 1, sun_color.data());
+    glUniform3fv(s_program.uniforms[su_SkyColor].location, 1, sky_color.data());
+    glUniform3fv(s_program.uniforms[su_HazeColor].location, 1, haze_color.data());
+    glUniform2f(s_program.uniforms[su_HazeRange].location, haze_start, haze_end);
+    glUniform3fv(s_program.uniforms[su_CameraPosition].location, 1, camera_position.data());
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);

@@ -142,64 +142,64 @@ static bool parse_realms(lua_State* L, int table_idx, WeatherTypeDefinition& def
     return true;
 }
 
-static bool parse_layer(lua_State* L, int layer_idx, CloudLayer& layer)
+static bool parse_cloud_body(lua_State* L, int cloud_idx, CloudBody& cloud)
 {
-    auto height = utils::opt_number(L, layer_idx, "height", layer.height);
+    auto height = utils::opt_number(L, cloud_idx, "height", cloud.height);
 
     if(!height.has_value()) {
         return false;
     }
 
-    layer.height = static_cast<float>(height.value());
+    cloud.height = static_cast<float>(height.value());
 
-    auto thickness = utils::opt_number(L, layer_idx, "thickness", layer.thickness);
+    auto thickness = utils::opt_number(L, cloud_idx, "thickness", cloud.thickness);
 
     if(!thickness.has_value()) {
         return false;
     }
 
-    layer.thickness = std::clamp(static_cast<float>(thickness.value()), 1.0f, 64.0f);
+    cloud.thickness = std::clamp(static_cast<float>(thickness.value()), 1.0f, 128.0f);
 
-    auto opacity = utils::opt_number(L, layer_idx, "opacity", layer.opacity);
+    auto opacity = utils::opt_number(L, cloud_idx, "opacity", cloud.opacity);
 
     if(!opacity.has_value()) {
         return false;
     }
 
-    layer.opacity = std::clamp(static_cast<float>(opacity.value()), 0.0f, 1.0f);
+    cloud.opacity = std::clamp(static_cast<float>(opacity.value()), 0.0f, 1.0f);
 
-    auto scale = utils::opt_number(L, layer_idx, "scale", layer.scale);
+    auto scale = utils::opt_number(L, cloud_idx, "scale", cloud.scale);
 
     if(!scale.has_value()) {
         return false;
     }
 
-    layer.scale = std::max(1.0f, static_cast<float>(scale.value()));
+    cloud.scale = std::max(1.0f, static_cast<float>(scale.value()));
 
-    auto coverage = utils::opt_number(L, layer_idx, "coverage", layer.coverage);
+    auto coverage = utils::opt_number(L, cloud_idx, "coverage", cloud.coverage);
 
     if(!coverage.has_value()) {
         return false;
     }
 
-    layer.coverage = std::clamp(static_cast<float>(coverage.value()), 0.0f, 1.0f);
+    cloud.coverage = std::clamp(static_cast<float>(coverage.value()), 0.0f, 1.0f);
 
-    auto seed = utils::opt_integer(L, layer_idx, "seed", static_cast<lua_Integer>(layer.seed));
+    auto seed = utils::opt_integer(L, cloud_idx, "seed", static_cast<lua_Integer>(cloud.seed));
 
     if(!seed.has_value()) {
         return false;
     }
 
-    layer.seed = static_cast<std::uint32_t>(seed.value());
+    cloud.seed = static_cast<std::uint32_t>(seed.value());
 
-    return parse_color(L, layer_idx, "shadow", layer.shadow_color) && parse_color(L, layer_idx, "lit", layer.lit_color);
+    return parse_color(L, cloud_idx, "shadow", cloud.shadow_color) && parse_color(L, cloud_idx, "lit", cloud.lit_color);
 }
 
-static bool parse_layers(lua_State* L, int def_idx, WeatherTypeDefinition& def)
+static bool parse_cloud(lua_State* L, int def_idx, WeatherTypeDefinition& def)
 {
     auto base = lua_gettop(L);
 
-    lua_getfield(L, def_idx, "layers");
+    lua_getfield(L, def_idx, "cloud");
 
     if(lua_isnoneornil(L, -1)) {
         lua_settop(L, base);
@@ -207,33 +207,16 @@ static bool parse_layers(lua_State* L, int def_idx, WeatherTypeDefinition& def)
     }
 
     if(!lua_istable(L, -1)) {
-        return fail(L, base, "layers must be a table");
+        return fail(L, base, "cloud must be a table");
     }
 
-    auto count = static_cast<std::size_t>(lua_rawlen(L, -1));
+    CloudBody cloud {};
 
-    for(std::size_t i = 0; i < count; ++i) {
-        if(def.layers.size() >= WEATHER_MAX_LAYERS) {
-            msg::log_warning("weather {}: more than {} layers, extra ones are ignored", def.name.full_string(), WEATHER_MAX_LAYERS);
-            break;
-        }
-
-        lua_rawgeti(L, -1, static_cast<lua_Integer>(i + 1));
-
-        if(!lua_istable(L, -1)) {
-            return fail(L, base, "each layer must be a table");
-        }
-
-        CloudLayer layer {};
-
-        if(!parse_layer(L, lua_gettop(L), layer)) {
-            return fail(L, base);
-        }
-
-        def.layers.push_back(layer);
-
-        lua_pop(L, 1);
+    if(!parse_cloud_body(L, lua_gettop(L), cloud)) {
+        return fail(L, base);
     }
+
+    def.cloud = cloud;
 
     lua_settop(L, base);
     return true;
@@ -338,7 +321,7 @@ static bool parse_definition(lua_State* L, int def_idx, WeatherTypeDefinition& d
     def.on_tick = parse_callback(L, def_idx, "on_tick", ctx);
     def.on_strike = parse_callback(L, def_idx, "on_strike", ctx);
 
-    return parse_realms(L, def_idx, def) && parse_layers(L, def_idx, def) && parse_precipitation(L, def_idx, def)
+    return parse_realms(L, def_idx, def) && parse_cloud(L, def_idx, def) && parse_precipitation(L, def_idx, def)
         && parse_color(L, def_idx, "sky_tint", def.sky_tint);
 }
 

@@ -34,7 +34,6 @@ static void update_checksum(void)
     for(std::size_t i = 1; i < s_definitions.size(); ++i) {
         auto& def = s_definitions[i];
         auto name = def.name.full_string();
-        auto layer_count = static_cast<std::uint32_t>(def.layers.size());
         auto precip_kind = static_cast<std::uint8_t>(def.precipitation.kind);
 
         hash_trivial(hash, name.data(), name.size());
@@ -55,18 +54,14 @@ static void update_checksum(void)
         hash_value(hash, def.precipitation.size);
         hash_value(hash, def.precipitation.color);
 
-        hash_value(hash, layer_count);
-
-        for(const auto& layer : def.layers) {
-            hash_value(hash, layer.height);
-            hash_value(hash, layer.thickness);
-            hash_value(hash, layer.opacity);
-            hash_value(hash, layer.scale);
-            hash_value(hash, layer.coverage);
-            hash_value(hash, layer.shadow_color);
-            hash_value(hash, layer.lit_color);
-            hash_value(hash, layer.seed);
-        }
+        hash_value(hash, def.cloud.height);
+        hash_value(hash, def.cloud.thickness);
+        hash_value(hash, def.cloud.opacity);
+        hash_value(hash, def.cloud.scale);
+        hash_value(hash, def.cloud.coverage);
+        hash_value(hash, def.cloud.shadow_color);
+        hash_value(hash, def.cloud.lit_color);
+        hash_value(hash, def.cloud.seed);
     }
 
     s_checksum = hash;

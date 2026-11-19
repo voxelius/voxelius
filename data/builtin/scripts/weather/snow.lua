@@ -7,17 +7,17 @@ weather.add("snow", {
   light = 0.80,
   wind = 0.8,
 
-  layers = {
-    {
-      height = 430,
-      thickness = 6,
-      opacity = 0.85,
-      scale = 96,
-      coverage = 0.8,
-      shadow = { 0.72, 0.76, 0.84 },
-      lit = { 0.90, 0.94, 1.00 },
-      seed = 11,
-    },
+  cloud = {
+    -- realm_sky.cc keeps sky islands inside y = 426: 320 base + 96 bias + 10 density;
+    -- the deck sits just above that envelope
+    height = 430,
+    thickness = 24,
+    opacity = 0.85,
+    scale = 96,
+    coverage = 0.8,
+    shadow = { 0.72, 0.76, 0.84 },
+    lit = { 0.90, 0.94, 1.00 },
+    seed = 11,
   },
 
   precipitation = {

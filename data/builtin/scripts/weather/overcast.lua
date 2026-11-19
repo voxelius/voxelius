@@ -7,17 +7,15 @@ weather.add("overcast", {
   light = 0.60,
   wind = 1.5,
 
-  layers = {
-    {
-      height = 188,
-      thickness = 6,
-      opacity = 0.95,
-      scale = 192,
-      coverage = 1.0,
-      shadow = { 0.34, 0.36, 0.40 },
-      lit = { 0.48, 0.50, 0.55 },
-      seed = 3,
-    },
+  cloud = {
+    height = 188,
+    thickness = 16,
+    opacity = 0.95,
+    scale = 192,
+    coverage = 1.0,
+    shadow = { 0.78, 0.80, 0.84 },
+    lit = { 0.95, 0.96, 0.99 },
+    seed = 3,
   },
 
   weight = 3,

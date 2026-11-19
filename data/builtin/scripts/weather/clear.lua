@@ -7,17 +7,15 @@ weather.add("clear", {
   light = 1.0,
   wind = 1.0,
 
-  layers = {
-    {
-      height = 196,
-      thickness = 5,
-      opacity = 0.85,
-      scale = 192,
-      coverage = 0.6,
-      shadow = { 0.82, 0.84, 0.88 },
-      lit = { 0.97, 0.98, 1.00 },
-      seed = 31,
-    },
+  cloud = {
+    height = 196,
+    thickness = 5,
+    opacity = 0.85,
+    scale = 192,
+    coverage = 0.6,
+    shadow = { 0.82, 0.84, 0.88 },
+    lit = { 0.97, 0.98, 1.00 },
+    seed = 31,
   },
 
   weight = 10,

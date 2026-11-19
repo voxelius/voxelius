@@ -15,19 +15,19 @@ using weather_type_id = std::uint32_t;
 
 constexpr static weather_type_id WEATHER_ID_NULL = 0;
 
-constexpr static std::size_t WEATHER_MAX_LAYERS = 4;
-
 enum class precipitation_kind : std::uint8_t {
     NONE = 0,
     RAIN,
     SNOW,
 };
 
-struct CloudLayer final {
+// One cloud body of a weather type: the volume starts at height and reaches
+// thickness blocks up. A type carries at most one, and a zero coverage leaves it clear
+struct CloudBody final {
     float height { 192.0f };  // World Y of the bottom of the volume, in blocks
     float thickness { 8.0f }; // How far the volume reaches up from the bottom, in blocks; the client divides it into whole voxels
     float opacity { 0.9f };   // How opaque the deck is where the field covers it
-    float scale { 128.0f };   // Blocks per noise tile; controls the size of the cloud massesы
+    float scale { 128.0f };   // Blocks per noise tile; controls the size of the cloud masses
     float coverage { 0.0f };  // Base density, 0 to 1
 
     Eigen::Vector3f shadow_color { Eigen::Vector3f(0.55f, 0.57f, 0.62f) };
@@ -56,7 +56,7 @@ struct WeatherTypeDefinition final {
     weather_type_id id { WEATHER_ID_NULL };
     std::uint32_t realms_bits { 0 }; // A type is only ever selected in the realms these bits name
 
-    std::vector<CloudLayer> layers;
+    CloudBody cloud;
 
     Precipitation precipitation;
 

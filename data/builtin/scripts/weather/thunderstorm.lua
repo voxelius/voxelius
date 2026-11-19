@@ -7,39 +7,17 @@ weather.add("thunderstorm", {
   light = 0.35,
   wind = 3.0,
 
-  -- The deck has to stay under the sky tint; at the old values it came out
-  -- brighter than a storm sky and the storm lost its ceiling.
-  layers = {
-    {
-      height = 160,
-      thickness = 8,
-      opacity = 0.95,
-      scale = 112,
-      coverage = 1.0,
-      shadow = { 0.10, 0.11, 0.13 },
-      lit = { 0.17, 0.18, 0.20 },
-      seed = 19,
-    },
-    {
-      height = 190,
-      thickness = 12,
-      opacity = 0.90,
-      scale = 176,
-      coverage = 1.0,
-      shadow = { 0.12, 0.13, 0.16 },
-      lit = { 0.20, 0.21, 0.24 },
-      seed = 23,
-    },
-    {
-      height = 220,
-      thickness = 15,
-      opacity = 0.85,
-      scale = 224,
-      coverage = 0.9,
-      shadow = { 0.14, 0.15, 0.18 },
-      lit = { 0.23, 0.24, 0.28 },
-      seed = 29,
-    },
+  -- The storm gets its darkness from the sky tint and the hidden sun,
+  -- not from the albedo: the cloud stays white and the light goes away.
+  cloud = {
+    height = 160,
+    thickness = 64,
+    opacity = 0.95,
+    scale = 112,
+    coverage = 1.0,
+    shadow = { 0.84, 0.85, 0.88 },
+    lit = { 0.97, 0.98, 1.00 },
+    seed = 19,
   },
 
   precipitation = {

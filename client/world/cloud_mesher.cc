@@ -2,9 +2,7 @@
 
 #include "client/world/cloud_mesher.hh"
 
-#include "shared/constant.hh"
-
-static_assert(sizeof(CloudVertex) == 7 * sizeof(float), "CloudVertex must stay packed for the vertex layout");
+static_assert(sizeof(CloudVertex) == 10 * sizeof(float), "CloudVertex must stay packed for the vertex layout");
 
 static std::size_t column_index(const CloudWindow& window, std::size_t x, std::size_t z)
 {
@@ -25,24 +23,25 @@ static CloudColumn column_at(const CloudWindow& window, const std::vector<CloudC
     return columns[column_index(window, static_cast<std::size_t>(x), static_cast<std::size_t>(z))];
 }
 
-static void push_vertex(CloudMesh& mesh, const Eigen::Vector3f& position, const CloudColor& color)
+static void push_vertex(CloudMesh& mesh, const Eigen::Vector3f& position, const Eigen::Vector3f& normal, const CloudColor& color)
 {
     CloudVertex vertex {};
     vertex.position = position;
+    vertex.normal = normal;
     vertex.color = color;
 
     mesh.vertices.push_back(vertex);
 }
 
 static void push_quad(CloudMesh& mesh, const Eigen::Vector3f& a, const Eigen::Vector3f& b, const Eigen::Vector3f& c,
-    const Eigen::Vector3f& d, const CloudColor& color)
+    const Eigen::Vector3f& d, const Eigen::Vector3f& normal, const CloudColor& color)
 {
     auto base = static_cast<std::uint32_t>(mesh.vertices.size());
 
-    push_vertex(mesh, a, color);
-    push_vertex(mesh, b, color);
-    push_vertex(mesh, c, color);
-    push_vertex(mesh, d, color);
+    push_vertex(mesh, a, normal, color);
+    push_vertex(mesh, b, normal, color);
+    push_vertex(mesh, c, normal, color);
+    push_vertex(mesh, d, normal, color);
 
     mesh.indices.push_back(base);
     mesh.indices.push_back(base + 1);
@@ -54,14 +53,14 @@ static void push_quad(CloudMesh& mesh, const Eigen::Vector3f& a, const Eigen::Ve
 
 // The corners are given in the winding that faces outwards from the column
 static void push_side_face(CloudMesh& mesh, const Eigen::Vector2f& a, const Eigen::Vector2f& b, float y_bottom, float y_top,
-    const CloudColor& color)
+    const Eigen::Vector3f& normal, const CloudColor& color)
 {
     auto bottom_a = Eigen::Vector3f(a.x(), y_bottom, a.y());
     auto bottom_b = Eigen::Vector3f(b.x(), y_bottom, b.y());
     auto top_b = Eigen::Vector3f(b.x(), y_top, b.y());
     auto top_a = Eigen::Vector3f(a.x(), y_top, a.y());
 
-    push_quad(mesh, bottom_a, bottom_b, top_b, top_a, color);
+    push_quad(mesh, bottom_a, bottom_b, top_b, top_a, normal, color);
 }
 
 // The vertical spans of `self` that `other` leaves exposed. A neighbour can
@@ -89,13 +88,13 @@ static void for_exposed_span(const CloudColumn& self, const CloudColumn& other, 
 }
 
 static void push_exposed_sides(CloudMesh& mesh, const CloudColumn& column, const CloudColumn& other, const Eigen::Vector2f& a,
-    const Eigen::Vector2f& b, float base_y, float height, const CloudColor& color)
+    const Eigen::Vector2f& b, float base_y, float height, const Eigen::Vector3f& normal, const CloudColor& color)
 {
     for_exposed_span(column, other, [&](std::int16_t from, std::int16_t to) {
         auto y_bottom = base_y + static_cast<float>(from) * height;
         auto y_top = base_y + static_cast<float>(to) * height;
 
-        push_side_face(mesh, a, b, y_bottom, y_top, color);
+        push_side_face(mesh, a, b, y_bottom, y_top, normal, color);
     });
 }
 
@@ -136,7 +135,7 @@ static void mesh_column(CloudMesh& mesh, const CloudDeck& deck, const CloudWindo
         return;
     }
 
-    auto base_y = deck.layer.height;
+    auto base_y = deck.body.height;
     auto grid_x = (static_cast<float>(window.min_x + static_cast<std::int32_t>(x)) + 0.5f) * deck.cell;
     auto grid_z = (static_cast<float>(window.min_z + static_cast<std::int32_t>(z)) + 0.5f) * deck.cell;
 
@@ -167,8 +166,8 @@ static void mesh_column(CloudMesh& mesh, const CloudDeck& deck, const CloudWindo
     auto bottom_d = Eigen::Vector3f(x0, y_bottom, z1);
 
     // Both caps are meshed; the view culls the one that faces away
-    push_quad(mesh, top_a, top_b, top_c, top_d, top_color);
-    push_quad(mesh, bottom_a, bottom_b, bottom_c, bottom_d, bottom_color);
+    push_quad(mesh, top_a, top_b, top_c, top_d, Eigen::Vector3f(0.0f, 1.0f, 0.0f), top_color);
+    push_quad(mesh, bottom_a, bottom_b, bottom_c, bottom_d, Eigen::Vector3f(0.0f, -1.0f, 0.0f), bottom_color);
 
     auto column_x = static_cast<std::int32_t>(x);
     auto column_z = static_cast<std::int32_t>(z);
@@ -178,30 +177,20 @@ static void mesh_column(CloudMesh& mesh, const CloudDeck& deck, const CloudWindo
     auto south = column_at(window, columns, column_x, column_z + 1);
     auto north = column_at(window, columns, column_x, column_z - 1);
 
-    // Every direction gets its own shade, and the column's own tint on top of
-    // it, which is what makes the volume read as blocks.
-    auto side_color = deck.side * column.shade;
+    // The vertex shader lights the sides by their normals, so every side
+    // keeps the same albedo and only the column's own tint varies
+    CloudColor side_tint {};
+    side_tint.rgb = deck.side * column.shade;
+    side_tint.alpha = deck.opacity;
 
-    CloudColor east_color {};
-    east_color.rgb = side_color;
-    east_color.alpha = deck.opacity;
-
-    CloudColor west_color {};
-    west_color.rgb = side_color * 0.88f;
-    west_color.alpha = deck.opacity;
-
-    CloudColor south_color {};
-    south_color.rgb = side_color * 0.95f;
-    south_color.alpha = deck.opacity;
-
-    CloudColor north_color {};
-    north_color.rgb = side_color * 0.82f;
-    north_color.alpha = deck.opacity;
-
-    push_exposed_sides(mesh, column, east, Eigen::Vector2f(x1, z1), Eigen::Vector2f(x1, z0), base_y, deck.height, east_color);
-    push_exposed_sides(mesh, column, west, Eigen::Vector2f(x0, z0), Eigen::Vector2f(x0, z1), base_y, deck.height, west_color);
-    push_exposed_sides(mesh, column, south, Eigen::Vector2f(x0, z1), Eigen::Vector2f(x1, z1), base_y, deck.height, south_color);
-    push_exposed_sides(mesh, column, north, Eigen::Vector2f(x1, z0), Eigen::Vector2f(x0, z0), base_y, deck.height, north_color);
+    push_exposed_sides(mesh, column, east, Eigen::Vector2f(x1, z1), Eigen::Vector2f(x1, z0), base_y, deck.height,
+        Eigen::Vector3f(1.0f, 0.0f, 0.0f), side_tint);
+    push_exposed_sides(mesh, column, west, Eigen::Vector2f(x0, z0), Eigen::Vector2f(x0, z1), base_y, deck.height,
+        Eigen::Vector3f(-1.0f, 0.0f, 0.0f), side_tint);
+    push_exposed_sides(mesh, column, south, Eigen::Vector2f(x0, z1), Eigen::Vector2f(x1, z1), base_y, deck.height,
+        Eigen::Vector3f(0.0f, 0.0f, 1.0f), side_tint);
+    push_exposed_sides(mesh, column, north, Eigen::Vector2f(x1, z0), Eigen::Vector2f(x0, z0), base_y, deck.height,
+        Eigen::Vector3f(0.0f, 0.0f, -1.0f), side_tint);
 }
 
 static CloudWindow make_window(const Eigen::Vector3f& center, float cell, float radius)

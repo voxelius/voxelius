@@ -1,13 +1,19 @@
 #version 330 core
 
 layout(location = 0) in vec3 vert_Position;
-layout(location = 1) in vec4 vert_Color;
+layout(location = 1) in vec3 vert_Normal;
+layout(location = 2) in vec4 vert_Color;
 
 uniform mat4 u_CloudViewProjection;
 uniform vec3 u_CameraOrigin;
 uniform vec2 u_DeckCenter;
 uniform vec3 u_WindOffset;
-uniform vec3 u_CloudTint;
+uniform vec3 u_SunDirection;
+uniform vec3 u_SunColor;
+uniform vec3 u_SkyColor;
+uniform vec3 u_HazeColor;
+uniform vec2 u_HazeRange;
+uniform vec3 u_CameraPosition;
 uniform float u_FadeDistance;
 uniform vec2 u_BlendRange;
 uniform float u_DepthBias;
@@ -45,9 +51,30 @@ void main(void)
         alpha *= 1.0 - smoothstep(u_BlendRange.x, u_BlendRange.x + u_BlendRange.y, square);
     }
 
-    // The atmosphere tints the whole deck with the setting
-    // sun; the compose step expects premultiplied colour
-    vs_Color = vec4(vert_Color.rgb * u_CloudTint * alpha, alpha);
+    // The face normal comes from the mesher; the sun and the sky light the
+    // deck here, so a moving sun does not need a rebuild. The constant term
+    // keeps a storm cloud from going pure black in its own shadow
+    vec3 normal = normalize(vert_Normal);
+    float sun = max(dot(normal, u_SunDirection), 0.0);
+    float wrap = clamp(dot(normal, u_SunDirection) * 0.5 + 0.5, 0.0, 1.0);
+    float sky = 0.65 + 0.35 * max(normal.y, 0.0);
+
+    // A cloud with the sun behind it scatters light forward: the side we look
+    // at is away from the sun, but the whole mass still catches the low light
+    vec3 to_camera = normalize(u_CameraPosition - world);
+    float backlit = pow(max(dot(-to_camera, u_SunDirection), 0.0), 6.0);
+
+    vec3 lit = u_SkyColor * sky;
+    lit += u_SunColor * (0.80 * pow(sun, 0.9) + 0.20 * wrap * wrap);
+    lit += u_SunColor * backlit * 0.85 + vec3(0.05);
+
+    // Distant clouds take the colour of the air in front of them, so a deck
+    // seen through a storm reads lighter than the same deck overhead
+    float haze = smoothstep(u_HazeRange.x, u_HazeRange.y, horizontal);
+    vec3 color = mix(vert_Color.rgb * lit, u_HazeColor, haze);
+
+    // The compose step expects premultiplied colour
+    vs_Color = vec4(color * alpha, alpha);
 
     gl_Position = u_CloudViewProjection * vec4(local, 1.0);
 

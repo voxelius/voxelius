@@ -413,11 +413,7 @@ WeatherBlend weather::blend_overhead(float x, float y, float z)
             continue;
         }
 
-        auto overhead = std::any_of(type->layers.cbegin(), type->layers.cend(), [y](const CloudLayer& layer) {
-            return layer.height > y + 4.0f;
-        });
-
-        if(!overhead) {
+        if(type->cloud.coverage <= 0.02f || type->cloud.height <= y + 4.0f) {
             continue;
         }
 
