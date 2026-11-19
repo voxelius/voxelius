@@ -11,7 +11,6 @@
 #include "core/utils/angles.hh"
 
 #include "shared/constant.hh"
-#include "shared/utils/biome.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/weather.hh"
 
@@ -48,18 +47,24 @@ static GLuint s_vao[2];
 static GLuint s_vbo[2];
 static GLuint s_ibo[2];
 
+// A realm's field drifts on its own, so a deck is anchored to the drift of
+// the realm its layer sits in. The camera realm plays no part: crossing into
+// another realm must not resample a deck that belongs to a different one
+struct CloudDrift final {
+    Eigen::Vector2f anchor { Eigen::Vector2f::Zero() };
+    Eigen::Vector2f offset { Eigen::Vector2f::Zero() };
+    bool anchored { false };
+};
+
 static CloudMesh s_meshes[2];
 static std::size_t s_front;
 static std::vector<CloudGroup> s_groups;
-static Eigen::Vector3f s_wind_offset { Eigen::Vector3f::Zero() };
-static Eigen::Vector3f s_last_build_offset { Eigen::Vector3f::Zero() };
+static std::array<CloudDrift, NUM_BIOME_REALMS> s_drift;
+static std::array<Eigen::Vector2f, NUM_BIOME_REALMS> s_last_build_offset;
 static std::uint64_t s_state_signature;
 static std::uint64_t s_generation;
 static Eigen::Vector3f s_last_build_center { Eigen::Vector3f::Zero() };
 static unsigned s_last_cloud_range { 0 };
-static Eigen::Vector2f s_drift_anchor { Eigen::Vector2f::Zero() };
-static biome_realm s_anchor_realm { BIOME_REALM_SURFACE };
-static bool s_anchored { false };
 static bool s_building { false };
 static float s_build_cooldown;
 
@@ -120,38 +125,44 @@ static bool needs_rebuild(void)
         return true;
     }
 
-    // The mesh is only re-evaluated when the field has drifted far
-    // enough for the window to slide a cell; the wind offset alone keeps
-    // the deck moving in between, and the field is sampled in the
-    // same frame the deck lives in, so a rebuild does not reshuffle cubes
-    if((s_wind_offset - s_last_build_offset).norm() > cloud_field::fine_cell_blocks() * 2.0f) {
-        return true;
+    // The mesh is only re-evaluated when a field has drifted far
+    // enough for its window to slide a cell; the wind offset alone
+    // keeps the deck moving in between, and every deck is sampled in
+    // the frame of its own realm, so a rebuild does not reshuffle cubes
+    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
+        if((s_drift[i].offset - s_last_build_offset[i]).norm() > cloud_field::fine_cell_blocks() * 2.0f) {
+            return true;
+        }
     }
 
     return s_state_signature != state_signature();
 }
 
-// The deck is built in the weather field's own frame and drawn
-// with that field's drift, so the cubes keep the shape the field
-// gave them while the front travels. Driving the offset from the
-// locally integrated wind instead lets the two slowly disagree,
-// and the next rebuild then swaps a whole swath of the deck at once
-static void advance_wind_offset(const WeatherRealmState& state, biome_realm realm)
+// Every deck is sampled in the weather field of its own realm and drawn
+// with that field's drift, so the cubes keep the shape the field gave
+// them while the front travels. Driving the offset from the locally
+// integrated wind instead lets the two slowly disagree, and the next
+// rebuild then swaps a whole swath of the deck at once
+static void advance_wind_offsets(void)
 {
-    if(!s_anchored || s_anchor_realm != realm) {
-        s_drift_anchor = state.types.drift - Eigen::Vector2f(s_wind_offset.x(), s_wind_offset.z());
-        s_anchor_realm = realm;
-        s_anchored = true;
-    }
-
-    auto target = Eigen::Vector3f(state.types.drift.x() - s_drift_anchor.x(), 0.0f, state.types.drift.y() - s_drift_anchor.y());
-
-    // A packet that moves the field somewhere else, such as a forced front, must not
-    // teleport the deck across the sky; a short ease turns it into a slide. Ordinary
-    // drift moves at a couple of blocks per second, so the lag this adds is under a block
     auto step = 1.0f - std::exp(-WIND_EASE_PER_SECOND * std::min(globals::window_frametime, 0.1f));
 
-    s_wind_offset += (target - s_wind_offset) * step;
+    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
+        auto& state = weather::state(static_cast<biome_realm>(i));
+        auto& drift = s_drift[i];
+
+        if(!drift.anchored) {
+            drift.anchor = state.types.drift - drift.offset;
+            drift.anchored = true;
+        }
+
+        // A packet that moves the field somewhere else, such as a forced front, must not
+        // teleport the deck across the sky; a short ease turns it into a slide. Ordinary
+        // drift moves at a couple of blocks per second, so the lag this adds is under a block
+        auto target = state.types.drift - drift.anchor;
+
+        drift.offset += (target - drift.offset) * step;
+    }
 }
 
 static void update_depth_range(float radius)
@@ -241,9 +252,14 @@ static void submit_build(void)
     CloudInput input {};
     auto states = weather::states();
     std::copy(states.begin(), states.end(), input.states.begin());
-    input.anchor = s_drift_anchor;
-    input.center = camera_position - s_wind_offset;
+    input.center = camera_position;
     input.radius = radius;
+
+    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
+        input.anchors[i] = s_drift[i].anchor;
+        input.offsets[i] = s_drift[i].offset;
+        s_last_build_offset[i] = s_drift[i].offset;
+    }
 
     s_groups.clear();
     cloud_field::collect_groups(camera_position.y(), s_groups);
@@ -253,7 +269,6 @@ static void submit_build(void)
         return a.distance > b.distance;
     });
 
-    s_last_build_offset = s_wind_offset;
     s_last_build_center = camera_position;
     s_last_cloud_range = camera::cloud_range.value();
     s_state_signature = state_signature();
@@ -327,9 +342,8 @@ void cloud_renderer::shutdown(void)
 
 void cloud_renderer::reset(void)
 {
-    s_anchored = false;
-    s_wind_offset.setZero();
-    s_last_build_offset.setZero();
+    s_drift.fill(CloudDrift {});
+    s_last_build_offset.fill(Eigen::Vector2f::Zero());
     s_generation += 1;
     s_building = false;
     s_front = 0;
@@ -348,11 +362,7 @@ void cloud_renderer::render(void)
         return;
     }
 
-    auto camera_position = camera_world_position();
-    auto realm = utils::realm_of_y(camera_position.y());
-    auto& state = weather::state(realm);
-
-    advance_wind_offset(state, realm);
+    advance_wind_offsets();
 
     s_build_cooldown = std::max(s_build_cooldown - globals::window_frametime, 0.0f);
 
@@ -374,12 +384,8 @@ void cloud_renderer::render(void)
 
     glUseProgram(s_program.handle);
 
-    Eigen::Vector2f deck_center = mesh.center + Eigen::Vector2f(s_wind_offset.x(), s_wind_offset.z());
-
     glUniformMatrix4fv(s_program.uniforms[su_CloudViewProjection].location, 1, GL_FALSE, cloud_projection.data());
     glUniform3fv(s_program.uniforms[su_CameraOrigin].location, 1, camera_origin.data());
-    glUniform2fv(s_program.uniforms[su_DeckCenter].location, 1, deck_center.data());
-    glUniform3fv(s_program.uniforms[su_WindOffset].location, 1, s_wind_offset.data());
     glUniform3fv(s_program.uniforms[su_CloudTint].location, 1, cloud_tint.data());
 
     glEnable(GL_DEPTH_TEST);
@@ -395,8 +401,12 @@ void cloud_renderer::render(void)
 
     for(const auto& batch : mesh.batches) {
         auto offset = reinterpret_cast<const void*>(batch.offset * sizeof(std::uint32_t));
+        auto& drift = s_drift[static_cast<std::size_t>(batch.realm)];
 
-        // Each ring has its own fade; only the one at the deck's edge dissolves
+        // Each deck rides the drift of its own realm, and each ring has its own
+        // fade; only the one at the deck's edge dissolves
+        glUniform2fv(s_program.uniforms[su_DeckCenter].location, 1, batch.center.data());
+        glUniform3f(s_program.uniforms[su_WindOffset].location, drift.offset.x(), 0.0f, drift.offset.y());
         glUniform1f(s_program.uniforms[su_FadeDistance].location, batch.fade);
         glUniform2f(s_program.uniforms[su_BlendRange].location, batch.blend_start, batch.blend_width);
         glUniform1f(s_program.uniforms[su_DepthBias].location, batch.depth_bias);

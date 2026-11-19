@@ -25,7 +25,9 @@ void main(void)
     vec3 world = vert_Position + vec3(u_WindOffset.x, 0.0, u_WindOffset.z);
     vec3 local = world - u_CameraOrigin;
 
-    vec2 offset = world.xz - u_DeckCenter;
+    // The fades belong to the window the mesh was built around; measuring
+    // them in the wind-shifted position would move them with the drift
+    vec2 offset = vert_Position.xz - u_DeckCenter;
     float horizontal = length(offset);
 
     // The rings tile square windows, so their own edge is the larger axis: a radial measure would open a gap at the corners

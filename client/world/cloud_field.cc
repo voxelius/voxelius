@@ -46,8 +46,14 @@ CloudDeck cloud_field::make_deck(const CloudInput& input, const CloudGroup& grou
     deck.layer = group.layer;
     deck.cell = ring.cell;
     deck.height = ring.height;
-    deck.state = &input.states[static_cast<std::size_t>(group.realm)];
-    deck.anchor = input.anchor;
+
+    auto realm_index = static_cast<std::size_t>(group.realm);
+    auto offset = input.offsets[realm_index];
+
+    deck.state = &input.states[realm_index];
+    deck.anchor = input.anchors[realm_index];
+    deck.center = input.center - Eigen::Vector3f(offset.x(), 0.0f, offset.y());
+
     deck.scale = std::max(group.layer.scale, 8.0f);
     deck.max_levels = std::clamp(static_cast<int>(group.layer.thickness / deck.height), 1, CLOUD_COLUMN_MAX_VOXELS);
     deck.opacity = std::clamp(group.layer.opacity, 0.05f, 1.0f);

@@ -29,7 +29,8 @@ struct CloudDeck final {
     weather_type_id type;
     CloudLayer layer;
     const WeatherRealmState* state;
-    Eigen::Vector2f anchor;
+    Eigen::Vector2f anchor; // Field drift of this deck's own realm, taken when the deck was anchored
+    Eigen::Vector3f center; // World point the window is meshed around, in the frame the vertices use
     float cell;
     float height;
     float scale;
@@ -50,11 +51,13 @@ struct CloudGroup final {
     float distance;
 };
 
-// Everything a worker needs: a copy of the
-// field state and the frame the window belongs to
+// Everything a worker needs: a copy of the field state and the frame the
+// window belongs to. Each realm drifts on its own, so every deck is anchored
+// and moved by the realm its layer sits in, never by the camera's realm
 struct CloudInput final {
     std::array<WeatherRealmState, NUM_BIOME_REALMS> states;
-    Eigen::Vector2f anchor;
+    std::array<Eigen::Vector2f, NUM_BIOME_REALMS> anchors;
+    std::array<Eigen::Vector2f, NUM_BIOME_REALMS> offsets;
     Eigen::Vector3f center;
     float radius;
 };

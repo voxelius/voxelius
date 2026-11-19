@@ -26,8 +26,10 @@ struct CloudWindow final {
 struct CloudBatch final {
     std::size_t offset;
     std::size_t count;
-    float fade;        // Outer edge of the deck; zero for a ring inside it, which does not fade out
-    float blend_start; // Outer edge of the ring, where it fades into the coarser one; a zero width means no fade
+    biome_realm realm;      // Realm whose drift moves this batch at draw time
+    Eigen::Vector2f center; // Window center this batch was meshed around, in the frame of its vertices
+    float fade;             // Outer edge of the deck; zero for a ring inside it, which does not fade out
+    float blend_start;      // Outer edge of the ring, where it fades into the coarser one; a zero width means no fade
     float blend_width;
     float depth_bias; // Pushes the ring back in depth, so two rings that overlap at the same height do not fight over the pixel
 };
@@ -38,10 +40,6 @@ struct CloudMesh final {
     std::vector<CloudVertex> vertices;
     std::vector<std::uint32_t> indices;
     std::vector<CloudBatch> batches;
-
-    // Center of the window the build was meshed around, in field
-    // coordinates; the rings and their fades are measured from it
-    Eigen::Vector2f center;
 };
 
 namespace cloud_mesher

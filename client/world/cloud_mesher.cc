@@ -224,10 +224,10 @@ static void mesh_ring(CloudMesh& mesh, const CloudInput& input, const CloudGroup
     float fade)
 {
     auto deck = cloud_field::make_deck(input, group, ring);
-    auto window = make_window(input.center, deck.cell, outer);
+    auto window = make_window(deck.center, deck.cell, outer);
     auto columns = std::vector<CloudColumn>(window.width * window.depth);
 
-    fill_columns(deck, window, input.center, inner, columns);
+    fill_columns(deck, window, deck.center, inner, columns);
 
     auto offset = mesh.indices.size();
 
@@ -247,6 +247,8 @@ static void mesh_ring(CloudMesh& mesh, const CloudInput& input, const CloudGroup
         CloudBatch batch {};
         batch.offset = offset;
         batch.count = count;
+        batch.realm = group.realm;
+        batch.center = Eigen::Vector2f(deck.center.x(), deck.center.z());
         batch.fade = fade;
         batch.blend_start = outer - blend_width;
         batch.blend_width = blend_width;
@@ -297,7 +299,6 @@ void cloud_mesher::build(const CloudInput& input, std::span<const CloudGroup> gr
     mesh.vertices.clear();
     mesh.indices.clear();
     mesh.batches.clear();
-    mesh.center = Eigen::Vector2f(input.center.x(), input.center.z());
 
     for(const auto& group : groups) {
         mesh_layer(mesh, input, group);
