@@ -123,6 +123,9 @@
   "settings.tooltip.net_username": "Name changes apply on next connection to a server",
   "settings.tooltip.r_vsync": "Synchronize buffer swapping with your monitor's refresh rate; this removes screen tearing but adds a noticeable input lag",
   "settings.tooltip.r_software_cursor": "Draw the menu cursor in software; enable this if the pointer is invisible in exclusive fullscreen with stuff like OBS",
+  "settings.tooltip.r_lod": "Draws distant terrain as simplified LOD cells; turn off to keep only the near, detailed world",
+  "settings.tooltip.r_lod_range": "How far the LOD terrain reaches, in chunks; a larger range costs more GPU time",
+  "settings.tooltip.r_lod_other_realms": "Draws LOD for the realms above and below the camera; turn off to save performance",
 
   "settings.choice.video_mode.windowed": "Windowed",
 

@@ -7,6 +7,7 @@
 
 constexpr static float CONTROL_FRACTION = 0.5f;
 constexpr static float ROW_PAD_X = 4.0f;
+constexpr static float TOOLTIP_WRAP_EM = 40.0f;
 
 // A stone face paints its bevel on top of the frame, and the stock padding is
 // in physical pixels, so on a scaled display the glyphs end up on the bevel
@@ -61,7 +62,7 @@ void gui::detail::SettingWidget::layout(void)
 
     if(m_tooltip_enabled) {
         if(ImGui::BeginItemTooltip()) {
-            ImGui::PushTextWrapPos(16.0f * ImGui::GetFontSize());
+            ImGui::PushTextWrapPos(TOOLTIP_WRAP_EM * ImGui::GetFontSize());
             ImGui::TextUnformatted(m_tooltip.c_str());
             ImGui::PopTextWrapPos();
             ImGui::EndTooltip();

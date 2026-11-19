@@ -140,13 +140,16 @@ void lod_manager::init(void)
     lod_other_realms_binding.set_flags(FCVAR_ARCHIVE);
 
     s_lod_gui.bind("r_lod");
+    s_lod_gui.enable_tooltip();
     settings::video_lod.add_child(s_lod_gui, 1);
 
     s_lod_range_gui.set_range(0, 128);
     s_lod_range_gui.bind("r_lod_range");
+    s_lod_range_gui.enable_tooltip();
     settings::video_lod.add_child(s_lod_range_gui, 2);
 
     s_lod_other_realms_gui.bind("r_lod_other_realms");
+    s_lod_other_realms_gui.enable_tooltip();
     settings::video_lod.add_child(s_lod_other_realms_gui, 3);
 
     auto& stats_binding = cvar::bind_cmd("lod_stats");
