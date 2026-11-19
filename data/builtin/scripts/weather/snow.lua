@@ -9,7 +9,7 @@ weather.add("snow", {
 
   layers = {
     {
-      height = 320,
+      height = 430,
       thickness = 6,
       opacity = 0.85,
       scale = 96,
