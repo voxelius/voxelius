@@ -35,11 +35,11 @@ struct ChunkLod final {
     std::uint8_t color_mode { lod::COLOR_PALETTE8 };
     LodPalette palette;
 
-    std::array<ChunkLodCell, 4096> level0;
-    std::array<ChunkLodCell, 512> level1;
-    std::array<ChunkLodCell, 64> level2;
-    std::array<ChunkLodCell, 8> level3;
-    std::array<ChunkLodCell, 1> level4;
+    std::array<ChunkLodCell, 4096> level0 {};
+    std::array<ChunkLodCell, 512> level1 {};
+    std::array<ChunkLodCell, 64> level2 {};
+    std::array<ChunkLodCell, 8> level3 {};
+    std::array<ChunkLodCell, 1> level4 {};
 };
 
 constexpr std::uint32_t ChunkLodCell::coverage(void) const

@@ -17,7 +17,7 @@ struct BaseColor final {
     bool apply_tint;
 };
 
-static std::mutex s_mutex;
+static std::shared_mutex s_mutex;
 static vx::hash_map<block_id_type, BaseColor> s_colors;
 
 static bool average_images(std::span<const Identifier> textures, const char* subdirectory, Eigen::Vector3f& out)
@@ -167,7 +167,7 @@ void lod_color::init(void)
     // is not thread-safe and chunk LOD tasks run on the pool.
     auto definitions = block_registry::all_definitions();
 
-    std::scoped_lock lock(s_mutex);
+    std::unique_lock lock(s_mutex);
     s_colors.clear();
 
     for(block_id_type id = 0; id < definitions.size(); id += 1) {
@@ -183,8 +183,11 @@ void lod_color::shutdown(void)
 
 Eigen::Vector3f lod_color::block_color(block_id_type id, biome_id_type biome)
 {
-    // The cache is resolved once on the main thread and never written again;
-    // LOD workers only read it.
+    // The palette is written once, before the pool has any LOD task to run,
+    // and is read by every LOD worker afterwards. The shared lock keeps a
+    // second init from racing them.
+    std::shared_lock lock(s_mutex);
+
     auto it = s_colors.find(id);
 
     if(it == s_colors.end()) {

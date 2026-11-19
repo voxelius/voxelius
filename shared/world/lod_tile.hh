@@ -44,7 +44,7 @@ struct LodTile final {
     LodKey key {};
     std::uint8_t color_mode { lod::COLOR_PALETTE8 };
     LodPalette palette;
-    std::array<LodTileCell, LOD_TILE_CELL_COUNT> cells;
+    std::array<LodTileCell, LOD_TILE_CELL_COUNT> cells {};
 };
 
 template<>

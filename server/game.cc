@@ -2,6 +2,8 @@
 
 #include "server/game.hh"
 
+#include "core/cvar/context.hh"
+#include "core/cvar/host.hh"
 #include "core/identifier.hh"
 
 #include "shared/cvar/gamerules.hh"
@@ -15,6 +17,13 @@
 #include "server/world/time_sim.hh"
 #include "server/world/weather_sim.hh"
 
+static cvar::status cmd_stop(const cvar::Context&, std::span<const std::string_view>)
+{
+    std::raise(SIGINT);
+
+    return cvar::status::OK;
+}
+
 void server_game::init(void)
 {
     lighting::set_replica(false);
@@ -24,6 +33,11 @@ void server_game::init(void)
 
     pmove_validator::init();
     time_sim::init();
+
+    auto& stop_binding = cvar::bind_cmd("stop");
+    stop_binding.set_help("Stop the server");
+    stop_binding.set_flags(FCVAR_RECALL | FCVAR_ADMIN);
+    stop_binding.connect<&cmd_stop>();
 }
 
 void server_game::init_late(void)

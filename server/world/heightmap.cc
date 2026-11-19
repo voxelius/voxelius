@@ -59,14 +59,23 @@ static std::shared_ptr<HeightmapEntry> get_entry(biome_realm realm, const ChunkP
         return entry;
     }
 
-    std::unique_lock lock(s_mutex);
-
     auto index = static_cast<std::size_t>(realm);
     assert(index < NUM_BIOME_REALMS);
 
+    std::unique_lock lock(s_mutex);
+
+    // Another thread may have inserted this column while this one waited for
+    // the exclusive lock. Replacing its entry would free a slice that an
+    // in-flight probe still holds a reference to.
     auto& cache = s_cache.at(index);
+    auto it = cache.find(pos);
+
+    if(it != cache.end()) {
+        return it->second;
+    }
+
     auto entry = std::make_shared<HeightmapEntry>();
-    cache[pos] = entry;
+    cache.emplace(pos, entry);
     return entry;
 }
 
