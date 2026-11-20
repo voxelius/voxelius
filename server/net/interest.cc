@@ -16,13 +16,12 @@
 
 #include "server/globals.hh"
 #include "server/net/sessions.hh"
+#include "server/universe.hh"
 
 cvar::Number<unsigned> interest::view_distance { 8, 1, 32 };
 
-static void send_full_snapshot(ENetPeer* peer, entt::entity entity)
+static void send_full_snapshot(entt::registry& registry, ENetPeer* peer, entt::entity entity)
 {
-    auto& registry = globals::world->registry();
-
     auto& entity_class = registry.get<EntityClass>(entity);
 
     packet::Entity_Spawn spawn_packet {};
@@ -53,27 +52,29 @@ static void update_visibility(void)
 {
     ZoneScoped;
 
-    auto& registry = globals::world->registry();
-    auto entities = registry.view<EntityClass, Transform>();
+    for(const auto& world : universe::worlds()) {
+        auto& registry = world->registry();
+        auto entities = registry.view<EntityClass, Transform>();
 
-    for(auto& session : sessions::all()) {
-        if(session.peer == nullptr) {
-            continue;
-        }
-
-        for(const auto [entity, cls, transform] : entities.each()) {
-            auto in_box = session.view_box.contains(transform.chunk);
-            auto is_known = session.known_entities.contains(entity);
-
-            if(in_box && !is_known) {
-                send_full_snapshot(session.peer, entity);
-                session.known_entities.insert(entity);
+        for(auto& session : sessions::all()) {
+            if(session.world != world || session.peer == nullptr) {
+                continue;
             }
-            else if(!in_box && is_known) {
-                packet::Entity_Remove packet {};
-                packet.entity = entity;
-                protocol::send(packet, session.peer);
-                session.known_entities.erase(entity);
+
+            for(const auto [entity, cls, transform] : entities.each()) {
+                auto in_box = session.view_box.contains(transform.chunk);
+                auto is_known = session.known_entities.contains(entity);
+
+                if(in_box && !is_known) {
+                    send_full_snapshot(registry, session.peer, entity);
+                    session.known_entities.insert(entity);
+                }
+                else if(!in_box && is_known) {
+                    packet::Entity_Remove packet {};
+                    packet.entity = entity;
+                    protocol::send(packet, session.peer);
+                    session.known_entities.erase(entity);
+                }
             }
         }
     }
@@ -90,11 +91,15 @@ void interest::fixed_update_late(void)
 {
     ZoneScoped;
 
-    auto& registry = globals::world->registry();
-
     auto radius = static_cast<ChunkPos::value_type>(view_distance.value());
 
     for(auto& session : sessions::all()) {
+        if(session.peer == nullptr || session.world == nullptr) {
+            continue;
+        }
+
+        auto& registry = session.world->registry();
+
         if(registry.valid(session.player)) {
             auto& transform = registry.get<Transform>(session.player);
             session.view_box = utils::view_box(transform.chunk, radius);

@@ -20,6 +20,12 @@ std::any Component<Head>::prepare(lua_State* L, int config_idx)
 }
 
 template<>
+void Component<Head>::connect(entt::registry& registry)
+{
+    registry.on_update<Head>().connect<&component_map::on_update<Head>>();
+}
+
+template<>
 void Component<Head>::attach(entt::registry& registry, entt::entity entity, const std::any& config)
 {
     assert(std::any_cast<const Eigen::Vector3f>(&config));
@@ -98,12 +104,6 @@ void Component<Head>::interpolate(entt::registry& registry, entt::entity entity,
     interp->offset.x() = std::lerp(previous->offset.x(), current->offset.x(), alpha);
     interp->offset.y() = std::lerp(previous->offset.y(), current->offset.y(), alpha);
     interp->offset.z() = std::lerp(previous->offset.z(), current->offset.z(), alpha);
-}
-
-template<>
-void Component<Head>::connect(entt::registry& registry)
-{
-    registry.on_update<Head>().connect<&component_map::on_update<Head>>();
 }
 
 void Head::register_component(void)

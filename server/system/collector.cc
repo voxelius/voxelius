@@ -12,6 +12,7 @@
 #include "server/globals.hh"
 #include "server/net/interest.hh"
 #include "server/net/sessions.hh"
+#include "server/universe.hh"
 
 static void on_create_entity(entt::registry& registry, entt::entity entity)
 {
@@ -46,11 +47,9 @@ static void on_destroy_entity(entt::registry& registry, entt::entity entity)
     interest::forget(entity);
 }
 
-static void process_entity(entt::entity entity, DirtyMarker& dirty)
+static void process_entity(entt::registry& registry, entt::entity entity, DirtyMarker& dirty)
 {
     static packet::Entity_Patch packet;
-
-    auto& registry = globals::world->registry();
 
     packet.entity = entity;
     packet.components.clear();
@@ -87,17 +86,21 @@ static void process_entity(entt::entity entity, DirtyMarker& dirty)
 
 void collector::init(void)
 {
-    auto& registry = globals::world->registry();
-    registry.on_construct<EntityClass>().connect<&on_create_entity>();
-    registry.on_destroy<EntityClass>().connect<&on_destroy_entity>();
+    for(const auto& world : universe::worlds()) {
+        auto& registry = world->registry();
+        registry.on_construct<EntityClass>().connect<&on_create_entity>();
+        registry.on_destroy<EntityClass>().connect<&on_destroy_entity>();
+    }
 }
 
 void collector::fixed_update_late(void)
 {
-    auto& registry = globals::world->registry();
-    auto view = registry.view<DirtyMarker>();
+    for(const auto& world : universe::worlds()) {
+        auto& registry = world->registry();
+        auto view = registry.view<DirtyMarker>();
 
-    for(auto [entity, dirty] : view.each()) {
-        process_entity(entity, dirty);
+        for(auto [entity, dirty] : view.each()) {
+            process_entity(registry, entity, dirty);
+        }
     }
 }

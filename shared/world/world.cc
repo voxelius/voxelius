@@ -470,6 +470,7 @@ void World::purge(void)
 {
     m_chunks.clear();
     m_chunk_registry.clear();
+    m_registry.clear();
     m_biomes.purge();
     m_weather = {};
 }

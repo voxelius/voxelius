@@ -19,6 +19,12 @@ std::any Component<Velocity>::prepare(lua_State* L, int config_idx)
 }
 
 template<>
+void Component<Velocity>::connect(entt::registry& registry)
+{
+    registry.on_update<Velocity>().connect<&component_map::on_update<Velocity>>();
+}
+
+template<>
 void Component<Velocity>::attach(entt::registry& registry, entt::entity entity, const std::any& config)
 {
     Velocity velocity {};
@@ -85,12 +91,6 @@ void Component<Velocity>::interpolate(entt::registry& registry, entt::entity ent
     interp->value.x() = std::lerp(previous->value.x(), current->value.x(), alpha);
     interp->value.y() = std::lerp(previous->value.y(), current->value.y(), alpha);
     interp->value.z() = std::lerp(previous->value.z(), current->value.z(), alpha);
-}
-
-template<>
-void Component<Velocity>::connect(entt::registry& registry)
-{
-    registry.on_update<Velocity>().connect<&component_map::on_update<Velocity>>();
 }
 
 void Velocity::register_component(void)

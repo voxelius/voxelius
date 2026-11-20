@@ -180,7 +180,6 @@ static void on_auth_request(const packet::Auth_Request& packet)
 
 static void on_auth_response(const packet::Auth_Response& packet)
 {
-    auto& registry = globals::world->registry();
     auto session = sessions::find(packet.peer);
 
     if(session == nullptr) {
@@ -211,6 +210,8 @@ static void on_auth_response(const packet::Auth_Response& packet)
     protocol::send(response, packet.peer);
 
     session->world = universe::default_world();
+
+    auto& registry = session->world->registry();
 
     replication::synchronize(session);
 
@@ -608,8 +609,6 @@ Session* sessions::find(const ENetPeer* peer)
 
 void sessions::destroy(Session* session, std::optional<std::uint32_t> reason)
 {
-    auto& registry = globals::world->registry();
-
     if(session) {
         std::string_view reason_string;
 
@@ -629,8 +628,12 @@ void sessions::destroy(Session* session, std::optional<std::uint32_t> reason)
         s_username_map.erase(session->username);
         s_identity_map.erase(session->identity);
 
-        if(registry.valid(session->player)) {
-            registry.destroy(session->player);
+        if(session->world) {
+            auto& registry = session->world->registry();
+
+            if(registry.valid(session->player)) {
+                registry.destroy(session->player);
+            }
         }
 
         session->state = session_state::UNCONNECTED;

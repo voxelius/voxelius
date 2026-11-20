@@ -37,6 +37,12 @@ std::any Component<Transform>::prepare(lua_State* L, int config_idx)
 }
 
 template<>
+void Component<Transform>::connect(entt::registry& registry)
+{
+    registry.on_update<Transform>().connect<&component_map::on_update<Transform>>();
+}
+
+template<>
 void Component<Transform>::attach(entt::registry& registry, entt::entity entity, const std::any& config)
 {
     Transform transform {};
@@ -131,12 +137,6 @@ void Component<Transform>::interpolate(entt::registry& registry, entt::entity en
     interp->local.x() = std::lerp(previous_local.x(), current->local.x(), alpha);
     interp->local.y() = std::lerp(previous_local.y(), current->local.y(), alpha);
     interp->local.z() = std::lerp(previous_local.z(), current->local.z(), alpha);
-}
-
-template<>
-void Component<Transform>::connect(entt::registry& registry)
-{
-    registry.on_update<Transform>().connect<&component_map::on_update<Transform>>();
 }
 
 void Transform::register_component(void)

@@ -116,12 +116,12 @@ void streaming::fixed_update_late(void)
 {
     ZoneScoped;
 
-    auto& registry = globals::world->registry();
-
     for(auto& session : sessions::all()) {
-        if(session.peer == nullptr) {
+        if(session.peer == nullptr || session.world == nullptr) {
             continue;
         }
+
+        auto& registry = session.world->registry();
 
         if(!registry.valid(session.player) || !registry.all_of<Transform>(session.player)) {
             continue;
@@ -149,7 +149,11 @@ void streaming::fixed_update_late(void)
 
 void streaming::subscribe(Session& session, const packet::World_Request& packet)
 {
-    auto& registry = globals::world->registry();
+    if(session.world == nullptr) {
+        return;
+    }
+
+    auto& registry = session.world->registry();
 
     if(!registry.valid(session.player) || !registry.all_of<Transform>(session.player)) {
         return;

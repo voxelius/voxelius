@@ -244,9 +244,8 @@ static void on_player_attack_e(const packet::Player_AttackE& packet)
     // empty
 }
 
-static bool in_reach(entt::entity player, const BlockPos& bpos)
+static bool in_reach(entt::registry& registry, entt::entity player, const BlockPos& bpos)
 {
-    auto& registry = globals::world->registry();
     auto& transform = registry.get<Transform>(player);
     auto player_bpos = utils::to_block(transform.chunk, transform.local.cast<LocalPos::value_type>());
     auto distance = (bpos - player_bpos).cast<float>().norm();
@@ -311,12 +310,13 @@ static void on_player_attack_b(const packet::Player_AttackB& packet)
         return;
     }
 
-    if(!in_reach(session->player, packet.bpos)) {
+    auto world = session->world;
+    auto& registry = world->registry();
+
+    if(!in_reach(registry, session->player, packet.bpos)) {
         reject_break(packet.peer, packet.bpos);
         return;
     }
-
-    auto world = session->world;
 
     if(world->get_block(packet.bpos) != packet.expected) {
         reject_break(packet.peer, packet.bpos);
@@ -348,12 +348,13 @@ static void on_player_interact_b(const packet::Player_InteractB& packet)
         return;
     }
 
-    if(!in_reach(session->player, packet.bpos)) {
+    auto world = session->world;
+    auto& registry = world->registry();
+
+    if(!in_reach(registry, session->player, packet.bpos)) {
         reject_place(packet.peer, packet);
         return;
     }
-
-    auto world = session->world;
 
     if(world->get_block(packet.bpos) != packet.expected) {
         reject_place(packet.peer, packet);
@@ -378,12 +379,13 @@ static void on_player_interact_b(const packet::Player_InteractB& packet)
 
 static void on_player_move_data(const packet::Player_MoveData& packet)
 {
-    auto& registry = globals::world->registry();
     auto session = sessions::find(packet.peer);
 
     if(session == nullptr) {
         return;
     }
+
+    auto& registry = session->world->registry();
 
     registry.emplace_or_replace<MoveData>(session->player, MoveData { packet.wishdir });
 

@@ -18,15 +18,14 @@
 
 #include "server/globals.hh"
 #include "server/net/sessions.hh"
+#include "server/universe.hh"
 
 static cvar::Number<float> s_pos_threshold { 10.0f, 0.0f, 100.0f };
 static cvar::Number<float> s_vel_threshold { 10.0f, 0.0f, 100.0f };
 
-static void send_full_update(entt::entity entity)
+static void send_full_update(entt::registry& registry, entt::entity entity)
 {
     static packet::Entity_Patch packet;
-
-    auto& registry = globals::world->registry();
 
     auto head_id = component_map::from_type<Head>();
     auto transform_id = component_map::from_type<Transform>();
@@ -64,43 +63,46 @@ void pmove_validator::init(void)
 
 void pmove_validator::fixed_update_late(void)
 {
-    auto& registry = globals::world->registry();
-    auto view = registry.view<MoveMode, SessionRef, SimulatedMoveData, Transform, Velocity>();
+    for(const auto& world : universe::worlds()) {
+        auto& registry = world->registry();
+        auto view = registry.view<MoveMode, SessionRef, SimulatedMoveData, Transform, Velocity>();
 
-    for(const auto [entity, move_mode, ref, sim_data, transform, velocity] : view.each()) {
-        BlockPos sim_bpos = utils::to_block(sim_data.chunk, sim_data.local.cast<LocalPos::value_type>());
-        BlockPos cur_bpos = utils::to_block(transform.chunk, transform.local.cast<LocalPos::value_type>());
+        for(const auto [entity, move_mode, ref, sim_data, transform, velocity] : view.each()) {
+            BlockPos sim_bpos = utils::to_block(sim_data.chunk, sim_data.local.cast<LocalPos::value_type>());
+            BlockPos cur_bpos = utils::to_block(transform.chunk, transform.local.cast<LocalPos::value_type>());
 
-        Eigen::Vector3f delta_vel = sim_data.velocity - velocity.value;
-        BlockPos delta_bpos = sim_bpos - cur_bpos;
+            Eigen::Vector3f delta_vel = sim_data.velocity - velocity.value;
+            BlockPos delta_bpos = sim_bpos - cur_bpos;
 
-        auto dist_vel = delta_vel.norm();
-        auto dist_bpos = delta_bpos.cast<float>().norm();
+            auto dist_vel = delta_vel.norm();
+            auto dist_bpos = delta_bpos.cast<float>().norm();
 
-        auto rubberband = false;
-        rubberband = rubberband || dist_vel > s_vel_threshold.value();
-        rubberband = rubberband || dist_bpos > s_pos_threshold.value();
+            auto rubberband = false;
+            rubberband = rubberband || dist_vel > s_vel_threshold.value();
+            rubberband = rubberband || dist_bpos > s_pos_threshold.value();
 
-        if(rubberband) {
-            msg::log_warning("rubberbanding entity {}: dist_vel={} dist_bpos={}", static_cast<std::uint64_t>(entity), dist_vel, dist_bpos);
+            if(rubberband) {
+                msg::log_warning("rubberbanding entity {}: dist_vel={} dist_bpos={}", static_cast<std::uint64_t>(entity), dist_vel,
+                    dist_bpos);
 
-            send_full_update(entity);
-        }
-        else {
-            registry.patch<Head>(entity, [&](Head& phead) {
-                phead.angles.x() = sim_data.angles.x();
-                phead.angles.z() = sim_data.angles.z();
-            });
+                send_full_update(registry, entity);
+            }
+            else {
+                registry.patch<Head>(entity, [&](Head& phead) {
+                    phead.angles.x() = sim_data.angles.x();
+                    phead.angles.z() = sim_data.angles.z();
+                });
 
-            registry.patch<Transform>(entity, [&](Transform& ptransform) {
-                ptransform.chunk = sim_data.chunk;
-                ptransform.local = sim_data.local;
-                ptransform.angles.y() = sim_data.angles.y();
-            });
+                registry.patch<Transform>(entity, [&](Transform& ptransform) {
+                    ptransform.chunk = sim_data.chunk;
+                    ptransform.local = sim_data.local;
+                    ptransform.angles.y() = sim_data.angles.y();
+                });
 
-            registry.patch<Velocity>(entity, [&](Velocity& pvelocity) {
-                pvelocity.value = sim_data.velocity;
-            });
+                registry.patch<Velocity>(entity, [&](Velocity& pvelocity) {
+                    pvelocity.value = sim_data.velocity;
+                });
+            }
         }
     }
 }

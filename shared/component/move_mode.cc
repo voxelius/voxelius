@@ -53,6 +53,12 @@ std::any Component<MoveMode>::prepare(lua_State* L, int config_idx)
 }
 
 template<>
+void Component<MoveMode>::connect(entt::registry& registry)
+{
+    registry.on_update<MoveMode>().connect<&component_map::on_update<MoveMode>>();
+}
+
+template<>
 void Component<MoveMode>::attach(entt::registry& registry, entt::entity entity, const std::any& config)
 {
     assert(std::any_cast<const unsigned>(&config));
@@ -115,12 +121,6 @@ template<>
 void Component<MoveMode>::decode_dat(entt::registry& registry, entt::entity entity, ReadBuffer& buffer)
 {
     decode_net(registry, entity, buffer);
-}
-
-template<>
-void Component<MoveMode>::connect(entt::registry& registry)
-{
-    registry.on_update<MoveMode>().connect<&component_map::on_update<MoveMode>>();
 }
 
 void MoveMode::register_component(void)

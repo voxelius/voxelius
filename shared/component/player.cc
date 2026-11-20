@@ -11,6 +11,12 @@ std::any Component<Player>::prepare(lua_State* L, int config_idx)
 }
 
 template<>
+void Component<Player>::connect(entt::registry& registry)
+{
+    registry.on_update<Player>().connect<&component_map::on_update<Player>>();
+}
+
+template<>
 void Component<Player>::attach(entt::registry& registry, entt::entity entity, const std::any& config)
 {
     registry.emplace<Player>(entity);
@@ -44,12 +50,6 @@ template<>
 void Component<Player>::decode_dat(entt::registry& registry, entt::entity entity, ReadBuffer& buffer)
 {
     // empty
-}
-
-template<>
-void Component<Player>::connect(entt::registry& registry)
-{
-    registry.on_update<Player>().connect<&component_map::on_update<Player>>();
 }
 
 void Player::register_component(void)
