@@ -60,20 +60,19 @@ static vx::hash_map<const World*, vx::hash_set<ChunkPos>> s_pending;
 static vx::hash_map<const World*, vx::hash_set<ChunkPos>> s_saving;
 static vx::hash_map<const World*, vx::hash_set<ChunkPos>> s_deferred;
 
-static std::filesystem::path region_path(const World* world, biome_realm realm, const RegionPos& region)
+static std::filesystem::path region_path(const World* world, const RegionPos& region)
 {
     auto ux = std::bit_cast<std::uint32_t>(region.x());
     auto uy = std::bit_cast<std::uint32_t>(region.y());
     auto uz = std::bit_cast<std::uint32_t>(region.z());
-    auto name = std::format("R{}X{:08X}Y{:08X}Z{:08X}.zvox", static_cast<unsigned>(realm), ux, uy, uz);
+    auto name = std::format("R{:08X}{:08X}{:08X}.zvox", ux, uy, uz);
     return world->chunk_dir() / name;
 }
 
-static std::shared_ptr<RegionEntry> find_region(const World* world, biome_realm realm, const RegionPos& pos)
+static std::shared_ptr<RegionEntry> find_region(const World* world, const RegionPos& pos)
 {
     RegionKey key {};
     key.world = world;
-    key.realm = realm;
     key.pos = pos;
 
     std::shared_lock lock(s_cache_mutex);
@@ -89,15 +88,14 @@ static std::shared_ptr<RegionEntry> find_region(const World* world, biome_realm 
     return it->second;
 }
 
-static std::shared_ptr<RegionEntry> get_region(const World* world, biome_realm realm, const RegionPos& pos)
+static std::shared_ptr<RegionEntry> get_region(const World* world, const RegionPos& pos)
 {
-    if(auto entry = find_region(world, realm, pos)) {
+    if(auto entry = find_region(world, pos)) {
         return entry;
     }
 
     RegionKey key {};
     key.world = world;
-    key.realm = realm;
     key.pos = pos;
 
     std::unique_lock lock(s_cache_mutex);
@@ -111,7 +109,7 @@ static std::shared_ptr<RegionEntry> get_region(const World* world, biome_realm r
         return it->second;
     }
 
-    auto entry = std::make_shared<RegionEntry>(region_path(world, realm, pos));
+    auto entry = std::make_shared<RegionEntry>(region_path(world, pos));
     entry->last_used.store(std::chrono::steady_clock::now(), std::memory_order_relaxed);
 
     s_cache.insert_or_assign(key, std::shared_ptr(entry));
@@ -152,11 +150,10 @@ static void evict_stale(void)
 
 static void write_chunk(const World* world, const ChunkPos& pos, const Chunk::Snapshot& snapshot)
 {
-    auto realm = utils::realm(pos.y());
     auto region = utils::region_of(pos);
     auto slot = utils::region_slot(pos, region);
 
-    auto entry = get_region(world, realm, region);
+    auto entry = get_region(world, region);
 
     WriteBuffer buffer;
     Chunk::encode_dat(snapshot, buffer);
@@ -230,11 +227,10 @@ void LoadTask::process(void)
 {
     ZoneScopedN("chunk_loader::load");
 
-    auto realm = utils::realm(m_pos.y());
     auto region = utils::region_of(m_pos);
     auto slot = utils::region_slot(m_pos, region);
 
-    auto entry = get_region(m_world.get(), realm, region);
+    auto entry = get_region(m_world.get(), region);
 
     ReadBuffer buffer;
     auto found = false;

@@ -6,7 +6,7 @@
 
 bool RegionKey::operator==(const RegionKey& other) const
 {
-    return world == other.world && realm == other.realm && pos == other.pos;
+    return world == other.world && pos == other.pos;
 }
 
 RegionPos utils::region_of(const ChunkPos& pos)
