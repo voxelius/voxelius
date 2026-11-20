@@ -12,7 +12,6 @@
 #include "shared/world/world.hh"
 
 #include "server/world/climate.hh"
-#include "server/world/climate_noise.hh"
 #include "server/world/feature_placer.hh"
 #include "server/world/generator_map.hh"
 #include "server/world/noise_cache_3D.hh"
@@ -137,7 +136,7 @@ ColumnSlice Generator<Vox17>::probe(ServerWorld* world, const ChunkPosXZ& pos)
     base_array.fill(BASE_MIN);
 
     ColumnSlice slice {};
-    auto climate_array = climate_noise::sample_array(pos);
+    auto climate_array = world->sample_climate_array(pos);
     auto origin_x = static_cast<BlockPos::value_type>(pos.x()) << constant::CHUNK_SIZE_LOG2;
     auto origin_z = static_cast<BlockPos::value_type>(pos.y()) << constant::CHUNK_SIZE_LOG2;
 
@@ -194,7 +193,7 @@ bool Generator<Vox17>::generate(ServerWorld* world, const ChunkPos& pos, BlockSt
     base_array.fill(BASE_MIN);
 
     auto cpos_xz = ChunkPosXZ(pos.x(), pos.z());
-    auto climate_array = climate_noise::sample_array(cpos_xz);
+    auto climate_array = world->sample_climate_array(cpos_xz);
 
     for(std::size_t i = 0; i < constant::CHUNK_AREA; ++i) {
         auto& sample = climate_array[i];

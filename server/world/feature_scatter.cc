@@ -10,8 +10,6 @@
 
 #include "server/utils/heightmap.hh"
 #include "server/world/climate.hh"
-#include "server/world/climate_noise.hh"
-#include "server/world/entropy_cache.hh"
 #include "server/world/world.hh"
 
 struct WouldPlaceKey final {
@@ -42,22 +40,8 @@ struct std::hash<WouldPlaceKey> final {
 };
 
 struct ScatterScanCache final {
-    vx::hash_map<BlockPosXZ, biome_id_type> biome;
     vx::hash_map<WouldPlaceKey, bool> would_place;
 };
-
-static std::uint64_t entropy_at(BlockPos::value_type bx, BlockPos::value_type bz)
-{
-    ChunkPosXZ owner_xz;
-    owner_xz[0] = static_cast<ChunkPosXZ::value_type>(bx >> constant::CHUNK_SIZE_LOG2);
-    owner_xz[1] = static_cast<ChunkPosXZ::value_type>(bz >> constant::CHUNK_SIZE_LOG2);
-
-    auto& entropy_array = entropy_cache::get(owner_xz);
-    auto entropy_lx = static_cast<std::size_t>(bx & (constant::CHUNK_SIZE - 1));
-    auto entropy_lz = static_cast<std::size_t>(bz & (constant::CHUNK_SIZE - 1));
-    auto entropy_index = entropy_lx + entropy_lz * constant::CHUNK_SIZE;
-    return entropy_array[entropy_index];
-}
 
 static float scatter_roll(std::uint64_t entropy, std::size_t entry_index, const Identifier& feature_id)
 {
@@ -146,22 +130,8 @@ static bool can_place(const PlacementContext& context, const BlockPos& origin, c
     return true;
 }
 
-static biome_id_type biome_at(ScatterScanCache& cache, ServerWorld* world, BlockPos::value_type bx, BlockPos::value_type bz)
-{
-    BlockPosXZ key(bx, bz);
-    auto it = cache.biome.find(key);
-
-    if(it == cache.biome.cend()) {
-        auto id = climate::find(world, climate_noise::sample_block(key));
-        cache.biome.emplace(key, id);
-        return id;
-    }
-
-    return it->second;
-}
-
-static bool check_footprint(ScatterScanCache& cache, ServerWorld* world, BlockPos::value_type bx, BlockPos::value_type bz,
-    const Feature& feature, unsigned edge, const BiomeDefinition* biome)
+static bool check_footprint(ServerWorld* world, BlockPos::value_type bx, BlockPos::value_type bz, const Feature& feature, unsigned edge,
+    const BiomeDefinition* biome)
 {
     auto& bounds = feature.bounds;
     auto pad = static_cast<int>(edge);
@@ -173,7 +143,7 @@ static bool check_footprint(ScatterScanCache& cache, ServerWorld* world, BlockPo
 
     for(auto dz = min_z; dz <= max_z; dz += 1) {
         for(auto dx = min_x; dx <= max_x; dx += 1) {
-            auto biome_id = biome_at(cache, world, bx + dx, bz + dz);
+            auto biome_id = world->biome_at(BlockPosXZ(bx + dx, bz + dz));
             auto biome_def = biome_registry::find_definition(biome_id);
 
             if(biome == biome_def)
@@ -192,7 +162,7 @@ static bool would_place_uncached(BlockPos::value_type bx, BlockPos::value_type b
         return false;
     }
 
-    auto entropy = entropy_at(bx, bz);
+    auto entropy = context.world->entropy_at(BlockPosXZ(bx, bz));
 
     if(scatter_roll(entropy, entry_index, entry.feature) >= entry.chance) {
         return false;
@@ -209,7 +179,7 @@ static bool would_place_uncached(BlockPos::value_type bx, BlockPos::value_type b
         return false;
     }
 
-    return check_footprint(cache, context.world, bx, bz, *entry.cached, entry.edge, &biome);
+    return check_footprint(context.world, bx, bz, *entry.cached, entry.edge, &biome);
 }
 
 static bool would_place(BlockPos::value_type bx, BlockPos::value_type bz, const PlacementContext& context, const BiomeDefinition& biome,
@@ -326,7 +296,7 @@ static bool resolve_padding_tie(BlockPos::value_type bx, BlockPos::value_type bz
     auto origin = BlockPos(bx, column.surface_y, bz);
     auto current_box = scatter_bounds(origin, feature, BLOCK_FACE_NORTH);
     auto search = group_search_radius(biome, entry, entry_index);
-    auto current_priority = tie_priority(entropy_at(bx, bz));
+    auto current_priority = tie_priority(context.world->entropy_at(BlockPosXZ(bx, bz)));
 
     for(auto dx = -search; dx <= search; dx += 1) {
         for(auto dz = -search; dz <= search; dz += 1) {
@@ -360,7 +330,7 @@ static bool resolve_padding_tie(BlockPos::value_type bx, BlockPos::value_type bz
                 continue;
             }
 
-            auto neighbour_priority = tie_priority(entropy_at(ox, oz));
+            auto neighbour_priority = tie_priority(context.world->entropy_at(BlockPosXZ(ox, oz)));
 
             if(neighbour_priority > current_priority) {
                 return true;
@@ -396,7 +366,7 @@ void FeatureScatter::collect(const ChunkPos& pos, const PlacementContext& contex
 
     for(auto wx = search_min_x; wx <= search_max_x; wx += 1) {
         for(auto wz = search_min_z; wz <= search_max_z; wz += 1) {
-            auto biome = biome_at(cache, context.world, wx, wz);
+            auto biome = context.world->biome_at(BlockPosXZ(wx, wz));
             auto biome_def = biome_registry::find_definition(biome);
 
             if(biome_def == nullptr || biome_def->scatter.empty()) {

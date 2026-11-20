@@ -10,8 +10,6 @@
 #include "shared/world/chunk.hh"
 #include "shared/world/world.hh"
 
-#include "server/world/climate_noise.hh"
-#include "server/world/entropy_cache.hh"
 #include "server/world/feature_placer.hh"
 #include "server/world/feature_scatter.hh"
 #include "server/world/generator_map.hh"
@@ -91,12 +89,6 @@ void WorldgenTask::finalize(void)
 
 void worldgen::init(void)
 {
-    std::mt19937_64 seeder;
-    seeder.seed(globals::world->seed);
-
-    entropy_cache::init(seeder);
-    climate_noise::init(seeder);
-
     feature_placer::init();
 
     FeatureScatter::init();
@@ -111,9 +103,6 @@ void worldgen::shutdown(void)
     threading::wait();
 
     feature_placer::shutdown();
-
-    climate_noise::shutdown();
-    entropy_cache::shutdown();
 }
 
 void worldgen::request(const std::shared_ptr<World>& world, const ChunkPos& pos)

@@ -32,7 +32,6 @@
 #include "server/universe.hh"
 #include "server/world/chunk_loader.hh"
 #include "server/world/chunk_unloader.hh"
-#include "server/world/climate.hh"
 #include "server/world/generator_vox17.hh"
 #include "server/world/worldgen.hh"
 
@@ -141,8 +140,6 @@ static void wrapped_main(int argc, char** argv)
     server_game::init_late();
 
     sessions::init_late();
-
-    climate::rebuild();
 
 #ifndef NDEBUG
     msg::log_warning("debug build");
