@@ -131,28 +131,9 @@ Assigns a blockstate at a given position.
 - `true` if the blockstate was set
 - `false` otherwise (eg. the block is void or has no such blockstate)
 
-### Function: `world.get_temperature_base(bx, by, bz) -> integer`
+### Function: `world.get_temperature_base(bx, by, bz) -> number`
 
-Retrieves a biome-defined temperature base for a block.
-
-#### Arguments
-
-- `bx` is the world-scale block X position
-- `by` is the world-scale block Y position
-- `bz` is the world-scale block Z position
-
-#### Return value
-
-- Base temperature in biome registry units (0..99)
-- `0` if the block is void or the chunk is not present
-
-#### Notes
-
-Many biomes may not define this. In that case most use `298`, which is about 25 degrees Celsius.
-
-### Function: `world.get_temperature(bx, by, bz) -> integer`
-
-Retrieves a biome-influenced seasonal temperature for a block.
+Retrieves the base temperature of the biome at a block.
 
 #### Arguments
 
@@ -162,12 +143,61 @@ Retrieves a biome-influenced seasonal temperature for a block.
 
 #### Return value
 
-- Temperature in biome registry units (0..99)
-- `0` if the block is void or the chunk is not present
+- Base temperature in degrees Celsius
+- `15.0` if the block is void or the chunk is not present
+
+### Function: `world.get_temperature(bx, by, bz) -> number`
+
+Retrieves the effective temperature of the biome at a block.
+
+#### Arguments
+
+- `bx` is the world-scale block X position
+- `by` is the world-scale block Y position
+- `bz` is the world-scale block Z position
+
+#### Return value
+
+- Effective temperature in degrees Celsius
+- `15.0` if the block is void or the chunk is not present
 
 #### Notes
 
-Season, weather, and other factors can change this. Relatively low values (below 0 C) can turn planned rain into snow at that location.
+Seasons, weather, and other world-wide effects can add a bias on top of the base temperature. Relatively low values (below 0 C) turn planned rain into snow at that location.
+
+### Function: `world.get_humidity_base(bx, by, bz) -> number`
+
+Retrieves the base relative humidity of the biome at a block.
+
+#### Arguments
+
+- `bx` is the world-scale block X position
+- `by` is the world-scale block Y position
+- `bz` is the world-scale block Z position
+
+#### Return value
+
+- Base relative humidity as a percentage, from 0 to 100
+- `50.0` if the block is void or the chunk is not present
+
+### Function: `world.get_humidity(bx, by, bz) -> number`
+
+Retrieves the effective relative humidity of the biome at a block.
+
+#### Arguments
+
+- `bx` is the world-scale block X position
+- `by` is the world-scale block Y position
+- `bz` is the world-scale block Z position
+
+#### Return value
+
+- Effective relative humidity as a percentage, from 0 to 100
+- `50.0` if the block is void or the chunk is not present
+
+#### Notes
+
+Weather and other world-wide effects can add a bias on top of the base humidity.
 
 ### Function: `world.schedule(bx, by, bz, dt)`
 

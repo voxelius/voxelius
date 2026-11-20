@@ -7,6 +7,7 @@
 #include "shared/utils/coord.hh"
 #include "shared/utils/world.hh"
 #include "shared/world/biome_map.hh"
+#include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/world_scope.hh"
 
@@ -396,28 +397,64 @@ bool World::set_state(const BlockPos& pos, std::string_view state, std::string_v
     return set_state(cpos, lpos, state, value);
 }
 
-std::int32_t World::get_temperature_base(const ChunkPos& cpos, const LocalPos& lpos) const
+float World::get_temperature_base(const ChunkPos& cpos, const LocalPos& lpos) const
 {
-    return 298; // TODO
+    auto biome_def = biome_registry::find_definition(biome(cpos, lpos));
+
+    if(biome_def) {
+        return biome_def->temperature;
+    }
+
+    return 15.0f;
 }
 
-std::int32_t World::get_temperature_base(const BlockPos& pos) const
+float World::get_temperature_base(const BlockPos& pos) const
 {
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
     return get_temperature_base(cpos, lpos);
 }
 
-std::int32_t World::get_temperature(const ChunkPos& cpos, const LocalPos& lpos) const
+float World::get_temperature(const ChunkPos& cpos, const LocalPos& lpos) const
 {
-    return 298; // TODO
+    return get_temperature_base(cpos, lpos); // TODO: add the season bias
 }
 
-std::int32_t World::get_temperature(const BlockPos& pos) const
+float World::get_temperature(const BlockPos& pos) const
 {
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
     return get_temperature(cpos, lpos);
+}
+
+float World::get_humidity_base(const ChunkPos& cpos, const LocalPos& lpos) const
+{
+    auto biome_def = biome_registry::find_definition(biome(cpos, lpos));
+
+    if(biome_def) {
+        return biome_def->humidity;
+    }
+
+    return 0.5f;
+}
+
+float World::get_humidity_base(const BlockPos& pos) const
+{
+    auto cpos = utils::to_chunk(pos);
+    auto lpos = utils::to_local(pos);
+    return get_humidity_base(cpos, lpos);
+}
+
+float World::get_humidity(const ChunkPos& cpos, const LocalPos& lpos) const
+{
+    return get_humidity_base(cpos, lpos); // TODO: add the weather bias
+}
+
+float World::get_humidity(const BlockPos& pos) const
+{
+    auto cpos = utils::to_chunk(pos);
+    auto lpos = utils::to_local(pos);
+    return get_humidity(cpos, lpos);
 }
 
 biome_id_type World::biome(const ChunkPos& cpos, const LocalPos& lpos) const

@@ -163,11 +163,17 @@ public:
     bool set_state(const ChunkPos& cpos, const LocalPos& lpos, std::string_view state, std::string_view value);
     bool set_state(const BlockPos& pos, std::string_view state, std::string_view value);
 
-    std::int32_t get_temperature_base(const ChunkPos& cpos, const LocalPos& lpos) const;
-    std::int32_t get_temperature_base(const BlockPos& pos) const;
+    float get_temperature_base(const ChunkPos& cpos, const LocalPos& lpos) const;
+    float get_temperature_base(const BlockPos& pos) const;
 
-    std::int32_t get_temperature(const ChunkPos& cpos, const LocalPos& lpos) const;
-    std::int32_t get_temperature(const BlockPos& pos) const;
+    float get_temperature(const ChunkPos& cpos, const LocalPos& lpos) const;
+    float get_temperature(const BlockPos& pos) const;
+
+    float get_humidity_base(const ChunkPos& cpos, const LocalPos& lpos) const;
+    float get_humidity_base(const BlockPos& pos) const;
+
+    float get_humidity(const ChunkPos& cpos, const LocalPos& lpos) const;
+    float get_humidity(const BlockPos& pos) const;
 
     biome_id_type biome(const ChunkPos& cpos, const LocalPos& lpos) const;
     biome_id_type biome(const BlockPos& pos) const;

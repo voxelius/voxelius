@@ -140,7 +140,7 @@ static int api_get_temperature_base(lua_State* L)
 
     auto temperature = globals::world->get_temperature_base(pos);
 
-    lua_pushinteger(L, static_cast<lua_Integer>(temperature));
+    lua_pushnumber(L, static_cast<lua_Number>(temperature));
     return 1;
 }
 
@@ -153,7 +153,33 @@ static int api_get_temperature(lua_State* L)
 
     auto temperature = globals::world->get_temperature(pos);
 
-    lua_pushinteger(L, static_cast<lua_Integer>(temperature));
+    lua_pushnumber(L, static_cast<lua_Number>(temperature));
+    return 1;
+}
+
+static int api_get_humidity_base(lua_State* L)
+{
+    BlockPos pos = BlockPos::Zero();
+    pos.x() = static_cast<BlockPos::value_type>(luaL_checkinteger(L, 1));
+    pos.y() = static_cast<BlockPos::value_type>(luaL_checkinteger(L, 2));
+    pos.z() = static_cast<BlockPos::value_type>(luaL_checkinteger(L, 3));
+
+    auto humidity = globals::world->get_humidity_base(pos) * 100.0f;
+
+    lua_pushnumber(L, static_cast<lua_Number>(humidity));
+    return 1;
+}
+
+static int api_get_humidity(lua_State* L)
+{
+    BlockPos pos = BlockPos::Zero();
+    pos.x() = static_cast<BlockPos::value_type>(luaL_checkinteger(L, 1));
+    pos.y() = static_cast<BlockPos::value_type>(luaL_checkinteger(L, 2));
+    pos.z() = static_cast<BlockPos::value_type>(luaL_checkinteger(L, 3));
+
+    auto humidity = globals::world->get_humidity(pos) * 100.0f;
+
+    lua_pushnumber(L, static_cast<lua_Number>(humidity));
     return 1;
 }
 
@@ -210,6 +236,12 @@ void api::open_world_library(std::shared_ptr<lua_State>& lua, const ModContext* 
 
     lua_pushcfunction(L, api_get_temperature);
     lua_setfield(L, -2, "get_temperature");
+
+    lua_pushcfunction(L, api_get_humidity_base);
+    lua_setfield(L, -2, "get_humidity_base");
+
+    lua_pushcfunction(L, api_get_humidity);
+    lua_setfield(L, -2, "get_humidity");
 
     lua_pushcfunction(L, api_schedule);
     lua_setfield(L, -2, "schedule");

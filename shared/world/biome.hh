@@ -33,6 +33,9 @@ struct BiomePaletteEntry final {
 struct BiomeDefinition {
     BiomeDefinition(void) = default;
 
+    float temperature { 15.0f }; // Base temperature in Celsius
+    float humidity { 0.5f };     // Relative humidity, 0.00 to 1.00
+
     BiomePaletteEntry palette_basic;
     BiomePaletteEntry palette_filler;
     BiomePaletteEntry palette_surface;

@@ -25,6 +25,8 @@ Returns the numeric biome ID.
 
 |Field|Type|Required|Default|Description|
 |----|----|----|----|----|
+|`temperature`|`number`|no|15.0|Base temperature in degrees Celsius|
+|`humidity`|`number`|no|50.0|Relative humidity, 0 to 100 percent|
 |`palette`|`table`|no|`{}`|Biome block palette|
 |`scatter`|`table[]`|no|`{}`|List of features to scatter|
 |`tints`|`table`|no|`{}`|Tint group override colors|
@@ -63,6 +65,9 @@ The engine evaluates scatter entries in list order. If several entries pass the 
 
 ```lua
 biomes.add("plains", {
+  temperature = 20,
+  humidity = 60,
+
   palette = {
     empty = { name = "air" },
     basic = { name = "stone" },

@@ -184,6 +184,27 @@ static bool parse_palette(lua_State* L, int palette_idx, BiomeDefinition& def, M
 
 static bool parse_definition(lua_State* L, int def_idx, BiomeDefinition& def, ModContext* ctx)
 {
+    auto temperature = utils::opt_number(L, def_idx, "temperature", 15.0);
+
+    if(!temperature.has_value()) {
+        return false;
+    }
+
+    def.temperature = static_cast<float>(temperature.value());
+
+    auto humidity = utils::opt_number(L, def_idx, "humidity", 50.0);
+
+    if(!humidity.has_value()) {
+        return false;
+    }
+
+    if(humidity.value() < 0.0 || humidity.value() > 100.0) {
+        lua_pushstring(L, "humidity must be in the range [0, 100]");
+        return false;
+    }
+
+    def.humidity = static_cast<float>(humidity.value()) / 100.0f;
+
     lua_getfield(L, def_idx, "palette");
 
     if(!lua_isnil(L, -1)) {
