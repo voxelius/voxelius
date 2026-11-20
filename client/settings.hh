@@ -20,6 +20,7 @@ extern gui::Container controls_gameplay;
 extern gui::Container controls_miscellaneous;
 extern gui::Container mouse;
 extern gui::Container video;
+extern gui::Container video_atmosphere;
 extern gui::Container video_gui;
 extern gui::Container sound;
 extern gui::Container sound_levels;

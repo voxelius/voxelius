@@ -27,7 +27,7 @@
 
 #include "client/camera.hh"
 
-constexpr static std::size_t MAX_SUBMIT_PER_FRAME = 32;
+constexpr static std::size_t MAX_SUBMIT_PER_FRAME = 64;
 
 // How far ahead of the player the mesh order is biased, in chunks. The loader
 // fetches that way, so the mesher follows, or the leading edge would still

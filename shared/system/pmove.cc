@@ -14,7 +14,7 @@
 #include "shared/globals.hh"
 
 constexpr static float PMOVE_EPS = 1.0e-6f;
-constexpr static float FLY_SPEED = 16.0f;
+constexpr static float FLY_SPEED = 64.0f;
 constexpr static float FLY_ACCEL_H = 32.0f;
 constexpr static float FLY_ACCEL_V = 64.0f; // sharper movement vertically
 

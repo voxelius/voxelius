@@ -72,7 +72,7 @@ static bool is_inside_sky_terrain(const BlockPos& bpos, float continentalness, f
     return is_inside_sky_terrain(s_density->get_slow(bpos), relative_y, density_bias);
 }
 
-static Column probe_column(BlockPos::value_type bx, BlockPos::value_type bz, float continentalness, float density_bias)
+static Column probe_one_column(BlockPos::value_type bx, BlockPos::value_type bz, float continentalness, float density_bias)
 {
     for(auto y = constant::SKY_MAX_Y; y >= constant::SKY_MIN_Y; y -= 1) {
         auto bpos = BlockPos(bx, y, bz);
@@ -232,7 +232,7 @@ ColumnSlice realm_sky::probe(const ChunkPosXZ& pos)
     auto origin_x = static_cast<BlockPos::value_type>(pos.x()) << constant::CHUNK_SIZE_LOG2;
     auto origin_z = static_cast<BlockPos::value_type>(pos.y()) << constant::CHUNK_SIZE_LOG2;
 
-    for(std::size_t i = 0; i < constant::CHUNK_AREA; i += 1) {
+    for(std::size_t i = 0; i < constant::CHUNK_AREA; ++i) {
         auto& sample = climate_array[i];
 
         auto cont = climate::normalize_01(sample.continentalness);
@@ -247,7 +247,7 @@ ColumnSlice realm_sky::probe(const ChunkPosXZ& pos)
     for(LocalPos::value_type lz = 0; lz < constant::CHUNK_SIZE; lz += 1) {
         for(LocalPos::value_type lx = 0; lx < constant::CHUNK_SIZE; lx += 1) {
             auto index = static_cast<std::size_t>(lx + lz * constant::CHUNK_SIZE);
-            auto column = probe_column(origin_x + lx, origin_z + lz, continentalness_array[index], density_bias_array[index]);
+            auto column = probe_one_column(origin_x + lx, origin_z + lz, continentalness_array[index], density_bias_array[index]);
             slice[index] = std::move(column);
         }
     }

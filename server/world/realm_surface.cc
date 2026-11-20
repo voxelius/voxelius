@@ -73,7 +73,7 @@ static BlockPos::value_type column_liquid_y(BlockPos::value_type wx, BlockPos::v
 {
     auto liquid_y = Column::UNSET;
 
-    for(auto y = surface_y + 1; y < SEA_LEVEL; y += 1) {
+    for(auto y = surface_y + 1; y < SEA_LEVEL; ++y) {
         if(column_solid_pass_1(wx, y, wz, base, variation)) {
             break;
         }
@@ -84,7 +84,7 @@ static BlockPos::value_type column_liquid_y(BlockPos::value_type wx, BlockPos::v
     return liquid_y;
 }
 
-static Column probe_column(BlockPos::value_type bx, BlockPos::value_type bz, float base, float variation)
+static Column probe_one_column(BlockPos::value_type bx, BlockPos::value_type bz, float base, float variation)
 {
     for(auto y = constant::SURFACE_MAX_Y; y >= constant::SURFACE_MIN_Y; y -= 1) {
         if(column_solid_pass_1(bx, y, bz, base, variation)) {
@@ -269,7 +269,7 @@ ColumnSlice realm_surface::probe(const ChunkPosXZ& pos)
     auto origin_x = static_cast<BlockPos::value_type>(pos.x()) << constant::CHUNK_SIZE_LOG2;
     auto origin_z = static_cast<BlockPos::value_type>(pos.y()) << constant::CHUNK_SIZE_LOG2;
 
-    for(std::size_t i = 0; i < constant::CHUNK_AREA; i += 1) {
+    for(std::size_t i = 0; i < constant::CHUNK_AREA; ++i) {
         auto& sample = climate_array[i];
 
         auto continentalness = climate::normalize_01(sample.continentalness);
@@ -284,7 +284,7 @@ ColumnSlice realm_surface::probe(const ChunkPosXZ& pos)
     for(LocalPos::value_type lz = 0; lz < constant::CHUNK_SIZE; lz += 1) {
         for(LocalPos::value_type lx = 0; lx < constant::CHUNK_SIZE; lx += 1) {
             auto index = static_cast<std::size_t>(lx + lz * constant::CHUNK_SIZE);
-            auto column = probe_column(origin_x + lx, origin_z + lz, base_array[index], variation_array[index]);
+            auto column = probe_one_column(origin_x + lx, origin_z + lz, base_array[index], variation_array[index]);
             slice[index] = std::move(column);
         }
     }

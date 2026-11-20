@@ -2,7 +2,6 @@
 
 #include "client/head.hh"
 
-#include "core/cmdline.hh"
 #include "core/cvar/host.hh"
 #include "core/cvar/number.hh"
 #include "core/exception.hh"
@@ -10,6 +9,7 @@
 
 #include "shared/constant.hh"
 
+#include "client/camera.hh"
 #include "client/fog.hh"
 #include "client/game.hh"
 #include "client/globals.hh"
@@ -19,7 +19,9 @@
 #include "client/shader_program.hh"
 #include "client/world/chunk_renderer.hh"
 #include "client/world/chunk_vbo.hh"
+#include "client/world/cloud_renderer.hh"
 #include "client/world/outline.hh"
+#include "client/world/sky_renderer.hh"
 
 struct LayerTarget final {
     GLuint fbo { 0 };
@@ -28,6 +30,7 @@ struct LayerTarget final {
 };
 
 static LayerTarget s_diffuse;
+static LayerTarget s_clouds;
 static LayerTarget s_alpha;
 static LayerTarget s_fluid;
 
@@ -41,6 +44,10 @@ static std::size_t su_AlphaColor;
 static std::size_t su_AlphaDepth;
 static std::size_t su_FluidColor;
 static std::size_t su_FluidDepth;
+static std::size_t su_CloudColor;
+static std::size_t su_CloudDepth;
+static std::size_t su_CloudRange;
+static std::size_t su_CameraRange;
 
 static cvar::Number<int> s_head_pixel_size { 1, 1, 4 };
 static gui::SliderInt s_pixel_size_gui;
@@ -99,6 +106,7 @@ static void update_framebuffer(int new_width, int new_height)
     s_scaled_height = new_height / pixel_size;
 
     create_or_resize_layer(s_diffuse, s_scaled_width, s_scaled_height);
+    create_or_resize_layer(s_clouds, s_scaled_width, s_scaled_height);
     create_or_resize_layer(s_alpha, s_scaled_width, s_scaled_height);
     create_or_resize_layer(s_fluid, s_scaled_width, s_scaled_height);
 
@@ -151,6 +159,18 @@ static void begin_translucent(LayerTarget& layer)
     glClear(GL_COLOR_BUFFER_BIT);
 }
 
+static void begin_cloud_layer(void)
+{
+    // Clouds go into a layer of their own: the composite lays them over the
+    // translucent passes and compares their distance with the ground, so the
+    // deck still hides behind terrain even though it has a depth range of its own
+    glBindFramebuffer(GL_FRAMEBUFFER, s_clouds.fbo);
+    glViewport(0, 0, s_scaled_width, s_scaled_height);
+
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
 static void composite_layers(void)
 {
     vx::throw_if_not(s_transparency.update());
@@ -188,6 +208,17 @@ static void composite_layers(void)
     glActiveTexture(GL_TEXTURE5);
     glBindTexture(GL_TEXTURE_2D, s_fluid.depth);
     glUniform1i(s_transparency.uniforms[su_FluidDepth].location, 5);
+
+    glActiveTexture(GL_TEXTURE6);
+    glBindTexture(GL_TEXTURE_2D, s_clouds.color);
+    glUniform1i(s_transparency.uniforms[su_CloudColor].location, 6);
+
+    glActiveTexture(GL_TEXTURE7);
+    glBindTexture(GL_TEXTURE_2D, s_clouds.depth);
+    glUniform1i(s_transparency.uniforms[su_CloudDepth].location, 7);
+
+    glUniform2f(s_transparency.uniforms[su_CloudRange].location, cloud_renderer::z_near, cloud_renderer::z_far);
+    glUniform2f(s_transparency.uniforms[su_CameraRange].location, camera::z_near, camera::z_far);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -251,9 +282,17 @@ void head::init(void)
     su_AlphaDepth = s_transparency.add_uniform("u_AlphaDepth");
     su_FluidColor = s_transparency.add_uniform("u_FluidColor");
     su_FluidDepth = s_transparency.add_uniform("u_FluidDepth");
+    su_CloudColor = s_transparency.add_uniform("u_CloudColor");
+    su_CloudDepth = s_transparency.add_uniform("u_CloudDepth");
+    su_CloudRange = s_transparency.add_uniform("u_CloudRange");
+    su_CameraRange = s_transparency.add_uniform("u_CameraRange");
+
+    fog::init();
 
     chunk_vbo::init();
     chunk_renderer::init();
+    cloud_renderer::init();
+    sky_renderer::init();
     outline::init();
 
     SDL_ShowWindow(globals::window);
@@ -269,12 +308,15 @@ void head::init_late(void)
 void head::shutdown(void)
 {
     outline::shutdown();
+    sky_renderer::shutdown();
+    cloud_renderer::shutdown();
     chunk_renderer::shutdown();
     chunk_vbo::shutdown();
 
     s_transparency.destroy();
 
     destroy_layer(s_diffuse);
+    destroy_layer(s_clouds);
     destroy_layer(s_alpha);
     destroy_layer(s_fluid);
 
@@ -322,12 +364,18 @@ void head::render(void)
 
     begin_diffuse();
 
+    sky_renderer::render();
+
     chunk_renderer::prepare();
     chunk_renderer::render_opaque();
 
     client_game::render();
 
+    begin_cloud_layer();
+    cloud_renderer::render();
+
     begin_translucent(s_alpha);
+
     chunk_renderer::render_alpha();
 
     begin_translucent(s_fluid);

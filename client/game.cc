@@ -9,6 +9,7 @@
 #include "shared/constant.hh"
 #include "shared/coord.hh"
 #include "shared/cvar/gamerules.hh"
+#include "shared/cvar/server.hh"
 #include "shared/physics/physics.hh"
 #include "shared/system/pmove.hh"
 #include "shared/utils/coord.hh"
@@ -31,7 +32,8 @@ void client_game::init(void)
     // The server owns the light; the client only applies what it receives.
     lighting::set_replica(true);
 
-    gamerules::init(false);
+    gamerules::init();
+    server_vars::init();
 
     interpolation::init();
 

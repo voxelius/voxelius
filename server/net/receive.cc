@@ -2,9 +2,6 @@
 
 #include "server/net/receive.hh"
 
-#include "core/cvar/host.hh"
-#include "core/cvar/number.hh"
-
 #include "shared/component/transform.hh"
 #include "shared/cvar/gamerules.hh"
 #include "shared/net/packet_player.hh"
@@ -24,20 +21,24 @@
 #include "server/globals.hh"
 #include "server/net/interest.hh"
 #include "server/net/sessions.hh"
+#include "server/net/streaming.hh"
 #include "server/system/pmove_validator.hh"
 #include "server/world/chunk_loader.hh"
-
-static vx::hash_map<ChunkPos, std::vector<ENetPeer*>> s_waiting_peers;
-static vx::hash_set<ChunkPos> s_sent_chunks;
-static std::vector<packet::World_Light::Entry> s_pending_light;
-static cvar::Number<float> s_reach_distance { 8.0f, 0.0f, 32.0f };
 
 struct PendingChunkSend final {
     ENetPeer* peer;
     ChunkPos cpos;
 };
 
-constexpr static std::size_t CHUNK_SEND_BUDGET = 64;
+struct ChunkRequest final {
+    ENetPeer* peer;
+};
+
+static vx::hash_map<ChunkPos, std::vector<ChunkRequest>> s_waiting_peers;
+static vx::hash_set<ChunkPos> s_sent_chunks;
+static std::vector<packet::World_Light::Entry> s_pending_light;
+
+constexpr static std::size_t CHUNK_SEND_BUDGET = 256;
 
 // A batch is capped so a tick that relights half the view distance does not
 // turn into one giant datagram.
@@ -59,8 +60,12 @@ static void enqueue_peer(const ChunkPos& cpos, ENetPeer* peer)
 {
     auto& waiting = s_waiting_peers[cpos];
 
-    if(std::find(waiting.begin(), waiting.end(), peer) == waiting.end()) {
-        waiting.push_back(peer);
+    auto known = std::find_if(waiting.begin(), waiting.end(), [peer](const auto& request) {
+        return request.peer == peer;
+    });
+
+    if(known == waiting.end()) {
+        waiting.push_back(ChunkRequest { peer });
     }
 }
 
@@ -94,6 +99,8 @@ static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos)
     protocol::send(blocks_packet, peer);
 
     s_sent_chunks.insert(cpos);
+
+    globals::dispatcher.trigger(ChunkSentEvent(peer, cpos));
 }
 
 static void send_waiting(const ChunkPos& cpos)
@@ -111,8 +118,8 @@ static void send_waiting(const ChunkPos& cpos)
         return;
     }
 
-    for(auto peer : it->second) {
-        enqueue_send(peer, cpos);
+    for(const auto& request : it->second) {
+        enqueue_send(request.peer, cpos);
     }
 
     s_waiting_peers.erase(it);
@@ -126,28 +133,7 @@ static void on_world_request(const packet::World_Request& packet)
         return;
     }
 
-    auto& transform = globals::registry.get<Transform>(session->player);
-    auto delta = ChunkPos(transform.chunk - packet.cpos);
-    auto distance = static_cast<unsigned>(delta.cwiseAbs().maxCoeff());
-
-    if(distance > interest::view_distance.value()) {
-        return;
-    }
-
-    auto chunk = world::find_chunk(packet.cpos);
-
-    // Chunks are loaded one at a time rather than a whole realm column at
-    // once. The light fill treats a missing chunk above as open sky and the
-    // chunk is relit as soon as that neighbour arrives, so a column only
-    // pre-generated chunks nobody asked for.
-    chunk_loader::request(packet.cpos);
-
-    if(chunk) {
-        enqueue_send(packet.peer, packet.cpos);
-        return;
-    }
-
-    enqueue_peer(packet.cpos, packet.peer);
+    streaming::subscribe(*session, packet);
 }
 
 static void on_chunk_ready(const ChunkReadyEvent& event)
@@ -213,7 +199,7 @@ static bool in_reach(entt::entity player, const BlockPos& bpos)
     auto& transform = globals::registry.get<Transform>(player);
     auto player_bpos = utils::to_block(transform.chunk, transform.local.cast<LocalPos::value_type>());
     auto distance = (bpos - player_bpos).cast<float>().norm();
-    return distance <= s_reach_distance.value();
+    return distance <= gamerules::reach_distance.value();
 }
 
 // The client predicts block changes locally. A rejected action must send
@@ -485,11 +471,13 @@ void receive::forget_peer(ENetPeer* peer)
     std::vector<ChunkPos> empty;
 
     for(auto& it : s_waiting_peers) {
-        auto& peers = it.second;
+        auto& requests = it.second;
 
-        peers.erase(std::remove(peers.begin(), peers.end(), peer), peers.end());
+        std::erase_if(requests, [peer](const auto& request) {
+            return request.peer == peer;
+        });
 
-        if(peers.empty()) {
+        if(requests.empty()) {
             empty.push_back(it.first);
         }
     }
@@ -499,12 +487,19 @@ void receive::forget_peer(ENetPeer* peer)
     }
 }
 
+void receive::enqueue_chunk(ENetPeer* peer, const ChunkPos& cpos)
+{
+    if(world::find_chunk(cpos)) {
+        enqueue_send(peer, cpos);
+        return;
+    }
+
+    enqueue_peer(cpos, peer);
+    chunk_loader::request(cpos);
+}
+
 void receive::init(void)
 {
-    auto& gr_reach_distance_binding = cvar::bind_var(s_reach_distance, "gr_reach_distance");
-    gr_reach_distance_binding.set_help("Maximum block interaction distance");
-    gr_reach_distance_binding.set_flags(FCVAR_ARCHIVE);
-
     globals::dispatcher.sink<packet::World_Request>().connect<&on_world_request>();
 
     globals::dispatcher.sink<packet::Player_AttackE>().connect<&on_player_attack_e>();
@@ -516,4 +511,9 @@ void receive::init(void)
     globals::dispatcher.sink<ChunkReadyEvent>().connect<&on_chunk_ready>();
     globals::dispatcher.sink<ChunkLightUpdateEvent>().connect<&on_chunk_light>();
     globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
+}
+
+ChunkSentEvent::ChunkSentEvent(ENetPeer* peer, const ChunkPos& pos) : m_peer(peer), m_pos(pos)
+{
+    // empty
 }

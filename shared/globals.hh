@@ -11,6 +11,8 @@ namespace globals
 {
 extern std::uint64_t curtime_us;
 extern std::uint64_t current_tick;
+extern std::uint64_t daylight_tick;
+extern std::uint64_t day;
 } // namespace globals
 
 namespace globals

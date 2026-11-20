@@ -2,12 +2,18 @@
 
 #include "server/net/transmit.hh"
 
+#include "shared/constant.hh"
+#include "shared/cvar/server.hh"
 #include "shared/net/packet_world.hh"
 #include "shared/net/protocol.hh"
+#include "shared/world/weather.hh"
 #include "shared/world/world.hh"
+#include "shared/world/world_clock.hh"
 
 #include "server/globals.hh"
 #include "server/net/interest.hh"
+
+constexpr static std::uint64_t WEATHER_SYNC_TICKS = constant::FIXED_TICKRATE;
 
 static void on_block_update(const BlockUpdateEvent& event)
 {
@@ -26,5 +32,16 @@ void transmit::fixed_update_late(void)
 {
     packet::World_Timings timings {};
     timings.current_tick = globals::current_tick;
+    timings.daylight_tick = globals::daylight_tick;
+    timings.day = world_clock::day(globals::daylight_tick, server_vars::day_length_ticks());
     protocol::broadcast(timings, globals::host);
+
+    // One small packet per second keeps both sides on the same front;
+    // the seeds and scales travel once in World_Info, so only the
+    // drift and the wind have to be refreshed here
+    if(0 == (globals::current_tick % WEATHER_SYNC_TICKS)) {
+        packet::World_Weather weather_state {};
+        weather::fill_packet(weather_state);
+        protocol::broadcast(weather_state, globals::host);
+    }
 }

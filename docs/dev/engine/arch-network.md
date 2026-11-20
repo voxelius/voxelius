@@ -97,9 +97,9 @@ The server owns every variable flagged with `FCVAR_REPLICATED`. After admission 
 
 The client keeps the server value in a shadow. A local variable with the same name must also be flagged `FCVAR_REPLICATED`; otherwise the server value is ignored and a warning is logged. A full snapshot drops stale remote variables and clears the old shadows.
 
-The server does not accept cvar values from clients. Gamerules use the `gr_` prefix; match rules will use `mp_`. The full list is in [Variables](../../manual/console/variables.md) and [Commands](../../manual/console/commands.md).
+The server accepts a cvar value from a client only when the variable is flagged `FCVAR_ADMIN` and the caller is an operator. A write to a shadowed variable is forwarded from the client console through the same `Cvar_Command` path as a command; the server applies the operator check and ignores every other remote value. Gamerules use the `gr_` prefix; match rules will use `mp_`. The full list is in [Variables](../../manual/console/variables.md) and [Commands](../../manual/console/commands.md).
 
-The command snapshot follows the same exchange. The server sends one full list to each admitted client, and the list leaves out the commands flagged `FCVAR_ADMIN` unless that client is an operator. When a live session is promoted or demoted, the server sends the list again. A dirty variable update never carries admin-flagged variables, since none of those replicate.
+The command snapshot follows the same exchange. The server sends one full list to each admitted client, and the list leaves out the commands flagged `FCVAR_ADMIN` unless that client is an operator. When a live session is promoted or demoted, the server sends the list again. A dirty variable update carries every replicated variable, including the admin-flagged ones.
 
 The snapshot packet carries a `uint8 full` flag and a `uint32 count`, then for each variable a `string name` and a `string value`. A full snapshot adds a `uint16 flags` and a `string help` for each entry.
 
@@ -109,7 +109,19 @@ Once the server admits a client, the client asks for chunks and reports block an
 
 ##### Chunk transfer
 
-The client sends `RequestChunk` for any chunk position it needs. The server answers with `ChunkBlocks`, holding that chunk's full block data. The server also sends `ChunkBlocks` on its own initiative, as a full resync.
+The client sends `RequestChunk` every fixed tick with the chunk-aligned view it needs. The server intersects that box with its own view limit and sends only what the peer does not hold yet. The server answers with `ChunkBlocks`, holding that chunk's full block data. It also sends `ChunkBlocks` on its own initiative, as a full resync.
+
+##### World info
+
+The server sends `World_Info` once, right after admission. It carries the universe seed, the seed the client builds its star field from and, per realm, the weather grid seeds and scales. These values never change for a world, so the periodic packets do not repeat them. The length of a day is not here: it is the replicated server variable `sv_day_length`, so a change reaches every connected client without another packet.
+
+##### Time
+
+The server owns the world clock. It increments `current_tick` and `daylight_tick` every fixed tick and sends both in `World_Timings` every tick, together with the whole `day` count (`daylight_tick / sv_day_length`). `daylight_tick` advances at the same fixed rate, but it is kept apart so the `gr_daylight_cycle` gamerule can stop the sun without stopping the world. The client runs its own smooth phase between packets and corrects towards the server; when a packet moves the clock by a second or more, which is what `time_set` does, it snaps instead of easing. There is no flag for this in the packet: the client sees the jump in the tick values it already keeps. The server writes both counters into `world.conf` on shutdown, so a restart continues the day where it was. Operators set the clock with `time_set <daylight tick>`; clients read what they see with `time_query`.
+
+##### Weather
+
+Weather is a realm-wide state rather than a stream of entities. The server drifts two noise grids per realm (one picks the type, one the local strength) and sends `World_Weather` to every admitted client once a second. The packet carries four drift pairs and four wind vectors; the seeds and scales arrived once in `World_Info`, so there is nothing constant to repeat. Both sides also advance the drift themselves every frame, so the packet only anchors the field: the client keeps its own continuous drift and snaps to the packet only when the two disagree by more than a chunk, which is what a forced front looks like. The replicated `gr_weather_cycle` gamerule freezes that local advance on both sides. The first weather packet of a connection is special only on the client: the client keeps a local flag and takes that drift whole, then rebuilds the cloud deck instead of sliding the old one towards it. The type definitions themselves travel as part of the mod content and are covered by the login checksum.
 
 ##### Block and entity actions
 
@@ -121,7 +133,7 @@ The entity variants carry only the targeted entity. The block variants carry the
 
 Each packet starts with a 16-bit unsigned integer that names its ID. The packets are named and structured as follows:
 
-### `0x0001` `StatusRequestPacket`
+### `0x0000` `StatusRequestPacket`
 
 Request a status from server
 
@@ -131,7 +143,7 @@ Request a status from server
 |`uint32`|`minor`|Minor game version|
 |`uint32`|`patch`|Patch game version|
 
-### `0x0002` `StatusResponsePacket`
+### `0x0001` `StatusResponsePacket`
 
 Server's response to a `StatusRequestPacket`
 
@@ -152,7 +164,7 @@ Server's response to a `StatusRequestPacket`
 |`0x00000001`|Server has whitelist enabled|
 |`0x00000002`|Server enforces strict version matching|
 
-### `0x0003` `AuthRequestPacket`
+### `0x0002` `AuthRequestPacket`
 
 Request an authentication on a server
 
@@ -170,7 +182,7 @@ Request an authentication on a server
 |`uint64`|`ents_hash`|Entity registry hash|
 |`string`|`username`|Desired username|
 
-### `0x0004` `AuthChallengePacket`
+### `0x0003` `AuthChallengePacket`
 
 Server's response to `AuthRequestPacket`
 
@@ -178,7 +190,7 @@ Server's response to `AuthRequestPacket`
 |----|----|----|
 |`uint8[64]`|`nonce`|Nonce for the client to sign|
 
-### `0x0005` `AuthResponsePacket`
+### `0x0004` `AuthResponsePacket`
 
 Client's repsonse to `AuthChallengePacket`
 
@@ -186,7 +198,7 @@ Client's repsonse to `AuthChallengePacket`
 |----|----|----|
 |`uint8[64]`|`signature`|Signed nonce + UNIX minutes|
 
-### `0x0006` `AuthAdmissionPacket`
+### `0x0005` `AuthAdmissionPacket`
 
 On successful auth, server's response to `AuthResponsePacket`
 
@@ -197,7 +209,7 @@ On successful auth, server's response to `AuthResponsePacket`
 |`string`|`username`|Assigned username|
 |`uint64`|`entity`|Player entity|
 
-### `0x0007` `Disconnect`
+### `0x0006` `Disconnect`
 
 Disconnection notification. Each network side should but may not terminate the connection immediately afterwards this packet is sent
 
@@ -222,15 +234,25 @@ Disconnection notification. Each network side should but may not terminate the c
 |`0x0000000A`|Server shutdown|Server is terminating|
 |`0x0000000C`|Kicked|An operator removed the client|
 
-### `0x0008` `RequestChunk`
+### `0x0007` `RequestChunk`
 
-Sent by client to request a chunk to be generated or loaded and sent to the client over the network. Server performs view distance checks and may not respond at all
+Sent by the client every fixed tick to describe what world data it wants. The
+packet carries a chunk-aligned box and a budget; the server intersects the box
+with its view limit, stores what the peer already has, and sends only the
+difference. A box with `min > max` is empty.
 
 |Type|Name|Description|
 |----|----|----|
-|`vector3<int32>`|`cpos`|Requested chunk position|
+|`vector3<int32>`|`view_min`|Minimum chunk of the view|
+|`vector3<int32>`|`view_max`|Maximum chunk of the view|
+|`uint16`|`chunk_budget`|How many chunks the server may queue now|
 
-### `0x0009` `ChunkBlocks`
+The budget carries the client's backpressure: it lowers the budget while its
+mesher queues more work than it can take. The sent sets live on the server and
+are filled only when a packet is handed to ENet, so a request that fails to
+produce data is retried instead of being treated as delivered.
+
+### `0x0008` `ChunkBlocks`
 
 Sent by server as a response to `RequestChunk` or at arbitrary moments to synchronize chunk contents with clients
 
@@ -241,7 +263,7 @@ Sent by server as a response to `RequestChunk` or at arbitrary moments to synchr
 |`data`|`light`|Compressed packed light, one byte per block: skylight in the high nibble, block light in the low nibble|
 |`uint8`|`light_valid`|`1` when `light` holds computed light; `0` makes the client fall back to its own estimate until a `ChunkLight` arrives|
 
-### `0x000A` `ChunkBiomes`
+### `0x0009` `ChunkBiomes`
 
 Sent by server as a response to `RequestChunk` once per realm to synchronize biome caches used for client rendering
 
@@ -258,82 +280,7 @@ or as their zlib stream. The whole array is compressed at once, so the ratio is
 the one the codec gets over a chunk rather than the one a transport can get out
 of a single datagram.
 
-### `0x000B` `SetBlock`
-
-Sent by server as a sub-chunk block update
-
-|Type|Name|Description|
-|----|----|----|
-|`vector3<int64>`|`bpos`|World-scale block position|
-|`uint32`|`block`|Resulting numeric block ID|
-
-### `0x000C` `PlayerAttackE`
-
-Sent by client to specify an attack action against an entity
-
-|Type|Name|Description|
-|----|----|----|
-|`uint64`|`target`|Targeted entity|
-
-### `0x000D` `PlayerAttackB`
-
-Sent by client to specify an attach action against a block
-
-|Type|Name|Description|
-|----|----|----|
-|`vector3<int64>`|`bpos`|Targeted block position|
-|`uint32`|`expected`|Numeric block ID the client expects at `bpos`|
-
-### `0x000E` `PlayerInteractE`
-
-Sent by client to specify an interact action against an entity
-
-> **TODO:** send over specific part of an entity's hitbox as well
-
-|Type|Name|Description|
-|----|----|----|
-|`uint64`|`target`|Targeted entity|
-
-### `0x000F` `PlayerInteractB`
-
-Sent by client to specify an interact action against a block
-
-|Type|Name|Description|
-|----|----|----|
-|`vector3<int64>`|`bpos`|Targeted block position|
-|`uint32`|`expected`|Numeric block ID the client expects at `bpos`|
-|`uint8`|`face`|Hit face used for interactions|
-|`vector3<float>`|`normal`|Hit normal|
-|`vector3<float>`|`point`|Hit point local to the block|
-
-### `0x0010` `EntitySpawn`
-
-Sent by server when an entity is spawned
-
-|Type|Name|Description|
-|----|----|----|
-|`uint64`|`id`|Entity ID|
-|`class_id_type`|`class_id`|Numeric class ID|
-
-### `0x0011` `EntityPatch`
-
-Sent by server when an entity's component is updated
-
-|Type|Name|Description|
-|----|----|----|
-|`uint64`|`id`|Entity ID|
-|`uint32`|`ncomp`|Component count|
-|`component[ncomp]`|`components`|Serialized components|
-
-### `0x0012` `EntityRemove`
-
-Sent by server when an entity is removed
-
-|Type|Name|Description|
-|----|----|----|
-|`uint64`|`id`|Entity ID|
-
-### `0x001A` `ChunkLight`
+### `0x000A` `ChunkLight`
 
 Sent by server when the light of chunks it has already synchronized changes.
 One packet carries every chunk whose light changed in a tick. Each entry is
@@ -363,3 +310,78 @@ delta that would be larger.
 
 A batch is split when it would exceed 32 KiB, so a tick that relights a large
 part of the view distance turns into several packets instead of one huge one.
+
+### `0x000B` `SetBlock`
+
+Sent by server as a sub-chunk block update
+
+|Type|Name|Description|
+|----|----|----|
+|`vector3<int64>`|`bpos`|World-scale block position|
+|`uint32`|`block`|Resulting numeric block ID|
+
+### `0x0012` `PlayerAttackE`
+
+Sent by client to specify an attack action against an entity
+
+|Type|Name|Description|
+|----|----|----|
+|`uint64`|`target`|Targeted entity|
+
+### `0x0013` `PlayerAttackB`
+
+Sent by client to specify an attach action against a block
+
+|Type|Name|Description|
+|----|----|----|
+|`vector3<int64>`|`bpos`|Targeted block position|
+|`uint32`|`expected`|Numeric block ID the client expects at `bpos`|
+
+### `0x0014` `PlayerInteractE`
+
+Sent by client to specify an interact action against an entity
+
+> **TODO:** send over specific part of an entity's hitbox as well
+
+|Type|Name|Description|
+|----|----|----|
+|`uint64`|`target`|Targeted entity|
+
+### `0x0015` `PlayerInteractB`
+
+Sent by client to specify an interact action against a block
+
+|Type|Name|Description|
+|----|----|----|
+|`vector3<int64>`|`bpos`|Targeted block position|
+|`uint32`|`expected`|Numeric block ID the client expects at `bpos`|
+|`uint8`|`face`|Hit face used for interactions|
+|`vector3<float>`|`normal`|Hit normal|
+|`vector3<float>`|`point`|Hit point local to the block|
+
+### `0x0017` `EntitySpawn`
+
+Sent by server when an entity is spawned
+
+|Type|Name|Description|
+|----|----|----|
+|`uint64`|`id`|Entity ID|
+|`class_id_type`|`class_id`|Numeric class ID|
+
+### `0x0018` `EntityPatch`
+
+Sent by server when an entity's component is updated
+
+|Type|Name|Description|
+|----|----|----|
+|`uint64`|`id`|Entity ID|
+|`uint32`|`ncomp`|Component count|
+|`component[ncomp]`|`components`|Serialized components|
+
+### `0x0019` `EntityRemove`
+
+Sent by server when an entity is removed
+
+|Type|Name|Description|
+|----|----|----|
+|`uint64`|`id`|Entity ID|

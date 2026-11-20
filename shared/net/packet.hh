@@ -7,32 +7,45 @@ class WriteBuffer;
 namespace packet
 {
 enum packet_type : std::uint16_t {
+    // Handshake and session
     STATUS_REQUEST = 0,
-    STATUS_RESPONSE = 1,
+    STATUS_RESPONSE,
     AUTH_REQUEST,
     AUTH_CHALLENGE,
     AUTH_RESPONSE,
     AUTH_ADMISSION,
     SESSION_DISCONNECT,
+
+    // World stream
     WORLD_REQUEST_CHUNK,
     WORLD_CHUNK_BLOCKS,
     WORLD_CHUNK_BIOMES,
+    WORLD_CHUNK_LIGHT,
     WORLD_SET_BLOCK,
     WORLD_TIMINGS,
+    WORLD_WEATHER,
+    WORLD_INFO,
+
+    // Console
     CVAR_SERVER_VARS,
+    CVAR_SERVER_CMDS,
+    CVAR_COMMAND,
+
+    // Player actions
     PLAYER_ATTACK_E,
     PLAYER_ATTACK_B,
     PLAYER_INTERACT_E,
     PLAYER_INTERACT_B,
     PLAYER_MOVE_DATA,
+
+    // Entities
     ENTITY_SPAWN,
     ENTITY_PATCH,
     ENTITY_REMOVE,
     ENTITY_CLIENT,
-    CVAR_SERVER_CMDS,
-    CVAR_COMMAND,
+
+    // Messages
     MSG_LOG,
-    WORLD_CHUNK_LIGHT,
 };
 } // namespace packet
 
@@ -73,6 +86,8 @@ struct World_Biomes;
 struct World_Light;
 struct World_SetBlock;
 struct World_Timings;
+struct World_Info;
+struct World_Weather;
 } // namespace packet
 
 namespace packet

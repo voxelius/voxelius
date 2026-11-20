@@ -20,14 +20,16 @@
 #include "client/gui/slider.hh"
 #include "client/settings.hh"
 
-// Below this horizontal speed the loader ignores the direction of travel.
+// Below this horizontal speed the loader ignores the direction of travel
 constexpr static float MOVING_SPEED = 1.0f;
 
 cvar::Number<float> camera::vertical_fov { 70.0f, 45.0f, 110.0f };
 cvar::Number<unsigned> camera::view_distance { 8, 1, 32 };
+cvar::Number<unsigned> camera::cloud_range { 16, 8, 256 };
 
 static gui::SliderFloat s_vertical_fov_gui;
 static gui::SliderUnsigned s_view_distance_gui;
+static gui::SliderUnsigned s_cloud_range_gui;
 
 Camera camera::instance;
 
@@ -37,6 +39,9 @@ Eigen::Vector3f camera::right;
 Eigen::Vector3f camera::up;
 Eigen::Vector3f camera::local;
 ChunkPos camera::chunk;
+
+float camera::z_near = 0.01f;
+float camera::z_far = 1.0f;
 
 block_id_type camera::inside_block;
 fluid_id_type camera::inside_fluid;
@@ -74,8 +79,8 @@ Eigen::Vector3f camera::lookahead(float chunks)
     auto direction = Eigen::Vector2f(velocity.value.x(), velocity.value.z());
     auto speed = direction.norm();
 
-    // Standing still has to load what is around the player, not what happens
-    // to be in front of the camera: the two differ right after a spawn.
+    // Standing still has to load what is around the player, not what
+    // happens to be in front of the camera: the two differ right after a spawn
     if(speed <= MOVING_SPEED) {
         return Eigen::Vector3f::Zero();
     }
@@ -101,7 +106,18 @@ void camera::init(void)
 
     s_view_distance_gui.set_range(1, 32);
     s_view_distance_gui.bind("r_view_distance");
-    settings::video.add_child(s_view_distance_gui, 0);
+    settings::video.add_child(s_view_distance_gui, 3);
+
+    auto& cloud_range_binding = cvar::bind_var(cloud_range, "r_cloud_range");
+    cloud_range_binding.set_help("Cloud render range, in chunks");
+    cloud_range_binding.set_flags(FCVAR_ARCHIVE);
+
+    s_cloud_range_gui.set_range(8, 256);
+    s_cloud_range_gui.bind("r_cloud_range");
+    settings::video_atmosphere.add_child(s_cloud_range_gui, 0);
+
+    camera::z_near = 0.01f;
+    camera::z_far = 1.25f * static_cast<float>(constant::CHUNK_SIZE * view_distance.value());
 
     reset_camera();
 }
@@ -120,10 +136,10 @@ void camera::update(void)
     camera::chunk = transform.chunk;
     camera::local = transform.local + head.offset;
 
-    auto z_near = 0.01f;
-    auto z_far = 1.25f * static_cast<float>(constant::CHUNK_SIZE * view_distance.value());
+    camera::z_near = 0.01f;
+    camera::z_far = 1.25f * static_cast<float>(constant::CHUNK_SIZE * view_distance.value());
 
-    instance.set_perspective(utils::radians(vertical_fov.value()), globals::aspect, z_near, z_far);
+    instance.set_perspective(utils::radians(vertical_fov.value()), globals::aspect, camera::z_near, camera::z_far);
     instance.set_view(camera::local, camera::angles);
     instance.update();
 

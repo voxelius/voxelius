@@ -80,6 +80,7 @@
   "settings.label.gui": "GUI",
   "settings.label.world": "World",
   "settings.label.levels": "Levels",
+  "settings.label.atmosphere": "Atmosphere",
 
   "settings.separator.settings": "Settings",
   "settings.separator.devices": "Devices",
@@ -93,6 +94,9 @@
   "settings.value.r_fog.1": "Simple",
   "settings.value.r_fog.2": "Fancy",
   "settings.value.r_fog": "Fog",
+  "settings.value.r_clouds": "Clouds",
+  "settings.value.r_cloud_range": "Cloud range",
+  "settings.value.r_sun_angle": "Sun angle",
   "settings.value.r_pixel_size": "Pixel size",
   "settings.value.lang": "Language",
   "settings.value.in_sensitivity": "Sensitivity",

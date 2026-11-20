@@ -10,6 +10,7 @@
 
 #include "shared/coord.hh"
 #include "shared/cvar/commands.hh"
+#include "shared/cvar/gamerules.hh"
 #include "shared/game.hh"
 #include "shared/splash.hh"
 
@@ -24,6 +25,7 @@
 #include "server/net/replication.hh"
 #include "server/net/sessions.hh"
 #include "server/net/status.hh"
+#include "server/net/streaming.hh"
 #include "server/net/transmit.hh"
 #include "server/net/whitelist.hh"
 #include "server/system/collector.hh"
@@ -68,6 +70,8 @@ static void zoned_fixed_update_late(void)
     chunk_loader::fixed_update();
     chunk_unloader::fixed_update_late();
 
+    streaming::fixed_update_late();
+
     receive::fixed_update_late();
 
     transmit::fixed_update_late();
@@ -107,9 +111,13 @@ static void wrapped_main(int argc, char** argv)
     receive::init();
     transmit::init();
 
-    worldgen::init();
+    streaming::init();
 
+    // The universe seed has to be loaded before worldgen
+    // derives its noise and feature seeds from it
     universe::init();
+
+    worldgen::init();
     chunk_loader::init();
     chunk_unloader::init();
 
@@ -171,6 +179,10 @@ static void wrapped_main(int argc, char** argv)
 
         globals::current_tick += 1;
 
+        if(gamerules::daylight_cycle.value()) {
+            globals::daylight_tick += 1;
+        }
+
         zoned_fixed_update();
 
         zoned_fixed_update_late();
@@ -193,7 +205,8 @@ static void wrapped_main(int argc, char** argv)
     worldgen::shutdown();
 
     chunk_loader::shutdown();
-    universe::shutdown();
+
+    streaming::shutdown();
 
     sessions::shutdown();
     invites::shutdown();
@@ -202,6 +215,10 @@ static void wrapped_main(int argc, char** argv)
 
     server_game::shutdown();
     shared_game::shutdown();
+
+    // The world config is written last: every subsystem that keeps state in it
+    // has already put its own there.
+    universe::shutdown();
 
     host::shutdown();
 

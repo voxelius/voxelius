@@ -48,6 +48,11 @@ constexpr static std::uint64_t FIXED_FRAMETIME_US = 1000000 / FIXED_TICKRATE;
 
 namespace constant
 {
+constexpr static std::uint64_t DAY_LENGTH_TICKS = 20 * 60 * FIXED_TICKRATE;
+} // namespace constant
+
+namespace constant
+{
 constexpr static float VELOCITY_EPS = 0.0001f;
 constexpr static float VELOCITY_EPS_SQ = VELOCITY_EPS * VELOCITY_EPS;
 } // namespace constant

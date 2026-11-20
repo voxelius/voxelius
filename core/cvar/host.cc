@@ -251,13 +251,21 @@ cvar::status cvar::exec(std::string_view name, std::span<const std::string_view>
             return status::UNKNOWN;
         }
 
-        if(is_remote) {
+        // A remote operator may change only variables marked as admin;
+        // the operator check above has already rejected everyone else
+        if(is_remote && !is_admin) {
             msg::log_warning("{} is not allowed to be set remotely", name);
 
             return status::UNKNOWN;
         }
 
         if(variable->is_shadowed()) {
+            // The value lives on the server, so forward the line there
+            // instead of trying to overwrite the shadow locally
+            if(is_admin && s_remote_exec) {
+                return s_remote_exec(rebuild_line(name, args));
+            }
+
             msg::log_warning("{} is replicated from the server and cannot be changed while connected", name);
 
             return status::UNKNOWN;
@@ -309,7 +317,7 @@ bool cvar::exec_from(std::string_view path)
     return true;
 }
 
-void cvar::save_values(std::string_view path)
+void cvar::save_values(std::string_view path, flag_bits ignore_flags)
 {
     std::ostringstream stream;
 
@@ -317,6 +325,10 @@ void cvar::save_values(std::string_view path)
         auto flags = binding->flags().value_or(FCVAR_NONE);
 
         if(binding->is_remote()) {
+            continue;
+        }
+
+        if(ignore_flags && (flags & ignore_flags)) {
             continue;
         }
 

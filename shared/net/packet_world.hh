@@ -10,7 +10,8 @@ struct packet::World_Request final : public packet::Base<packet::WORLD_REQUEST_C
     static void encode(const World_Request& packet, WriteBuffer& buffer);
     static void decode(World_Request& packet, ReadBuffer& buffer);
 
-    ChunkPos cpos;
+    ChunkAlignedBox view;
+    std::uint16_t chunk_budget { 0 };
 };
 
 struct packet::World_Blocks final : public packet::Base<packet::WORLD_CHUNK_BLOCKS> {
@@ -66,6 +67,30 @@ struct packet::World_Timings final : public packet::Base<packet::WORLD_TIMINGS> 
     static void decode(World_Timings& packet, ReadBuffer& buffer);
 
     std::uint64_t current_tick;
+    std::uint64_t daylight_tick;
+    std::uint64_t day;
+};
+
+struct packet::World_Info final : public packet::Base<packet::WORLD_INFO> {
+    static void encode(const World_Info& packet, WriteBuffer& buffer);
+    static void decode(World_Info& packet, ReadBuffer& buffer);
+
+    std::uint64_t seed;
+    std::uint32_t star_seed;
+
+    std::array<std::uint32_t, NUM_BIOME_REALMS> types_seed;
+    std::array<float, NUM_BIOME_REALMS> types_scale;
+    std::array<std::uint32_t, NUM_BIOME_REALMS> detail_seed;
+    std::array<float, NUM_BIOME_REALMS> detail_scale;
+};
+
+struct packet::World_Weather final : public packet::Base<packet::WORLD_WEATHER> {
+    static void encode(const World_Weather& packet, WriteBuffer& buffer);
+    static void decode(World_Weather& packet, ReadBuffer& buffer);
+
+    std::array<Eigen::Vector2f, NUM_BIOME_REALMS> types_drift;
+    std::array<Eigen::Vector2f, NUM_BIOME_REALMS> detail_drift;
+    std::array<Eigen::Vector2f, NUM_BIOME_REALMS> wind;
 };
 
 #endif /* BD2D77E8_727E_4B4C_83D6_92E1569F5B4D */

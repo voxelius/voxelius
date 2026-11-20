@@ -10,7 +10,7 @@ biomes.add("surface_hills_grassy", {
   palette = {
     basic = { name = "stone" },
     filler = { name = "dirt" },
-    surface = { name = "stone_slab", states = { orientation = "bottom" } },
+    surface = { name = "grass" },
     fluid = { name = "water", states = { level = "8", source = "true" } },
   },
 

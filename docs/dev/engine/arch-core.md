@@ -18,11 +18,11 @@ The first store is `config::Map`. It is a generic key-value map with string keys
 
 The second store is the cvar host. It holds console variables and commands. A variable has a type, an optional default, a range or validator, flags and optional change hooks. A command has a help text and a callback. The host keeps every variable and command in one registry. The client and the server each fill their own registry during startup.
 
-`cvar::exec_from` reads a command script. Each line is either `name value`, a command, or a comment that starts with `#`. `cvar::save_values` writes every `FCVAR_ARCHIVE` value, then calls the registered write hooks. The client uses `client.conf` for its settings and bindings; the server uses `server.conf`. The client loads `client.user.conf` after `client.conf`, so a user file can override the main file.
+`cvar::exec_from` reads a command script. Each line is either `name value`, a command, or a comment that starts with `#`. `cvar::save_values` writes every `FCVAR_ARCHIVE` value, then calls the registered write hooks. It can ignore a set of flags: the client passes `FCVAR_REPLICATED`, so the server-owned values never reach `client.conf`. The client uses `client.conf` for its settings and bindings; the server uses `server.conf`. The client loads `client.user.conf` after `client.conf`, so a user file can override the main file.
 
 The startup order is: defaults and flags are set first, then the config file is loaded, then `init_late` applies the values that other subsystems depend on. The client loads both config files after every `init` and before `init_late`.
 
-A server-owned variable can use `FCVAR_REPLICATED`. The server sends its value to clients as a shadow; clients cannot overwrite it while connected. A command can use `FCVAR_ADMIN`: only a remote caller that the server considers an operator may run it, while a context without a client ID is trusted. The full list of variables is in [Variables](../../manual/console/variables.md).
+A server-owned variable can use `FCVAR_REPLICATED`. The server sends its value to clients as a shadow; clients cannot overwrite it directly while connected. `FCVAR_ADMIN` marks a command or a variable as operator-only: only a remote caller that the server considers an operator may run or change it, while a context without a client ID is trusted. The client console forwards an operator's write to a shadowed variable to the server, and the server applies the value. The full list of variables is in [Variables](../../manual/console/variables.md).
 
 ## Resources
 

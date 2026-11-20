@@ -16,6 +16,7 @@
 #include "shared/api/fluids_library.hh"
 #include "shared/api/lua_libraries.hh"
 #include "shared/api/tints_library.hh"
+#include "shared/api/weather_library.hh"
 #include "shared/api/world_library.hh"
 #include "shared/constant.hh"
 
@@ -142,6 +143,7 @@ bool ModContext::initialize(void)
     api::open_fluids_library(m_lua_state, this);
     api::open_blocks_library(m_lua_state, this);
     api::open_biomes_library(m_lua_state, this);
+    api::open_weather_library(m_lua_state, this);
     api::open_entities_library(m_lua_state, this);
     api::open_world_library(m_lua_state, this);
 
@@ -335,6 +337,41 @@ std::vector<TintDefinition> ModContext::take_tints(void)
 vx::hash_map<Identifier, tint_id_type> ModContext::take_tint_names(void)
 {
     return std::move(m_tint_names);
+}
+
+weather_type_id ModContext::find_weather(const Identifier& name) const
+{
+    auto it = m_weather_names.find(name);
+
+    if(it == m_weather_names.cend())
+        return WEATHER_ID_NULL;
+    return it->second;
+}
+
+weather_type_id ModContext::register_weather(const Identifier& name, WeatherTypeDefinition def)
+{
+    if(m_weathers.empty()) {
+        m_weathers.emplace_back();
+    }
+
+    auto id = static_cast<weather_type_id>(m_weathers.size());
+
+    def.id = id;
+
+    m_weathers.push_back(std::move(def));
+    m_weather_names.try_emplace(name, id);
+
+    return id;
+}
+
+std::vector<WeatherTypeDefinition> ModContext::take_weathers(void)
+{
+    return std::move(m_weathers);
+}
+
+vx::hash_map<Identifier, weather_type_id> ModContext::take_weather_names(void)
+{
+    return std::move(m_weather_names);
 }
 
 class_id_type ModContext::find_class(const Identifier& name) const

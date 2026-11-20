@@ -13,6 +13,7 @@ namespace camera
 {
 extern cvar::Number<float> vertical_fov;
 extern cvar::Number<unsigned> view_distance;
+extern cvar::Number<unsigned> cloud_range;
 } // namespace camera
 
 namespace camera
@@ -32,6 +33,12 @@ extern ChunkPos chunk;
 
 namespace camera
 {
+extern float z_near;
+extern float z_far;
+} // namespace camera
+
+namespace camera
+{
 extern block_id_type inside_block;
 extern fluid_id_type inside_fluid;
 } // namespace camera
@@ -40,7 +47,7 @@ namespace camera
 {
 // Horizontal unit vector of where the player looks, scaled to the given
 // number of chunks. Chunk work is ordered towards it, so while flying the
-// leading edge is fetched and meshed before the ground that is already behind.
+// leading edge is fetched and meshed before the ground that is already behind
 Eigen::Vector3f lookahead(float chunks);
 } // namespace camera
 

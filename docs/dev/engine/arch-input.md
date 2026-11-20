@@ -23,7 +23,7 @@ The `buttons` subsystem ignores events while a settings control captures a key, 
 
 The client sets up its default bindings during the input subsystem initialization. These defaults are applied before the configuration files are read. The files can replace or remove them.
 
-The client reads `client.conf` and then `client.user.conf`. Each file is a cvar command script. The binding and axis maps register write hooks, so `cvar::save_values("client.conf")` writes the current bindings as `kbutton`, `mbutton`, `mwheel`, `gbutton` and `maxis` lines. The main settings are written as `name value` lines.
+The client reads `client.conf` and then `client.user.conf`. Each file is a cvar command script. The binding and axis maps register write hooks, so `cvar::save_values` writes the current bindings as `kbutton`, `mbutton`, `mwheel`, `gbutton` and `maxis` lines. The main settings are written as `name value` lines.
 
 The server uses the same cvar host for `server.conf`. The server does not create input bindings.
 

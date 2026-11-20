@@ -42,8 +42,17 @@ static std::shared_ptr<Entry> get_entry(const ChunkPosXZ& pos)
 
     std::unique_lock lock(s_mutex);
 
+    // Another thread may have inserted this column while this one waited for
+    // the exclusive lock. Overwriting its entry frees an array that an
+    // in-flight placement pass still reads through a reference.
+    auto it = s_cache.find(pos);
+
+    if(it != s_cache.end()) {
+        return it->second;
+    }
+
     auto entry = std::make_shared<Entry>();
-    s_cache[pos] = entry;
+    s_cache.emplace(pos, entry);
     return entry;
 }
 

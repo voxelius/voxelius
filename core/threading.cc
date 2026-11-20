@@ -11,6 +11,19 @@ static std::unique_ptr<BS::light_thread_pool> s_threads;
 static std::deque<std::unique_ptr<Task>> s_deque;
 static std::deque<std::unique_ptr<Task>> s_finalize_queue;
 
+// The pool sets the promise after the task body returns, so a ready future
+// proves that the worker has left task_process. The status alone does not:
+// a worker stores it before it returns, and the main thread that frees the
+// object on that store leaves the worker with a dangling pointer
+static bool task_joined(const std::unique_ptr<Task>& task)
+{
+    if(!task->future.valid()) {
+        return true;
+    }
+
+    return std::future_status::ready == task->future.wait_for(std::chrono::seconds(0));
+}
+
 static void task_process(Task* task)
 {
     ZoneScoped;
@@ -18,8 +31,8 @@ static void task_process(Task* task)
     task->status.store(task_status::PROCESSING, std::memory_order_relaxed);
     task->process();
 
-    if(task_status::PROCESSING == task->status.load(std::memory_order_relaxed)) {
-        task->status.store(task_status::COMPLETED, std::memory_order_relaxed);
+    if(task_status::PROCESSING == task->status.load(std::memory_order_acquire)) {
+        task->status.store(task_status::COMPLETED, std::memory_order_release);
     }
 }
 
@@ -114,14 +127,25 @@ void threading::update(void)
 
     while(it < s_deque.end()) {
         auto& task = *it;
-        auto status = task->status.load(std::memory_order_relaxed);
+        auto status = task->status.load(std::memory_order_acquire);
 
         if(status == task_status::CANCELLED) {
+            // A task that cancels itself from process() is still running here
+            if(!task_joined(task)) {
+                it = std::next(it);
+                continue;
+            }
+
             it = s_deque.erase(it);
             continue;
         }
 
         if(status == task_status::COMPLETED) {
+            if(!task_joined(task)) {
+                it = std::next(it);
+                continue;
+            }
+
             s_finalize_queue.push_back(std::move(task));
             it = s_deque.erase(it);
             continue;

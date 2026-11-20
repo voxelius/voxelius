@@ -2,21 +2,34 @@
 
 #include "client/net/receive.hh"
 
+#include "core/cvar/context.hh"
+#include "core/cvar/host.hh"
 #include "core/msg/log.hh"
 
+#include "shared/constant.hh"
+#include "shared/cvar/server.hh"
 #include "shared/entity/class_registry.hh"
 #include "shared/entity/component_map.hh"
 #include "shared/net/packet_entity.hh"
 #include "shared/net/packet_session.hh"
 #include "shared/net/packet_world.hh"
-#include "shared/net/protocol.hh"
+#include "shared/utils/coord.hh"
 #include "shared/utils/entity.hh"
 #include "shared/world/biome_map.hh"
+#include "shared/world/weather.hh"
+#include "shared/world/weather_registry.hh"
 #include "shared/world/world.hh"
+#include "shared/world/world_clock.hh"
 
+#include "client/camera.hh"
 #include "client/globals.hh"
 #include "client/net/session.hh"
-#include "client/world/chunk_visibility.hh"
+#include "client/world/cloud_renderer.hh"
+#include "client/world/skybox.hh"
+
+// The first weather packet of a connection sets the whole drift;
+// later packets only correct it, so the deck does not slide on join
+static bool s_weather_synced;
 
 static void on_entity_spawn(const packet::Entity_Spawn& packet)
 {
@@ -79,13 +92,10 @@ static void on_entity_client(const packet::Entity_Client& packet)
 
 static void on_world_blocks(const packet::World_Blocks& packet)
 {
-    chunk_visibility::note_received(packet.cpos);
-
-    // A full chunk packet is authoritative: it is both the first load and
-    // the resync the server sends to roll a stale client world back. Block
-    // edits made after the packet was queued arrive as SetBlock on the same
-    // reliable channel, so applying the whole chunk here cannot win over a
-    // newer prediction.
+    // A full chunk packet is authoritative: it is both the first load and the
+    // resync the server sends to roll a stale client world back. Block edits
+    // made after the packet was queued arrive as SetBlock on the same reliable
+    // channel, so applying the whole chunk here cannot win over a newer prediction
     auto chunk = world::find_chunk(packet.cpos);
 
     if(chunk == nullptr) {
@@ -122,13 +132,13 @@ static void on_world_light(const packet::World_Light& packet)
             chunk->set_light(entry.light);
         }
         else {
-            // A delta cannot seed a chunk the client was never given light
-            // for; the server sends the whole array in that case.
+            // A delta cannot seed a chunk the client was never
+            // given light, so the server sends the whole array in that case
             if(!chunk->has_light()) {
                 continue;
             }
 
-            for(std::size_t i = 0; i < entry.indices.size(); i += 1) {
+            for(std::size_t i = 0; i < entry.indices.size(); ++i) {
                 chunk->set_packed_light(entry.indices[i], entry.values[i]);
             }
         }
@@ -144,13 +154,89 @@ static void on_world_set_block(const packet::World_SetBlock& packet)
 
 static void on_world_timings(const packet::World_Timings& packet)
 {
+    auto previous_tick = globals::daylight_tick;
+    auto jump = packet.daylight_tick > previous_tick ? packet.daylight_tick - previous_tick : previous_tick - packet.daylight_tick;
+
     globals::current_tick = packet.current_tick;
+    globals::daylight_tick = packet.daylight_tick;
+    globals::day = packet.day;
+
+    // A jump of a second or more is a deliberate time_set; the
+    // ordinary one-tick step is left for the sky to interpolate
+    if(jump > constant::FIXED_TICKRATE) {
+        skybox::snap();
+    }
+}
+
+static void on_world_info(const packet::World_Info& packet)
+{
+    weather::apply_info(packet);
+
+    skybox::set_star_seed(packet.star_seed);
+}
+
+static void on_world_weather(const packet::World_Weather& packet)
+{
+    // The first packet after connecting replaces the drift whole, so
+    // the deck that was built from the old field must not slide to it
+    auto baseline = !s_weather_synced;
+    s_weather_synced = true;
+
+    weather::apply_packet(packet, baseline);
+
+    if(baseline) {
+        cloud_renderer::reset();
+    }
+}
+
+static cvar::status cmd_time_query(const cvar::Context& ctx, std::span<const std::string_view> args)
+{
+    auto phase = world_clock::phase(globals::daylight_tick, server_vars::day_length_ticks());
+    auto daylight = world_clock::daylight(phase);
+
+    msg::log_info("time: tick={} daylight_tick={} day={} phase={:.3f} daylight={:.2f}", globals::current_tick, globals::daylight_tick,
+        globals::day, phase, daylight);
+
+    return cvar::status::OK;
+}
+
+static cvar::status cmd_weather_status(const cvar::Context& ctx, std::span<const std::string_view> args)
+{
+    auto world = utils::to_fvec(camera::chunk) + camera::local;
+
+    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
+        auto realm = static_cast<biome_realm>(i);
+        auto& state = weather::state(realm);
+
+        auto type = weather::type_at(realm, world.x(), world.z());
+        auto coverage = weather::coverage(realm, world.x(), world.z());
+
+        std::string description = "none";
+
+        if(auto name = weather_registry::name_of(type)) {
+            // The identifier is a temporary, so its view must be copied
+            // before the optional goes out of scope
+            description = name->full_string();
+        }
+
+        auto types = std::format("({:.0f}, {:.0f})/{}", state.types.drift.x(), state.types.drift.y(), state.types.scale);
+        auto detail = std::format("({:.0f}, {:.0f})/{}", state.detail.drift.x(), state.detail.drift.y(), state.detail.scale);
+
+        msg::log_info("weather[{}]: type={} coverage={:.2f} types={} detail={}", i, description, coverage, types, detail);
+    }
+
+    return cvar::status::OK;
 }
 
 static void on_session_state(const SessionStateEvent& event)
 {
     if(SESSION_DISCONNECTED == event.state()) {
         globals::player = entt::null;
+        s_weather_synced = false;
+    }
+
+    if(SESSION_AUTHENTICATING == event.state()) {
+        s_weather_synced = false;
     }
 }
 
@@ -166,6 +252,16 @@ void receive::init(void)
     globals::dispatcher.sink<packet::World_Light>().connect<&on_world_light>();
     globals::dispatcher.sink<packet::World_SetBlock>().connect<&on_world_set_block>();
     globals::dispatcher.sink<packet::World_Timings>().connect<&on_world_timings>();
+    globals::dispatcher.sink<packet::World_Info>().connect<&on_world_info>();
+    globals::dispatcher.sink<packet::World_Weather>().connect<&on_world_weather>();
 
     globals::dispatcher.sink<SessionStateEvent>().connect<&on_session_state>();
+
+    auto& status_binding = cvar::bind_cmd("weather_status");
+    status_binding.set_help("Print the weather state the client currently has");
+    status_binding.connect<&cmd_weather_status>();
+
+    auto& time_binding = cvar::bind_cmd("time_query");
+    time_binding.set_help("Print the world clock the client currently has");
+    time_binding.connect<&cmd_time_query>();
 }

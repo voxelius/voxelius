@@ -204,6 +204,12 @@ LoadTask::~LoadTask(void)
     s_pending.erase(m_pos);
 }
 
+static bool read_region_slot(RegionEntry& entry, std::size_t slot, ReadBuffer& buffer)
+{
+    std::scoped_lock io_lock(entry.io_mutex);
+    return entry.region_file.read_slot(slot, buffer);
+}
+
 void LoadTask::process(void)
 {
     ZoneScopedN("chunk_loader::load");
@@ -215,10 +221,10 @@ void LoadTask::process(void)
     auto entry = get_region(realm, region);
 
     ReadBuffer buffer;
+    auto found = false;
 
-    std::scoped_lock io_lock(entry->io_mutex);
-
-    if(entry->region_file.read_slot(slot, buffer)) {
+    found = read_region_slot(*entry, slot, buffer);
+    if(found) {
         Chunk::decode_dat(m_snapshot, buffer);
         m_found = true;
     }

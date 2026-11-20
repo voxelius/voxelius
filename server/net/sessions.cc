@@ -7,16 +7,21 @@
 #include "core/utils/epoch.hh"
 #include "core/version.hh"
 
+#include "shared/cvar/server.hh"
 #include "shared/entity/class_registry.hh"
 #include "shared/net/packet_auth.hh"
 #include "shared/net/packet_entity.hh"
 #include "shared/net/packet_session.hh"
+#include "shared/net/packet_world.hh"
 #include "shared/net/protocol.hh"
 #include "shared/utils/entity.hh"
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
 #include "shared/world/tint_registry.hh"
+#include "shared/world/weather.hh"
+#include "shared/world/weather_registry.hh"
+#include "shared/world/world_clock.hh"
 
 #include "server/globals.hh"
 #include "server/net/host.hh"
@@ -24,6 +29,7 @@
 #include "server/net/operators.hh"
 #include "server/net/replication.hh"
 #include "server/net/whitelist.hh"
+#include "server/universe.hh"
 
 static std::vector<Session> s_sessions;
 static vx::hash_map<std::string, Session*> s_username_map;
@@ -32,6 +38,16 @@ static vx::hash_map<std::uint64_t, Session*> s_identity_map;
 cvar::Boolean sessions::strict_version { false };
 
 static std::mt19937_64 s_randomizer;
+
+// Stars are cosmetic, but two clients of the same world
+// must get the same field, so the seed comes from the world
+static std::uint32_t star_seed_of(std::uint64_t seed)
+{
+    auto mixed = seed * UINT64_C(0x9E3779B97F4A7C15);
+    mixed ^= mixed >> 29U;
+
+    return static_cast<std::uint32_t>(mixed >> 32U);
+}
 
 std::uint16_t sessions::num_players = 0;
 
@@ -114,6 +130,7 @@ static void on_auth_request(const packet::Auth_Request& packet)
     checksums_match = checksums_match && packet.fluids_hash == fluid_registry::checksum();
     checksums_match = checksums_match && packet.tints_hash == tint_registry::checksum();
     checksums_match = checksums_match && packet.ents_hash == class_registry::checksum();
+    checksums_match = checksums_match && packet.weather_hash == weather_registry::checksum();
 
     if(!checksums_match) {
         packet::Session_Disconnect response {};
@@ -192,6 +209,27 @@ static void on_auth_response(const packet::Auth_Response& packet)
     protocol::send(response, packet.peer);
 
     replication::synchronize(session);
+
+    // The world seed and the weather seeds do not change, so they
+    // travel once. The one-shot state packets then fix the client's
+    // time, drift and cloud deck before the first periodic update
+    auto world_seed = universe::seed();
+
+    packet::World_Info world_info {};
+    weather::fill_info(world_info);
+    world_info.seed = world_seed;
+    world_info.star_seed = star_seed_of(world_seed);
+    protocol::send(world_info, packet.peer);
+
+    packet::World_Weather weather_state {};
+    weather::fill_packet(weather_state);
+    protocol::send(weather_state, packet.peer);
+
+    packet::World_Timings timings {};
+    timings.current_tick = globals::current_tick;
+    timings.daylight_tick = globals::daylight_tick;
+    timings.day = world_clock::day(globals::daylight_tick, server_vars::day_length_ticks());
+    protocol::send(timings, packet.peer);
 
     auto bpos = BlockPos::Zero(); // TODO: spawn positions?
     auto player = utils::spawn_player(bpos);
@@ -593,6 +631,11 @@ void sessions::destroy(Session* session, std::optional<std::uint32_t> reason)
         session->player = entt::null;
         session->peer = nullptr;
         session->known_entities.clear();
+        session->stream_sent_chunks.clear();
+        session->stream_wanted_chunks.clear();
+        session->stream_cursor_chunks = 0;
+        session->stream_budget_chunks = 0;
+        session->stream_rebuild = true;
         session->cvar_ratelimit_tick = 0;
         session->cvar_ratelimit_tokens = 0.0f;
 

@@ -274,7 +274,7 @@ static const BiomeScatterEntry* find_group_winner(BlockPos::value_type bx, Block
 {
     const BiomeScatterEntry* winner = nullptr;
 
-    for(std::size_t i = 0; i < biome.scatter.size(); i += 1) {
+    for(std::size_t i = 0; i < biome.scatter.size(); ++i) {
         const auto& candidate = biome.scatter[i];
 
         if(!same_group(entry, candidate, entry_index, i)) {
@@ -295,7 +295,7 @@ static BlockPos::value_type group_search_radius(const BiomeDefinition& biome, co
 {
     auto search = static_cast<BlockPos::value_type>(entry.padding) + scatter_extent(*entry.cached);
 
-    for(std::size_t i = 0; i < biome.scatter.size(); i += 1) {
+    for(std::size_t i = 0; i < biome.scatter.size(); ++i) {
         auto& candidate = biome.scatter[i];
 
         if(candidate.cached == nullptr) {
