@@ -8,6 +8,7 @@
 #include "shared/utils/coord.hh"
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
+#include "shared/world/world.hh"
 
 #include "server/world/climate.hh"
 #include "server/world/climate_noise.hh"
@@ -115,7 +116,7 @@ void realm_surface::shutdown(void)
     s_terrain.reset();
 }
 
-void realm_surface::generate(BlockStorage& blocks, BiomeSlice& biomes, const ChunkPos& pos)
+void realm_surface::generate(World* world, BlockStorage& blocks, BiomeSlice& biomes, const ChunkPos& pos)
 {
     thread_local std::array<block_id_type, constant::CHUNK_AREA> palette_basic_array;
     thread_local std::array<block_id_type, constant::CHUNK_AREA> palette_filler_array;
@@ -136,7 +137,7 @@ void realm_surface::generate(BlockStorage& blocks, BiomeSlice& biomes, const Chu
 
     for(std::size_t i = 0; i < constant::CHUNK_AREA; ++i) {
         auto& sample = climate_array[i];
-        auto biome = climate::find(BIOME_REALM_SURFACE, sample);
+        auto biome = climate::find(world, sample);
         auto biome_def = biome_registry::find_definition(biome);
 
         if(biome && biome_def) {
@@ -253,7 +254,7 @@ void realm_surface::generate(BlockStorage& blocks, BiomeSlice& biomes, const Chu
         }
     }
 
-    feature_placer::commit(blocks, pos, BIOME_REALM_SURFACE);
+    feature_placer::commit(world, blocks, pos);
 }
 
 ColumnSlice realm_surface::probe(const ChunkPosXZ& pos)

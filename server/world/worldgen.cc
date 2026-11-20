@@ -16,7 +16,6 @@
 #include "server/world/feature_placer.hh"
 #include "server/world/feature_scatter.hh"
 #include "server/world/heightmap.hh"
-#include "server/world/realm_sky.hh"
 #include "server/world/realm_surface.hh"
 #include "server/world/terrain.hh"
 
@@ -50,16 +49,9 @@ void WorldgenTask::process(void)
 {
     ZoneScopedN("worldgen::process");
 
-    auto realm = utils::realm(m_pos.y());
-
-    if(realm != BIOME_REALM_SURFACE && realm != BIOME_REALM_SKY) {
-        status.store(task_status::CANCELLED, std::memory_order_release);
-        return;
-    }
-
     auto biomes = std::make_unique<BiomeSlice>();
 
-    if(!terrain::generate(m_pos, m_blocks, *biomes)) {
+    if(!terrain::generate(m_world.get(), m_pos, m_blocks, *biomes)) {
         status.store(task_status::CANCELLED, std::memory_order_release);
         return;
     }
@@ -80,9 +72,8 @@ void WorldgenTask::finalize(void)
         });
 
         if(has_biome) {
-            auto realm = utils::realm(m_pos.y());
             auto cpos_xz = ChunkPosXZ(m_pos.x(), m_pos.z());
-            m_world->insert_biomes(realm, cpos_xz, std::move(*m_biomes));
+            m_world->insert_biomes(cpos_xz, std::move(*m_biomes));
         }
 
         m_biomes.reset();
@@ -101,7 +92,6 @@ void worldgen::init(void)
     climate_noise::init(seeder);
 
     realm_surface::init(seeder);
-    realm_sky::init(seeder);
 
     feature_placer::init();
 
@@ -118,7 +108,6 @@ void worldgen::shutdown(void)
 
     feature_placer::shutdown();
 
-    realm_sky::shutdown();
     realm_surface::shutdown();
 
     climate_noise::shutdown();

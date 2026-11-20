@@ -122,15 +122,10 @@ static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos)
         return;
     }
 
-    auto realm = utils::realm(cpos.y());
-
-    if(realm != BIOME_REALM_VOID) {
-        packet::World_Biomes biomes_packet;
-        biomes_packet.realm = realm;
-        biomes_packet.cpos = ChunkPosXZ(cpos.x(), cpos.z());
-        biomes_packet.biomes = world->biomes(realm, biomes_packet.cpos);
-        protocol::send(biomes_packet, peer);
-    }
+    packet::World_Biomes biomes_packet;
+    biomes_packet.cpos = ChunkPosXZ(cpos.x(), cpos.z());
+    biomes_packet.biomes = world->biomes(biomes_packet.cpos);
+    protocol::send(biomes_packet, peer);
 
     packet::World_Blocks blocks_packet;
     blocks_packet.cpos = cpos;

@@ -154,21 +154,9 @@ static bool registry_valid(entt::entity entity)
 
 static bool realm_top(ChunkPos::value_type y)
 {
-    switch(utils::realm(y)) {
-        case BIOME_REALM_SURFACE:
-            return y == constant::SURFACE_MAX_CHUNK_Y;
-
-        case BIOME_REALM_SKY:
-            return y == constant::SKY_MAX_CHUNK_Y;
-
-        case BIOME_REALM_UNDERGROUND:
-        case BIOME_REALM_THE_DEPTHS:
-        case BIOME_REALM_VOID:
-        case BIOME_REALM_COUNT:
-            break;
-    }
-
-    return true;
+    auto& definition = globals::world->definition();
+    auto top = static_cast<ChunkPos::value_type>(definition.max_y >> constant::CHUNK_SIZE_LOG2);
+    return y == top;
 }
 
 static bool sky_ready(const ChunkPos& pos)

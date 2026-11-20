@@ -7,6 +7,7 @@
 #include "shared/utils/coord.hh"
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
+#include "shared/world/world.hh"
 
 #include "server/world/climate.hh"
 #include "server/world/climate_noise.hh"
@@ -145,13 +146,13 @@ static bool can_place(const PlacementContext& context, const BlockPos& origin, c
     return true;
 }
 
-static biome_id_type biome_at(ScatterScanCache& cache, biome_realm realm, BlockPos::value_type bx, BlockPos::value_type bz)
+static biome_id_type biome_at(ScatterScanCache& cache, World* world, BlockPos::value_type bx, BlockPos::value_type bz)
 {
     BlockPosXZ key(bx, bz);
     auto it = cache.biome.find(key);
 
     if(it == cache.biome.cend()) {
-        auto id = climate::find(realm, climate_noise::sample_block(key));
+        auto id = climate::find(world, climate_noise::sample_block(key));
         cache.biome.emplace(key, id);
         return id;
     }
@@ -159,8 +160,8 @@ static biome_id_type biome_at(ScatterScanCache& cache, biome_realm realm, BlockP
     return it->second;
 }
 
-static bool check_footprint(ScatterScanCache& cache, biome_realm realm, BlockPos::value_type bx, BlockPos::value_type bz,
-    const Feature& feature, unsigned edge, const BiomeDefinition* biome)
+static bool check_footprint(ScatterScanCache& cache, World* world, BlockPos::value_type bx, BlockPos::value_type bz, const Feature& feature,
+    unsigned edge, const BiomeDefinition* biome)
 {
     auto& bounds = feature.bounds;
     auto pad = static_cast<int>(edge);
@@ -172,7 +173,7 @@ static bool check_footprint(ScatterScanCache& cache, biome_realm realm, BlockPos
 
     for(auto dz = min_z; dz <= max_z; dz += 1) {
         for(auto dx = min_x; dx <= max_x; dx += 1) {
-            auto biome_id = biome_at(cache, realm, bx + dx, bz + dz);
+            auto biome_id = biome_at(cache, world, bx + dx, bz + dz);
             auto biome_def = biome_registry::find_definition(biome_id);
 
             if(biome == biome_def)
@@ -201,14 +202,14 @@ static bool would_place_uncached(BlockPos::value_type bx, BlockPos::value_type b
     sample_xz[0] = bx;
     sample_xz[1] = bz;
 
-    auto& column = heightmap::probe_slow(context.realm, sample_xz);
+    auto& column = heightmap::probe_slow(sample_xz);
     auto position = BlockPos(bx, column.surface_y, bz);
 
     if(!can_place(context, position, biome, entry, column)) {
         return false;
     }
 
-    return check_footprint(cache, context.realm, bx, bz, *entry.cached, entry.edge, &biome);
+    return check_footprint(cache, context.world, bx, bz, *entry.cached, entry.edge, &biome);
 }
 
 static bool would_place(BlockPos::value_type bx, BlockPos::value_type bz, const PlacementContext& context, const BiomeDefinition& biome,
@@ -346,7 +347,7 @@ static bool resolve_padding_tie(BlockPos::value_type bx, BlockPos::value_type bz
             neighbour_xz[0] = ox;
             neighbour_xz[1] = oz;
 
-            auto& neighbour_column = heightmap::probe_slow(context.realm, neighbour_xz);
+            auto& neighbour_column = heightmap::probe_slow(neighbour_xz);
 
             if(!neighbour_column.is_valid()) {
                 continue;
@@ -395,7 +396,7 @@ void FeatureScatter::collect(const ChunkPos& pos, const PlacementContext& contex
 
     for(auto wx = search_min_x; wx <= search_max_x; wx += 1) {
         for(auto wz = search_min_z; wz <= search_max_z; wz += 1) {
-            auto biome = biome_at(cache, context.realm, wx, wz);
+            auto biome = biome_at(cache, context.world, wx, wz);
             auto biome_def = biome_registry::find_definition(biome);
 
             if(biome_def == nullptr || biome_def->scatter.empty()) {
@@ -406,7 +407,7 @@ void FeatureScatter::collect(const ChunkPos& pos, const PlacementContext& contex
             sample_pos.x() = wx;
             sample_pos.y() = wz;
 
-            auto& column = heightmap::probe_slow(context.realm, sample_pos);
+            auto& column = heightmap::probe_slow(sample_pos);
 
             if(!column.is_valid()) {
                 continue;

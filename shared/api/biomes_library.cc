@@ -184,14 +184,6 @@ static bool parse_palette(lua_State* L, int palette_idx, BiomeDefinition& def, M
 
 static bool parse_definition(lua_State* L, int def_idx, BiomeDefinition& def, ModContext* ctx)
 {
-    auto realm = utils::require_integer(L, def_idx, "realm");
-
-    if(!realm.has_value()) {
-        return false;
-    }
-
-    def.realm = static_cast<biome_realm>(realm.value());
-
     const std::array climate_fields = {
         std::make_pair("temperature", &def.temperature),
         std::make_pair("humidity", &def.humidity),

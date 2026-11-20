@@ -3,6 +3,9 @@
 #include "server/world/climate.hh"
 
 #include "shared/world/biome_registry.hh"
+#include "shared/world/world.hh"
+
+#include "server/universe.hh"
 
 constexpr static int CLIMATE_SIZE = 100;
 constexpr static std::size_t CLIMATE_DIMS = 5;
@@ -18,7 +21,8 @@ struct ClimateSeed final {
     float offset;
 };
 
-static std::array<std::vector<ClimateSeed>, NUM_BIOME_REALMS> s_seeds;
+static std::shared_mutex s_seeds_mutex;
+static vx::hash_map<const World*, std::vector<ClimateSeed>> s_seeds;
 static std::array<ClimateDir, 242> s_neighbour_dirs;
 static std::once_flag s_neighbour_dirs_once;
 
@@ -152,36 +156,40 @@ static bool nudge(vx::hash_map<std::uint64_t, biome_id_type>& occupied, ClimateP
     return false;
 }
 
-static void rebuild_realm(biome_realm realm)
+static void build_seeds(World* world)
 {
-    auto& out = s_seeds.at(static_cast<std::size_t>(realm));
+    auto& out = s_seeds[world];
     auto definitions = biome_registry::all_definitions();
 
     out.clear();
     out.reserve(definitions.size());
 
     std::mt19937 random;
-    random.seed(UINT32_C(0xB10BEE5E) ^ (static_cast<std::uint32_t>(realm) * UINT32_C(0x9E3779B9)));
+    random.seed(UINT32_C(0xB10BEE5E));
+
+    const auto& allowed = world->definition().biomes;
 
     for(biome_id_type id = 1; id < definitions.size(); id += 1) {
+        if(!allowed.empty() && std::find(allowed.cbegin(), allowed.cend(), id) == allowed.cend()) {
+            continue;
+        }
+
         const auto& def = definitions[id];
 
-        if(def.realm == realm) {
-            ClimatePos target {};
-            target[0] = def.temperature;
-            target[1] = def.humidity;
-            target[2] = def.continentalness;
-            target[3] = def.erosion;
-            target[4] = def.weirdness;
+        ClimatePos target {};
+        target[0] = def.temperature;
+        target[1] = def.humidity;
+        target[2] = def.continentalness;
+        target[3] = def.erosion;
+        target[4] = def.weirdness;
 
-            ClimateSeed seed {};
-            seed.id = id;
-            seed.priority = def.priority;
-            seed.offset = def.offset;
-            seed.target = clamp_pos(std::move(target));
+        ClimateSeed seed {};
+        seed.id = id;
+        seed.priority = def.priority;
+        seed.offset = def.offset;
+        seed.target = clamp_pos(std::move(target));
 
-            out.emplace_back(std::move(seed));
-        }
+        out.emplace_back(std::move(seed));
     }
 
     std::stable_sort(out.begin(), out.end(), [](const ClimateSeed& a, const ClimateSeed& b) {
@@ -192,7 +200,7 @@ static void rebuild_realm(biome_realm realm)
 
     for(auto& seed : out) {
         if(!nudge(occupied, seed.target, seed.id, random)) {
-            msg::log_warning("failed to place biome {} uniquely in realm {}", seed.id, static_cast<unsigned>(realm));
+            msg::log_warning("failed to place biome {} uniquely", seed.id);
         }
     }
 }
@@ -208,22 +216,33 @@ float climate::normalize_01(float sample)
     return std::clamp((sample + 1.0f) * 0.5f, 0.0f, 1.0f);
 }
 
-void climate::rebuild(void)
+void climate::rebuild(World* world)
 {
     std::call_once(s_neighbour_dirs_once, &build_neighbour_dirs);
 
-    for(unsigned realm = 0; realm < BIOME_REALM_COUNT; realm += 1) {
-        rebuild_realm(static_cast<biome_realm>(realm));
+    std::unique_lock lock(s_seeds_mutex);
+
+    build_seeds(world);
+}
+
+void climate::rebuild(void)
+{
+    for(const auto& world : universe::worlds()) {
+        rebuild(world.get());
     }
 }
 
-biome_id_type climate::find(biome_realm realm, const ClimateSample& sample)
+biome_id_type climate::find(World* world, const ClimateSample& sample)
 {
-    if(realm >= BIOME_REALM_COUNT) {
-        return BIOME_ID_NULL; // WTF
+    std::shared_lock lock(s_seeds_mutex);
+
+    auto it = s_seeds.find(world);
+
+    if(it == s_seeds.end()) {
+        return BIOME_ID_NULL;
     }
 
-    const auto& seeds = s_seeds.at(static_cast<std::size_t>(realm));
+    const auto& seeds = it->second;
 
     if(seeds.empty()) {
         return BIOME_ID_NULL;

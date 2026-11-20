@@ -1,5 +1,6 @@
 #include "shared/pch.hh"
 
+#include "shared/world/biome_registry.hh"
 #include "shared/world/world_registry.hh"
 
 #include "core/exception.hh"
@@ -97,6 +98,14 @@ void world_registry::resolve(void)
         vx::throw_if_not_fmt(!has_directory(definition->directory, definition.get()), "world {}: directory \"{}\" is already taken",
             full_id, definition->directory);
         vx::throw_if_not_fmt(definition->min_y <= definition->max_y, "world {}: min_y is greater than max_y", full_id);
+
+        definition->biomes.clear();
+
+        for(const auto& name : definition->biome_names) {
+            auto biome = biome_registry::find(name);
+            vx::throw_if_not_fmt(biome, "world {}: unknown biome {}", full_id, name.full_string());
+            definition->biomes.push_back(biome);
+        }
     }
 }
 

@@ -430,9 +430,9 @@ biome_id_type World::biome(const BlockPos& pos) const
     return m_biomes.get_slow(pos);
 }
 
-void World::insert_biomes(biome_realm realm, const ChunkPosXZ& pos, BiomeSlice biomes)
+void World::insert_biomes(const ChunkPosXZ& pos, BiomeSlice biomes)
 {
-    m_biomes.insert(realm, pos, std::move(biomes));
+    m_biomes.insert(pos, std::move(biomes));
 }
 
 const BiomeSlice& World::biomes(const ChunkPos& pos) const
@@ -440,9 +440,9 @@ const BiomeSlice& World::biomes(const ChunkPos& pos) const
     return m_biomes.get(pos);
 }
 
-const BiomeSlice& World::biomes(biome_realm realm, const ChunkPosXZ& pos) const
+const BiomeSlice& World::biomes(const ChunkPosXZ& pos) const
 {
-    return m_biomes.get(realm, pos);
+    return m_biomes.get(pos);
 }
 
 biome_id_type World::biome_slow(const BlockPos& pos) const

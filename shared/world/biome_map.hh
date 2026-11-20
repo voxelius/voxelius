@@ -11,14 +11,13 @@ public:
 
     void purge(void);
 
-    void insert(biome_realm realm, const ChunkPosXZ& pos, BiomeSlice biomes);
+    void insert(const ChunkPosXZ& pos, BiomeSlice biomes);
     void attach(entt::registry& registry, entt::entity entity, const ChunkPos& pos);
 
     biome_id_type get_slow(const BlockPos& pos) const;
-    biome_id_type get_slow(biome_realm realm, const BlockPosXZ& pos) const;
 
     const BiomeSlice& get(const ChunkPos& pos) const;
-    const BiomeSlice& get(biome_realm realm, const ChunkPosXZ& pos) const;
+    const BiomeSlice& get(const ChunkPosXZ& pos) const;
 
 private:
     struct Entry final {
@@ -27,7 +26,7 @@ private:
     };
 
     mutable std::mutex m_mutex;
-    std::array<vx::hash_map<ChunkPosXZ, Entry>, NUM_BIOME_REALMS> m_slices;
+    vx::hash_map<ChunkPosXZ, Entry> m_slices;
     std::shared_ptr<BiomeSlice> m_void;
 };
 

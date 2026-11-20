@@ -16,16 +16,19 @@ struct ScatterCacheEntry final {
 static std::size_t s_max_extent;
 static std::vector<std::unique_ptr<PlacementRule>> s_rules;
 static std::shared_mutex s_scatter_mutex;
-static std::array<vx::hash_map<ChunkPosXZ, std::shared_ptr<ScatterCacheEntry>>, NUM_BIOME_REALMS> s_scatter_cache;
+static vx::hash_map<const World*, vx::hash_map<ChunkPosXZ, std::shared_ptr<ScatterCacheEntry>>> s_scatter_cache;
 
-static std::shared_ptr<ScatterCacheEntry> find_scatter_entry(biome_realm realm, const ChunkPosXZ& pos)
+static std::shared_ptr<ScatterCacheEntry> find_scatter_entry(World* world, const ChunkPosXZ& pos)
 {
-    auto index = static_cast<std::size_t>(realm);
-    assert(index < NUM_BIOME_REALMS);
-
     std::shared_lock lock(s_scatter_mutex);
 
-    auto& cache = s_scatter_cache.at(index);
+    auto world_it = s_scatter_cache.find(world);
+
+    if(world_it == s_scatter_cache.end()) {
+        return nullptr;
+    }
+
+    auto& cache = world_it->second;
     auto it = cache.find(pos);
 
     if(it == cache.end()) {
@@ -35,30 +38,27 @@ static std::shared_ptr<ScatterCacheEntry> find_scatter_entry(biome_realm realm, 
     return it->second;
 }
 
-static std::shared_ptr<ScatterCacheEntry> get_scatter_entry(biome_realm realm, const ChunkPosXZ& pos)
+static std::shared_ptr<ScatterCacheEntry> get_scatter_entry(World* world, const ChunkPosXZ& pos)
 {
-    if(auto entry = find_scatter_entry(realm, pos)) {
+    if(auto entry = find_scatter_entry(world, pos)) {
         return entry;
     }
 
     std::unique_lock lock(s_scatter_mutex);
 
-    auto index = static_cast<std::size_t>(realm);
-    assert(index < NUM_BIOME_REALMS);
-
-    auto& cache = s_scatter_cache.at(index);
+    auto& cache = s_scatter_cache[world];
     auto entry = std::make_shared<ScatterCacheEntry>();
     cache[pos] = entry;
     return entry;
 }
 
-static const std::vector<FeatureInstance>& collect_cached(biome_realm realm, const ChunkPosXZ& pos)
+static const std::vector<FeatureInstance>& collect_cached(World* world, const ChunkPosXZ& pos)
 {
-    auto entry = get_scatter_entry(realm, pos);
+    auto entry = get_scatter_entry(world, pos);
 
-    std::call_once(entry->init_flag, [realm, pos, entry] {
+    std::call_once(entry->init_flag, [world, pos, entry] {
         PlacementContext context {};
-        context.realm = realm;
+        context.world = world;
         context.position = ChunkPos(pos.x(), 0, pos.y());
         context.storage = nullptr;
         context.max_extent = s_max_extent;
@@ -121,10 +121,10 @@ static bool check_intersection(const FeatureInstance& instance, const ChunkPos& 
     return chunk_bounds.intersects(local_bounds);
 }
 
-static void collect_candidates(const ChunkPos& cpos, biome_realm realm, std::vector<FeatureInstance>& out)
+static void collect_candidates(World* world, const ChunkPos& cpos, std::vector<FeatureInstance>& out)
 {
     auto cpos_xz = ChunkPosXZ(cpos.x(), cpos.z());
-    auto& cached = collect_cached(realm, cpos_xz);
+    auto& cached = collect_cached(world, cpos_xz);
     out.insert(out.end(), cached.cbegin(), cached.cend());
 }
 
@@ -211,22 +211,20 @@ void feature_placer::shutdown(void)
 
     std::unique_lock lock(s_scatter_mutex);
 
-    for(auto& cache : s_scatter_cache) {
-        cache.clear();
-    }
+    s_scatter_cache.clear();
 }
 
-void feature_placer::commit(BlockStorage& storage, const ChunkPos& cpos, biome_realm realm)
+void feature_placer::commit(World* world, BlockStorage& storage, const ChunkPos& cpos)
 {
     thread_local std::vector<FeatureInstance> candidates;
 
     candidates.clear();
-    collect_candidates(cpos, realm, candidates);
+    collect_candidates(world, cpos, candidates);
 
-    commit(storage, cpos, realm, candidates);
+    commit(world, storage, cpos, candidates);
 }
 
-void feature_placer::commit(BlockStorage& storage, const ChunkPos& cpos, biome_realm realm, std::span<const FeatureInstance> instances)
+void feature_placer::commit(World* world, BlockStorage& storage, const ChunkPos& cpos, std::span<const FeatureInstance> instances)
 {
     for(auto& instance : instances) {
         if(check_intersection(instance, cpos)) {

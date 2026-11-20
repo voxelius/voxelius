@@ -44,8 +44,6 @@ struct BiomePaletteEntry final {
 struct BiomeDefinition {
     BiomeDefinition(void) = default;
 
-    biome_realm realm;
-
     std::uint8_t temperature;
     std::uint8_t humidity;
     std::uint8_t continentalness;

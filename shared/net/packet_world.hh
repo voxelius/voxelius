@@ -28,7 +28,6 @@ struct packet::World_Biomes final : public packet::Base<packet::WORLD_CHUNK_BIOM
     static void encode(const World_Biomes& packet, WriteBuffer& buffer);
     static void decode(World_Biomes& packet, ReadBuffer& buffer);
 
-    biome_realm realm;
     ChunkPosXZ cpos;
     BiomeSlice biomes;
 };

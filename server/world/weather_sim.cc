@@ -241,7 +241,7 @@ static void strike(biome_realm realm, const WeatherTypeDefinition& def)
         return;
     }
 
-    auto column = heightmap::probe_slow(realm, BlockPosXZ(x, z));
+    auto column = heightmap::probe_slow(BlockPosXZ(x, z));
     auto y = static_cast<BlockPos::value_type>(origin.y());
 
     // A strike lands on the surface; without a column to stand on it keeps the player's own height

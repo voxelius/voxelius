@@ -38,14 +38,12 @@ void packet::World_Blocks::decode(World_Blocks& packet, ReadBuffer& buffer)
 
 void packet::World_Biomes::encode(const World_Biomes& packet, WriteBuffer& buffer)
 {
-    buffer.write<std::uint32_t>(static_cast<std::uint32_t>(packet.realm));
     buffer.write_vector<std::int32_t, 2>(packet.cpos.cast<std::int32_t>());
     BiomeSlice::encode(packet.biomes, buffer);
 }
 
 void packet::World_Biomes::decode(World_Biomes& packet, ReadBuffer& buffer)
 {
-    packet.realm = static_cast<biome_realm>(buffer.read<std::uint32_t>());
     packet.cpos = buffer.read_vector<std::int32_t, 2>().cast<ChunkPosXZ::value_type>();
     BiomeSlice::decode(packet.biomes, buffer);
 }

@@ -47,8 +47,6 @@ add_executable(vserver
     "${CMAKE_CURRENT_LIST_DIR}/world/noise_cache_2D.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/noise_cache_3D.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/noise_cache_3D.hh"
-    "${CMAKE_CURRENT_LIST_DIR}/world/realm_sky.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/world/realm_sky.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/realm_surface.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/realm_surface.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/terrain.cc"

@@ -4,7 +4,6 @@
 
 #include "core/utils/modulo.hh"
 
-#include "server/world/realm_sky.hh"
 #include "server/world/realm_surface.hh"
 
 struct HeightmapEntry final {
@@ -13,69 +12,40 @@ struct HeightmapEntry final {
 };
 
 static std::shared_mutex s_mutex;
-static std::array<vx::hash_map<ChunkPosXZ, std::shared_ptr<HeightmapEntry>>, NUM_BIOME_REALMS> s_cache;
+static vx::hash_map<ChunkPosXZ, std::shared_ptr<HeightmapEntry>> s_cache;
 
-static ColumnSlice generate_slice(biome_realm realm, const ChunkPosXZ& pos)
+static std::shared_ptr<HeightmapEntry> find_entry(const ChunkPosXZ& pos)
 {
-    switch(realm) {
-        case BIOME_REALM_SURFACE:
-            return realm_surface::probe(pos);
-
-        case BIOME_REALM_SKY:
-            return realm_sky::probe(pos);
-
-        case BIOME_REALM_UNDERGROUND:
-        case BIOME_REALM_THE_DEPTHS:
-        case BIOME_REALM_VOID:
-            break; // these realms have no heightmap yet
-
-        case BIOME_REALM_COUNT:
-            break; // shut up clang
-    }
-
-    return {};
-}
-
-static std::shared_ptr<HeightmapEntry> find_entry(biome_realm realm, const ChunkPosXZ& pos)
-{
-    auto index = static_cast<std::size_t>(realm);
-    assert(index < NUM_BIOME_REALMS);
-
     std::shared_lock lock(s_mutex);
 
-    auto& cache = s_cache.at(index);
-    auto it = cache.find(pos);
+    auto it = s_cache.find(pos);
 
-    if(it == cache.end()) {
+    if(it == s_cache.end()) {
         return nullptr;
     }
 
     return it->second;
 }
 
-static std::shared_ptr<HeightmapEntry> get_entry(biome_realm realm, const ChunkPosXZ& pos)
+static std::shared_ptr<HeightmapEntry> get_entry(const ChunkPosXZ& pos)
 {
-    if(auto entry = find_entry(realm, pos)) {
+    if(auto entry = find_entry(pos)) {
         return entry;
     }
-
-    auto index = static_cast<std::size_t>(realm);
-    assert(index < NUM_BIOME_REALMS);
 
     std::unique_lock lock(s_mutex);
 
     // Another thread may have inserted this column while this one waited for
     // the exclusive lock. Replacing its entry would free a slice that an
     // in-flight probe still holds a reference to.
-    auto& cache = s_cache.at(index);
-    auto it = cache.find(pos);
+    auto it = s_cache.find(pos);
 
-    if(it != cache.end()) {
+    if(it != s_cache.end()) {
         return it->second;
     }
 
     auto entry = std::make_shared<HeightmapEntry>();
-    cache.emplace(pos, entry);
+    s_cache.emplace(pos, entry);
     return entry;
 }
 
@@ -83,23 +53,21 @@ void heightmap::purge(void)
 {
     std::unique_lock lock(s_mutex);
 
-    for(auto& cache : s_cache) {
-        cache.clear();
-    }
+    s_cache.clear();
 }
 
-const ColumnSlice& heightmap::probe(biome_realm realm, const ChunkPosXZ& pos)
+const ColumnSlice& heightmap::probe(const ChunkPosXZ& pos)
 {
-    auto entry = get_entry(realm, pos);
+    auto entry = get_entry(pos);
 
-    std::call_once(entry->init_flag, [realm, pos, entry] {
-        entry->data = generate_slice(realm, pos);
+    std::call_once(entry->init_flag, [pos, entry] {
+        entry->data = realm_surface::probe(pos);
     });
 
     return entry->data;
 }
 
-const Column& heightmap::probe_slow(biome_realm realm, const BlockPosXZ& pos)
+const Column& heightmap::probe_slow(const BlockPosXZ& pos)
 {
     ChunkPosXZ cpos;
     cpos[0] = static_cast<ChunkPosXZ::value_type>(pos[0] >> constant::CHUNK_SIZE_LOG2);
@@ -110,6 +78,6 @@ const Column& heightmap::probe_slow(biome_realm realm, const BlockPosXZ& pos)
     lpos[1] = static_cast<LocalPosXZ::value_type>(utils::mod_signed<BlockPosXZ::value_type>(pos[1], constant::CHUNK_SIZE));
 
     auto index = static_cast<std::size_t>(lpos[0] + lpos[1] * constant::CHUNK_SIZE);
-    auto& slice = probe(realm, cpos);
+    auto& slice = probe(cpos);
     return slice[index];
 }

@@ -25,8 +25,8 @@ void purge(void);
 
 namespace heightmap
 {
-const Column& probe_slow(biome_realm realm, const BlockPosXZ& pos);
-const ColumnSlice& probe(biome_realm realm, const ChunkPosXZ& pos);
+const Column& probe_slow(const BlockPosXZ& pos);
+const ColumnSlice& probe(const ChunkPosXZ& pos);
 } // namespace heightmap
 
 constexpr bool Column::is_valid(void) const

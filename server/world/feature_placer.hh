@@ -14,8 +14,10 @@ struct FeatureInstance final {
     res::handle<Feature> feature;
 };
 
+class World;
+
 struct PlacementContext final {
-    biome_realm realm;
+    World* world;
     ChunkPos position;
     const BlockStorage* storage;
     std::size_t max_extent;
@@ -53,8 +55,8 @@ void add_rule(AT&&... args);
 
 namespace feature_placer
 {
-void commit(BlockStorage& storage, const ChunkPos& cpos, biome_realm realm);
-void commit(BlockStorage& storage, const ChunkPos& cpos, biome_realm realm, std::span<const FeatureInstance> instances);
+void commit(World* world, BlockStorage& storage, const ChunkPos& cpos);
+void commit(World* world, BlockStorage& storage, const ChunkPos& cpos, std::span<const FeatureInstance> instances);
 } // namespace feature_placer
 
 template<typename T, typename... AT>

@@ -166,9 +166,9 @@ public:
     biome_id_type biome(const ChunkPos& cpos, const LocalPos& lpos) const;
     biome_id_type biome(const BlockPos& pos) const;
 
-    void insert_biomes(biome_realm realm, const ChunkPosXZ& pos, BiomeSlice biomes);
+    void insert_biomes(const ChunkPosXZ& pos, BiomeSlice biomes);
     const BiomeSlice& biomes(const ChunkPos& pos) const;
-    const BiomeSlice& biomes(biome_realm realm, const ChunkPosXZ& pos) const;
+    const BiomeSlice& biomes(const ChunkPosXZ& pos) const;
     biome_id_type biome_slow(const BlockPos& pos) const;
 
     void schedule(const ChunkPos& cpos, const LocalPos& lpos, std::uint64_t deadline, block_tick_source source);

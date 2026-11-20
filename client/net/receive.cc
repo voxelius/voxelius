@@ -125,7 +125,7 @@ static void on_world_blocks(const packet::World_Blocks& packet)
 
 static void on_world_biomes(const packet::World_Biomes& packet)
 {
-    globals::world->insert_biomes(packet.realm, packet.cpos, packet.biomes);
+    globals::world->insert_biomes(packet.cpos, packet.biomes);
 }
 
 static void on_world_light(const packet::World_Light& packet)
