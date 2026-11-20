@@ -25,13 +25,6 @@ Returns the numeric biome ID.
 
 |Field|Type|Required|Default|Description|
 |----|----|----|----|----|
-|`temperature`|`integer`|no|50|Target temperature in climate space, 0 to 99|
-|`humidity`|`integer`|no|50|Target humidity in climate space, 0 to 99|
-|`continentalness`|`integer`|no|50|Target continentalness, 0 to 99. Low values correspond to oceans|
-|`erosion`|`integer`|no|50|Target erosion, 0 to 99. High values are flat terrain, low values are mountainous|
-|`weirdness`|`integer`|no|50|Target weirdness or ridges, 0 to 99. Drives biome variants and peaks-vs-valleys terrain offset|
-|`priority`|`integer`|no|0|If two biomes claim the same climate target during setup, the higher priority keeps the point. The engine nudges the loser until the point becomes unique|
-|`offset`|`number`|no|0|The engine adds this value to climate distance when it picks a biome. Larger values make the biome harder to win and effectively smaller|
 |`palette`|`table`|no|`{}`|Biome block palette|
 |`scatter`|`table[]`|no|`{}`|List of features to scatter|
 |`tints`|`table`|no|`{}`|Tint group override colors|
@@ -70,14 +63,6 @@ The engine evaluates scatter entries in list order. If several entries pass the 
 
 ```lua
 biomes.add("plains", {
-  temperature = 50,
-  humidity = 50,
-  continentalness = 55,
-  erosion = 70,
-  weirdness = 50,
-  priority = 0,
-  offset = 0,
-
   palette = {
     empty = { name = "air" },
     basic = { name = "stone" },
@@ -103,18 +88,8 @@ biomes.add("plains", {
 })
 ```
 
-## Climate / multi-noise
+## Biome selection
 
-Biome placement uses a sparse multi-noise model aligned with Minecraft 1.18+. At generation time the engine samples five continuous climate noises: temperature, humidity, continentalness, erosion, and weirdness. The engine picks a biome whose target point in that space is nearest.
+A biome no longer carries climate coordinates. Instead, a world defines how the engine picks a biome through the `biome_selector` field of `worlds.add`.
 
-During mod loading, each biome defines a nucleation point at its target coordinates (0..99 per axis). If two biomes collide, the higher `priority` keeps the cell. The engine nudges the loser randomly until it gets a free slot.
-
-### Climate axes
-
-|Axis|Terrain role|Biome role|
-|----|------------|----------|
-|Temperature|none|Climate bands, frozen ocean|
-|Humidity|none|Forests, swamps, jungles|
-|Continentalness|Base height, oceans vs land|Ocean / inland biomes|
-|Erosion|Flat vs mountainous relief|Peaks, meadows, shattered terrain|
-|Weirdness|Peaks-and-valleys offset via PV transform|Biome variants|
+The `vox17` generator uses the `nearest` strategy: the engine samples five climate noises (temperature, humidity, continentalness, erosion, and weirdness), then picks the biome whose target point in that space is nearest, weighted per axis. The selector's `entries` list the participating biomes and their target coordinates (0 to 99 per axis); `priority` and `offset` break ties and bias the distance. During world load the engine nudges colliding targets until each is unique.

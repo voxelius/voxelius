@@ -184,56 +184,6 @@ static bool parse_palette(lua_State* L, int palette_idx, BiomeDefinition& def, M
 
 static bool parse_definition(lua_State* L, int def_idx, BiomeDefinition& def, ModContext* ctx)
 {
-    const std::array climate_fields = {
-        std::make_pair("temperature", &def.temperature),
-        std::make_pair("humidity", &def.humidity),
-        std::make_pair("continentalness", &def.continentalness),
-        std::make_pair("erosion", &def.erosion),
-        std::make_pair("weirdness", &def.weirdness),
-    };
-
-    for(const auto& [field_name, field_ptr] : climate_fields) {
-        lua_getfield(L, def_idx, field_name);
-
-        if(!lua_isnil(L, -1)) {
-            auto value = utils::require_integer(L, -1);
-
-            if(!value.has_value()) {
-                return false;
-            }
-
-            if(value.value() < 0 || value.value() > 99) {
-                lua_pushliteral(L, "climate value out of range [0..99]");
-                return false;
-            }
-
-            field_ptr[0] = static_cast<std::uint8_t>(value.value());
-        }
-
-        lua_pop(L, 1);
-    }
-
-    auto priority = utils::opt_integer(L, def_idx, "priority", 0);
-
-    if(!priority.has_value()) {
-        return false;
-    }
-
-    if(priority.value() < 0) {
-        lua_pushliteral(L, "priority must be non-negative");
-        return false;
-    }
-
-    def.priority = static_cast<unsigned>(priority.value());
-
-    auto offset = utils::opt_number(L, def_idx, "offset", 0.0);
-
-    if(!offset.has_value()) {
-        return false;
-    }
-
-    def.offset = static_cast<float>(offset.value());
-
     lua_getfield(L, def_idx, "palette");
 
     if(!lua_isnil(L, -1)) {
@@ -336,15 +286,6 @@ static bool add_biome(lua_State* L, ModContext* ctx, const char* raw_name, int d
     id = make_unique_id(id, ctx);
 
     BiomeDefinition def {};
-
-    def.temperature = 50;
-    def.humidity = 50;
-    def.continentalness = 50;
-    def.erosion = 50;
-    def.weirdness = 50;
-    def.offset = 0.0f;
-
-    def.priority = 0;
 
     if(!parse_definition(L, def_idx, def, ctx)) {
         return false;

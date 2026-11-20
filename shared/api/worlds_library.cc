@@ -259,6 +259,226 @@ static bool parse_visuals(lua_State* L, int base, int table_idx, WorldVisuals& o
     return true;
 }
 
+static bool parse_string_list(lua_State* L, int base, int table_idx, const char* key, std::vector<std::string>& out)
+{
+    lua_getfield(L, table_idx, key);
+
+    if(lua_isnoneornil(L, -1)) {
+        lua_pop(L, 1);
+        return true;
+    }
+
+    if(!lua_istable(L, -1)) {
+        return fail(L, base, "biome_selector axes must be a table");
+    }
+
+    auto count = static_cast<std::size_t>(lua_rawlen(L, -1));
+
+    for(std::size_t i = 0; i < count; ++i) {
+        lua_rawgeti(L, -1, static_cast<lua_Integer>(i + 1));
+
+        auto value = utils::require_string(L, -1);
+
+        if(!value.has_value()) {
+            return fail(L, base, "biome_selector axes entry must be a string");
+        }
+
+        out.emplace_back(value.value());
+
+        lua_pop(L, 1);
+    }
+
+    lua_pop(L, 1);
+    return true;
+}
+
+static bool parse_number_list(lua_State* L, int base, int table_idx, const char* key, std::vector<float>& out)
+{
+    lua_getfield(L, table_idx, key);
+
+    if(lua_isnoneornil(L, -1)) {
+        lua_pop(L, 1);
+        return true;
+    }
+
+    if(!lua_istable(L, -1)) {
+        return fail(L, base, "biome_selector weights must be a table");
+    }
+
+    auto count = static_cast<std::size_t>(lua_rawlen(L, -1));
+
+    for(std::size_t i = 0; i < count; ++i) {
+        lua_rawgeti(L, -1, static_cast<lua_Integer>(i + 1));
+
+        auto value = utils::require_number(L, -1);
+
+        if(!value.has_value()) {
+            return fail(L, base, "biome_selector weights entry must be a number");
+        }
+
+        out.emplace_back(static_cast<float>(value.value()));
+
+        lua_pop(L, 1);
+    }
+
+    lua_pop(L, 1);
+    return true;
+}
+
+static bool parse_target_list(lua_State* L, int base, int target_idx, std::vector<std::uint8_t>& out)
+{
+    auto count = static_cast<std::size_t>(lua_rawlen(L, target_idx));
+    out.reserve(count);
+
+    for(std::size_t i = 0; i < count; ++i) {
+        lua_rawgeti(L, target_idx, static_cast<lua_Integer>(i + 1));
+
+        auto value = utils::require_integer(L, -1);
+
+        if(!value.has_value()) {
+            return fail(L, base, "biome_selector target entry must be an integer");
+        }
+
+        if(value.value() < 0 || value.value() > 99) {
+            return fail(L, base, "biome_selector target value out of range [0..99]");
+        }
+
+        out.emplace_back(static_cast<std::uint8_t>(value.value()));
+
+        lua_pop(L, 1);
+    }
+
+    return true;
+}
+
+static bool parse_nearest_selector(lua_State* L, int base, int sel_idx, const ModContext* ctx, BiomeSelector& selector)
+{
+    if(!parse_string_list(L, base, sel_idx, "axes", selector.axes)) {
+        return false;
+    }
+
+    if(!parse_number_list(L, base, sel_idx, "weights", selector.weights)) {
+        return false;
+    }
+
+    lua_getfield(L, sel_idx, "entries");
+
+    if(!lua_istable(L, -1)) {
+        return fail(L, base, "biome_selector entries must be a table");
+    }
+
+    auto entries_idx = lua_gettop(L);
+    auto count = static_cast<std::size_t>(lua_rawlen(L, entries_idx));
+
+    selector.entries.reserve(count);
+
+    for(std::size_t i = 0; i < count; ++i) {
+        lua_rawgeti(L, entries_idx, static_cast<lua_Integer>(i + 1));
+
+        auto entry_idx = lua_gettop(L);
+
+        if(!lua_istable(L, entry_idx)) {
+            return fail(L, base, "biome_selector entry must be a table");
+        }
+
+        auto biome = utils::require_string(L, entry_idx, "biome");
+
+        if(!biome.has_value()) {
+            return fail(L, base, "biome_selector entry biome must be a string");
+        }
+
+        BiomeSelector::Entry entry {};
+        entry.biome_name = Identifier::from_string(biome.value(), ctx->name_space());
+
+        lua_getfield(L, entry_idx, "target");
+
+        if(!lua_istable(L, -1)) {
+            return fail(L, base, "biome_selector entry target must be a table");
+        }
+
+        auto target_idx = lua_gettop(L);
+
+        if(!parse_target_list(L, base, target_idx, entry.target)) {
+            return false;
+        }
+
+        lua_pop(L, 1);
+
+        auto priority = utils::opt_integer(L, entry_idx, "priority", 0);
+
+        if(!priority.has_value() || priority.value() < 0) {
+            return fail(L, base, "biome_selector entry priority must be non-negative");
+        }
+
+        entry.priority = static_cast<unsigned>(priority.value());
+
+        auto offset = utils::opt_number(L, entry_idx, "offset", 0.0);
+
+        if(!offset.has_value()) {
+            return fail(L, base, "biome_selector entry offset must be a number");
+        }
+
+        entry.offset = static_cast<float>(offset.value());
+
+        selector.entries.push_back(std::move(entry));
+
+        lua_pop(L, 1);
+    }
+
+    lua_pop(L, 1);
+    return true;
+}
+
+static bool parse_biome_selector(lua_State* L, int base, int table_idx, const ModContext* ctx, BiomeSelector& selector)
+{
+    lua_getfield(L, table_idx, "biome_selector");
+
+    if(lua_isnoneornil(L, -1)) {
+        lua_pop(L, 1);
+        return true;
+    }
+
+    if(!lua_istable(L, -1)) {
+        return fail(L, base, "biome_selector must be a table");
+    }
+
+    auto sel_idx = lua_gettop(L);
+
+    auto strategy = utils::opt_integer(L, sel_idx, "strategy", static_cast<lua_Integer>(BIOME_SELECTION_CONSTANT));
+
+    if(!strategy.has_value()) {
+        return fail(L, base, "biome_selector strategy must be an integer");
+    }
+
+    if(strategy.value() == BIOME_SELECTION_NEAREST) {
+        selector.strategy = BIOME_SELECTION_NEAREST;
+
+        if(!parse_nearest_selector(L, base, sel_idx, ctx, selector)) {
+            return false;
+        }
+    }
+    else if(strategy.value() == BIOME_SELECTION_CONSTANT) {
+        selector.strategy = BIOME_SELECTION_CONSTANT;
+
+        auto biome = utils::require_string(L, sel_idx, "biome");
+
+        if(!biome.has_value()) {
+            return fail(L, base, "biome_selector constant biome must be a string");
+        }
+
+        selector.constant_biome_name = Identifier::from_string(biome.value(), ctx->name_space());
+    }
+    else if(strategy.value() == BIOME_SELECTION_GRID) {
+        return fail(L, base, "biome_selector grid strategy is not implemented");
+    }
+    else {
+        return fail(L, base, "biome_selector unknown strategy");
+    }
+
+    lua_pop(L, 1);
+    return true;
+}
+
 static int api_add(lua_State* L)
 {
     auto ctx = static_cast<ModContext*>(lua_touserdata(L, lua_upvalueindex(1)));
@@ -338,7 +558,7 @@ static int api_add(lua_State* L)
 
     definition->spawn = BlockPos(spawn->x(), spawn->y(), spawn->z());
 
-    if(!parse_name_list(L, base, 2, "biomes", ctx, definition->biome_names)) {
+    if(!parse_biome_selector(L, base, 2, ctx, definition->biome_selector)) {
         world_registry::remove(id);
         return lua_error(L);
     }
@@ -364,6 +584,13 @@ void api::open_worlds_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
     auto L = lua.get();
 
     lua_newtable(L); // worlds
+
+    lua_pushinteger(L, BIOME_SELECTION_NEAREST);
+    lua_setfield(L, -2, "SELECTION_NEAREST");
+    lua_pushinteger(L, BIOME_SELECTION_GRID);
+    lua_setfield(L, -2, "SELECTION_GRID");
+    lua_pushinteger(L, BIOME_SELECTION_CONSTANT);
+    lua_setfield(L, -2, "SELECTION_CONSTANT");
 
     lua_pushlightuserdata(L, ctx);
     lua_pushcclosure(L, &api_add, 1);

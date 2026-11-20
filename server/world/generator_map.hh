@@ -7,6 +7,7 @@ struct GeneratorDefinition final {
     std::shared_ptr<void> (*attach)(ServerWorld* world);
     ColumnSlice (*probe)(ServerWorld* world, const ChunkPosXZ& pos);
     bool (*generate)(ServerWorld* world, const ChunkPos& pos, BlockStorage& blocks, BiomeSlice& biomes);
+    void (*fill_biomes)(ServerWorld* world, const ChunkPosXZ& pos, BiomeSlice& out);
 };
 
 namespace generator_map::detail
@@ -32,6 +33,7 @@ void generator_map::add(std::string_view name)
     definition.attach = &Generator<T>::attach;
     definition.probe = &Generator<T>::probe;
     definition.generate = &Generator<T>::generate;
+    definition.fill_biomes = &Generator<T>::fill_biomes;
 
     detail::add(name, definition);
 }

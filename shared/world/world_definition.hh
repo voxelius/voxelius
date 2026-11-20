@@ -4,7 +4,7 @@
 #include "core/identifier.hh"
 
 #include "shared/coord.hh"
-#include "shared/world/biome.hh"
+#include "shared/world/biome_selector.hh"
 #include "shared/world/weather.hh"
 
 struct WorldVisuals final {
@@ -56,8 +56,8 @@ struct WorldDefinition final {
 
     WorldVisuals visuals;
 
-    std::vector<Identifier> biome_names;
-    std::vector<biome_id_type> biomes;
+    BiomeSelector biome_selector;
+
     std::vector<Identifier> weather_names;
     std::vector<weather_type_id> weather;
 };

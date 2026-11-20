@@ -13,6 +13,7 @@ struct Generator final {
     static std::shared_ptr<void> attach(ServerWorld* world);
     static ColumnSlice probe(ServerWorld* world, const ChunkPosXZ& pos);
     static bool generate(ServerWorld* world, const ChunkPos& pos, BlockStorage& blocks, BiomeSlice& biomes);
+    static void fill_biomes(ServerWorld* world, const ChunkPosXZ& pos, BiomeSlice& out);
 };
 
 #endif /* D5A7C9E1_3F2B_4D6A_8C0E_1B3D5F7A9C81 */

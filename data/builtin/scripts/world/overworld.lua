@@ -43,13 +43,24 @@ worlds.add("overworld", {
     "thunderstorm",
   },
 
-  biomes = {
-    "surface_beach",
-    "surface_desert",
-    "surface_forest_oak",
-    "surface_forest_pine",
-    "surface_hills_grassy",
-    "surface_hills_rocky",
-    "surface_plains",
+  biome_selector = {
+    strategy = worlds.SELECTION_NEAREST,
+    axes = {
+      "temperature",
+      "humidity",
+      "continentalness",
+      "erosion",
+      "weirdness",
+    },
+    weights = { 1.0, 1.0, 0.75, 1.0, 1.5 },
+    entries = {
+      { biome = "surface_beach",        target = { 60, 60, 35, 80, 50 } },
+      { biome = "surface_desert",       target = { 80, 20, 60, 65, 50 } },
+      { biome = "surface_forest_oak",   target = { 50, 70, 55, 60, 45 } },
+      { biome = "surface_forest_pine",  target = { 25, 55, 60, 50, 55 } },
+      { biome = "surface_hills_grassy", target = { 40, 50, 70, 25, 50 } },
+      { biome = "surface_hills_rocky",  target = { 30, 40, 75, 15, 50 } },
+      { biome = "surface_plains",       target = { 50, 55, 55, 70, 50 } },
+    },
   },
 })

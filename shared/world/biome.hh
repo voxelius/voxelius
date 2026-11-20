@@ -33,15 +33,6 @@ struct BiomePaletteEntry final {
 struct BiomeDefinition {
     BiomeDefinition(void) = default;
 
-    std::uint8_t temperature;
-    std::uint8_t humidity;
-    std::uint8_t continentalness;
-    std::uint8_t erosion;
-    std::uint8_t weirdness;
-
-    unsigned priority;
-    float offset;
-
     BiomePaletteEntry palette_basic;
     BiomePaletteEntry palette_filler;
     BiomePaletteEntry palette_surface;

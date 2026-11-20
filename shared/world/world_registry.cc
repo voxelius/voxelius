@@ -100,13 +100,21 @@ void world_registry::resolve(void)
             full_id, definition->directory);
         vx::throw_if_not_fmt(definition->min_y <= definition->max_y, "world {}: min_y is greater than max_y", full_id);
 
-        definition->biomes.clear();
+        auto& selector = definition->biome_selector;
 
-        for(const auto& name : definition->biome_names) {
-            auto biome = biome_registry::find(name);
-            vx::throw_if_not_fmt(biome, "world {}: unknown biome {}", full_id, name.full_string());
-            definition->biomes.push_back(biome);
+        for(auto& entry : selector.entries) {
+            auto biome = biome_registry::find(entry.biome_name);
+            vx::throw_if_not_fmt(biome, "world {}: unknown biome {}", full_id, entry.biome_name.full_string());
+            entry.biome = biome;
         }
+
+        if(selector.strategy == BIOME_SELECTION_CONSTANT && selector.constant_biome_name.is_valid()) {
+            auto biome = biome_registry::find(selector.constant_biome_name);
+            vx::throw_if_not_fmt(biome, "world {}: unknown biome {}", full_id, selector.constant_biome_name.full_string());
+            selector.constant_biome = biome;
+        }
+
+        selector.finalize();
 
         definition->weather.clear();
 

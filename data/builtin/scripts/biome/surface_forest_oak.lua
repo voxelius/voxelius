@@ -1,10 +1,4 @@
 biomes.add("surface_forest_oak", {
-  temperature = 50,
-  humidity = 70,
-  continentalness = 55,
-  erosion = 60,
-  weirdness = 45,
-
   palette = {
     basic = { name = "stone" },
     filler = { name = "dirt" },

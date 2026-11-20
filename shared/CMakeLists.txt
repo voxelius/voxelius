@@ -96,6 +96,8 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/world/biome_map.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/biome_registry.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/biome_registry.hh"
+    "${CMAKE_CURRENT_LIST_DIR}/world/biome_selector.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/world/biome_selector.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/biome_slice.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/biome_slice.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/biome.hh"

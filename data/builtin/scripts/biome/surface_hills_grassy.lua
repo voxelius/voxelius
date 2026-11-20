@@ -1,10 +1,4 @@
 biomes.add("surface_hills_grassy", {
-  temperature = 40,
-  humidity = 50,
-  continentalness = 70,
-  erosion = 25,
-  weirdness = 50,
-
   palette = {
     basic = { name = "stone" },
     filler = { name = "dirt" },
