@@ -1,6 +1,4 @@
 biomes.add("surface_hills_rocky", {
-  realm = biomes.REALM_SURFACE,
-
   temperature = 30,
   humidity = 40,
   continentalness = 75,

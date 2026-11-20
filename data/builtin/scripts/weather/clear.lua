@@ -1,6 +1,4 @@
 weather.add("clear", {
-  realms = { weather.REALM_SURFACE, weather.REALM_SKY },
-
   intensity = 0.22,
   sky_tint = { 0.42, 0.60, 0.92 },
   sky_visibility = 1.0,

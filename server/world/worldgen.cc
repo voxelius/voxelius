@@ -5,7 +5,6 @@
 #include "core/threading.hh"
 
 #include "shared/globals.hh"
-#include "shared/utils/biome.hh"
 #include "shared/world/biome_map.hh"
 #include "shared/world/biome_slice.hh"
 #include "shared/world/chunk.hh"

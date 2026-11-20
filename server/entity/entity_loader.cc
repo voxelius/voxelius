@@ -9,7 +9,6 @@
 #include "shared/entity/class_registry.hh"
 #include "shared/entity/component_map.hh"
 #include "shared/globals.hh"
-#include "shared/utils/biome.hh"
 #include "shared/utils/entity.hh"
 #include "shared/world/world.hh"
 

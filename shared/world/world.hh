@@ -119,8 +119,8 @@ public:
     void load_config(void);
     void save_config(void);
 
-    constexpr std::array<WeatherRealmState, NUM_BIOME_REALMS>& weather(void);
-    constexpr const std::array<WeatherRealmState, NUM_BIOME_REALMS>& weather(void) const;
+    constexpr WeatherState& weather(void);
+    constexpr const WeatherState& weather(void) const;
 
 public:
     std::shared_ptr<Chunk> create_chunk(const ChunkPos& pos);
@@ -184,7 +184,7 @@ private:
     entt::registry m_registry;
     entt::registry m_chunk_registry;
     BiomeMap m_biomes;
-    std::array<WeatherRealmState, NUM_BIOME_REALMS> m_weather {};
+    WeatherState m_weather {};
     config::Map m_config;
     std::filesystem::path m_root;
     std::filesystem::path m_chunk_dir;
@@ -236,12 +236,12 @@ constexpr const std::filesystem::path& World::entity_dir(void) const
     return m_entity_dir;
 }
 
-constexpr std::array<WeatherRealmState, NUM_BIOME_REALMS>& World::weather(void)
+constexpr WeatherState& World::weather(void)
 {
     return m_weather;
 }
 
-constexpr const std::array<WeatherRealmState, NUM_BIOME_REALMS>& World::weather(void) const
+constexpr const WeatherState& World::weather(void) const
 {
     return m_weather;
 }

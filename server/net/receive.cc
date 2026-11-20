@@ -10,7 +10,6 @@
 #include "shared/net/protocol.hh"
 #include "shared/physics/physics.hh"
 #include "shared/system/pmove.hh"
-#include "shared/utils/biome.hh"
 #include "shared/utils/coord.hh"
 #include "shared/utils/world.hh"
 #include "shared/world/biome_map.hh"

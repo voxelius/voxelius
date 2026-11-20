@@ -3,8 +3,6 @@
 
 #include "core/identifier.hh"
 
-#include "shared/world/biome.hh"
-
 namespace packet
 {
 struct World_Info;
@@ -54,7 +52,6 @@ struct WeatherCallback final {
 struct WeatherTypeDefinition final {
     Identifier name;
     weather_type_id id { WEATHER_ID_NULL };
-    std::uint32_t realms_bits { 0 }; // A type is only ever selected in the realms these bits name
 
     CloudBody cloud;
 
@@ -82,7 +79,7 @@ struct WeatherField final {
     std::uint32_t seed { 0 };
 };
 
-struct WeatherRealmState final {
+struct WeatherState final {
     // One field picks the type, the other one drives how strong it
     // is right here. Both drift with the wind and are rebuilt from a
     // seed on both sides, so no per-cell data travels over the network
@@ -90,6 +87,8 @@ struct WeatherRealmState final {
     WeatherField detail;
 
     Eigen::Vector2f wind { Eigen::Vector2f::Zero() };
+    Eigen::Vector2f wind_direction { Eigen::Vector2f::Zero() };
+    float strike_budget { 0.0f };
 };
 
 struct WeatherBlend final {
@@ -101,19 +100,14 @@ struct WeatherBlend final {
 
 namespace weather
 {
-std::span<WeatherRealmState, NUM_BIOME_REALMS> states(void);
-} // namespace weather
-
-namespace weather
-{
-WeatherRealmState& state(biome_realm realm);
+WeatherState& state(void);
 } // namespace weather
 
 namespace weather
 {
 void reset(void);
 void advance(float delta_time);
-void force_at(biome_realm realm, weather_type_id type, float x, float z);
+void force_at(weather_type_id type, float x, float z);
 } // namespace weather
 
 namespace weather
@@ -124,21 +118,21 @@ float cell_random(std::int32_t x, std::int32_t z, std::uint32_t seed);
 
 namespace weather
 {
-weather_type_id type_at(biome_realm realm, float x, float z);
-float type_weight(biome_realm realm, weather_type_id type, float x, float z);
-float coverage_of(biome_realm realm, weather_type_id type, float x, float z);
-float coverage(biome_realm realm, float x, float z);
+weather_type_id type_at(float x, float z);
+float type_weight(weather_type_id type, float x, float z);
+float coverage_of(weather_type_id type, float x, float z);
+float coverage(float x, float z);
 } // namespace weather
 
 namespace weather
 {
-float type_weight_in_field(const WeatherRealmState& state, biome_realm realm, weather_type_id type, float fx, float fz);
-float coverage_in_field(const WeatherRealmState& state, biome_realm realm, weather_type_id type, float fx, float fz);
+float type_weight_in_field(const WeatherState& state, weather_type_id type, float fx, float fz);
+float coverage_in_field(const WeatherState& state, weather_type_id type, float fx, float fz);
 } // namespace weather
 
 namespace weather
 {
-WeatherBlend blend(biome_realm realm, float x, float z);
+WeatherBlend blend(float x, float z);
 WeatherBlend blend_overhead(float x, float y, float z);
 WeatherBlend blend_region(float x, float y, float z, float radius);
 } // namespace weather

@@ -1,6 +1,4 @@
 biomes.add("surface_beach", {
-  realm = biomes.REALM_SURFACE,
-
   temperature = 60,
   humidity = 60,
   continentalness = 35,

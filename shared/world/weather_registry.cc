@@ -38,7 +38,6 @@ static void update_checksum(void)
 
         hash_trivial(hash, name.data(), name.size());
 
-        hash_value(hash, def.realms_bits);
         hash_value(hash, def.weight);
         hash_value(hash, def.intensity);
         hash_value(hash, def.sky_tint);
@@ -200,13 +199,12 @@ weather_type_id weather_registry::resolve(std::string_view name)
     return WEATHER_ID_NULL;
 }
 
-bool weather_registry::type_interval(biome_realm realm, weather_type_id type, float& start, float& end)
+bool weather_registry::type_interval(weather_type_id type, float& start, float& end)
 {
-    auto bit = 1U << static_cast<unsigned>(realm);
     std::uint32_t total = 0;
 
     for(const auto& def : s_definitions) {
-        if(def.id && (def.realms_bits & bit)) {
+        if(def.id) {
             total += std::max<std::uint32_t>(def.weight, 1);
         }
     }
@@ -218,7 +216,7 @@ bool weather_registry::type_interval(biome_realm realm, weather_type_id type, fl
     std::uint32_t offset = 0;
 
     for(const auto& def : s_definitions) {
-        if(def.id == WEATHER_ID_NULL || 0 == (def.realms_bits & bit)) {
+        if(def.id == WEATHER_ID_NULL) {
             continue;
         }
 

@@ -52,9 +52,8 @@ static GLuint s_vao[2];
 static GLuint s_vbo[2];
 static GLuint s_ibo[2];
 
-// A realm's field drifts on its own, so a deck is anchored to the drift of
-// the realm its layer sits in. The camera realm plays no part: crossing into
-// another realm must not resample a deck that belongs to a different one
+// A deck is anchored to the field drift at the time it was built, so a
+// rebuild resamples only the cells that slid in at the window's edge
 struct CloudDrift final {
     Eigen::Vector2f anchor { Eigen::Vector2f::Zero() };
     Eigen::Vector2f offset { Eigen::Vector2f::Zero() };
@@ -64,8 +63,8 @@ struct CloudDrift final {
 static CloudMesh s_meshes[2];
 static std::size_t s_front;
 static std::vector<CloudGroup> s_groups;
-static std::array<CloudDrift, NUM_BIOME_REALMS> s_drift;
-static std::array<Eigen::Vector2f, NUM_BIOME_REALMS> s_last_build_offset;
+static CloudDrift s_drift;
+static Eigen::Vector2f s_last_build_offset;
 static std::uint64_t s_state_signature;
 static std::uint64_t s_generation;
 static Eigen::Vector3f s_last_build_center { Eigen::Vector3f::Zero() };
@@ -104,17 +103,16 @@ static void upload_mesh(const CloudMesh& mesh, std::size_t slot)
 static std::uint64_t state_signature(void)
 {
     std::uint64_t hash = 0;
+    auto& state = weather::state();
 
-    for(auto& state : weather::states()) {
-        hash ^= static_cast<std::uint64_t>((state.types.drift.x() + 4096.0f) / 16.0f);
-        hash ^= static_cast<std::uint64_t>((state.types.drift.y() + 4096.0f) / 16.0f) << 1;
-        hash ^= static_cast<std::uint64_t>(state.types.scale) << 2;
-        hash ^= static_cast<std::uint64_t>(state.types.seed) << 3;
-        hash ^= static_cast<std::uint64_t>((state.detail.drift.x() + 4096.0f) / 16.0f) << 4;
-        hash ^= static_cast<std::uint64_t>((state.detail.drift.y() + 4096.0f) / 16.0f) << 5;
-        hash ^= static_cast<std::uint64_t>(state.detail.scale) << 6;
-        hash ^= static_cast<std::uint64_t>(state.detail.seed) << 7;
-    }
+    hash ^= static_cast<std::uint64_t>((state.types.drift.x() + 4096.0f) / 16.0f);
+    hash ^= static_cast<std::uint64_t>((state.types.drift.y() + 4096.0f) / 16.0f) << 1;
+    hash ^= static_cast<std::uint64_t>(state.types.scale) << 2;
+    hash ^= static_cast<std::uint64_t>(state.types.seed) << 3;
+    hash ^= static_cast<std::uint64_t>((state.detail.drift.x() + 4096.0f) / 16.0f) << 4;
+    hash ^= static_cast<std::uint64_t>((state.detail.drift.y() + 4096.0f) / 16.0f) << 5;
+    hash ^= static_cast<std::uint64_t>(state.detail.scale) << 6;
+    hash ^= static_cast<std::uint64_t>(state.detail.seed) << 7;
 
     return hash;
 }
@@ -130,44 +128,39 @@ static bool needs_rebuild(void)
         return true;
     }
 
-    // The mesh is only re-evaluated when a field has drifted far
+    // The mesh is only re-evaluated when the field has drifted far
     // enough for its window to slide a cell; the wind offset alone
-    // keeps the deck moving in between, and every deck is sampled in
-    // the frame of its own realm, so a rebuild does not reshuffle cubes
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        if((s_drift[i].offset - s_last_build_offset[i]).norm() > cloud_field::fine_cell_blocks() * 2.0f) {
-            return true;
-        }
+    // keeps the deck moving in between, and the deck is sampled in
+    // the frame of the build, so a rebuild does not reshuffle cubes
+    if((s_drift.offset - s_last_build_offset).norm() > cloud_field::fine_cell_blocks() * 2.0f) {
+        return true;
     }
 
     return s_state_signature != state_signature();
 }
 
-// Every deck is sampled in the weather field of its own realm and drawn
-// with that field's drift, so the cubes keep the shape the field gave
-// them while the front travels. Driving the offset from the locally
-// integrated wind instead lets the two slowly disagree, and the next
-// rebuild then swaps a whole swath of the deck at once
+// The deck is sampled in the weather field and drawn with that field's
+// drift, so the cubes keep the shape the field gave them while the front
+// travels. Driving the offset from the locally integrated wind instead lets
+// the two slowly disagree, and the next rebuild then swaps a whole swath of
+// the deck at once
 static void advance_wind_offsets(void)
 {
     auto step = 1.0f - std::exp(-WIND_EASE_PER_SECOND * std::min(globals::window_frametime, 0.1f));
+    auto& state = weather::state();
+    auto& drift = s_drift;
 
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        auto& state = weather::state(static_cast<biome_realm>(i));
-        auto& drift = s_drift[i];
-
-        if(!drift.anchored) {
-            drift.anchor = state.types.drift - drift.offset;
-            drift.anchored = true;
-        }
-
-        // A packet that moves the field somewhere else, such as a forced front, must not
-        // teleport the deck across the sky; a short ease turns it into a slide. Ordinary
-        // drift moves at a couple of blocks per second, so the lag this adds is under a block
-        auto target = state.types.drift - drift.anchor;
-
-        drift.offset += (target - drift.offset) * step;
+    if(!drift.anchored) {
+        drift.anchor = state.types.drift - drift.offset;
+        drift.anchored = true;
     }
+
+    // A packet that moves the field somewhere else, such as a forced front, must not
+    // teleport the deck across the sky; a short ease turns it into a slide. Ordinary
+    // drift moves at a couple of blocks per second, so the lag this adds is under a block
+    auto target = state.types.drift - drift.anchor;
+
+    drift.offset += (target - drift.offset) * step;
 }
 
 static void update_depth_range(float radius)
@@ -255,16 +248,13 @@ static void submit_build(void)
     update_depth_range(radius);
 
     CloudInput input {};
-    auto states = weather::states();
-    std::copy(states.begin(), states.end(), input.states.begin());
+    input.state = weather::state();
+    input.anchor = s_drift.anchor;
+    input.offset = s_drift.offset;
     input.center = camera_position;
     input.radius = radius;
 
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        input.anchors[i] = s_drift[i].anchor;
-        input.offsets[i] = s_drift[i].offset;
-        s_last_build_offset[i] = s_drift[i].offset;
-    }
+    s_last_build_offset = s_drift.offset;
 
     s_groups.clear();
     cloud_field::collect_groups(camera_position.y(), s_groups);
@@ -354,8 +344,8 @@ void cloud_renderer::shutdown(void)
 
 void cloud_renderer::reset(void)
 {
-    s_drift.fill(CloudDrift {});
-    s_last_build_offset.fill(Eigen::Vector2f::Zero());
+    s_drift = CloudDrift {};
+    s_last_build_offset = Eigen::Vector2f::Zero();
     s_generation += 1;
     s_building = false;
     s_front = 0;
@@ -426,12 +416,10 @@ void cloud_renderer::render(void)
 
     for(const auto& batch : mesh.batches) {
         auto offset = reinterpret_cast<const void*>(batch.offset * sizeof(std::uint32_t));
-        auto& drift = s_drift[static_cast<std::size_t>(batch.realm)];
 
-        // Each deck rides the drift of its own realm, and each ring has its own
-        // fade; only the one at the deck's edge dissolves
+        // Each ring has its own fade; only the one at the deck's edge dissolves
         glUniform2fv(s_program.uniforms[su_DeckCenter].location, 1, batch.center.data());
-        glUniform3f(s_program.uniforms[su_WindOffset].location, drift.offset.x(), 0.0f, drift.offset.y());
+        glUniform3f(s_program.uniforms[su_WindOffset].location, s_drift.offset.x(), 0.0f, s_drift.offset.y());
         glUniform1f(s_program.uniforms[su_FadeDistance].location, batch.fade);
         glUniform2f(s_program.uniforms[su_BlendRange].location, batch.blend_start, batch.blend_width);
         glUniform1f(s_program.uniforms[su_DepthBias].location, batch.depth_bias);

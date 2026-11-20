@@ -236,7 +236,6 @@ static void mesh_ring(CloudMesh& mesh, const CloudInput& input, const CloudGroup
         CloudBatch batch {};
         batch.offset = offset;
         batch.count = count;
-        batch.realm = group.realm;
         batch.center = Eigen::Vector2f(deck.center.x(), deck.center.z());
         batch.fade = fade;
         batch.blend_start = outer - blend_width;

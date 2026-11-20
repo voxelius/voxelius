@@ -25,11 +25,10 @@ struct CloudColumn final {
 // One cloud body of one weather type in one ring, with everything the mesher
 // needs worked out once.
 struct CloudDeck final {
-    biome_realm realm;
     weather_type_id type;
     CloudBody body;
-    const WeatherRealmState* state;
-    Eigen::Vector2f anchor; // Field drift of this deck's own realm, taken when the deck was anchored
+    const WeatherState* state;
+    Eigen::Vector2f anchor; // Field drift when the deck was anchored
     Eigen::Vector3f center; // World point the window is meshed around, in the frame the vertices use
     float cell;
     float height;
@@ -44,7 +43,6 @@ struct CloudDeck final {
 // A cloud body that is actually built, with the distance it sits at from the
 // camera; the mesher draws the farthest first.
 struct CloudGroup final {
-    biome_realm realm;
     weather_type_id type;
     // A copy, because the registry may grow between the sort and the build
     CloudBody body;
@@ -52,12 +50,11 @@ struct CloudGroup final {
 };
 
 // Everything a worker needs: a copy of the field state and the frame the
-// window belongs to. Each realm drifts on its own, so every deck is anchored
-// and moved by the realm its layer sits in, never by the camera's realm
+// window belongs to
 struct CloudInput final {
-    std::array<WeatherRealmState, NUM_BIOME_REALMS> states;
-    std::array<Eigen::Vector2f, NUM_BIOME_REALMS> anchors;
-    std::array<Eigen::Vector2f, NUM_BIOME_REALMS> offsets;
+    WeatherState state;
+    Eigen::Vector2f anchor;
+    Eigen::Vector2f offset;
     Eigen::Vector3f center;
     float radius;
 };

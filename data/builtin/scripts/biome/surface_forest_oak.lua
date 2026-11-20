@@ -1,6 +1,4 @@
 biomes.add("surface_forest_oak", {
-  realm = biomes.REALM_SURFACE,
-
   temperature = 50,
   humidity = 70,
   continentalness = 55,

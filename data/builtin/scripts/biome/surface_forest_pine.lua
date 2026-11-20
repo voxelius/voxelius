@@ -1,6 +1,4 @@
 biomes.add("surface_forest_pine", {
-  realm = biomes.REALM_SURFACE,
-
   temperature = 25,
   humidity = 55,
   continentalness = 60,

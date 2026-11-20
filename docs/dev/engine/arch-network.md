@@ -113,7 +113,7 @@ The client sends `RequestChunk` every fixed tick with the chunk-aligned view it 
 
 ##### World info
 
-The server sends `World_Info` once, right after admission. It carries the universe seed, the seed the client builds its star field from and, per realm, the weather grid seeds and scales. These values never change for a world, so the periodic packets do not repeat them. The length of a day is not here: it is the replicated server variable `sv_day_length`, so a change reaches every connected client without another packet.
+The server sends `World_Info` once, right after admission. It carries the universe seed, the seed the client builds its star field from and the weather grid seeds and scales. These values never change for a world, so the periodic packets do not repeat them. The length of a day is not here: it is the replicated server variable `sv_day_length`, so a change reaches every connected client without another packet.
 
 ##### Time
 
@@ -121,7 +121,7 @@ The server owns the world clock. It increments `current_tick` and `daylight_tick
 
 ##### Weather
 
-Weather is a realm-wide state rather than a stream of entities. The server drifts two noise grids per realm (one picks the type, one the local strength) and sends `World_Weather` to every admitted client once a second. The packet carries four drift pairs and four wind vectors; the seeds and scales arrived once in `World_Info`, so there is nothing constant to repeat. Both sides also advance the drift themselves every frame, so the packet only anchors the field: the client keeps its own continuous drift and snaps to the packet only when the two disagree by more than a chunk, which is what a forced front looks like. The replicated `gr_weather_cycle` gamerule freezes that local advance on both sides. The first weather packet of a connection is special only on the client: the client keeps a local flag and takes that drift whole, then rebuilds the cloud deck instead of sliding the old one towards it. The type definitions themselves travel as part of the mod content and are covered by the login checksum.
+Weather is a world-wide state rather than a stream of entities. The server drifts two noise grids (one picks the type, one the local strength) and sends `World_Weather` to every admitted client once a second. The packet carries three drift or wind pairs; the seeds and scales arrived once in `World_Info`, so there is nothing constant to repeat. Both sides also advance the drift themselves every frame, so the packet only anchors the field: the client keeps its own continuous drift and snaps to the packet only when the two disagree by more than a chunk, which is what a forced front looks like. The replicated `gr_weather_cycle` gamerule freezes that local advance on both sides. The first weather packet of a connection is special only on the client: the client keeps a local flag and takes that drift whole, then rebuilds the cloud deck instead of sliding the old one towards it. The type definitions themselves travel as part of the mod content and are covered by the login checksum.
 
 ##### Block and entity actions
 
@@ -265,11 +265,10 @@ Sent by server as a response to `RequestChunk` or at arbitrary moments to synchr
 
 ### `0x0009` `ChunkBiomes`
 
-Sent by server as a response to `RequestChunk` once per realm to synchronize biome caches used for client rendering
+Sent by server as a response to `RequestChunk` to synchronize biome caches used for client rendering
 
 |Type|Name|Description|
 |----|----|----|
-|`uint32`|`realm`|Biome realm|
 |`vector2<int32>`|`cpos`|XZ-position|
 |`data`|`biomes`|Compressed list of 256 biome IDs|
 

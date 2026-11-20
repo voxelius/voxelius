@@ -2,7 +2,6 @@
 
 #include "shared/world/biome_map.hh"
 
-#include "shared/utils/biome.hh"
 #include "shared/utils/coord.hh"
 
 BiomeMap::BiomeMap(void)

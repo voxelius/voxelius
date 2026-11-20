@@ -1,6 +1,4 @@
 biomes.add("surface_hills_grassy", {
-  realm = biomes.REALM_SURFACE,
-
   temperature = 40,
   humidity = 50,
   continentalness = 70,

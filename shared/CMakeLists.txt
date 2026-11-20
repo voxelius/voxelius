@@ -82,8 +82,6 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/system/pmove.hh"
     "${CMAKE_CURRENT_LIST_DIR}/utils/chunk.cc"
     "${CMAKE_CURRENT_LIST_DIR}/utils/chunk.hh"
-    "${CMAKE_CURRENT_LIST_DIR}/utils/biome.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/utils/biome.hh"
     "${CMAKE_CURRENT_LIST_DIR}/utils/coord.cc"
     "${CMAKE_CURRENT_LIST_DIR}/utils/coord.hh"
     "${CMAKE_CURRENT_LIST_DIR}/utils/entity.cc"

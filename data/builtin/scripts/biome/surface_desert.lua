@@ -1,6 +1,4 @@
 biomes.add("surface_desert", {
-  realm = biomes.REALM_SURFACE,
-
   temperature = 80,
   humidity = 20,
   continentalness = 60,

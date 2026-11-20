@@ -2,7 +2,6 @@
 
 #include "server/world/terrain.hh"
 
-#include "shared/utils/biome.hh"
 #include "shared/world/world.hh"
 
 #include "server/constant.hh"

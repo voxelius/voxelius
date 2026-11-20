@@ -1,6 +1,4 @@
 weather.add("thunderstorm", {
-  realms = { weather.REALM_SURFACE },
-
   intensity = 1.0,
   sky_tint = { 0.14, 0.16, 0.19 },
   sky_visibility = 0.05,

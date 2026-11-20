@@ -1,6 +1,4 @@
 biomes.add("surface_plains", {
-  realm = biomes.REALM_SURFACE,
-
   temperature = 50,
   humidity = 55,
   continentalness = 55,

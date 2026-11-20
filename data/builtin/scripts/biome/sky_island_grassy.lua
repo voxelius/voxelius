@@ -1,6 +1,4 @@
 biomes.add("sky_island_grassy", {
-  realm = biomes.REALM_SKY,
-
   temperature = 55,
   humidity = 50,
   continentalness = 55,

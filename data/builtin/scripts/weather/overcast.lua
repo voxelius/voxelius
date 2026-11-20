@@ -1,6 +1,4 @@
 weather.add("overcast", {
-  realms = { weather.REALM_SURFACE },
-
   intensity = 1.0,
   sky_tint = { 0.388, 0.451, 0.541 },
   sky_visibility = 0.15,

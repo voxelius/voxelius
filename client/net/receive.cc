@@ -225,26 +225,22 @@ static cvar::status cmd_weather_status(const cvar::Context& ctx, std::span<const
 {
     auto world = utils::to_fvec(camera::chunk) + camera::local;
 
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        auto realm = static_cast<biome_realm>(i);
-        auto& state = weather::state(realm);
+    auto& state = weather::state();
+    auto type = weather::type_at(world.x(), world.z());
+    auto coverage = weather::coverage(world.x(), world.z());
 
-        auto type = weather::type_at(realm, world.x(), world.z());
-        auto coverage = weather::coverage(realm, world.x(), world.z());
+    std::string description = "none";
 
-        std::string description = "none";
-
-        if(auto name = weather_registry::name_of(type)) {
-            // The identifier is a temporary, so its view must be copied
-            // before the optional goes out of scope
-            description = name->full_string();
-        }
-
-        auto types = std::format("({:.0f}, {:.0f})/{}", state.types.drift.x(), state.types.drift.y(), state.types.scale);
-        auto detail = std::format("({:.0f}, {:.0f})/{}", state.detail.drift.x(), state.detail.drift.y(), state.detail.scale);
-
-        msg::log_info("weather[{}]: type={} coverage={:.2f} types={} detail={}", i, description, coverage, types, detail);
+    if(auto name = weather_registry::name_of(type)) {
+        // The identifier is a temporary, so its view must be copied
+        // before the optional goes out of scope
+        description = name->full_string();
     }
+
+    auto types = std::format("({:.0f}, {:.0f})/{}", state.types.drift.x(), state.types.drift.y(), state.types.scale);
+    auto detail = std::format("({:.0f}, {:.0f})/{}", state.detail.drift.x(), state.detail.drift.y(), state.detail.scale);
+
+    msg::log_info("weather: type={} coverage={:.2f} types={} detail={}", description, coverage, types, detail);
 
     return cvar::status::OK;
 }

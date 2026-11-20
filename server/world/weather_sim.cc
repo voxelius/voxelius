@@ -11,14 +11,15 @@
 #include "shared/constant.hh"
 #include "shared/cvar/gamerules.hh"
 #include "shared/globals.hh"
-#include "shared/utils/biome.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
 #include "shared/world/world.hh"
+#include "shared/world/world_scope.hh"
 
 #include "server/globals.hh"
 #include "server/net/sessions.hh"
+#include "server/universe.hh"
 #include "server/world/heightmap.hh"
 
 constexpr static std::uint64_t CONTENT_TICK_INTERVAL = constant::FIXED_TICKRATE;
@@ -26,19 +27,6 @@ constexpr static std::uint64_t CONTENT_TICK_INTERVAL = constant::FIXED_TICKRATE;
 constexpr static float TYPE_CELL_SCALE = 1024.0f;
 constexpr static float DETAIL_CELL_SCALE = 512.0f;
 
-// The name each realm is saved under in
-// world.conf; the order follows biome_realm
-static const std::array REALM_NAMES = {
-    std::string_view("surface"),     // BIOME_REALM_SURFACE
-    std::string_view("underground"), // BIOME_REALM_UNDERGROUND
-    std::string_view("depths"),      // BIOME_REALM_THE_DEPTHS
-    std::string_view("sky"),         // BIOME_REALM_SKY
-};
-
-static_assert(NUM_BIOME_REALMS == REALM_NAMES.size());
-
-static std::array<float, NUM_BIOME_REALMS> s_strike_budget {};
-static std::array<Eigen::Vector2f, NUM_BIOME_REALMS> s_wind_direction {};
 static std::mt19937_64 s_random;
 
 static float random_float(void)
@@ -54,26 +42,25 @@ static Eigen::Vector2f random_direction(void)
     return Eigen::Vector2f(std::cos(angle), std::sin(angle));
 }
 
-static Eigen::Vector2f realm_player_center(biome_realm realm)
+static Eigen::Vector2f player_center(World* world)
 {
-    auto& registry = globals::world->registry();
+    auto& registry = world->registry();
 
     Eigen::Vector2f sum = Eigen::Vector2f::Zero();
     std::size_t count = 0;
 
     for(auto& session : sessions::all()) {
+        if(session.world.get() != world) {
+            continue;
+        }
+
         if(session.state != session_state::CONNECTED || !registry.valid(session.player)) {
             continue;
         }
 
         const auto& transform = registry.get<Transform>(session.player);
-
-        if(utils::realm(transform.chunk.y()) != realm) {
-            continue;
-        }
-
-        auto world = utils::to_fvec(transform.chunk) + transform.local;
-        sum += Eigen::Vector2f(world.x(), world.z());
+        auto position = utils::to_fvec(transform.chunk) + transform.local;
+        sum += Eigen::Vector2f(position.x(), position.z());
         count += 1;
     }
 
@@ -84,7 +71,7 @@ static Eigen::Vector2f realm_player_center(biome_realm realm)
     return sum / static_cast<float>(count);
 }
 
-static void call_tick_callback(const WeatherCallback& callback, biome_realm realm)
+static void call_tick_callback(const WeatherCallback& callback)
 {
     if(callback.callback_ref == LUA_NOREF || callback.state == nullptr) {
         return;
@@ -92,16 +79,15 @@ static void call_tick_callback(const WeatherCallback& callback, biome_realm real
 
     auto L = callback.state.get();
     lua_rawgeti(L, LUA_REGISTRYINDEX, callback.callback_ref);
-    lua_pushinteger(L, static_cast<lua_Integer>(realm));
     lua_pushinteger(L, static_cast<lua_Integer>(globals::current_tick));
 
-    if(lua_pcall(L, 2, 0, 0) != LUA_OK) {
+    if(lua_pcall(L, 1, 0, 0) != LUA_OK) {
         msg::log_error("weather on_tick: {}", lua_tostring(L, -1));
         lua_pop(L, 1);
     }
 }
 
-static void call_strike_callback(const WeatherCallback& callback, biome_realm realm, const BlockPos& bpos)
+static void call_strike_callback(const WeatherCallback& callback, const BlockPos& bpos)
 {
     if(callback.callback_ref == LUA_NOREF || callback.state == nullptr) {
         return;
@@ -112,33 +98,11 @@ static void call_strike_callback(const WeatherCallback& callback, biome_realm re
     lua_pushinteger(L, static_cast<lua_Integer>(bpos.x()));
     lua_pushinteger(L, static_cast<lua_Integer>(bpos.z()));
     lua_pushinteger(L, static_cast<lua_Integer>(bpos.y()));
-    lua_pushinteger(L, static_cast<lua_Integer>(realm));
 
-    if(lua_pcall(L, 4, 0, 0) != LUA_OK) {
+    if(lua_pcall(L, 3, 0, 0) != LUA_OK) {
         msg::log_error("weather on_strike: {}", lua_tostring(L, -1));
         lua_pop(L, 1);
     }
-}
-
-static std::optional<biome_realm> parse_realm(std::string_view name)
-{
-    if(name == "surface") {
-        return BIOME_REALM_SURFACE;
-    }
-
-    if(name == "sky") {
-        return BIOME_REALM_SKY;
-    }
-
-    if(name == "underground") {
-        return BIOME_REALM_UNDERGROUND;
-    }
-
-    if(name == "depths") {
-        return BIOME_REALM_THE_DEPTHS;
-    }
-
-    return std::nullopt;
 }
 
 static void log_registered_types(void)
@@ -160,59 +124,52 @@ static void log_registered_types(void)
     msg::log_error("weather_force: registered types: {}", names);
 }
 
-static void force_type(biome_realm realm, weather_type_id type)
+static cvar::status cmd_weather_force(const cvar::Context&, std::span<const std::string_view> args)
 {
-    auto center = realm_player_center(realm);
-
-    weather::force_at(realm, type, center.x(), center.y());
-}
-
-static cvar::status cmd_weather_force(const cvar::Context& ctx, std::span<const std::string_view> args)
-{
-    if(args.size() < 2) {
-        msg::log_error("usage: weather_force <surface|sky|underground|depths> <type>");
+    if(args.empty()) {
+        msg::log_error("usage: weather_force <type>");
         return cvar::status::ARGUMENT;
     }
 
-    auto realm = parse_realm(args[0]);
-
-    if(!realm.has_value()) {
-        msg::log_error("weather_force: unknown realm: {}", args[0]);
-        return cvar::status::ARGUMENT;
-    }
-
-    auto type = weather_registry::resolve(args[1]);
+    auto type = weather_registry::resolve(args[0]);
 
     if(type == WEATHER_ID_NULL) {
-        msg::log_error("weather_force: unknown weather: {}", args[1]);
+        msg::log_error("weather_force: unknown weather: {}", args[0]);
         log_registered_types();
         return cvar::status::ARGUMENT;
     }
 
-    force_type(realm.value(), type);
+    auto world = globals::world;
 
-    auto center = realm_player_center(realm.value());
-    auto coverage = weather::coverage(realm.value(), center.x(), center.y());
+    if(world == nullptr) {
+        world = universe::default_world().get();
+    }
 
-    msg::log_info("weather_force: {} is now {} (coverage {:.2f} at {:.0f}, {:.0f})", args[0], args[1], coverage, center.x(), center.y());
+    WorldScope scope(world);
+
+    auto center = player_center(world);
+
+    weather::force_at(type, center.x(), center.y());
+
+    auto coverage = weather::coverage(center.x(), center.y());
+
+    msg::log_info("weather_force: {} is now active (coverage {:.2f} at {:.0f}, {:.0f})", args[0], coverage, center.x(), center.y());
     return cvar::status::OK;
 }
 
-static void strike(biome_realm realm, const WeatherTypeDefinition& def)
+static void strike(World* world, const WeatherTypeDefinition& def)
 {
-    auto& registry = globals::world->registry();
+    auto& registry = world->registry();
 
     Session* target = nullptr;
     auto players = 0;
 
     for(auto& session : sessions::all()) {
-        if(session.state != session_state::CONNECTED || !registry.valid(session.player)) {
+        if(session.world.get() != world) {
             continue;
         }
 
-        const auto& transform = registry.get<Transform>(session.player);
-
-        if(utils::realm(transform.chunk.y()) != realm) {
+        if(session.state != session_state::CONNECTED || !registry.valid(session.player)) {
             continue;
         }
 
@@ -237,7 +194,7 @@ static void strike(biome_realm realm, const WeatherTypeDefinition& def)
 
     // Only strike where the field has a storm
     // patch and the point still belongs to the same type
-    if(weather::coverage(realm, static_cast<float>(x), static_cast<float>(z)) < 0.25f) {
+    if(weather::coverage(static_cast<float>(x), static_cast<float>(z)) < 0.25f) {
         return;
     }
 
@@ -251,61 +208,60 @@ static void strike(biome_realm realm, const WeatherTypeDefinition& def)
 
     BlockPos bpos(x, y, z);
 
-    msg::log_info("weather: strike at ({}, {}, {}) in realm {}", x, y, z, static_cast<unsigned>(realm));
+    msg::log_info("weather: strike at ({}, {}, {})", x, y, z);
 
-    call_strike_callback(def.on_strike, realm, bpos);
+    call_strike_callback(def.on_strike, bpos);
 }
 
-static void update_realm(biome_realm realm)
+static void update_world(World* world)
 {
-    auto& state = weather::state(realm);
+    auto& state = weather::state();
 
-    auto center = realm_player_center(realm);
-    auto def = weather_registry::find_definition(weather::type_at(realm, center.x(), center.y()));
+    auto center = player_center(world);
+    auto def = weather_registry::find_definition(weather::type_at(center.x(), center.y()));
 
     if(def == nullptr) {
         return;
     }
 
     // The front travels at the speed its own type asks for.
-    // The direction is fixed per realm, so a type change
+    // The direction is fixed per world, so a type change
     // turns the speed up or down without the wind swinging around
-    state.wind = s_wind_direction[static_cast<std::size_t>(realm)] * def->wind_speed;
+    state.wind = state.wind_direction * def->wind_speed;
 
     if(0 == (globals::current_tick % CONTENT_TICK_INTERVAL)) {
-        call_tick_callback(def->on_tick, realm);
+        call_tick_callback(def->on_tick);
     }
 
     if(def->strikes_per_minute > 0.0f) {
-        auto& budget = s_strike_budget[static_cast<std::size_t>(realm)];
-        budget += def->strikes_per_minute * globals::fixed_frametime / 60.0f;
+        state.strike_budget += def->strikes_per_minute * globals::fixed_frametime / 60.0f;
 
-        while(budget >= 1.0f) {
-            budget -= 1.0f;
-            strike(realm, *def);
+        while(state.strike_budget >= 1.0f) {
+            state.strike_budget -= 1.0f;
+            strike(world, *def);
         }
     }
 }
 
-static std::string realm_key(biome_realm realm, std::string_view field)
+static std::string weather_key(std::string_view field)
 {
-    return std::format("weather.{}.{}", REALM_NAMES.at(static_cast<std::size_t>(realm)), field);
+    return std::format("weather.{}", field);
 }
 
 template<typename T>
-static void save_value(biome_realm realm, std::string_view field, const T& value)
+static void save_value(World* world, std::string_view field, const T& value)
 {
-    auto key = realm_key(realm, field);
-    auto& config = globals::world->config();
+    auto key = weather_key(field);
+    auto& config = world->config();
 
     config.set_value<T>(key, value);
 }
 
 template<typename T>
-static T load_value(biome_realm realm, std::string_view field, const T& fallback)
+static T load_value(World* world, std::string_view field, const T& fallback)
 {
-    auto key = realm_key(realm, field);
-    auto& config = globals::world->config();
+    auto key = weather_key(field);
+    auto& config = world->config();
 
     return config.value<T>(key).value_or(fallback);
 }
@@ -313,49 +269,44 @@ static T load_value(biome_realm realm, std::string_view field, const T& fallback
 // A world keeps its fronts in world.conf next to the seed, so a restart
 // picks the sky up where it was left instead of rolling a new one. A world
 // that has never been saved draws its seeds and its wind from the universe seed
-static void load_state(void)
+static void load_state(World* world)
 {
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        auto realm = static_cast<biome_realm>(i);
-        auto& state = weather::state(realm);
+    auto& state = world->weather();
 
-        state.types.drift = load_value<Eigen::Vector2f>(realm, "types_drift", Eigen::Vector2f::Zero());
-        state.types.scale = load_value<float>(realm, "types_scale", TYPE_CELL_SCALE);
-        state.types.seed = load_value<std::uint32_t>(realm, "types_seed", static_cast<std::uint32_t>(s_random()));
+    state.types.drift = load_value<Eigen::Vector2f>(world, "types_drift", Eigen::Vector2f::Zero());
+    state.types.scale = load_value<float>(world, "types_scale", TYPE_CELL_SCALE);
+    state.types.seed = load_value<std::uint32_t>(world, "types_seed", static_cast<std::uint32_t>(s_random()));
 
-        state.detail.drift = load_value<Eigen::Vector2f>(realm, "detail_drift", Eigen::Vector2f::Zero());
-        state.detail.scale = load_value<float>(realm, "detail_scale", DETAIL_CELL_SCALE);
-        state.detail.seed = load_value<std::uint32_t>(realm, "detail_seed", static_cast<std::uint32_t>(s_random()));
+    state.detail.drift = load_value<Eigen::Vector2f>(world, "detail_drift", Eigen::Vector2f::Zero());
+    state.detail.scale = load_value<float>(world, "detail_scale", DETAIL_CELL_SCALE);
+    state.detail.seed = load_value<std::uint32_t>(world, "detail_seed", static_cast<std::uint32_t>(s_random()));
 
-        auto direction = load_value<Eigen::Vector2f>(realm, "wind_direction", Eigen::Vector2f::Zero());
+    auto direction = load_value<Eigen::Vector2f>(world, "wind_direction", Eigen::Vector2f::Zero());
 
-        if(direction.squaredNorm() > 1.0e-6f) {
-            s_wind_direction[i] = direction.normalized();
-        }
-        else {
-            s_wind_direction[i] = random_direction();
-        }
-
-        state.wind = Eigen::Vector2f::Zero();
+    if(direction.squaredNorm() > 1.0e-6f) {
+        state.wind_direction = direction.normalized();
     }
+    else {
+        state.wind_direction = random_direction();
+    }
+
+    state.wind = Eigen::Vector2f::Zero();
+    state.strike_budget = 0.0f;
 }
 
-static void save_state(void)
+static void save_state(World* world)
 {
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        auto realm = static_cast<biome_realm>(i);
-        auto& state = weather::state(realm);
+    auto& state = world->weather();
 
-        save_value<Eigen::Vector2f>(realm, "types_drift", state.types.drift);
-        save_value<float>(realm, "types_scale", state.types.scale);
-        save_value<std::uint32_t>(realm, "types_seed", state.types.seed);
+    save_value<Eigen::Vector2f>(world, "types_drift", state.types.drift);
+    save_value<float>(world, "types_scale", state.types.scale);
+    save_value<std::uint32_t>(world, "types_seed", state.types.seed);
 
-        save_value<Eigen::Vector2f>(realm, "detail_drift", state.detail.drift);
-        save_value<float>(realm, "detail_scale", state.detail.scale);
-        save_value<std::uint32_t>(realm, "detail_seed", state.detail.seed);
+    save_value<Eigen::Vector2f>(world, "detail_drift", state.detail.drift);
+    save_value<float>(world, "detail_scale", state.detail.scale);
+    save_value<std::uint32_t>(world, "detail_seed", state.detail.seed);
 
-        save_value<Eigen::Vector2f>(realm, "wind_direction", s_wind_direction[i]);
-    }
+    save_value<Eigen::Vector2f>(world, "wind_direction", state.wind_direction);
 }
 
 void weather_sim::init(void)
@@ -365,19 +316,23 @@ void weather_sim::init(void)
     force_binding.set_flags(FCVAR_RECALL | FCVAR_ADMIN);
     force_binding.connect<&cmd_weather_force>();
 
-    s_random.seed(globals::world->seed ^ UINT64_C(0x9E3779B97F4A7C15));
-    s_strike_budget.fill(0.0f);
-    weather::reset();
+    for(const auto& world : universe::worlds()) {
+        WorldScope scope(world.get());
 
-    load_state();
+        s_random.seed(world->seed ^ UINT64_C(0x9E3779B97F4A7C15));
+        weather::reset();
+
+        load_state(world.get());
+    }
 }
 
 void weather_sim::shutdown(void)
 {
-    save_state();
+    for(const auto& world : universe::worlds()) {
+        WorldScope scope(world.get());
 
-    s_strike_budget.fill(0.0f);
-    weather::reset();
+        save_state(world.get());
+    }
 }
 
 void weather_sim::fixed_update(void)
@@ -386,9 +341,10 @@ void weather_sim::fixed_update(void)
         return;
     }
 
-    weather::advance(globals::fixed_frametime);
+    for(const auto& world : universe::worlds()) {
+        WorldScope scope(world.get());
 
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        update_realm(static_cast<biome_realm>(i));
+        weather::advance(globals::fixed_frametime);
+        update_world(world.get());
     }
 }

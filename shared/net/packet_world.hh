@@ -78,19 +78,19 @@ struct packet::World_Info final : public packet::Base<packet::WORLD_INFO> {
     std::uint64_t seed;
     std::uint32_t star_seed;
 
-    std::array<std::uint32_t, NUM_BIOME_REALMS> types_seed;
-    std::array<float, NUM_BIOME_REALMS> types_scale;
-    std::array<std::uint32_t, NUM_BIOME_REALMS> detail_seed;
-    std::array<float, NUM_BIOME_REALMS> detail_scale;
+    std::uint32_t types_seed;
+    float types_scale;
+    std::uint32_t detail_seed;
+    float detail_scale;
 };
 
 struct packet::World_Weather final : public packet::Base<packet::WORLD_WEATHER> {
     static void encode(const World_Weather& packet, WriteBuffer& buffer);
     static void decode(World_Weather& packet, ReadBuffer& buffer);
 
-    std::array<Eigen::Vector2f, NUM_BIOME_REALMS> types_drift;
-    std::array<Eigen::Vector2f, NUM_BIOME_REALMS> detail_drift;
-    std::array<Eigen::Vector2f, NUM_BIOME_REALMS> wind;
+    Eigen::Vector2f types_drift;
+    Eigen::Vector2f detail_drift;
+    Eigen::Vector2f wind;
 };
 
 #endif /* BD2D77E8_727E_4B4C_83D6_92E1569F5B4D */

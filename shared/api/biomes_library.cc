@@ -384,15 +384,6 @@ void api::open_biomes_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     lua_newtable(L); // biomes
 
-    lua_pushinteger(L, BIOME_REALM_SURFACE);
-    lua_setfield(L, -2, "REALM_SURFACE");
-    lua_pushinteger(L, BIOME_REALM_UNDERGROUND);
-    lua_setfield(L, -2, "REALM_UNDERGROUND");
-    lua_pushinteger(L, BIOME_REALM_THE_DEPTHS);
-    lua_setfield(L, -2, "REALM_THE_DEPTHS");
-    lua_pushinteger(L, BIOME_REALM_SKY);
-    lua_setfield(L, -2, "REALM_SKY");
-
     lua_pushinteger(L, BIOME_ID_NULL);
     lua_setfield(L, -2, "NULL_BIOME");
 

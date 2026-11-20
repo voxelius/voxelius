@@ -3,7 +3,6 @@
 #include "client/world/cloud_field.hh"
 
 #include "shared/constant.hh"
-#include "shared/utils/biome.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
 
@@ -41,18 +40,14 @@ float cloud_field::fine_cell_blocks(void)
 CloudDeck cloud_field::make_deck(const CloudInput& input, const CloudGroup& group, const CloudRing& ring)
 {
     CloudDeck deck {};
-    deck.realm = group.realm;
     deck.type = group.type;
     deck.body = group.body;
     deck.cell = ring.cell;
     deck.height = ring.height;
 
-    auto realm_index = static_cast<std::size_t>(group.realm);
-    auto offset = input.offsets[realm_index];
-
-    deck.state = &input.states[realm_index];
-    deck.anchor = input.anchors[realm_index];
-    deck.center = input.center - Eigen::Vector3f(offset.x(), 0.0f, offset.y());
+    deck.state = &input.state;
+    deck.anchor = input.anchor;
+    deck.center = input.center - Eigen::Vector3f(input.offset.x(), 0.0f, input.offset.y());
 
     deck.scale = std::max(group.body.scale, 8.0f);
     deck.max_levels = std::clamp(static_cast<int>(group.body.thickness / deck.height), 1, CLOUD_COLUMN_MAX_VOXELS);
@@ -72,10 +67,10 @@ static float cell_coverage(const CloudDeck& deck, float field_x, float field_z)
     auto step = deck.cell * 0.25f;
     auto state = *deck.state;
 
-    auto a = weather::coverage_in_field(state, deck.realm, deck.type, field_x - step, field_z - step);
-    auto b = weather::coverage_in_field(state, deck.realm, deck.type, field_x + step, field_z - step);
-    auto c = weather::coverage_in_field(state, deck.realm, deck.type, field_x - step, field_z + step);
-    auto d = weather::coverage_in_field(state, deck.realm, deck.type, field_x + step, field_z + step);
+    auto a = weather::coverage_in_field(state, deck.type, field_x - step, field_z - step);
+    auto b = weather::coverage_in_field(state, deck.type, field_x + step, field_z - step);
+    auto c = weather::coverage_in_field(state, deck.type, field_x - step, field_z + step);
+    auto d = weather::coverage_in_field(state, deck.type, field_x + step, field_z + step);
 
     return (a + b + c + d) * 0.25f;
 }
@@ -86,7 +81,7 @@ static float column_coverage(const CloudDeck& deck, float field_x, float field_z
         return cell_coverage(deck, field_x, field_z);
     }
 
-    return weather::coverage_in_field(*deck.state, deck.realm, deck.type, field_x, field_z);
+    return weather::coverage_in_field(*deck.state, deck.type, field_x, field_z);
 }
 
 static float shell_hash(std::int32_t x, std::int32_t y, std::int32_t z, std::uint32_t seed)
@@ -199,20 +194,13 @@ CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_
     return column;
 }
 
-static void add_group(biome_realm realm, weather_type_id type, const CloudBody& body, float camera_y, std::vector<CloudGroup>& out)
+static void add_group(weather_type_id type, const CloudBody& body, float camera_y, std::vector<CloudGroup>& out)
 {
     if(body.coverage <= 0.02f) {
         return;
     }
 
-    // A deck belongs to the realm its height sits in; otherwise a type shared
-    // by two realms would be built twice in place.
-    if(utils::realm_of_y(body.height) != realm) {
-        return;
-    }
-
     CloudGroup group {};
-    group.realm = realm;
     group.type = type;
     group.body = body;
     group.distance = std::abs(body.height - camera_y);
@@ -220,22 +208,13 @@ static void add_group(biome_realm realm, weather_type_id type, const CloudBody& 
     out.push_back(group);
 }
 
-static void collect_realm_groups(biome_realm realm, float camera_y, std::vector<CloudGroup>& out)
+void cloud_field::collect_groups(float camera_y, std::vector<CloudGroup>& out)
 {
-    auto bit = 1U << static_cast<unsigned>(realm);
-
     for(const auto& def : weather_registry::all_definitions()) {
-        if(def.id == WEATHER_ID_NULL || 0 == (def.realms_bits & bit)) {
+        if(def.id == WEATHER_ID_NULL) {
             continue;
         }
 
-        add_group(realm, def.id, def.cloud, camera_y, out);
-    }
-}
-
-void cloud_field::collect_groups(float camera_y, std::vector<CloudGroup>& out)
-{
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        collect_realm_groups(static_cast<biome_realm>(i), camera_y, out);
+        add_group(def.id, def.cloud, camera_y, out);
     }
 }

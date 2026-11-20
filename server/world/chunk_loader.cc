@@ -7,7 +7,6 @@
 
 #include "shared/constant.hh"
 #include "shared/globals.hh"
-#include "shared/utils/biome.hh"
 #include "shared/world/chunk.hh"
 #include "shared/world/world.hh"
 

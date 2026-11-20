@@ -7,13 +7,12 @@
 #include "shared/cvar/gamerules.hh"
 #include "shared/globals.hh"
 #include "shared/net/packet_world.hh"
-#include "shared/utils/biome.hh"
 #include "shared/world/weather_registry.hh"
 #include "shared/world/world.hh"
 
-static std::array<WeatherRealmState, NUM_BIOME_REALMS>& active_states(void)
+static WeatherState& active_state(void)
 {
-    static std::array<WeatherRealmState, NUM_BIOME_REALMS> fallback {};
+    static WeatherState fallback {};
 
     if(globals::world) {
         return globals::world->weather();
@@ -40,21 +39,21 @@ static std::uint32_t lattice_hash(std::int32_t x, std::int32_t z, std::uint32_t 
 // cell (the cloud renderer) uses them so that its sample points do
 // not depend on how far the field has drifted: subtracting
 // two large world-space floats rounds differently every time
-static float type_noise_in_field(const WeatherRealmState& state, float fx, float fz)
+static float type_noise_in_field(const WeatherState& state, float fx, float fz)
 {
     auto scale = std::max(state.types.scale, 1.0f);
 
     return weather::noise_at(fx / scale, fz / scale, state.types.seed);
 }
 
-static float type_noise(biome_realm realm, float x, float z)
+static float type_noise(float x, float z)
 {
-    auto& state = weather::state(realm);
+    auto& state = weather::state();
 
     return type_noise_in_field(state, x - state.types.drift.x(), z - state.types.drift.y());
 }
 
-static float interval_weight(biome_realm realm, weather_type_id type, float roll)
+static float interval_weight(weather_type_id type, float roll)
 {
     // The band is what turns a hard slice boundary into a gradual fade
     constexpr static float BAND = 0.05f;
@@ -62,7 +61,7 @@ static float interval_weight(biome_realm realm, weather_type_id type, float roll
     float start = 0.0f;
     float end = 0.0f;
 
-    if(!weather_registry::type_interval(realm, type, start, end)) {
+    if(!weather_registry::type_interval(type, start, end)) {
         return 0.0f;
     }
 
@@ -72,7 +71,7 @@ static float interval_weight(biome_realm realm, weather_type_id type, float roll
     return fade_in * fade_out;
 }
 
-static float detail_coverage_in_field(const WeatherRealmState& state, float intensity, float fx, float fz)
+static float detail_coverage_in_field(const WeatherState& state, float intensity, float fx, float fz)
 {
     auto scale = std::max(state.detail.scale, 1.0f);
     auto value = weather::noise_at(fx / scale, fz / scale, state.detail.seed);
@@ -83,75 +82,21 @@ static float detail_coverage_in_field(const WeatherRealmState& state, float inte
     return utils::smoothstep(threshold, threshold + 0.2f, value);
 }
 
-static float detail_coverage(biome_realm realm, float intensity, float x, float z)
+static float detail_coverage(float intensity, float x, float z)
 {
-    auto& state = weather::state(realm);
+    auto& state = weather::state();
 
     return detail_coverage_in_field(state, intensity, x - state.detail.drift.x(), z - state.detail.drift.y());
 }
 
-static WeatherBlend blend_at_height(float x, float y, float z)
+WeatherState& weather::state(void)
 {
-    // Realms are stacked vertically; the fade band hides
-    // the seam where one stops providing the ambient tint
-    constexpr static float FADE = 24.0f;
-
-    struct Boundary final {
-        float y;
-        biome_realm below;
-        biome_realm above;
-    };
-
-    constexpr static std::array BOUNDARIES = {
-        Boundary { -256.0f, BIOME_REALM_THE_DEPTHS, BIOME_REALM_UNDERGROUND },
-        Boundary { -64.0f, BIOME_REALM_UNDERGROUND, BIOME_REALM_SURFACE },
-        Boundary { 256.0f, BIOME_REALM_SURFACE, BIOME_REALM_SKY },
-    };
-
-    for(const auto& boundary : BOUNDARIES) {
-        auto distance = y - boundary.y;
-
-        if(distance <= -FADE || distance >= FADE) {
-            continue;
-        }
-
-        auto t = std::clamp(0.5f + distance / (2.0f * FADE), 0.0f, 1.0f);
-        auto below = weather::blend(boundary.below, x, z);
-        auto above = weather::blend(boundary.above, x, z);
-
-        WeatherBlend result {};
-        result.coverage = below.coverage * (1.0f - t) + above.coverage * t;
-        result.sky_tint = below.sky_tint * (1.0f - t) + above.sky_tint * t;
-        result.sky_visibility = below.sky_visibility * (1.0f - t) + above.sky_visibility * t;
-        result.light_scale = below.light_scale * (1.0f - t) + above.light_scale * t;
-        return result;
-    }
-
-    return weather::blend(utils::realm_of_y(y), x, z);
-}
-
-std::span<WeatherRealmState, NUM_BIOME_REALMS> weather::states(void)
-{
-    return active_states();
-}
-
-WeatherRealmState& weather::state(biome_realm realm)
-{
-    static WeatherRealmState fallback {};
-
-    if(realm >= BIOME_REALM_COUNT) {
-        return fallback;
-    }
-
-    auto& states = active_states();
-    return states.at(static_cast<std::size_t>(realm));
+    return active_state();
 }
 
 void weather::reset(void)
 {
-    for(auto& state : active_states()) {
-        state = WeatherRealmState {};
-    }
+    active_state() = WeatherState {};
 }
 
 void weather::advance(float delta_time)
@@ -160,25 +105,21 @@ void weather::advance(float delta_time)
         return;
     }
 
-    for(auto& state : active_states()) {
-        state.types.drift += state.wind * delta_time;
-        state.detail.drift += state.wind * delta_time;
-    }
+    auto& state = active_state();
+
+    state.types.drift += state.wind * delta_time;
+    state.detail.drift += state.wind * delta_time;
 }
 
-void weather::force_at(biome_realm realm, weather_type_id type, float x, float z)
+void weather::force_at(weather_type_id type, float x, float z)
 {
-    if(realm >= BIOME_REALM_COUNT) {
-        return;
-    }
-
-    auto& state = weather::state(realm);
+    auto& state = weather::state();
     auto type_scale = std::max(state.types.scale, 1.0f);
 
     float interval_start = 0.0f;
     float interval_end = 0.0f;
 
-    if(!weather_registry::type_interval(realm, type, interval_start, interval_end)) {
+    if(!weather_registry::type_interval(type, interval_start, interval_end)) {
         return;
     }
 
@@ -267,13 +208,9 @@ float weather::cell_random(std::int32_t x, std::int32_t z, std::uint32_t seed)
     return static_cast<float>(lattice_hash(x, z, seed) & UINT32_C(0xFFFFFF)) / static_cast<float>(UINT32_C(0xFFFFFF));
 }
 
-weather_type_id weather::type_at(biome_realm realm, float x, float z)
+weather_type_id weather::type_at(float x, float z)
 {
-    if(realm >= BIOME_REALM_COUNT) {
-        return WEATHER_ID_NULL;
-    }
-
-    auto roll = type_noise(realm, x, z);
+    auto roll = type_noise(x, z);
     auto best = WEATHER_ID_NULL;
     auto best_weight = 0.0f;
 
@@ -282,7 +219,7 @@ weather_type_id weather::type_at(biome_realm realm, float x, float z)
             continue;
         }
 
-        auto weight = interval_weight(realm, def.id, roll);
+        auto weight = interval_weight(def.id, roll);
 
         if(weight > best_weight) {
             best_weight = weight;
@@ -293,25 +230,17 @@ weather_type_id weather::type_at(biome_realm realm, float x, float z)
     return best;
 }
 
-float weather::type_weight(biome_realm realm, weather_type_id type, float x, float z)
+float weather::type_weight(weather_type_id type, float x, float z)
 {
-    if(realm >= BIOME_REALM_COUNT) {
-        return 0.0f;
-    }
-
-    return interval_weight(realm, type, type_noise(realm, x, z));
+    return interval_weight(type, type_noise(x, z));
 }
 
-float weather::type_weight_in_field(const WeatherRealmState& state, biome_realm realm, weather_type_id type, float fx, float fz)
+float weather::type_weight_in_field(const WeatherState& state, weather_type_id type, float fx, float fz)
 {
-    if(realm >= BIOME_REALM_COUNT) {
-        return 0.0f;
-    }
-
-    return interval_weight(realm, type, type_noise_in_field(state, fx, fz));
+    return interval_weight(type, type_noise_in_field(state, fx, fz));
 }
 
-float weather::coverage_of(biome_realm realm, weather_type_id type, float x, float z)
+float weather::coverage_of(weather_type_id type, float x, float z)
 {
     auto def = weather_registry::find_definition(type);
 
@@ -319,16 +248,16 @@ float weather::coverage_of(biome_realm realm, weather_type_id type, float x, flo
         return 0.0f;
     }
 
-    auto weight = weather::type_weight(realm, type, x, z);
+    auto weight = weather::type_weight(type, x, z);
 
     if(weight <= 0.0f) {
         return 0.0f;
     }
 
-    return weight * detail_coverage(realm, def->intensity, x, z);
+    return weight * detail_coverage(def->intensity, x, z);
 }
 
-float weather::coverage_in_field(const WeatherRealmState& state, biome_realm realm, weather_type_id type, float fx, float fz)
+float weather::coverage_in_field(const WeatherState& state, weather_type_id type, float fx, float fz)
 {
     auto def = weather_registry::find_definition(type);
 
@@ -336,7 +265,7 @@ float weather::coverage_in_field(const WeatherRealmState& state, biome_realm rea
         return 0.0f;
     }
 
-    auto weight = weather::type_weight_in_field(state, realm, type, fx, fz);
+    auto weight = weather::type_weight_in_field(state, type, fx, fz);
 
     if(weight <= 0.0f) {
         return 0.0f;
@@ -345,23 +274,19 @@ float weather::coverage_in_field(const WeatherRealmState& state, biome_realm rea
     return weight * detail_coverage_in_field(state, def->intensity, fx, fz);
 }
 
-float weather::coverage(biome_realm realm, float x, float z)
+float weather::coverage(float x, float z)
 {
-    return weather::coverage_of(realm, weather::type_at(realm, x, z), x, z);
+    return weather::coverage_of(weather::type_at(x, z), x, z);
 }
 
-WeatherBlend weather::blend(biome_realm realm, float x, float z)
+WeatherBlend weather::blend(float x, float z)
 {
     WeatherBlend result {};
     result.sky_tint = Eigen::Vector3f::Ones();
     result.sky_visibility = 1.0f;
     result.light_scale = 1.0f;
 
-    if(realm >= BIOME_REALM_COUNT) {
-        return result;
-    }
-
-    auto roll = type_noise(realm, x, z);
+    auto roll = type_noise(x, z);
 
     Eigen::Vector3f tint = Eigen::Vector3f::Zero();
     auto visibility = 0.0f;
@@ -373,13 +298,13 @@ WeatherBlend weather::blend(biome_realm realm, float x, float z)
             continue;
         }
 
-        auto weight = interval_weight(realm, def.id, roll);
+        auto weight = interval_weight(def.id, roll);
 
         if(weight <= 0.0f) {
             continue;
         }
 
-        auto amount = weight * detail_coverage(realm, def.intensity, x, z);
+        auto amount = weight * detail_coverage(def.intensity, x, z);
 
         tint += def.sky_tint * amount;
         visibility += def.sky_visibility * amount;
@@ -409,120 +334,46 @@ WeatherBlend weather::blend(biome_realm realm, float x, float z)
 
 WeatherBlend weather::blend_overhead(float x, float y, float z)
 {
-    auto result = blend_at_height(x, y, z);
-    auto camera_realm = utils::realm_of_y(y);
+    (void)y;
 
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        auto realm = static_cast<biome_realm>(i);
-
-        if(realm == camera_realm) {
-            continue;
-        }
-
-        auto type = weather_registry::find_definition(weather::type_at(realm, x, z));
-
-        if(type == nullptr) {
-            continue;
-        }
-
-        if(type->cloud.coverage <= 0.02f || type->cloud.height <= y + 4.0f) {
-            continue;
-        }
-
-        auto candidate = weather::blend(realm, x, z);
-
-        if(candidate.coverage > result.coverage) {
-            result = candidate;
-        }
-    }
-
-    return result;
+    return weather::blend(x, z);
 }
 
 WeatherBlend weather::blend_region(float x, float y, float z, float radius)
 {
-    auto base = weather::blend_overhead(x, y, z);
+    (void)y;
+    (void)radius;
 
-    // The coverage this function reports is the strongest
-    // cell in the region, so the tint has to come from that same
-    // cell. A plain average lets a barely touched corner speak
-    // for a cell that is fully under the front, and the
-    // sky takes the colour of weather that is almost not there
-    constexpr static int STEPS = 5;
-
-    Eigen::Vector3f tint = Eigen::Vector3f::Zero();
-    auto visibility = 0.0f;
-    auto light = 0.0f;
-    auto coverage = 0.0f;
-    auto total = 0.0f;
-    auto realm = utils::realm_of_y(y);
-
-    for(int iz = 0; iz < STEPS; iz += 1) {
-        for(int ix = 0; ix < STEPS; ix += 1) {
-            auto px = x + (static_cast<float>(ix) / static_cast<float>(STEPS - 1) - 0.5f) * 2.0f * radius;
-            auto pz = z + (static_cast<float>(iz) / static_cast<float>(STEPS - 1) - 0.5f) * 2.0f * radius;
-
-            auto sample = weather::blend(realm, px, pz);
-            auto amount = std::clamp(sample.coverage, 0.0f, 1.0f);
-            auto weight = amount * amount * amount * amount;
-
-            tint += sample.sky_tint * weight;
-            visibility += sample.sky_visibility * weight;
-            light += sample.light_scale * weight;
-            total += weight;
-            coverage = std::max(coverage, amount);
-        }
-    }
-
-    WeatherBlend result {};
-    result.coverage = coverage;
-    result.sky_tint = Eigen::Vector3f::Ones();
-    result.sky_visibility = 1.0f;
-    result.light_scale = 1.0f;
-
-    if(total > 0.0f) {
-        result.sky_tint = tint / total;
-        result.sky_visibility = std::clamp(visibility / total, 0.0f, 1.0f);
-        result.light_scale = light / total;
-    }
-
-    if(base.coverage > coverage) {
-        result.coverage = base.coverage;
-        result.sky_tint = base.sky_tint;
-        result.sky_visibility = base.sky_visibility;
-        result.light_scale = base.light_scale;
-    }
-
-    return result;
+    return weather::blend(x, z);
 }
 
 void weather::fill_info(packet::World_Info& packet)
 {
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        packet.types_seed[i] = active_states()[i].types.seed;
-        packet.types_scale[i] = active_states()[i].types.scale;
-        packet.detail_seed[i] = active_states()[i].detail.seed;
-        packet.detail_scale[i] = active_states()[i].detail.scale;
-    }
+    auto& state = active_state();
+
+    packet.types_seed = state.types.seed;
+    packet.types_scale = state.types.scale;
+    packet.detail_seed = state.detail.seed;
+    packet.detail_scale = state.detail.scale;
 }
 
 void weather::apply_info(const packet::World_Info& packet)
 {
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        active_states()[i].types.seed = packet.types_seed[i];
-        active_states()[i].types.scale = packet.types_scale[i];
-        active_states()[i].detail.seed = packet.detail_seed[i];
-        active_states()[i].detail.scale = packet.detail_scale[i];
-    }
+    auto& state = active_state();
+
+    state.types.seed = packet.types_seed;
+    state.types.scale = packet.types_scale;
+    state.detail.seed = packet.detail_seed;
+    state.detail.scale = packet.detail_scale;
 }
 
 void weather::fill_packet(packet::World_Weather& packet)
 {
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        packet.types_drift[i] = active_states()[i].types.drift;
-        packet.detail_drift[i] = active_states()[i].detail.drift;
-        packet.wind[i] = active_states()[i].wind;
-    }
+    auto& state = active_state();
+
+    packet.types_drift = state.types.drift;
+    packet.detail_drift = state.detail.drift;
+    packet.wind = state.wind;
 }
 
 void weather::apply_packet(const packet::World_Weather& packet, bool baseline)
@@ -534,17 +385,15 @@ void weather::apply_packet(const packet::World_Weather& packet, bool baseline)
     // The first snapshot of a session is always taken whole
     constexpr static float DRIFT_SNAP = 64.0f;
 
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        auto& target = active_states()[i];
+    auto& target = active_state();
 
-        if(baseline || (packet.types_drift[i] - target.types.drift).norm() > DRIFT_SNAP) {
-            target.types.drift = packet.types_drift[i];
-        }
-
-        if(baseline || (packet.detail_drift[i] - target.detail.drift).norm() > DRIFT_SNAP) {
-            target.detail.drift = packet.detail_drift[i];
-        }
-
-        target.wind = packet.wind[i];
+    if(baseline || (packet.types_drift - target.types.drift).norm() > DRIFT_SNAP) {
+        target.types.drift = packet.types_drift;
     }
+
+    if(baseline || (packet.detail_drift - target.detail.drift).norm() > DRIFT_SNAP) {
+        target.detail.drift = packet.detail_drift;
+    }
+
+    target.wind = packet.wind;
 }
