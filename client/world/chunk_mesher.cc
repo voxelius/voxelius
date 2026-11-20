@@ -1227,6 +1227,11 @@ static void on_chunk_light(const ChunkLightUpdateEvent& event)
     mark_neighbors_dirty(event.pos());
 }
 
+void chunk_mesher::reset(void)
+{
+    s_pending.clear();
+}
+
 void chunk_mesher::init(void)
 {
     globals::dispatcher.sink<ChunkCreateEvent>().connect<&on_chunk_create>();

@@ -4,12 +4,12 @@
 
 #include "shared/globals.hh"
 
-WorldScope::WorldScope(std::shared_ptr<World> world) : m_previous(std::exchange(globals::world, std::move(world)))
+WorldScope::WorldScope(World* world) : m_previous(std::exchange(globals::world, world))
 {
     // empty
 }
 
 WorldScope::~WorldScope(void)
 {
-    globals::world = std::move(m_previous);
+    globals::world = m_previous;
 }

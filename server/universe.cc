@@ -132,7 +132,7 @@ void universe::init(void)
 
     s_universe_config.set_value<std::string>("default_world", default_id_string);
 
-    globals::world = s_default_world;
+    globals::world = s_default_world.get();
 }
 
 void universe::init_late(void)

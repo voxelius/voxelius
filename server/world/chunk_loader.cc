@@ -251,7 +251,7 @@ void LoadTask::finalize(void)
 
         // Not ChunkUpdateEvent: loaded-from-disk chunks are identical
         // to what's saved and must NOT be marked ChunkDirtyMarker.
-        globals::dispatcher.trigger(ChunkReadyEvent(globals::world.get(), m_pos, chunk));
+        globals::dispatcher.trigger(ChunkReadyEvent(globals::world, m_pos, chunk));
 
         entity_loader::load(m_pos);
     }

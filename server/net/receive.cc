@@ -266,7 +266,7 @@ static void on_player_attack_b(const packet::Player_AttackB& packet)
     }
 
     physics::BlockHit hit {};
-    hit.world = globals::world.get();
+    hit.world = globals::world;
     hit.block_pos = packet.bpos;
     hit.id = packet.expected;
 
@@ -301,7 +301,7 @@ static void on_player_interact_b(const packet::Player_InteractB& packet)
     }
 
     physics::BlockHit hit {};
-    hit.world = globals::world.get();
+    hit.world = globals::world;
     hit.block_pos = packet.bpos;
     hit.id = packet.expected;
     hit.face = packet.face;

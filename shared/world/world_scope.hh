@@ -8,7 +8,7 @@ class World;
 // argument and reads the active world instead.
 class WorldScope final {
 public:
-    explicit WorldScope(std::shared_ptr<World> world);
+    explicit WorldScope(World* world);
     ~WorldScope(void);
 
     WorldScope(const WorldScope& other) = delete;
@@ -17,7 +17,7 @@ public:
     WorldScope& operator=(WorldScope&& other) = delete;
 
 private:
-    std::shared_ptr<World> m_previous;
+    World* m_previous;
 };
 
 #endif /* F28A4C61_7D35_4E9B_A1C8_6B0E3D7F5A29 */

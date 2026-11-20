@@ -4,6 +4,7 @@
 namespace chunk_mesher
 {
 void init(void);
+void reset(void);
 void update(void);
 } // namespace chunk_mesher
 

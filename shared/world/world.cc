@@ -7,6 +7,7 @@
 #include "shared/utils/world.hh"
 #include "shared/world/biome_map.hh"
 #include "shared/world/block_registry.hh"
+#include "shared/world/world_scope.hh"
 
 ChunkCreateEvent::ChunkCreateEvent(World* world, const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk)
     : m_world(world), m_chunk(chunk), m_pos(pos)
@@ -474,6 +475,8 @@ void World::purge(void)
 
 void World::fixed_update(void)
 {
+    WorldScope scope(this);
+
     std::vector<std::pair<std::size_t, block_tick_source>> due;
 
     m_chunk_registry.view<Chunk_Component>().each([&](Chunk_Component& component) {

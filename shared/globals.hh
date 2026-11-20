@@ -10,7 +10,7 @@ extern entt::dispatcher dispatcher;
 // Entities still share one registry; they move into World in a later stage
 extern entt::registry registry;
 
-extern std::shared_ptr<World> world;
+extern World* world;
 } // namespace globals
 
 namespace globals

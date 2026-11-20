@@ -16,6 +16,7 @@
 
 #include "client/camera.hh"
 #include "client/fog.hh"
+#include "client/game.hh"
 #include "client/globals.hh"
 #include "client/shader_program.hh"
 #include "client/world/block_atlas.hh"
@@ -424,13 +425,21 @@ void chunk_renderer::init(void)
     globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
     globals::dispatcher.sink<ChunkUpdateEvent>().connect<&on_chunk_update>();
 
-    auto& chunk_registry = globals::world->chunk_registry();
-    chunk_registry.on_update<ChunkMesh>().connect<&on_chunk_mesh>();
-    chunk_registry.on_destroy<ChunkMesh>().connect<&on_chunk_mesh>();
+    for(const auto& world : client_game::worlds()) {
+        auto& chunk_registry = world->chunk_registry();
+        chunk_registry.on_update<ChunkMesh>().connect<&on_chunk_mesh>();
+        chunk_registry.on_destroy<ChunkMesh>().connect<&on_chunk_mesh>();
+    }
 }
 
 void chunk_renderer::shutdown(void)
 {
+    for(const auto& world : client_game::worlds()) {
+        auto& chunk_registry = world->chunk_registry();
+        chunk_registry.on_update<ChunkMesh>().disconnect<&on_chunk_mesh>();
+        chunk_registry.on_destroy<ChunkMesh>().disconnect<&on_chunk_mesh>();
+    }
+
     glDeleteBuffers(1, &s_chunk_positions_buffer);
     glDeleteTextures(1, &s_chunk_positions_tbo);
     glDeleteBuffers(1, &s_pattern_ibo);

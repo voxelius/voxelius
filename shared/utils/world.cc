@@ -8,6 +8,7 @@
 #include "shared/utils/coord.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/world.hh"
+#include "shared/world/world_scope.hh"
 
 static std::string_view callback_name(const BlockFamily* family)
 {
@@ -31,6 +32,8 @@ static bool call_routine(lua_State* L, int argc, int retc, std::string_view debu
 bool utils::block_place(const physics::BlockHit& hit, entt::entity actor, block_id_type id)
 {
     assert(hit.world);
+
+    WorldScope scope(hit.world);
 
     auto world = hit.world;
 
@@ -156,6 +159,8 @@ bool utils::block_break(const physics::BlockHit& hit, entt::entity actor)
 {
     assert(hit.world);
 
+    WorldScope scope(hit.world);
+
     auto world = hit.world;
 
     auto replace_block = BLOCK_ID_NULL; // TODO: ask biome subsystem for this
@@ -198,6 +203,10 @@ bool utils::block_break(const physics::BlockHit& hit, entt::entity actor)
 
 bool utils::block_interact(const physics::BlockHit& hit, entt::entity actor)
 {
+    assert(hit.world);
+
+    WorldScope scope(hit.world);
+
     auto family = block_registry::find_family_of(hit.id);
 
     if(family == nullptr) {

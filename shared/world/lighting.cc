@@ -561,7 +561,7 @@ void ChunkLightTask::finalize(void)
 
         mark_full_light_change(m_cpos);
 
-        globals::dispatcher.trigger(ChunkLightUpdateEvent(globals::world.get(), m_cpos));
+        globals::dispatcher.trigger(ChunkLightUpdateEvent(globals::world, m_cpos));
 
         // A changed border is a seed for the six chunks that share a face
         // with this one; the diagonal chunks are reached through them.
@@ -925,7 +925,7 @@ void lighting::fixed_update(void)
     process_add(budget);
 
     for(const auto& cpos : s_changed) {
-        globals::dispatcher.trigger(ChunkLightUpdateEvent(globals::world.get(), cpos));
+        globals::dispatcher.trigger(ChunkLightUpdateEvent(globals::world, cpos));
     }
 
     s_changed.clear();

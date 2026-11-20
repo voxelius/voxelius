@@ -120,7 +120,7 @@ void player_target::init(void)
 void player_target::update(void)
 {
     physics::Ray ray {};
-    ray.world = globals::world.get();
+    ray.world = globals::world;
     ray.start_chunk = camera::chunk;
     ray.start = camera::instance.position();
     ray.direction = camera::forward;

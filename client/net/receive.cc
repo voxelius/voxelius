@@ -25,6 +25,7 @@
 #include "shared/world/world_registry.hh"
 
 #include "client/camera.hh"
+#include "client/game.hh"
 #include "client/globals.hh"
 #include "client/net/session.hh"
 #include "client/world/cloud_renderer.hh"
@@ -114,7 +115,7 @@ static void on_world_blocks(const packet::World_Blocks& packet)
         chunk->clear_light();
     }
 
-    globals::dispatcher.trigger(ChunkUpdateEvent(globals::world.get(), packet.cpos, chunk));
+    globals::dispatcher.trigger(ChunkUpdateEvent(globals::world, packet.cpos, chunk));
 }
 
 static void on_world_biomes(const packet::World_Biomes& packet)
@@ -146,7 +147,7 @@ static void on_world_light(const packet::World_Light& packet)
             }
         }
 
-        globals::dispatcher.trigger(ChunkLightUpdateEvent(globals::world.get(), entry.cpos));
+        globals::dispatcher.trigger(ChunkLightUpdateEvent(globals::world, entry.cpos));
     }
 }
 
@@ -181,9 +182,7 @@ static void on_world_info(const packet::World_Info& packet)
         return;
     }
 
-    if(!globals::world || globals::world->id() != id) {
-        globals::world = std::make_shared<World>(definition);
-    }
+    client_game::open_world(id);
 
     globals::world->seed = packet.seed;
 

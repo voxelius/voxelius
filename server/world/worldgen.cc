@@ -86,8 +86,8 @@ void WorldgenTask::finalize(void)
         m_biomes.reset();
     }
 
-    globals::dispatcher.trigger(ChunkUpdateEvent(globals::world.get(), m_pos, chunk));
-    globals::dispatcher.trigger(ChunkReadyEvent(globals::world.get(), m_pos, chunk));
+    globals::dispatcher.trigger(ChunkUpdateEvent(globals::world, m_pos, chunk));
+    globals::dispatcher.trigger(ChunkReadyEvent(globals::world, m_pos, chunk));
 }
 
 void worldgen::init(void)
