@@ -16,6 +16,7 @@
 #include "server/globals.hh"
 #include "server/net/interest.hh"
 #include "server/net/sessions.hh"
+#include "server/universe.hh"
 #include "server/world/chunk_loader.hh"
 
 constexpr static std::size_t UNLOAD_BUDGET = constant::REGION_VOLUME;
@@ -32,71 +33,77 @@ void chunk_unloader::fixed_update_late(void)
     auto all_sessions = sessions::all();
 
     std::vector<ChunkAlignedBox> boxes;
-    boxes.reserve(all_sessions.size());
+    std::vector<ChunkPos> to_unload;
+    std::vector<entt::entity> chunk_entities;
 
-    for(const auto& session : all_sessions) {
-        if(globals::registry.valid(session.player)) {
+    for(const auto& world : universe::worlds()) {
+        boxes.clear();
+
+        for(const auto& session : all_sessions) {
+            if(session.world != world) {
+                continue;
+            }
+
+            if(!globals::registry.valid(session.player)) {
+                continue;
+            }
+
             auto& transform = globals::registry.get<Transform>(session.player);
             auto radius = static_cast<ChunkPos::value_type>(interest::view_distance.value());
             boxes.push_back(utils::view_box(transform.chunk, radius));
         }
-    }
 
-    std::vector<ChunkPos> to_unload;
-    std::size_t autosaved = 0;
+        to_unload.clear();
 
-    auto& chunk_registry = globals::world->chunk_registry();
-    auto chunks = chunk_registry.view<Chunk_Component>();
+        auto& chunk_registry = world->chunk_registry();
+        auto chunks = chunk_registry.view<Chunk_Component>();
 
-    for(const auto [entity, component] : chunks.each()) {
-        auto inside_view = false;
+        for(const auto [entity, component] : chunks.each()) {
+            auto inside_view = false;
 
-        for(const auto& box : boxes) {
-            auto& min = box.min();
-            auto& max = box.max();
-            auto& pos = component.position;
+            for(const auto& box : boxes) {
+                auto& min = box.min();
+                auto& max = box.max();
+                auto& pos = component.position;
 
-            // Keep whole columns alive while their XZ position is in view;
-            // light needs every chunk of the realm, not only the visible ones.
-            if(pos.x() < min.x() || pos.x() > max.x()) {
-                continue;
+                // Keep whole columns alive while their XZ position is in view;
+                // light needs every chunk of the realm, not only the visible ones.
+                if(pos.x() < min.x() || pos.x() > max.x()) {
+                    continue;
+                }
+
+                if(pos.z() < min.z() || pos.z() > max.z()) {
+                    continue;
+                }
+
+                inside_view = true;
+                break;
             }
 
-            if(pos.z() < min.z() || pos.z() > max.z()) {
-                continue;
-            }
-
-            inside_view = true;
-            break;
-        }
-
-        if(!inside_view) {
-            if(to_unload.size() < UNLOAD_BUDGET) {
+            if(!inside_view && to_unload.size() < UNLOAD_BUDGET) {
                 to_unload.push_back(component.position);
             }
-
-            continue;
         }
-    }
 
-    auto entities = globals::registry.view<EntityClass, Transform>();
+        auto entities = globals::registry.view<EntityClass, Transform>();
 
-    for(const auto& pos : to_unload) {
-        std::vector<entt::entity> chunk_entities;
+        for(const auto& pos : to_unload) {
+            chunk_entities.clear();
 
-        for(const auto [entity, cls, transform] : entities.each()) {
-            if(transform.chunk == pos) {
-                chunk_entities.push_back(entity);
+            for(const auto [entity, cls, transform] : entities.each()) {
+                if(transform.chunk == pos) {
+                    chunk_entities.push_back(entity);
+                }
             }
+
+            entity_loader::save(world.get(), pos, chunk_entities);
+
+            for(const auto entity : chunk_entities) {
+                globals::registry.destroy(entity);
+            }
+
+            chunk_loader::save(world, pos);
+            world->remove_chunk(pos);
         }
-
-        entity_loader::save(pos, chunk_entities);
-
-        for(const auto entity : chunk_entities) {
-            globals::registry.destroy(entity);
-        }
-
-        chunk_loader::save(pos);
-        globals::world->remove_chunk(pos);
     }
 }

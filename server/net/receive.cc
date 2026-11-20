@@ -35,7 +35,27 @@ struct ChunkRequest final {
     ENetPeer* peer;
 };
 
-static vx::hash_map<ChunkPos, std::vector<ChunkRequest>> s_waiting_peers;
+struct ChunkWaitKey final {
+    bool operator==(const ChunkWaitKey& other) const
+    {
+        return world == other.world && pos == other.pos;
+    }
+
+    World* world;
+    ChunkPos pos;
+};
+
+template<>
+struct std::hash<ChunkWaitKey> final {
+    std::size_t operator()(const ChunkWaitKey& key) const
+    {
+        auto value = std::hash<ChunkPos>()(key.pos);
+        value ^= reinterpret_cast<std::size_t>(key.world) * 2654435761;
+        return value;
+    }
+};
+
+static vx::hash_map<ChunkWaitKey, std::vector<ChunkRequest>> s_waiting_peers;
 static vx::hash_set<ChunkPos> s_sent_chunks;
 static std::vector<packet::World_Light::Entry> s_pending_light;
 
@@ -53,32 +73,52 @@ static void enqueue_send(ENetPeer* peer, const ChunkPos& cpos)
     auto& queued = s_send_queued[peer];
 
     if(queued.insert(cpos).second) {
-        s_send_queue.push_back(PendingChunkSend { peer, cpos });
+        PendingChunkSend request {};
+        request.peer = peer;
+        request.cpos = cpos;
+
+        s_send_queue.push_back(request);
     }
 }
 
-static void enqueue_peer(const ChunkPos& cpos, ENetPeer* peer)
+static void enqueue_peer(World* world, const ChunkPos& cpos, ENetPeer* peer)
 {
-    auto& waiting = s_waiting_peers[cpos];
+    assert(world);
+
+    ChunkWaitKey key {};
+    key.world = world;
+    key.pos = cpos;
+
+    auto& waiting = s_waiting_peers[key];
 
     auto known = std::find_if(waiting.begin(), waiting.end(), [peer](const auto& request) {
         return request.peer == peer;
     });
 
     if(known == waiting.end()) {
-        waiting.push_back(ChunkRequest { peer });
+        ChunkRequest request {};
+        request.peer = peer;
+
+        waiting.push_back(request);
     }
 }
 
 static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos)
 {
-    auto chunk = globals::world->find_chunk(cpos);
+    auto session = sessions::find(peer);
+
+    if(session == nullptr) {
+        return;
+    }
+
+    auto world = session->world;
+    auto chunk = world->find_chunk(cpos);
 
     if(chunk == nullptr) {
         // The chunk was unloaded between queueing and sending. Ask for it
         // again instead of dropping the peer's request on the floor.
-        enqueue_peer(cpos, peer);
-        chunk_loader::request(cpos);
+        enqueue_peer(world.get(), cpos, peer);
+        chunk_loader::request(world, cpos);
         return;
     }
 
@@ -88,7 +128,7 @@ static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos)
         packet::World_Biomes biomes_packet;
         biomes_packet.realm = realm;
         biomes_packet.cpos = ChunkPosXZ(cpos.x(), cpos.z());
-        biomes_packet.biomes = globals::world->biomes(realm, biomes_packet.cpos);
+        biomes_packet.biomes = world->biomes(realm, biomes_packet.cpos);
         protocol::send(biomes_packet, peer);
     }
 
@@ -104,15 +144,21 @@ static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos)
     globals::dispatcher.trigger(ChunkSentEvent(peer, cpos));
 }
 
-static void send_waiting(const ChunkPos& cpos)
+static void send_waiting(World* world, const ChunkPos& cpos)
 {
-    auto it = s_waiting_peers.find(cpos);
+    assert(world);
+
+    ChunkWaitKey key {};
+    key.world = world;
+    key.pos = cpos;
+
+    auto it = s_waiting_peers.find(key);
 
     if(it == s_waiting_peers.end()) {
         return;
     }
 
-    auto chunk = globals::world->find_chunk(cpos);
+    auto chunk = world->find_chunk(cpos);
 
     if(chunk == nullptr) {
         // Still loading/generating; retry on the next sweep.
@@ -139,7 +185,7 @@ static void on_world_request(const packet::World_Request& packet)
 
 static void on_chunk_ready(const ChunkReadyEvent& event)
 {
-    send_waiting(event.pos());
+    send_waiting(event.world(), event.pos());
 }
 
 static void on_chunk_light(const ChunkLightUpdateEvent& event)
@@ -154,7 +200,8 @@ static void on_chunk_light(const ChunkLightUpdateEvent& event)
         return;
     }
 
-    auto chunk = globals::world->find_chunk(event.pos());
+    auto world = event.world();
+    auto chunk = world->find_chunk(event.pos());
 
     if(chunk == nullptr || !chunk->has_light()) {
         return;
@@ -210,14 +257,22 @@ static bool in_reach(entt::entity player, const BlockPos& bpos)
 // prediction stays in the client world until it is rebuilt from scratch.
 static void send_correction(ENetPeer* peer, const BlockPos& bpos)
 {
+    auto session = sessions::find(peer);
+
+    if(session == nullptr) {
+        return;
+    }
+
+    auto world = session->world;
+
     auto cpos = utils::to_chunk(bpos);
-    auto chunk = globals::world->find_chunk(cpos);
+    auto chunk = world->find_chunk(cpos);
 
     if(chunk == nullptr) {
         // The client kept a chunk the server no longer has. Resending the
         // whole chunk rolls back every prediction made against it.
-        enqueue_peer(cpos, peer);
-        chunk_loader::request(cpos);
+        enqueue_peer(world.get(), cpos, peer);
+        chunk_loader::request(world, cpos);
         return;
     }
 
@@ -260,13 +315,15 @@ static void on_player_attack_b(const packet::Player_AttackB& packet)
         return;
     }
 
-    if(globals::world->get_block(packet.bpos) != packet.expected) {
+    auto world = session->world;
+
+    if(world->get_block(packet.bpos) != packet.expected) {
         reject_break(packet.peer, packet.bpos);
         return;
     }
 
     physics::BlockHit hit {};
-    hit.world = globals::world;
+    hit.world = world.get();
     hit.block_pos = packet.bpos;
     hit.id = packet.expected;
 
@@ -295,13 +352,15 @@ static void on_player_interact_b(const packet::Player_InteractB& packet)
         return;
     }
 
-    if(globals::world->get_block(packet.bpos) != packet.expected) {
+    auto world = session->world;
+
+    if(world->get_block(packet.bpos) != packet.expected) {
         reject_place(packet.peer, packet);
         return;
     }
 
     physics::BlockHit hit {};
-    hit.world = globals::world;
+    hit.world = world.get();
     hit.block_pos = packet.bpos;
     hit.id = packet.expected;
     hit.face = packet.face;
@@ -449,15 +508,15 @@ void receive::fixed_update_late(void)
     ZoneScoped;
 
     if(!s_waiting_peers.empty()) {
-        std::vector<ChunkPos> keys;
+        std::vector<ChunkWaitKey> keys;
         keys.reserve(s_waiting_peers.size());
 
         for(const auto& it : s_waiting_peers) {
             keys.push_back(it.first);
         }
 
-        for(const auto& cpos : keys) {
-            send_waiting(cpos);
+        for(const auto& key : keys) {
+            send_waiting(key.world, key.pos);
         }
     }
 
@@ -475,7 +534,7 @@ void receive::forget_peer(ENetPeer* peer)
 
     s_send_queued.erase(peer);
 
-    std::vector<ChunkPos> empty;
+    std::vector<ChunkWaitKey> empty;
 
     for(auto& it : s_waiting_peers) {
         auto& requests = it.second;
@@ -489,20 +548,28 @@ void receive::forget_peer(ENetPeer* peer)
         }
     }
 
-    for(const auto& cpos : empty) {
-        s_waiting_peers.erase(cpos);
+    for(const auto& key : empty) {
+        s_waiting_peers.erase(key);
     }
 }
 
 void receive::enqueue_chunk(ENetPeer* peer, const ChunkPos& cpos)
 {
-    if(globals::world->find_chunk(cpos)) {
+    auto session = sessions::find(peer);
+
+    if(session == nullptr) {
+        return;
+    }
+
+    auto world = session->world;
+
+    if(world->find_chunk(cpos)) {
         enqueue_send(peer, cpos);
         return;
     }
 
-    enqueue_peer(cpos, peer);
-    chunk_loader::request(cpos);
+    enqueue_peer(world.get(), cpos, peer);
+    chunk_loader::request(world, cpos);
 }
 
 void receive::init(void)

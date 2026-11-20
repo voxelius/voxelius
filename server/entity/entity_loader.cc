@@ -34,18 +34,19 @@ EntityRegionEntry::EntityRegionEntry(std::filesystem::path path) : region_file(s
 
 static vx::hash_map<RegionKey, std::shared_ptr<EntityRegionEntry>> s_cache;
 
-static std::filesystem::path region_path(biome_realm realm, const RegionPos& region)
+static std::filesystem::path region_path(const World* world, biome_realm realm, const RegionPos& region)
 {
     auto ux = std::bit_cast<std::uint32_t>(region.x());
     auto uy = std::bit_cast<std::uint32_t>(region.y());
     auto uz = std::bit_cast<std::uint32_t>(region.z());
     auto name = std::format("R{}X{:08X}Y{:08X}Z{:08X}.zent", static_cast<unsigned>(realm), ux, uy, uz);
-    return globals::world->entity_dir() / name;
+    return world->entity_dir() / name;
 }
 
-static std::shared_ptr<EntityRegionEntry> find_region(biome_realm realm, const RegionPos& pos)
+static std::shared_ptr<EntityRegionEntry> find_region(const World* world, biome_realm realm, const RegionPos& pos)
 {
     RegionKey key {};
+    key.world = world;
     key.realm = realm;
     key.pos = pos;
 
@@ -58,17 +59,18 @@ static std::shared_ptr<EntityRegionEntry> find_region(biome_realm realm, const R
     return it->second;
 }
 
-static std::shared_ptr<EntityRegionEntry> get_region(biome_realm realm, const RegionPos& pos)
+static std::shared_ptr<EntityRegionEntry> get_region(const World* world, biome_realm realm, const RegionPos& pos)
 {
-    if(auto entry = find_region(realm, pos)) {
+    if(auto entry = find_region(world, realm, pos)) {
         return entry;
     }
 
     RegionKey key {};
+    key.world = world;
     key.realm = realm;
     key.pos = pos;
 
-    auto entry = std::make_shared<EntityRegionEntry>(region_path(realm, pos));
+    auto entry = std::make_shared<EntityRegionEntry>(region_path(world, realm, pos));
     entry->last_used = std::chrono::steady_clock::now();
 
     if(s_cache.size() > MAX_REGIONS) {
@@ -173,8 +175,10 @@ static void decode_entity(ReadBuffer& buffer)
     }
 }
 
-void entity_loader::save(const ChunkPos& pos, std::span<const entt::entity> entities)
+void entity_loader::save(World* world, const ChunkPos& pos, std::span<const entt::entity> entities)
 {
+    assert(world);
+
     if(entities.empty()) {
         return;
     }
@@ -183,7 +187,7 @@ void entity_loader::save(const ChunkPos& pos, std::span<const entt::entity> enti
     auto region = utils::region_of(pos);
     auto slot = utils::region_slot(pos, region);
 
-    auto entry = get_region(realm, region);
+    auto entry = get_region(world, realm, region);
 
     WriteBuffer buffer;
     buffer.write<std::uint32_t>(static_cast<std::uint32_t>(entities.size()));
@@ -196,13 +200,15 @@ void entity_loader::save(const ChunkPos& pos, std::span<const entt::entity> enti
     entry->region_file.write_slot(slot, buffer);
 }
 
-void entity_loader::load(const ChunkPos& pos)
+void entity_loader::load(World* world, const ChunkPos& pos)
 {
+    assert(world);
+
     auto realm = utils::realm(pos.y());
     auto region = utils::region_of(pos);
     auto slot = utils::region_slot(pos, region);
 
-    auto entry = get_region(realm, region);
+    auto entry = get_region(world, realm, region);
 
     ReadBuffer buffer;
 

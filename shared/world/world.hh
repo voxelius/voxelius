@@ -101,55 +101,25 @@ class World final {
 public:
     explicit World(std::shared_ptr<const WorldDefinition> definition);
 
-    constexpr const WorldDefinition& definition(void) const
-    {
-        return *m_definition;
-    }
-    constexpr const Identifier& id(void) const
-    {
-        return m_definition->id;
-    }
+    constexpr const WorldDefinition& definition(void) const;
+    constexpr const Identifier& id(void) const;
 
     std::uint64_t seed { 0 };
 
-    constexpr entt::registry& chunk_registry(void)
-    {
-        return m_chunk_registry;
-    }
-    constexpr const vx::hash_map<ChunkPos, std::shared_ptr<Chunk>>& chunks(void) const
-    {
-        return m_chunks;
-    }
-    constexpr config::Map& config(void)
-    {
-        return m_config;
-    }
+    constexpr entt::registry& chunk_registry(void);
+    constexpr const vx::hash_map<ChunkPos, std::shared_ptr<Chunk>>& chunks(void) const;
+    constexpr config::Map& config(void);
 
     void set_root(std::filesystem::path root);
-    constexpr const std::filesystem::path& root(void) const
-    {
-        return m_root;
-    }
-    constexpr const std::filesystem::path& chunk_dir(void) const
-    {
-        return m_chunk_dir;
-    }
-    constexpr const std::filesystem::path& entity_dir(void) const
-    {
-        return m_entity_dir;
-    }
+    constexpr const std::filesystem::path& root(void) const;
+    constexpr const std::filesystem::path& chunk_dir(void) const;
+    constexpr const std::filesystem::path& entity_dir(void) const;
 
     void load_config(void);
     void save_config(void);
 
-    constexpr std::array<WeatherRealmState, NUM_BIOME_REALMS>& weather(void)
-    {
-        return m_weather;
-    }
-    constexpr const std::array<WeatherRealmState, NUM_BIOME_REALMS>& weather(void) const
-    {
-        return m_weather;
-    }
+    constexpr std::array<WeatherRealmState, NUM_BIOME_REALMS>& weather(void);
+    constexpr const std::array<WeatherRealmState, NUM_BIOME_REALMS>& weather(void) const;
 
 public:
     std::shared_ptr<Chunk> create_chunk(const ChunkPos& pos);
@@ -218,6 +188,56 @@ private:
     std::filesystem::path m_chunk_dir;
     std::filesystem::path m_entity_dir;
 };
+
+constexpr const WorldDefinition& World::definition(void) const
+{
+    return *m_definition;
+}
+
+constexpr const Identifier& World::id(void) const
+{
+    return m_definition->id;
+}
+
+constexpr entt::registry& World::chunk_registry(void)
+{
+    return m_chunk_registry;
+}
+
+constexpr const vx::hash_map<ChunkPos, std::shared_ptr<Chunk>>& World::chunks(void) const
+{
+    return m_chunks;
+}
+
+constexpr config::Map& World::config(void)
+{
+    return m_config;
+}
+
+constexpr const std::filesystem::path& World::root(void) const
+{
+    return m_root;
+}
+
+constexpr const std::filesystem::path& World::chunk_dir(void) const
+{
+    return m_chunk_dir;
+}
+
+constexpr const std::filesystem::path& World::entity_dir(void) const
+{
+    return m_entity_dir;
+}
+
+constexpr std::array<WeatherRealmState, NUM_BIOME_REALMS>& World::weather(void)
+{
+    return m_weather;
+}
+
+constexpr const std::array<WeatherRealmState, NUM_BIOME_REALMS>& World::weather(void) const
+{
+    return m_weather;
+}
 
 constexpr World* ChunkCreateEvent::world(void) const
 {

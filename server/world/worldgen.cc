@@ -1,7 +1,8 @@
 #include "server/pch.hh"
 
-#include "core/threading.hh"
 #include "server/world/worldgen.hh"
+
+#include "core/threading.hh"
 
 #include "shared/globals.hh"
 #include "shared/utils/biome.hh"
@@ -21,27 +22,28 @@
 
 class WorldgenTask final : public Task {
 public:
-    explicit WorldgenTask(const ChunkPos& pos);
+    WorldgenTask(std::shared_ptr<World> world, const ChunkPos& pos);
     virtual ~WorldgenTask(void) override;
     virtual void process(void) override;
     virtual void finalize(void) override;
 
 private:
+    std::shared_ptr<World> m_world;
     BlockStorage m_blocks;
     std::unique_ptr<BiomeSlice> m_biomes;
     ChunkPos m_pos;
 };
 
-static vx::hash_set<ChunkPos> s_pending;
+static vx::hash_map<const World*, vx::hash_set<ChunkPos>> s_pending;
 
-WorldgenTask::WorldgenTask(const ChunkPos& pos) : m_pos(pos)
+WorldgenTask::WorldgenTask(std::shared_ptr<World> world, const ChunkPos& pos) : m_world(std::move(world)), m_pos(pos)
 {
     m_blocks.fill(BLOCK_ID_NULL);
 }
 
 WorldgenTask::~WorldgenTask(void)
 {
-    s_pending.erase(m_pos);
+    s_pending[m_world.get()].erase(m_pos);
 }
 
 void WorldgenTask::process(void)
@@ -69,7 +71,7 @@ void WorldgenTask::finalize(void)
 {
     ZoneScopedN("worldgen::finalize");
 
-    auto chunk = globals::world->create_chunk(m_pos);
+    auto chunk = m_world->create_chunk(m_pos);
     chunk->set_blocks(std::move(m_blocks));
 
     if(m_biomes) {
@@ -80,14 +82,14 @@ void WorldgenTask::finalize(void)
         if(has_biome) {
             auto realm = utils::realm(m_pos.y());
             auto cpos_xz = ChunkPosXZ(m_pos.x(), m_pos.z());
-            globals::world->insert_biomes(realm, cpos_xz, std::move(*m_biomes));
+            m_world->insert_biomes(realm, cpos_xz, std::move(*m_biomes));
         }
 
         m_biomes.reset();
     }
 
-    globals::dispatcher.trigger(ChunkUpdateEvent(globals::world, m_pos, chunk));
-    globals::dispatcher.trigger(ChunkReadyEvent(globals::world, m_pos, chunk));
+    globals::dispatcher.trigger(ChunkUpdateEvent(m_world.get(), m_pos, chunk));
+    globals::dispatcher.trigger(ChunkReadyEvent(m_world.get(), m_pos, chunk));
 }
 
 void worldgen::init(void)
@@ -124,18 +126,21 @@ void worldgen::shutdown(void)
     entropy_cache::shutdown();
 }
 
-void worldgen::request(const ChunkPos& pos)
+void worldgen::request(const std::shared_ptr<World>& world, const ChunkPos& pos)
 {
-    if(s_pending.contains(pos)) {
+    auto& pending = s_pending[world.get()];
+
+    if(pending.contains(pos)) {
         return;
     }
 
-    s_pending.emplace(pos);
+    pending.emplace(pos);
 
-    threading::submit<WorldgenTask>(pos);
+    threading::submit<WorldgenTask>(world, pos);
 }
 
-bool worldgen::pending(const ChunkPos& pos)
+bool worldgen::pending(World* world, const ChunkPos& pos)
 {
-    return s_pending.contains(pos);
+    assert(world);
+    return s_pending[world].contains(pos);
 }

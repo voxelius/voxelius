@@ -4,11 +4,14 @@
 #include "shared/coord.hh"
 #include "shared/world/biome.hh"
 
+class World;
+
 using RegionPos = Eigen::Vector<std::int32_t, 3>;
 
 struct RegionKey final {
     bool operator==(const RegionKey& other) const;
 
+    const World* world;
     biome_realm realm;
     RegionPos pos;
 };
@@ -21,6 +24,7 @@ struct std::hash<RegionKey> final {
         value ^= key.pos.x() * 73856093;
         value ^= key.pos.y() * 19349663;
         value ^= key.pos.z() * 83492791;
+        value ^= reinterpret_cast<std::size_t>(key.world) * 2246822519;
         value ^= static_cast<std::size_t>(key.realm) * 2654435761;
         return value;
     }
