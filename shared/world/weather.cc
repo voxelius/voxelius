@@ -121,7 +121,7 @@ void weather::advance(float delta_time)
     state.detail.drift += state.wind * delta_time;
 }
 
-void weather::force_at(weather_type_id type, float x, float z)
+bool weather::force_at(weather_type_id type, float x, float z)
 {
     auto& state = weather::state();
     auto type_scale = std::max(state.types.scale, 1.0f);
@@ -129,7 +129,7 @@ void weather::force_at(weather_type_id type, float x, float z)
     auto interval = weather_registry::type_interval(allowed_weather(), type);
 
     if(!interval) {
-        return;
+        return false;
     }
 
     auto [interval_start, interval_end] = interval.value();
@@ -186,8 +186,10 @@ void weather::force_at(weather_type_id type, float x, float z)
         }
     }
 
-    state.detail.drift = Eigen::Vector2f(x - (static_cast<float>(detail_best_x) + 0.5f) * detail_scale,
-        z - (static_cast<float>(detail_best_z) + 0.5f) * detail_scale);
+    state.detail.drift.x() = x - (static_cast<float>(detail_best_x) + 0.5f) * detail_scale;
+    state.detail.drift.y() = z - (static_cast<float>(detail_best_z) + 0.5f) * detail_scale;
+
+    return true;
 }
 
 float weather::noise_at(float x, float z, std::uint32_t seed)

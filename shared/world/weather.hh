@@ -107,7 +107,7 @@ namespace weather
 {
 void reset(void);
 void advance(float delta_time);
-void force_at(weather_type_id type, float x, float z);
+bool force_at(weather_type_id type, float x, float z);
 } // namespace weather
 
 namespace weather

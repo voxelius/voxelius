@@ -381,9 +381,9 @@ static int api_force(lua_State* L)
     auto x = luaL_optnumber(L, 2, 0.0);
     auto z = luaL_optnumber(L, 3, 0.0);
 
-    weather::force_at(type, static_cast<float>(x), static_cast<float>(z));
+    auto success = weather::force_at(type, static_cast<float>(x), static_cast<float>(z));
 
-    lua_pushboolean(L, true);
+    lua_pushboolean(L, success);
     return 1;
 }
 

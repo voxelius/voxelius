@@ -150,7 +150,11 @@ static cvar::status cmd_weather_force(const cvar::Context&, std::span<const std:
 
     auto center = player_center(world);
 
-    weather::force_at(type, center.x(), center.y());
+    if(!weather::force_at(type, center.x(), center.y())) {
+        msg::log_error("weather_force: {} is not part of this world", args[0]);
+
+        return cvar::status::ARGUMENT;
+    }
 
     auto coverage = weather::coverage(center.x(), center.y());
 
