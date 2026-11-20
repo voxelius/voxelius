@@ -4,6 +4,7 @@
 
 #include "client/fonts.hh"
 #include "client/globals.hh"
+#include "shared/world/world.hh"
 
 constexpr static float SPLASH_GAP = 4.0f;
 constexpr static float VERSION_PAD = 4.0f;
@@ -46,6 +47,8 @@ gui::Title& gui::Title::set_width(float width)
 
 void gui::Title::layout(void)
 {
+    auto& registry = globals::world->registry();
+
     auto window_size = ImGui::GetWindowSize();
     auto draw_list = ImGui::GetWindowDrawList();
 
@@ -57,7 +60,7 @@ void gui::Title::layout(void)
 
     // In game the menu is a pause screen, so the wordmark and the splash
     // would just cover the world; only the buttons and the version stay
-    if(!globals::registry.valid(globals::player)) {
+    if(!registry.valid(globals::player)) {
         layout_header(window_size, draw_list, shadow_offset);
     }
 

@@ -9,39 +9,38 @@
 #include "shared/entity/class_registry.hh"
 #include "shared/entity/component_map.hh"
 #include "shared/entity/required_class.hh"
-#include "shared/globals.hh"
 #include "shared/utils/coord.hh"
 
-static entt::entity create_entity(entt::entity hint)
+static entt::entity create_entity(entt::registry& registry, entt::entity hint)
 {
     if(hint == entt::null) {
-        return globals::registry.create();
+        return registry.create();
     }
     else {
-        auto result = globals::registry.create(hint);
+        auto result = registry.create(hint);
 
         if(result == hint) {
             return result;
         }
 
-        globals::registry.destroy(result);
+        registry.destroy(result);
 
         return entt::null;
     }
 }
 
-static void attach_class(entt::entity entity, class_id_type id, Identifier name)
+static void attach_class(entt::registry& registry, entt::entity entity, class_id_type id, Identifier name)
 {
     EntityClass class_component {};
     class_component.id = id;
     class_component.name = std::move(name);
-    globals::registry.emplace<EntityClass>(entity, std::move(class_component));
+    registry.emplace<EntityClass>(entity, std::move(class_component));
 }
 
-static bool attach_components(entt::entity entity, const ClassDefinition* def)
+static bool attach_components(entt::registry& registry, entt::entity entity, const ClassDefinition* def)
 {
     for(auto& it : def->entries) {
-        if(!component_map::attach(it.id, entity, it.config)) {
+        if(!component_map::attach(registry, it.id, entity, it.config)) {
             return false;
         }
     }
@@ -49,13 +48,13 @@ static bool attach_components(entt::entity entity, const ClassDefinition* def)
     return true;
 }
 
-static bool patch_components(entt::entity entity, const ClassDefinition* def, lua_State* L, int kv_idx)
+static bool patch_components(entt::registry& registry, entt::entity entity, const ClassDefinition* def, lua_State* L, int kv_idx)
 {
     for(auto& it : def->entries) {
         lua_getfield(L, kv_idx, it.name.c_str());
 
         if(!lua_isnil(L, -1)) {
-            if(!component_map::patch(it.id, entity, L, -1)) {
+            if(!component_map::patch(registry, it.id, entity, L, -1)) {
                 lua_remove(L, -2);
                 return false;
             }
@@ -65,7 +64,7 @@ static bool patch_components(entt::entity entity, const ClassDefinition* def, lu
     return true;
 }
 
-entt::entity utils::spawn(class_id_type class_id, entt::entity hint)
+entt::entity utils::spawn(entt::registry& registry, class_id_type class_id, entt::entity hint)
 {
     auto def = class_registry::find_definition(class_id);
 
@@ -73,9 +72,9 @@ entt::entity utils::spawn(class_id_type class_id, entt::entity hint)
         return entt::null;
     }
 
-    auto entity = create_entity(hint);
+    auto entity = create_entity(registry, hint);
 
-    if(!globals::registry.valid(entity)) {
+    if(!registry.valid(entity)) {
         msg::log_critical("if you're reading this, entt has fucked up");
         return entt::null;
     }
@@ -83,17 +82,17 @@ entt::entity utils::spawn(class_id_type class_id, entt::entity hint)
     auto name = class_registry::name_of(class_id);
     vx::throw_if_not(name.has_value(), "class_registry got corrupted");
 
-    if(!attach_components(entity, def)) {
-        globals::registry.destroy(entity);
+    if(!attach_components(registry, entity, def)) {
+        registry.destroy(entity);
         return entt::null;
     }
 
-    attach_class(entity, class_id, std::move(name.value()));
+    attach_class(registry, entity, class_id, std::move(name.value()));
 
     return entity;
 }
 
-entt::entity utils::spawn(class_id_type class_id, lua_State* L, int kv_idx, entt::entity hint)
+entt::entity utils::spawn(entt::registry& registry, class_id_type class_id, lua_State* L, int kv_idx, entt::entity hint)
 {
     auto def = class_registry::find_definition(class_id);
 
@@ -102,9 +101,9 @@ entt::entity utils::spawn(class_id_type class_id, lua_State* L, int kv_idx, entt
         return entt::null;
     }
 
-    auto entity = create_entity(hint);
+    auto entity = create_entity(registry, hint);
 
-    if(!globals::registry.valid(entity)) {
+    if(!registry.valid(entity)) {
         lua_pushstring(L, "if you're reading this, entt has fucked up");
         return entt::null;
     }
@@ -112,38 +111,38 @@ entt::entity utils::spawn(class_id_type class_id, lua_State* L, int kv_idx, entt
     auto name = class_registry::name_of(class_id);
     vx::throw_if_not(name.has_value(), "class_registry got corrupted");
 
-    if(!attach_components(entity, def)) {
+    if(!attach_components(registry, entity, def)) {
         lua_pushstring(L, "failed to attach components");
-        globals::registry.destroy(entity);
+        registry.destroy(entity);
         return entt::null;
     }
 
-    attach_class(entity, class_id, std::move(name.value()));
+    attach_class(registry, entity, class_id, std::move(name.value()));
 
-    if(!patch_components(entity, def, L, kv_idx)) {
+    if(!patch_components(registry, entity, def, L, kv_idx)) {
         lua_pushstring(L, "failed to patch components");
-        globals::registry.destroy(entity);
+        registry.destroy(entity);
         return entt::null;
     }
 
     return entity;
 }
 
-entt::entity utils::spawn(const Identifier& name, entt::entity hint)
+entt::entity utils::spawn(entt::registry& registry, const Identifier& name, entt::entity hint)
 {
     auto id = class_registry::find(name);
 
-    return utils::spawn(id, hint);
+    return utils::spawn(registry, id, hint);
 }
 
-entt::entity utils::spawn(const Identifier& name, lua_State* L, int kv_idx, entt::entity hint)
+entt::entity utils::spawn(entt::registry& registry, const Identifier& name, lua_State* L, int kv_idx, entt::entity hint)
 {
     auto id = class_registry::find(name);
 
-    return utils::spawn(id, L, kv_idx, hint);
+    return utils::spawn(registry, id, L, kv_idx, hint);
 }
 
-entt::entity utils::spawn_player(const BlockPos& pos, entt::entity hint)
+entt::entity utils::spawn_player(entt::registry& registry, const BlockPos& pos, entt::entity hint)
 {
     auto def = class_registry::find_definition(required_class::player);
 
@@ -151,9 +150,9 @@ entt::entity utils::spawn_player(const BlockPos& pos, entt::entity hint)
         return entt::null;
     }
 
-    auto entity = create_entity(hint);
+    auto entity = create_entity(registry, hint);
 
-    if(!globals::registry.valid(entity)) {
+    if(!registry.valid(entity)) {
         msg::log_critical("if you're reading this, entt has fucked up");
         return entt::null;
     }
@@ -161,15 +160,15 @@ entt::entity utils::spawn_player(const BlockPos& pos, entt::entity hint)
     auto player_class = class_registry::name_of(required_class::player);
     vx::throw_if_not(player_class.has_value(), "class_registry got corrupted");
 
-    if(!attach_components(entity, def)) {
-        globals::registry.destroy(entity);
+    if(!attach_components(registry, entity, def)) {
+        registry.destroy(entity);
         return entt::null;
     }
 
-    attach_class(entity, required_class::player, std::move(player_class.value()));
+    attach_class(registry, entity, required_class::player, std::move(player_class.value()));
 
-    if(globals::registry.all_of<Transform>(entity)) {
-        globals::registry.patch<Transform>(entity, [&](Transform& transform) {
+    if(registry.all_of<Transform>(entity)) {
+        registry.patch<Transform>(entity, [&](Transform& transform) {
             transform.chunk = utils::to_chunk(pos);
             transform.local = utils::to_local(pos).cast<float>();
         });

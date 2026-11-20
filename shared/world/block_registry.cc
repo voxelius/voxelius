@@ -114,7 +114,7 @@ static BlockDefinition apply_matching_variant(const BlockDefinition& base_def, c
 {
     BlockDefinition resolved = base_def;
 
-    if(const auto* rule = find_matching_rule(family, map)) {
+    if(const auto rule = find_matching_rule(family, map)) {
         resolved = BlockOverridePatch::apply(base_def, rule->overrides);
     }
 
@@ -551,7 +551,7 @@ fluid_id_type block_registry::preview_fluid(block_id_type id, blockstate_key_typ
     map.insert_or_assign(blockstate_key_type(state), blockstate_val_type(value));
 
     fluid_id_type result = FLUID_ID_NULL;
-    const auto* rule = find_matching_rule(*family, map);
+    const auto rule = find_matching_rule(*family, map);
 
     if(rule) {
         if(rule->overrides.fluid_name.has_value()) {

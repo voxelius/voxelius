@@ -246,7 +246,8 @@ static void on_player_attack_e(const packet::Player_AttackE& packet)
 
 static bool in_reach(entt::entity player, const BlockPos& bpos)
 {
-    auto& transform = globals::registry.get<Transform>(player);
+    auto& registry = globals::world->registry();
+    auto& transform = registry.get<Transform>(player);
     auto player_bpos = utils::to_block(transform.chunk, transform.local.cast<LocalPos::value_type>());
     auto distance = (bpos - player_bpos).cast<float>().norm();
     return distance <= gamerules::reach_distance.value();
@@ -377,20 +378,21 @@ static void on_player_interact_b(const packet::Player_InteractB& packet)
 
 static void on_player_move_data(const packet::Player_MoveData& packet)
 {
+    auto& registry = globals::world->registry();
     auto session = sessions::find(packet.peer);
 
     if(session == nullptr) {
         return;
     }
 
-    globals::registry.emplace_or_replace<MoveData>(session->player, MoveData { packet.wishdir });
+    registry.emplace_or_replace<MoveData>(session->player, MoveData { packet.wishdir });
 
     SimulatedMoveData sim_data;
     sim_data.chunk = packet.simulated_cpos;
     sim_data.local = packet.simulated_lpos;
     sim_data.velocity = packet.velocity;
 
-    globals::registry.emplace_or_replace<SimulatedMoveData>(session->player, std::move(sim_data));
+    registry.emplace_or_replace<SimulatedMoveData>(session->player, std::move(sim_data));
 }
 
 // ENet transmits a reliable packet only while its window has room, and that

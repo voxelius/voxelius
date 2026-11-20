@@ -56,15 +56,17 @@ static Eigen::Vector2f random_direction(void)
 
 static Eigen::Vector2f realm_player_center(biome_realm realm)
 {
+    auto& registry = globals::world->registry();
+
     Eigen::Vector2f sum = Eigen::Vector2f::Zero();
     std::size_t count = 0;
 
     for(auto& session : sessions::all()) {
-        if(session.state != session_state::CONNECTED || !globals::registry.valid(session.player)) {
+        if(session.state != session_state::CONNECTED || !registry.valid(session.player)) {
             continue;
         }
 
-        const auto& transform = globals::registry.get<Transform>(session.player);
+        const auto& transform = registry.get<Transform>(session.player);
 
         if(utils::realm(transform.chunk.y()) != realm) {
             continue;
@@ -198,15 +200,17 @@ static cvar::status cmd_weather_force(const cvar::Context& ctx, std::span<const 
 
 static void strike(biome_realm realm, const WeatherTypeDefinition& def)
 {
+    auto& registry = globals::world->registry();
+
     Session* target = nullptr;
     auto players = 0;
 
     for(auto& session : sessions::all()) {
-        if(session.state != session_state::CONNECTED || !globals::registry.valid(session.player)) {
+        if(session.state != session_state::CONNECTED || !registry.valid(session.player)) {
             continue;
         }
 
-        const auto& transform = globals::registry.get<Transform>(session.player);
+        const auto& transform = registry.get<Transform>(session.player);
 
         if(utils::realm(transform.chunk.y()) != realm) {
             continue;
@@ -223,7 +227,7 @@ static void strike(biome_realm realm, const WeatherTypeDefinition& def)
         return;
     }
 
-    const auto& transform = globals::registry.get<Transform>(target->player);
+    const auto& transform = registry.get<Transform>(target->player);
     auto origin = utils::to_fvec(transform.chunk) + transform.local;
 
     auto angle = random_float() * std::numbers::pi_v<float> * 2.0f;

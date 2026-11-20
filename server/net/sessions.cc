@@ -180,6 +180,7 @@ static void on_auth_request(const packet::Auth_Request& packet)
 
 static void on_auth_response(const packet::Auth_Response& packet)
 {
+    auto& registry = globals::world->registry();
     auto session = sessions::find(packet.peer);
 
     if(session == nullptr) {
@@ -238,12 +239,12 @@ static void on_auth_response(const packet::Auth_Response& packet)
     protocol::send(timings, packet.peer);
 
     auto bpos = BlockPos::Zero(); // TODO: spawn positions?
-    auto player = utils::spawn_player(bpos);
+    auto player = utils::spawn_player(session->world->registry(), bpos);
     session->player = player;
 
     SessionRef ref {};
     ref.ptr = session;
-    globals::registry.emplace<SessionRef>(player, std::move(ref));
+    registry.emplace<SessionRef>(player, std::move(ref));
 
     packet::Entity_Client response_2 {};
     response_2.entity = player;
@@ -607,6 +608,8 @@ Session* sessions::find(const ENetPeer* peer)
 
 void sessions::destroy(Session* session, std::optional<std::uint32_t> reason)
 {
+    auto& registry = globals::world->registry();
+
     if(session) {
         std::string_view reason_string;
 
@@ -626,8 +629,8 @@ void sessions::destroy(Session* session, std::optional<std::uint32_t> reason)
         s_username_map.erase(session->username);
         s_identity_map.erase(session->identity);
 
-        if(globals::registry.valid(session->player)) {
-            globals::registry.destroy(session->player);
+        if(registry.valid(session->player)) {
+            registry.destroy(session->player);
         }
 
         session->state = session_state::UNCONNECTED;

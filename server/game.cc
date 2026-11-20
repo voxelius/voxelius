@@ -12,6 +12,7 @@
 #include "shared/system/pmove.hh"
 #include "shared/utils/entity.hh"
 #include "shared/world/lighting.hh"
+#include "shared/world/world.hh"
 
 #include "server/system/pmove_validator.hh"
 #include "server/world/time_sim.hh"
@@ -42,7 +43,9 @@ void server_game::init(void)
 
 void server_game::init_late(void)
 {
-    utils::spawn(Identifier::from_string("builtin:test_entity"));
+    auto& registry = globals::world->registry();
+
+    utils::spawn(registry, Identifier::from_string("builtin:test_entity"));
 
     // Mods and the universe seed are both ready by this point.
     weather_sim::init();

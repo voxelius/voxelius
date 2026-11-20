@@ -37,9 +37,10 @@ static bool s_weather_synced;
 
 static void on_entity_spawn(const packet::Entity_Spawn& packet)
 {
-    auto entity = utils::spawn(packet.class_id, packet.entity);
+    auto& registry = globals::world->registry();
+    auto entity = utils::spawn(registry, packet.class_id, packet.entity);
 
-    if(!globals::registry.valid(entity)) {
+    if(!registry.valid(entity)) {
         session::disconnect(packet::Session_Disconnect::ENTITY_ID_DESYNC);
         return;
     }
@@ -63,10 +64,12 @@ static void on_entity_patch(const packet::Entity_Patch& packet)
 {
     static ReadBuffer buffer;
 
+    auto& registry = globals::world->registry();
+
     for(auto& it : packet.components) {
         buffer.reset(it.data);
 
-        component_map::decode_net(it.id, packet.entity, buffer);
+        component_map::decode_net(registry, it.id, packet.entity, buffer);
     }
 
     msg::log_info("entity patch: id={} components={}", static_cast<std::uint64_t>(packet.entity), packet.components.size());
@@ -74,9 +77,11 @@ static void on_entity_patch(const packet::Entity_Patch& packet)
 
 static void on_entity_remove(const packet::Entity_Remove& packet)
 {
+    auto& registry = globals::world->registry();
+
     msg::log_info("entity remove: id={}", static_cast<std::uint64_t>(packet.entity));
 
-    globals::registry.destroy(packet.entity);
+    registry.destroy(packet.entity);
 
     if(globals::player == packet.entity) {
         globals::player = entt::null;

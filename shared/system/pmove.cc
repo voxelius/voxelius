@@ -12,6 +12,7 @@
 #include "shared/component/transform.hh"
 #include "shared/component/velocity.hh"
 #include "shared/globals.hh"
+#include "shared/world/world.hh"
 
 constexpr static float PMOVE_EPS = 1.0e-6f;
 constexpr static float FLY_SPEED = 64.0f;
@@ -44,7 +45,9 @@ static float accelerate(float target, float velocity, float accel, float frameti
 
 static void update_fly(entt::entity entity, const Eigen::Vector3f& wishdir, float frametime)
 {
-    globals::registry.patch<Velocity>(entity, [&](Velocity& velocity) {
+    auto& registry = globals::world->registry();
+
+    registry.patch<Velocity>(entity, [&](Velocity& velocity) {
         Eigen::Vector3f target_h(wishdir.x() * FLY_SPEED, 0.0f, wishdir.z() * FLY_SPEED);
         Eigen::Vector3f current_h(velocity.value.x(), 0.0f, velocity.value.z());
         Eigen::Vector3f new_h = accelerate(target_h, current_h, FLY_ACCEL_H, frametime);
@@ -62,7 +65,8 @@ static void update_walk(entt::entity entity, const Eigen::Vector3f& wishdir, flo
 
 void pmove::update(float frametime)
 {
-    auto view = globals::registry.view<MoveData, MoveMode, Player, Velocity>(entt::exclude<Stasis>);
+    auto& registry = globals::world->registry();
+    auto view = registry.view<MoveData, MoveMode, Player, Velocity>(entt::exclude<Stasis>);
 
     for(const auto [entity, move_data, move_mode, velocity] : view.each()) {
         switch(move_mode.value) {

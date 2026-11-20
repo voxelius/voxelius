@@ -8,14 +8,15 @@
 
 void Stasis::fixed_update(void)
 {
-    auto view = globals::registry.view<Transform>();
+    auto& registry = globals::world->registry();
+    auto view = registry.view<Transform>();
 
     for(auto [entity, transform] : view.each()) {
         if(globals::world->find_chunk(transform.chunk)) {
-            globals::registry.remove<Stasis>(entity);
+            registry.remove<Stasis>(entity);
         }
         else {
-            globals::registry.emplace_or_replace<Stasis>(entity);
+            registry.emplace_or_replace<Stasis>(entity);
         }
     }
 }

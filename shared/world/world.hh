@@ -106,6 +106,7 @@ public:
 
     std::uint64_t seed { 0 };
 
+    constexpr entt::registry& registry(void);
     constexpr entt::registry& chunk_registry(void);
     constexpr const vx::hash_map<ChunkPos, std::shared_ptr<Chunk>>& chunks(void) const;
     constexpr config::Map& config(void);
@@ -180,6 +181,7 @@ public:
 private:
     std::shared_ptr<const WorldDefinition> m_definition;
     vx::hash_map<ChunkPos, std::shared_ptr<Chunk>> m_chunks;
+    entt::registry m_registry;
     entt::registry m_chunk_registry;
     BiomeMap m_biomes;
     std::array<WeatherRealmState, NUM_BIOME_REALMS> m_weather {};
@@ -197,6 +199,11 @@ constexpr const WorldDefinition& World::definition(void) const
 constexpr const Identifier& World::id(void) const
 {
     return m_definition->id;
+}
+
+constexpr entt::registry& World::registry(void)
+{
+    return m_registry;
 }
 
 constexpr entt::registry& World::chunk_registry(void)

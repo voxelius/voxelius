@@ -14,6 +14,7 @@
 #include "shared/net/packet_entity.hh"
 #include "shared/net/protocol.hh"
 #include "shared/utils/coord.hh"
+#include "shared/world/world.hh"
 
 #include "server/globals.hh"
 #include "server/net/sessions.hh"
@@ -25,6 +26,8 @@ static void send_full_update(entt::entity entity)
 {
     static packet::Entity_Patch packet;
 
+    auto& registry = globals::world->registry();
+
     auto head_id = component_map::from_type<Head>();
     auto transform_id = component_map::from_type<Transform>();
     auto velocity_id = component_map::from_type<Velocity>();
@@ -35,7 +38,7 @@ static void send_full_update(entt::entity entity)
 
     for(auto id : std::array { head_id, transform_id, velocity_id }) {
         WriteBuffer buffer;
-        component_map::encode_net(id, entity, buffer);
+        component_map::encode_net(registry, id, entity, buffer);
 
         packet::Entity_Patch::Component component;
         component.id = id;
@@ -44,7 +47,7 @@ static void send_full_update(entt::entity entity)
         packet.components.emplace_back(std::move(component));
     }
 
-    auto& ref = globals::registry.get<SessionRef>(entity);
+    auto& ref = registry.get<SessionRef>(entity);
     protocol::send(packet, ref.ptr->peer);
 }
 
@@ -61,7 +64,8 @@ void pmove_validator::init(void)
 
 void pmove_validator::fixed_update_late(void)
 {
-    auto view = globals::registry.view<MoveMode, SessionRef, SimulatedMoveData, Transform, Velocity>();
+    auto& registry = globals::world->registry();
+    auto view = registry.view<MoveMode, SessionRef, SimulatedMoveData, Transform, Velocity>();
 
     for(const auto [entity, move_mode, ref, sim_data, transform, velocity] : view.each()) {
         BlockPos sim_bpos = utils::to_block(sim_data.chunk, sim_data.local.cast<LocalPos::value_type>());
@@ -83,18 +87,18 @@ void pmove_validator::fixed_update_late(void)
             send_full_update(entity);
         }
         else {
-            globals::registry.patch<Head>(entity, [&](Head& phead) {
+            registry.patch<Head>(entity, [&](Head& phead) {
                 phead.angles.x() = sim_data.angles.x();
                 phead.angles.z() = sim_data.angles.z();
             });
 
-            globals::registry.patch<Transform>(entity, [&](Transform& ptransform) {
+            registry.patch<Transform>(entity, [&](Transform& ptransform) {
                 ptransform.chunk = sim_data.chunk;
                 ptransform.local = sim_data.local;
                 ptransform.angles.y() = sim_data.angles.y();
             });
 
-            globals::registry.patch<Velocity>(entity, [&](Velocity& pvelocity) {
+            registry.patch<Velocity>(entity, [&](Velocity& pvelocity) {
                 pvelocity.value = sim_data.velocity;
             });
         }

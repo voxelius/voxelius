@@ -70,7 +70,7 @@ static void reset_camera(void)
 
 Eigen::Vector3f camera::lookahead(float chunks)
 {
-    auto& registry = globals::registry;
+    auto& registry = globals::world->registry();
 
     if(!registry.valid(globals::player) || !registry.all_of<Velocity_Intr>(globals::player)) {
         return Eigen::Vector3f::Zero();
@@ -125,13 +125,15 @@ void camera::init(void)
 
 void camera::update(void)
 {
-    if(!globals::registry.valid(globals::player)) {
+    auto& registry = globals::world->registry();
+
+    if(!registry.valid(globals::player)) {
         reset_camera();
         return;
     }
 
-    const auto& head = globals::registry.get<Head_Intr>(globals::player);
-    const auto& transform = globals::registry.get<Transform_Intr>(globals::player);
+    const auto& head = registry.get<Head_Intr>(globals::player);
+    const auto& transform = registry.get<Transform_Intr>(globals::player);
 
     camera::angles = head.angles;
     camera::chunk = transform.chunk;

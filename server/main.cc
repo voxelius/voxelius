@@ -98,6 +98,10 @@ static void wrapped_main(int argc, char** argv)
     shared_game::init();
     server_game::init();
 
+    // The universe seed has to be loaded before worldgen
+    // derives its noise and feature seeds from it
+    universe::init();
+
     collector::init();
 
     interest::init();
@@ -112,10 +116,6 @@ static void wrapped_main(int argc, char** argv)
     transmit::init();
 
     streaming::init();
-
-    // The universe seed has to be loaded before worldgen
-    // derives its noise and feature seeds from it
-    universe::init();
 
     worldgen::init();
     chunk_loader::init();

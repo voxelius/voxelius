@@ -10,6 +10,7 @@
 #include "shared/mod_loader.hh"
 #include "shared/net/packet_session.hh"
 #include "shared/splash.hh"
+#include "shared/world/world.hh"
 
 #include "client/console.hh"
 #include "client/constant.hh"
@@ -43,11 +44,13 @@ static void on_language_update(const LanguageUpdateEvent& event)
 
 static void on_keyboard_event(const SDL_KeyboardEvent& event)
 {
+    auto& registry = globals::world->registry();
+
     if(globals::gui_screen == &console::screen) {
         return;
     }
 
-    if(event.type == SDL_EVENT_KEY_DOWN && event.key == SDLK_ESCAPE && globals::registry.valid(globals::player)) {
+    if(event.type == SDL_EVENT_KEY_DOWN && event.key == SDLK_ESCAPE && registry.valid(globals::player)) {
         if(globals::gui_screen) {
             globals::gui_screen = nullptr;
         }

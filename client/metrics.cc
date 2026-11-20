@@ -426,7 +426,7 @@ static ImVec2 layout_network(ImDrawList* draw_list, ImVec2 position, ImU32 text,
 
 static ImVec2 layout_position(ImDrawList* draw_list, ImVec2 position, ImU32 text, ImU32 shadow, float ystep)
 {
-    auto& registry = globals::registry;
+    auto& registry = globals::world->registry();
 
     if(!registry.valid(globals::player)) {
         return position;

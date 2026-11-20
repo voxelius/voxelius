@@ -8,6 +8,7 @@
 #include "shared/component/transform.hh"
 #include "shared/component/velocity.hh"
 #include "shared/system/pmove.hh"
+#include "shared/world/world.hh"
 
 #include "client/globals.hh"
 #include "client/gui/button_bind.hh"
@@ -109,23 +110,27 @@ void player_move::init(void)
 
 void player_move::fixed_update(void)
 {
-    if(globals::registry.valid(globals::player)) {
-        const auto& transform = globals::registry.get<Transform>(globals::player);
-        const auto& velocity = globals::registry.get<Velocity>(globals::player);
-        globals::registry.emplace_or_replace<Transform_Prev>(globals::player, transform);
-        globals::registry.emplace_or_replace<Velocity_Prev>(globals::player, velocity);
+    auto& registry = globals::world->registry();
+
+    if(registry.valid(globals::player)) {
+        const auto& transform = registry.get<Transform>(globals::player);
+        const auto& velocity = registry.get<Velocity>(globals::player);
+        registry.emplace_or_replace<Transform_Prev>(globals::player, transform);
+        registry.emplace_or_replace<Velocity_Prev>(globals::player, velocity);
     }
 }
 
 void player_move::update(void)
 {
+    auto& registry = globals::world->registry();
+
     if(globals::gui_screen && !s_gui_was_open) {
         release_all();
     }
 
     s_gui_was_open = globals::gui_screen;
 
-    if(!globals::registry.valid(globals::player)) {
+    if(!registry.valid(globals::player)) {
         return;
     }
 
@@ -157,7 +162,7 @@ void player_move::update(void)
         }
 
         if(!wishdir.isZero()) {
-            const auto& head = globals::registry.get<Head>(globals::player);
+            const auto& head = registry.get<Head>(globals::player);
             auto yaw = Eigen::AngleAxisf(head.angles.y(), Eigen::Vector3f::UnitY());
             wishdir = yaw * wishdir;
             wishdir.normalize();
@@ -167,5 +172,5 @@ void player_move::update(void)
     MoveData move_data {};
     move_data.wishdir = wishdir;
 
-    globals::registry.emplace_or_replace<MoveData>(globals::player, std::move(move_data));
+    registry.emplace_or_replace<MoveData>(globals::player, std::move(move_data));
 }

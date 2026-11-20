@@ -69,6 +69,8 @@ static void reset_session(void)
 
 static void handle_disconnect(std::uint32_t reason)
 {
+    auto& registry = globals::world->registry();
+
     replication::clear();
 
     if(session::state) {
@@ -79,7 +81,8 @@ static void handle_disconnect(std::uint32_t reason)
         globals::dispatcher.trigger(SessionStateEvent(SESSION_DISCONNECTED, reason));
     }
 
-    globals::registry.clear();
+    registry.clear();
+
     globals::player = entt::null;
 
     if(globals::world) {

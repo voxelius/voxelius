@@ -12,6 +12,7 @@
 #include "shared/net/packet_entity.hh"
 #include "shared/net/packet_world.hh"
 #include "shared/utils/view.hh"
+#include "shared/world/world.hh"
 
 #include "server/globals.hh"
 #include "server/net/sessions.hh"
@@ -20,7 +21,9 @@ cvar::Number<unsigned> interest::view_distance { 8, 1, 32 };
 
 static void send_full_snapshot(ENetPeer* peer, entt::entity entity)
 {
-    auto& entity_class = globals::registry.get<EntityClass>(entity);
+    auto& registry = globals::world->registry();
+
+    auto& entity_class = registry.get<EntityClass>(entity);
 
     packet::Entity_Spawn spawn_packet {};
     spawn_packet.entity = entity;
@@ -35,7 +38,7 @@ static void send_full_snapshot(ENetPeer* peer, entt::entity entity)
         component.id = id;
 
         WriteBuffer buffer;
-        component_map::encode_net(id, entity, buffer);
+        component_map::encode_net(registry, id, entity, buffer);
         component.data = std::move(buffer.take());
 
         patch_packet.components.emplace_back(std::move(component));
@@ -50,7 +53,8 @@ static void update_visibility(void)
 {
     ZoneScoped;
 
-    auto entities = globals::registry.view<EntityClass, Transform>();
+    auto& registry = globals::world->registry();
+    auto entities = registry.view<EntityClass, Transform>();
 
     for(auto& session : sessions::all()) {
         if(session.peer == nullptr) {
@@ -86,11 +90,13 @@ void interest::fixed_update_late(void)
 {
     ZoneScoped;
 
+    auto& registry = globals::world->registry();
+
     auto radius = static_cast<ChunkPos::value_type>(view_distance.value());
 
     for(auto& session : sessions::all()) {
-        if(globals::registry.valid(session.player)) {
-            auto& transform = globals::registry.get<Transform>(session.player);
+        if(registry.valid(session.player)) {
+            auto& transform = registry.get<Transform>(session.player);
             session.view_box = utils::view_box(transform.chunk, radius);
         }
     }

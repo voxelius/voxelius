@@ -7,6 +7,7 @@
 #include "shared/component/velocity.hh"
 #include "shared/entity/class.hh"
 #include "shared/entity/component_map.hh"
+#include "shared/world/world.hh"
 
 #include "client/globals.hh"
 
@@ -33,16 +34,20 @@ static void on_velocity_construct(entt::registry& registry, entt::entity entity)
 
 static void interpolate_components(float alpha)
 {
-    for(auto entity : globals::registry.view<EntityClass>()) {
-        component_map::interpolate(globals::registry, entity, alpha);
+    auto& registry = globals::world->registry();
+
+    for(auto entity : registry.view<EntityClass>()) {
+        component_map::interpolate(registry, entity, alpha);
     }
 }
 
 void interpolation::init(void)
 {
-    globals::registry.on_construct<Transform>().connect<&on_transform_construct>();
-    globals::registry.on_construct<Head>().connect<&on_head_construct>();
-    globals::registry.on_construct<Velocity>().connect<&on_velocity_construct>();
+    auto& registry = globals::world->registry();
+
+    registry.on_construct<Transform>().connect<&on_transform_construct>();
+    registry.on_construct<Head>().connect<&on_head_construct>();
+    registry.on_construct<Velocity>().connect<&on_velocity_construct>();
 }
 
 void interpolation::update(void)

@@ -5,7 +5,7 @@
 #include "shared/constant.hh"
 
 entt::dispatcher globals::dispatcher;
-entt::registry globals::registry;
+
 World* globals::world { nullptr };
 
 std::uint64_t globals::curtime_us;

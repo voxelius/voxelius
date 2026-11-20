@@ -11,6 +11,7 @@
 #include "shared/globals.hh"
 #include "shared/utils/coord.hh"
 #include "shared/utils/lua.hh"
+#include "shared/world/world.hh"
 
 constexpr inline static bool update_component(unsigned dim, Transform& component)
 {
@@ -36,20 +37,20 @@ std::any Component<Transform>::prepare(lua_State* L, int config_idx)
 }
 
 template<>
-void Component<Transform>::attach(entt::entity entity, const std::any& config)
+void Component<Transform>::attach(entt::registry& registry, entt::entity entity, const std::any& config)
 {
     Transform transform {};
     transform.chunk = ChunkPos::Zero();
     transform.local = Eigen::Vector3f::Zero();
     transform.angles = Eigen::Vector3f::Zero();
 
-    globals::registry.emplace_or_replace<Transform>(entity, std::move(transform));
+    registry.emplace_or_replace<Transform>(entity, std::move(transform));
 }
 
 template<>
-bool Component<Transform>::patch(entt::entity entity, lua_State* L, int kv_idx)
+bool Component<Transform>::patch(entt::registry& registry, entt::entity entity, lua_State* L, int kv_idx)
 {
-    auto& current = globals::registry.get<Transform>(entity);
+    auto& current = registry.get<Transform>(entity);
     auto current_bpos = utils::to_block(current.chunk, current.local.cast<ChunkPos::value_type>());
 
     auto bpos = utils::opt_ivec<3>(L, kv_idx, "bpos", current_bpos.cast<lua_Integer>());
@@ -64,7 +65,7 @@ bool Component<Transform>::patch(entt::entity entity, lua_State* L, int kv_idx)
         return false;
     }
 
-    globals::registry.patch<Transform>(entity, [&](Transform& transform) {
+    registry.patch<Transform>(entity, [&](Transform& transform) {
         transform.chunk = utils::to_chunk(bpos.value().cast<BlockPos::value_type>());
         transform.local = utils::to_local(bpos.value().cast<BlockPos::value_type>()).cast<float>();
         transform.angles = angs.value().cast<float>();
@@ -74,18 +75,18 @@ bool Component<Transform>::patch(entt::entity entity, lua_State* L, int kv_idx)
 }
 
 template<>
-void Component<Transform>::encode_net(entt::entity entity, WriteBuffer& buffer)
+void Component<Transform>::encode_net(entt::registry& registry, entt::entity entity, WriteBuffer& buffer)
 {
-    const auto& transform = globals::registry.get<Transform>(entity);
+    const auto& transform = registry.get<Transform>(entity);
     buffer.write_vector<std::int64_t, 3>(transform.chunk.cast<std::int64_t>());
     buffer.write_vector<float, 3>(transform.local);
     buffer.write_vector<float, 3>(transform.angles);
 }
 
 template<>
-void Component<Transform>::decode_net(entt::entity entity, ReadBuffer& buffer)
+void Component<Transform>::decode_net(entt::registry& registry, entt::entity entity, ReadBuffer& buffer)
 {
-    globals::registry.patch<Transform>(entity, [&](Transform& transform) {
+    registry.patch<Transform>(entity, [&](Transform& transform) {
         transform.chunk = buffer.read_vector<std::int64_t, 3>().cast<ChunkPos::value_type>();
         transform.local = buffer.read_vector<float, 3>();
         transform.angles = buffer.read_vector<float, 3>();
@@ -93,23 +94,23 @@ void Component<Transform>::decode_net(entt::entity entity, ReadBuffer& buffer)
 }
 
 template<>
-void Component<Transform>::encode_dat(entt::entity entity, WriteBuffer& buffer)
+void Component<Transform>::encode_dat(entt::registry& registry, entt::entity entity, WriteBuffer& buffer)
 {
-    encode_net(entity, buffer);
+    encode_net(registry, entity, buffer);
 }
 
 template<>
-void Component<Transform>::decode_dat(entt::entity entity, ReadBuffer& buffer)
+void Component<Transform>::decode_dat(entt::registry& registry, entt::entity entity, ReadBuffer& buffer)
 {
-    decode_net(entity, buffer);
+    decode_net(registry, entity, buffer);
 }
 
 template<>
-void Component<Transform>::interpolate(entt::entity entity, float alpha)
+void Component<Transform>::interpolate(entt::registry& registry, entt::entity entity, float alpha)
 {
-    auto* current = globals::registry.try_get<Transform>(entity);
-    auto* previous = globals::registry.try_get<Transform_Prev>(entity);
-    auto* interp = globals::registry.try_get<Transform_Intr>(entity);
+    auto current = registry.try_get<Transform>(entity);
+    auto previous = registry.try_get<Transform_Prev>(entity);
+    auto interp = registry.try_get<Transform_Intr>(entity);
 
     if(current == nullptr || previous == nullptr || interp == nullptr) {
         return;
@@ -132,16 +133,21 @@ void Component<Transform>::interpolate(entt::entity entity, float alpha)
     interp->local.z() = std::lerp(previous_local.z(), current->local.z(), alpha);
 }
 
+template<>
+void Component<Transform>::connect(entt::registry& registry)
+{
+    registry.on_update<Transform>().connect<&component_map::on_update<Transform>>();
+}
+
 void Transform::register_component(void)
 {
     component_map::add<Transform>("transform");
-
-    globals::registry.on_update<Transform>().connect<&component_map::on_update<Transform>>();
 }
 
 void Transform::fixed_update(void)
 {
-    auto view = globals::registry.view<Transform>();
+    auto& registry = globals::world->registry();
+    auto view = registry.view<Transform>();
 
     for(auto [entity, transform] : view.each()) {
         auto changed = false;
@@ -150,7 +156,7 @@ void Transform::fixed_update(void)
         changed = update_component(2, transform) || changed;
 
         if(changed) {
-            globals::registry.patch<Transform>(entity);
+            registry.patch<Transform>(entity);
         }
     }
 }

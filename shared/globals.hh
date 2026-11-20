@@ -6,10 +6,10 @@ class World;
 namespace globals
 {
 extern entt::dispatcher dispatcher;
+} // namespace globals
 
-// Entities still share one registry; they move into World in a later stage
-extern entt::registry registry;
-
+namespace globals
+{
 extern World* world;
 } // namespace globals
 

@@ -37,6 +37,8 @@ void chunk_unloader::fixed_update_late(void)
     std::vector<entt::entity> chunk_entities;
 
     for(const auto& world : universe::worlds()) {
+        auto& registry = world->registry();
+
         boxes.clear();
 
         for(const auto& session : all_sessions) {
@@ -44,11 +46,11 @@ void chunk_unloader::fixed_update_late(void)
                 continue;
             }
 
-            if(!globals::registry.valid(session.player)) {
+            if(!registry.valid(session.player)) {
                 continue;
             }
 
-            auto& transform = globals::registry.get<Transform>(session.player);
+            auto& transform = registry.get<Transform>(session.player);
             auto radius = static_cast<ChunkPos::value_type>(interest::view_distance.value());
             boxes.push_back(utils::view_box(transform.chunk, radius));
         }
@@ -85,7 +87,7 @@ void chunk_unloader::fixed_update_late(void)
             }
         }
 
-        auto entities = globals::registry.view<EntityClass, Transform>();
+        auto entities = registry.view<EntityClass, Transform>();
 
         for(const auto& pos : to_unload) {
             chunk_entities.clear();
@@ -99,7 +101,7 @@ void chunk_unloader::fixed_update_late(void)
             entity_loader::save(world.get(), pos, chunk_entities);
 
             for(const auto entity : chunk_entities) {
-                globals::registry.destroy(entity);
+                registry.destroy(entity);
             }
 
             chunk_loader::save(world, pos);

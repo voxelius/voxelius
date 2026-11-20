@@ -116,16 +116,18 @@ void streaming::fixed_update_late(void)
 {
     ZoneScoped;
 
+    auto& registry = globals::world->registry();
+
     for(auto& session : sessions::all()) {
         if(session.peer == nullptr) {
             continue;
         }
 
-        if(!globals::registry.valid(session.player) || !globals::registry.all_of<Transform>(session.player)) {
+        if(!registry.valid(session.player) || !registry.all_of<Transform>(session.player)) {
             continue;
         }
 
-        const auto& transform = globals::registry.get<Transform>(session.player);
+        const auto& transform = registry.get<Transform>(session.player);
 
         if(session.stream_rebuild) {
             rebuild(session, transform.chunk);
@@ -147,11 +149,13 @@ void streaming::fixed_update_late(void)
 
 void streaming::subscribe(Session& session, const packet::World_Request& packet)
 {
-    if(!globals::registry.valid(session.player) || !globals::registry.all_of<Transform>(session.player)) {
+    auto& registry = globals::world->registry();
+
+    if(!registry.valid(session.player) || !registry.all_of<Transform>(session.player)) {
         return;
     }
 
-    const auto& transform = globals::registry.get<Transform>(session.player);
+    const auto& transform = registry.get<Transform>(session.player);
     const auto& player = transform.chunk;
 
     auto allowed_view = utils::view_box(player, static_cast<ChunkPos::value_type>(interest::view_distance.value()));

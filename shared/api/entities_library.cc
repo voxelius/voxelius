@@ -12,6 +12,7 @@
 #include "shared/mod_context.hh"
 #include "shared/utils/entity.hh"
 #include "shared/utils/lua.hh"
+#include "shared/world/world.hh"
 
 static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
 {
@@ -172,6 +173,8 @@ static int api_add(lua_State* L)
 
 static std::optional<entt::entity> spawn_entity(lua_State* L, ModContext* ctx, const char* raw_name, int kv_idx)
 {
+    auto& registry = globals::world->registry();
+
     auto id = Identifier::from_string(raw_name, ctx->name_space());
 
     if(!id.is_valid()) {
@@ -179,9 +182,9 @@ static std::optional<entt::entity> spawn_entity(lua_State* L, ModContext* ctx, c
         return std::nullopt;
     }
 
-    auto entity = utils::spawn(id, L, kv_idx);
+    auto entity = utils::spawn(registry, id, L, kv_idx);
 
-    if(!globals::registry.valid(entity)) {
+    if(!registry.valid(entity)) {
         return std::nullopt;
     }
 
@@ -242,10 +245,12 @@ static int api_set_player(lua_State* L)
 
 static int api_patch(lua_State* L)
 {
+    auto& registry = globals::world->registry();
+
     auto raw_entity = luaL_checkinteger(L, 1);
     auto entity = static_cast<entt::entity>(raw_entity);
 
-    if(!globals::registry.valid(entity)) {
+    if(!registry.valid(entity)) {
         lua_pushboolean(L, false);
         return 1;
     }
@@ -260,7 +265,7 @@ static int api_patch(lua_State* L)
 
     luaL_checktype(L, 3, LUA_TTABLE);
 
-    auto success = component_map::patch(id, entity, L, 3);
+    auto success = component_map::patch(registry, id, entity, L, 3);
 
     if(!success) {
         lua_pushboolean(L, false);
@@ -274,15 +279,17 @@ static int api_patch(lua_State* L)
 
 static int api_despawn(lua_State* L)
 {
+    auto& registry = globals::world->registry();
+
     auto raw_entity = luaL_checkinteger(L, 1);
     auto entity = static_cast<entt::entity>(raw_entity);
 
-    if(!globals::registry.valid(entity)) {
+    if(!registry.valid(entity)) {
         lua_pushboolean(L, false);
         return 1;
     }
 
-    globals::registry.destroy(entity);
+    registry.destroy(entity);
 
     lua_pushboolean(L, true);
     return 1;

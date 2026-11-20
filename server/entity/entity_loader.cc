@@ -93,11 +93,11 @@ static std::shared_ptr<EntityRegionEntry> get_region(const World* world, biome_r
     return entry;
 }
 
-static void encode_entity(entt::entity entity, WriteBuffer& buffer)
+static void encode_entity(entt::registry& registry, entt::entity entity, WriteBuffer& buffer)
 {
     thread_local std::vector<component_id_type> components;
 
-    auto& entity_class = globals::registry.get<EntityClass>(entity);
+    auto& entity_class = registry.get<EntityClass>(entity);
     auto name = class_registry::name_of(entity_class.id);
 
     if(name.has_value()) {
@@ -119,14 +119,14 @@ static void encode_entity(entt::entity entity, WriteBuffer& buffer)
         buffer.write<std::string_view>(component_map::name_of(id));
 
         WriteBuffer component_buffer;
-        component_map::encode_dat(id, entity, component_buffer);
+        component_map::encode_dat(registry, id, entity, component_buffer);
 
         buffer.write<std::uint32_t>(static_cast<std::uint32_t>(component_buffer.size()));
         buffer.write_bytes(component_buffer.take());
     }
 }
 
-static void decode_entity(ReadBuffer& buffer)
+static void decode_entity(entt::registry& registry, ReadBuffer& buffer)
 {
     thread_local std::vector<std::pair<std::string, std::vector<std::byte>>> components;
 
@@ -155,7 +155,7 @@ static void decode_entity(ReadBuffer& buffer)
         return;
     }
 
-    auto entity = utils::spawn(class_id);
+    auto entity = utils::spawn(registry, class_id);
 
     if(entity == entt::null) {
         return;
@@ -171,13 +171,15 @@ static void decode_entity(ReadBuffer& buffer)
         ReadBuffer component_buffer;
         component_buffer.reset(it.second);
 
-        component_map::decode_dat(component_id, entity, component_buffer);
+        component_map::decode_dat(registry, component_id, entity, component_buffer);
     }
 }
 
 void entity_loader::save(World* world, const ChunkPos& pos, std::span<const entt::entity> entities)
 {
     assert(world);
+
+    auto& registry = world->registry();
 
     if(entities.empty()) {
         return;
@@ -193,7 +195,7 @@ void entity_loader::save(World* world, const ChunkPos& pos, std::span<const entt
     buffer.write<std::uint32_t>(static_cast<std::uint32_t>(entities.size()));
 
     for(auto entity : entities) {
-        encode_entity(entity, buffer);
+        encode_entity(registry, entity, buffer);
     }
 
     std::scoped_lock io_lock(entry->io_mutex);
@@ -203,6 +205,8 @@ void entity_loader::save(World* world, const ChunkPos& pos, std::span<const entt
 void entity_loader::load(World* world, const ChunkPos& pos)
 {
     assert(world);
+
+    auto& registry = world->registry();
 
     auto realm = utils::realm(pos.y());
     auto region = utils::region_of(pos);
@@ -221,6 +225,6 @@ void entity_loader::load(World* world, const ChunkPos& pos)
     auto num_entities = buffer.read<std::uint32_t>();
 
     for(std::size_t i = 0; i < num_entities; ++i) {
-        decode_entity(buffer);
+        decode_entity(registry, buffer);
     }
 }

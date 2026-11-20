@@ -190,8 +190,10 @@ static bool sky_ready(const ChunkPos& pos)
 
 static std::int64_t chunk_distance(const ChunkPos& pos)
 {
+    auto& registry = globals::world->registry();
+
     auto best = std::numeric_limits<std::int64_t>::max();
-    auto players = globals::registry.view<Player, Transform>();
+    auto players = registry.view<Player, Transform>();
 
     for(const auto [entity, transform] : players.each()) {
         auto dx = static_cast<std::int64_t>(pos.x()) - transform.chunk.x();

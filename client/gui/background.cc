@@ -4,6 +4,7 @@
 
 #include "client/constant.hh"
 #include "client/globals.hh"
+#include "shared/world/world.hh"
 
 constexpr static float CELL_DIVISOR = 48.0f;
 
@@ -189,10 +190,12 @@ void gui::Background::layout_dim(ImVec2 window_pos, ImVec2 window_size)
 
 void gui::Background::layout(void)
 {
+    auto& registry = globals::world->registry();
+
     auto window_pos = ImGui::GetWindowPos();
     auto window_size = ImGui::GetWindowSize();
 
-    if(globals::registry.valid(globals::player)) {
+    if(registry.valid(globals::player)) {
         layout_dim(window_pos, window_size);
 
         // The pause menu sits on top of the world itself, so it needs a

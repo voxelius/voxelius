@@ -7,6 +7,7 @@
 #include "shared/entity/component_map.hh"
 #include "shared/net/packet_entity.hh"
 #include "shared/net/protocol.hh"
+#include "shared/world/world.hh"
 
 #include "server/globals.hh"
 #include "server/net/interest.hh"
@@ -14,8 +15,6 @@
 
 static void on_create_entity(entt::registry& registry, entt::entity entity)
 {
-    assert(&registry == &globals::registry); // sanyaty check
-
     auto& component = registry.get<EntityClass>(entity);
 
     packet::Entity_Spawn packet {};
@@ -34,8 +33,6 @@ static void on_create_entity(entt::registry& registry, entt::entity entity)
 
 static void on_destroy_entity(entt::registry& registry, entt::entity entity)
 {
-    assert(&registry == &globals::registry); // sanyaty check
-
     packet::Entity_Remove packet {};
     packet.entity = entity;
 
@@ -53,6 +50,8 @@ static void process_entity(entt::entity entity, DirtyMarker& dirty)
 {
     static packet::Entity_Patch packet;
 
+    auto& registry = globals::world->registry();
+
     packet.entity = entity;
     packet.components.clear();
 
@@ -62,7 +61,7 @@ static void process_entity(entt::entity entity, DirtyMarker& dirty)
             component.id = id;
 
             WriteBuffer buffer;
-            component_map::encode_net(id, entity, buffer);
+            component_map::encode_net(registry, id, entity, buffer);
             component.data = std::move(buffer.take());
 
             packet.components.emplace_back(std::move(component));
@@ -70,9 +69,9 @@ static void process_entity(entt::entity entity, DirtyMarker& dirty)
     }
 
     if(packet.components.size()) {
-        auto except = globals::registry.all_of<SessionRef>(entity) ? globals::registry.get<SessionRef>(entity).ptr->peer : nullptr;
+        auto except = registry.all_of<SessionRef>(entity) ? registry.get<SessionRef>(entity).ptr->peer : nullptr;
 
-        if(auto transform = globals::registry.try_get<Transform>(entity)) {
+        if(auto transform = registry.try_get<Transform>(entity)) {
             interest::broadcast(packet, transform->chunk, except);
         }
         else if(except) {
@@ -88,13 +87,15 @@ static void process_entity(entt::entity entity, DirtyMarker& dirty)
 
 void collector::init(void)
 {
-    globals::registry.on_construct<EntityClass>().connect<&on_create_entity>();
-    globals::registry.on_destroy<EntityClass>().connect<&on_destroy_entity>();
+    auto& registry = globals::world->registry();
+    registry.on_construct<EntityClass>().connect<&on_create_entity>();
+    registry.on_destroy<EntityClass>().connect<&on_destroy_entity>();
 }
 
 void collector::fixed_update_late(void)
 {
-    auto view = globals::registry.view<DirtyMarker>();
+    auto& registry = globals::world->registry();
+    auto view = registry.view<DirtyMarker>();
 
     for(auto [entity, dirty] : view.each()) {
         process_entity(entity, dirty);

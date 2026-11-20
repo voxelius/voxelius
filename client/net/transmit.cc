@@ -8,15 +8,18 @@
 #include "shared/net/packet_player.hh"
 #include "shared/net/protocol.hh"
 #include "shared/system/pmove.hh"
+#include "shared/world/world.hh"
 
 #include "client/globals.hh"
 
 void transmit::fixed_update_late(void)
 {
-    if(globals::peer && globals::registry.valid(globals::player)) {
-        const auto& head = globals::registry.get<Head>(globals::player);
-        const auto& transform = globals::registry.get<Transform>(globals::player);
-        const auto& velocity = globals::registry.get<Velocity>(globals::player);
+    auto& registry = globals::world->registry();
+
+    if(globals::peer && registry.valid(globals::player)) {
+        const auto& head = registry.get<Head>(globals::player);
+        const auto& transform = registry.get<Transform>(globals::player);
+        const auto& velocity = registry.get<Velocity>(globals::player);
 
         packet::Player_MoveData packet {};
         packet.simulated_lpos = transform.local;
@@ -26,7 +29,7 @@ void transmit::fixed_update_late(void)
         packet.camera_angles.z() = head.angles.z();
         packet.velocity = velocity.value;
 
-        if(const auto move_data = globals::registry.try_get<MoveData>(globals::player)) {
+        if(const auto move_data = registry.try_get<MoveData>(globals::player)) {
             packet.wishdir = move_data->wishdir;
         }
 

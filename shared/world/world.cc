@@ -2,6 +2,7 @@
 
 #include "shared/world/world.hh"
 
+#include "shared/entity/component_map.hh"
 #include "shared/globals.hh"
 #include "shared/utils/coord.hh"
 #include "shared/utils/world.hh"
@@ -46,7 +47,7 @@ BlockUpdateEvent::BlockUpdateEvent(World* world, const BlockPos& pos, block_id_t
 
 World::World(std::shared_ptr<const WorldDefinition> definition) : m_definition(std::move(definition))
 {
-    // empty
+    component_map::connect_all(m_registry);
 }
 
 void World::set_root(std::filesystem::path root)

@@ -7,6 +7,7 @@
 #include "core/utils/angles.hh"
 
 #include "shared/component/head.hh"
+#include "shared/world/world.hh"
 
 #include "client/globals.hh"
 #include "client/gui/checkbox.hh"
@@ -25,8 +26,10 @@ static gui::CheckBox s_software_cursor_gui;
 
 static void add_angles(float pitch, float yaw)
 {
-    if(globals::registry.valid(globals::player)) {
-        auto& head = globals::registry.get<Head>(globals::player);
+    auto& registry = globals::world->registry();
+
+    if(registry.valid(globals::player)) {
+        auto& head = registry.get<Head>(globals::player);
 
         head.angles[0] += pitch;
         head.angles[1] += yaw;
@@ -36,7 +39,7 @@ static void add_angles(float pitch, float yaw)
         // Client-side head angles are not interpolated; re-assigning
         // the previous state after updating the current one is something
         // of a way to force the interpolation to behave like we need it to
-        globals::registry.emplace_or_replace<Head_Prev>(globals::player, head);
+        registry.emplace_or_replace<Head_Prev>(globals::player, head);
     }
 }
 
