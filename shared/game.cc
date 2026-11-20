@@ -7,7 +7,6 @@
 #include "shared/component/head.hh"
 #include "shared/component/move_mode.hh"
 #include "shared/component/player.hh"
-#include "shared/component/stasis.hh"
 #include "shared/component/transform.hh"
 #include "shared/component/velocity.hh"
 #include "shared/globals.hh"
@@ -64,17 +63,6 @@ void shared_game::shutdown(void)
 void shared_game::fixed_update(void)
 {
     ZoneScoped;
-
-    // NOTE: this freezes entities that are out
-    // of a loaded chunk; uncomment this later!!!
-    // Stasis::fixed_update();
-
-    Transform::fixed_update();
-    Velocity::fixed_update();
-
-    if(globals::world) {
-        globals::world->fixed_update();
-    }
 
     lighting::fixed_update();
 }

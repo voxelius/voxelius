@@ -7,7 +7,7 @@ struct MoveData final {
 
 namespace pmove
 {
-void update(float frametime);
+void update(entt::registry& registry, float frametime);
 } // namespace pmove
 
 #endif /* E4130E55_D817_41FD_86F5_99BE2CB4D74B */

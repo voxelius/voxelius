@@ -3,16 +3,15 @@
 #include "shared/component/stasis.hh"
 
 #include "shared/component/transform.hh"
-#include "shared/globals.hh"
 #include "shared/world/world.hh"
 
-void Stasis::fixed_update(void)
+void Stasis::fixed_update(World& world)
 {
-    auto& registry = globals::world->registry();
+    auto& registry = world.registry();
     auto view = registry.view<Transform>();
 
     for(auto [entity, transform] : view.each()) {
-        if(globals::world->find_chunk(transform.chunk)) {
+        if(world.find_chunk(transform.chunk)) {
             registry.remove<Stasis>(entity);
         }
         else {

@@ -6,7 +6,7 @@
 
 struct Transform {
     static void register_component(void);
-    static void fixed_update(void);
+    static void fixed_update(entt::registry& registry);
 
     ChunkPos chunk;
     Eigen::Vector3f local;

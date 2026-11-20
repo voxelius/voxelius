@@ -6,6 +6,8 @@
 #include "core/cvar/host.hh"
 #include "core/identifier.hh"
 
+#include "shared/component/transform.hh"
+#include "shared/component/velocity.hh"
 #include "shared/cvar/gamerules.hh"
 #include "shared/cvar/server.hh"
 #include "shared/globals.hh"
@@ -56,11 +58,20 @@ void server_game::shutdown(void)
     weather_sim::shutdown();
 }
 
-void server_game::fixed_update(void)
+void server_game::fixed_update(World* world)
 {
     ZoneScoped;
 
-    pmove::update(globals::fixed_frametime);
+    if(world) {
+        auto& registry = world->registry();
+
+        Transform::fixed_update(registry);
+        Velocity::fixed_update(registry);
+
+        world->fixed_update();
+
+        pmove::update(registry, globals::fixed_frametime);
+    }
 }
 
 void server_game::fixed_update_late(void)

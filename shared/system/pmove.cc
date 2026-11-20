@@ -11,13 +11,11 @@
 #include "shared/component/stasis.hh"
 #include "shared/component/transform.hh"
 #include "shared/component/velocity.hh"
-#include "shared/globals.hh"
-#include "shared/world/world.hh"
 
 constexpr static float PMOVE_EPS = 1.0e-6f;
-constexpr static float FLY_SPEED = 64.0f;
-constexpr static float FLY_ACCEL_H = 32.0f;
-constexpr static float FLY_ACCEL_V = 64.0f; // sharper movement vertically
+constexpr static float FLY_SPEED = 16.0f;
+constexpr static float FLY_ACCEL_H = 64.0f;
+constexpr static float FLY_ACCEL_V = 96.0f; // sharper movement vertically
 
 static Eigen::Vector3f accelerate(const Eigen::Vector3f& target, const Eigen::Vector3f& velocity, float accel, float frametime)
 {
@@ -43,10 +41,8 @@ static float accelerate(float target, float velocity, float accel, float frameti
     return velocity + delta * (accel * frametime / distance);
 }
 
-static void update_fly(entt::entity entity, const Eigen::Vector3f& wishdir, float frametime)
+static void update_fly(entt::registry& registry, entt::entity entity, const Eigen::Vector3f& wishdir, float frametime)
 {
-    auto& registry = globals::world->registry();
-
     registry.patch<Velocity>(entity, [&](Velocity& velocity) {
         Eigen::Vector3f target_h(wishdir.x() * FLY_SPEED, 0.0f, wishdir.z() * FLY_SPEED);
         Eigen::Vector3f current_h(velocity.value.x(), 0.0f, velocity.value.z());
@@ -63,15 +59,14 @@ static void update_walk(entt::entity entity, const Eigen::Vector3f& wishdir, flo
     msg::log_warning("no walk move implemented yet");
 }
 
-void pmove::update(float frametime)
+void pmove::update(entt::registry& registry, float frametime)
 {
-    auto& registry = globals::world->registry();
     auto view = registry.view<MoveData, MoveMode, Player, Velocity>(entt::exclude<Stasis>);
 
     for(const auto [entity, move_data, move_mode, velocity] : view.each()) {
         switch(move_mode.value) {
             case MoveMode::FLY:
-                update_fly(entity, move_data.wishdir, frametime);
+                update_fly(registry, entity, move_data.wishdir, frametime);
                 break;
 
             case MoveMode::WALK:

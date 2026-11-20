@@ -7,6 +7,8 @@
 #include "core/threading.hh"
 #include "core/utils/angles.hh"
 
+#include "shared/component/transform.hh"
+#include "shared/component/velocity.hh"
 #include "shared/constant.hh"
 #include "shared/coord.hh"
 #include "shared/cvar/gamerules.hh"
@@ -134,7 +136,7 @@ void client_game::update(void)
 
     player_look::update();
     player_move::update();
-    pmove::update(globals::window_frametime);
+    pmove::update(globals::world->registry(), globals::window_frametime);
 
     metrics::update();
 }
@@ -146,11 +148,20 @@ void client_game::update_late(void)
     player_look::update_late();
 }
 
-void client_game::fixed_update(void)
+void client_game::fixed_update(World* world)
 {
     ZoneScoped;
 
     player_move::fixed_update();
+
+    if(world) {
+        auto& registry = world->registry();
+
+        Transform::fixed_update(registry);
+        Velocity::fixed_update(registry);
+
+        world->fixed_update();
+    }
 }
 
 void client_game::fixed_update_late(void)

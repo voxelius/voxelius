@@ -8,10 +8,8 @@
 #include "shared/coord.hh"
 #include "shared/entity/class.hh"
 #include "shared/entity/component_map.hh"
-#include "shared/globals.hh"
 #include "shared/utils/coord.hh"
 #include "shared/utils/lua.hh"
-#include "shared/world/world.hh"
 
 constexpr inline static bool update_component(unsigned dim, Transform& component)
 {
@@ -144,9 +142,8 @@ void Transform::register_component(void)
     component_map::add<Transform>("transform");
 }
 
-void Transform::fixed_update(void)
+void Transform::fixed_update(entt::registry& registry)
 {
-    auto& registry = globals::world->registry();
     auto view = registry.view<Transform>();
 
     for(auto [entity, transform] : view.each()) {

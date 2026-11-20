@@ -34,6 +34,7 @@
 #include "server/world/chunk_unloader.hh"
 #include "server/world/generator_superflat.hh"
 #include "server/world/generator_vox17.hh"
+#include "server/world/world.hh"
 #include "server/world/worldgen.hh"
 
 static std::atomic_bool s_is_running;
@@ -50,7 +51,10 @@ static void zoned_fixed_update(void)
     ZoneScopedN("server::fixed_update");
 
     shared_game::fixed_update();
-    server_game::fixed_update();
+
+    for(const auto& world : universe::worlds()) {
+        server_game::fixed_update(world.get());
+    }
 }
 
 static void zoned_fixed_update_late(void)

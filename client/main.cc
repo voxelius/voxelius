@@ -126,7 +126,7 @@ static void zoned_fixed_update(void)
     for(std::uint64_t i = 0; i < globals::fixed_framecount; ++i) {
         FrameMarkStart("Fixed");
 
-        client_game::fixed_update();
+        client_game::fixed_update(globals::world);
         shared_game::fixed_update();
 
         FrameMarkEnd("Fixed");

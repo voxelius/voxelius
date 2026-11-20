@@ -10,7 +10,6 @@
 #include "shared/entity/component_map.hh"
 #include "shared/globals.hh"
 #include "shared/utils/lua.hh"
-#include "shared/world/world.hh"
 
 template<>
 std::any Component<Velocity>::prepare(lua_State* L, int config_idx)
@@ -98,9 +97,8 @@ void Velocity::register_component(void)
     component_map::add<Velocity>("velocity");
 }
 
-void Velocity::fixed_update(void)
+void Velocity::fixed_update(entt::registry& registry)
 {
-    auto& registry = globals::world->registry();
     auto view = registry.view<Velocity, Transform>(entt::exclude<Stasis>);
 
     for(auto [entity, velocity, transform] : view.each()) {
