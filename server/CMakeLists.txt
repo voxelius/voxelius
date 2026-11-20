@@ -50,6 +50,8 @@ add_executable(vserver
     "${CMAKE_CURRENT_LIST_DIR}/world/generator.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/generator_map.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/generator_map.hh"
+    "${CMAKE_CURRENT_LIST_DIR}/world/generator_superflat.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/world/generator_superflat.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/generator_vox17.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/generator_vox17.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/world.cc"

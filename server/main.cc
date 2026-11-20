@@ -32,6 +32,7 @@
 #include "server/universe.hh"
 #include "server/world/chunk_loader.hh"
 #include "server/world/chunk_unloader.hh"
+#include "server/world/generator_superflat.hh"
 #include "server/world/generator_vox17.hh"
 #include "server/world/worldgen.hh"
 
@@ -100,6 +101,7 @@ static void wrapped_main(int argc, char** argv)
 
     // Generators register before the universe resolves the world definitions
     Vox17::register_generator();
+    Superflat::register_generator();
 
     // The universe seed has to be loaded before worldgen
     // derives its noise and feature seeds from it

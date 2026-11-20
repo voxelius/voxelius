@@ -2,6 +2,7 @@ print("mod:", core.NAMESPACE)
 print("engine version:", core.VERSION)
 
 dofile("world/overworld.lua")
+dofile("world/superflat.lua")
 
 tints.add("grass", { default_color = { 0.57, 0.75, 0.28 } })
 tints.add("foliage", { default_color = { 0.40, 0.65, 0.25 } })
