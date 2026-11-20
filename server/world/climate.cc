@@ -6,23 +6,13 @@
 #include "shared/world/world.hh"
 
 #include "server/universe.hh"
+#include "server/world/generator_vox17.hh"
 
 constexpr static int CLIMATE_SIZE = 100;
-constexpr static std::size_t CLIMATE_DIMS = 5;
 constexpr static std::size_t MAX_NUDGE_STEPS = 1000000;
 
-using ClimatePos = std::array<std::uint8_t, CLIMATE_DIMS>;
 using ClimateDir = std::array<int, CLIMATE_DIMS>;
 
-struct ClimateSeed final {
-    ClimatePos target;
-    biome_id_type id;
-    unsigned priority;
-    float offset;
-};
-
-static std::shared_mutex s_seeds_mutex;
-static vx::hash_map<const World*, std::vector<ClimateSeed>> s_seeds;
 static std::array<ClimateDir, 242> s_neighbour_dirs;
 static std::once_flag s_neighbour_dirs_once;
 
@@ -158,7 +148,7 @@ static bool nudge(vx::hash_map<std::uint64_t, biome_id_type>& occupied, ClimateP
 
 static void build_seeds(World* world)
 {
-    auto& out = s_seeds[world];
+    auto& out = Vox17::climate_seeds(world);
     auto definitions = biome_registry::all_definitions();
 
     out.clear();
@@ -220,8 +210,6 @@ void climate::rebuild(World* world)
 {
     std::call_once(s_neighbour_dirs_once, &build_neighbour_dirs);
 
-    std::unique_lock lock(s_seeds_mutex);
-
     build_seeds(world);
 }
 
@@ -234,15 +222,7 @@ void climate::rebuild(void)
 
 biome_id_type climate::find(World* world, const ClimateSample& sample)
 {
-    std::shared_lock lock(s_seeds_mutex);
-
-    auto it = s_seeds.find(world);
-
-    if(it == s_seeds.end()) {
-        return BIOME_ID_NULL;
-    }
-
-    const auto& seeds = it->second;
+    const auto& seeds = Vox17::climate_seeds(world);
 
     if(seeds.empty()) {
         return BIOME_ID_NULL;

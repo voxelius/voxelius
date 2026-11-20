@@ -8,15 +8,20 @@
 #include "shared/world/block_storage.hh"
 #include "shared/world/world.hh"
 
+#include "server/world/climate.hh"
 #include "server/world/generator_map.hh"
 #include "server/world/terrain.hh"
 
-void Vox17::register_generator(void)
+struct Vox17_State final {
+    std::vector<ClimateSeed> climate_seeds;
+};
+
+static std::shared_ptr<void> attach(World*)
 {
-    generator_map::add<Vox17>("vox17");
+    return std::make_shared<Vox17_State>();
 }
 
-bool Vox17::generate(World* world, const ChunkPos& pos, BlockStorage& blocks, BiomeSlice& biomes)
+static bool generate(World* world, const ChunkPos& pos, BlockStorage& blocks, BiomeSlice& biomes)
 {
     auto& definition = world->definition();
     auto min_y = definition.min_y >> constant::CHUNK_SIZE_LOG2;
@@ -27,4 +32,22 @@ bool Vox17::generate(World* world, const ChunkPos& pos, BlockStorage& blocks, Bi
     }
 
     return terrain::generate(world, pos, blocks, biomes);
+}
+
+void Vox17::register_generator(void)
+{
+    GeneratorDefinition definition {};
+    definition.generate = &generate;
+    definition.attach = &attach;
+
+    generator_map::detail::add("vox17", definition);
+}
+
+std::vector<ClimateSeed>& Vox17::climate_seeds(World* world)
+{
+    auto state = static_cast<Vox17_State*>(world->generator_state());
+
+    assert(state);
+
+    return state->climate_seeds;
 }

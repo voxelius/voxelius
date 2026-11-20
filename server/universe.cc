@@ -122,6 +122,11 @@ void universe::init(void)
         world->load_config();
         world->set_generator(generator);
 
+        auto state = generator->attach(world.get());
+        vx::throw_if_fmt(state == nullptr, "world {}: generator failed to attach", definition->id.full_string());
+
+        world->set_generator_state(std::move(state));
+
         s_worlds.push_back(std::move(world));
     }
 

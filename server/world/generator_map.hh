@@ -9,6 +9,7 @@ class World;
 
 struct GeneratorDefinition final {
     bool (*generate)(World* world, const ChunkPos& pos, BlockStorage& blocks, BiomeSlice& biomes);
+    std::shared_ptr<void> (*attach)(World* world);
 };
 
 namespace generator_map::detail
@@ -19,18 +20,6 @@ void add(std::string_view name, GeneratorDefinition definition);
 namespace generator_map
 {
 const GeneratorDefinition* find(std::string_view name);
-} // namespace generator_map
-
-namespace generator_map
-{
-template<typename T>
-void add(std::string_view name)
-{
-    GeneratorDefinition definition {};
-    definition.generate = &T::generate;
-
-    detail::add(name, definition);
-}
 } // namespace generator_map
 
 #endif /* F0A5E0C4_0C55_4A0B_9A3B_0F5D1A7B2C11 */

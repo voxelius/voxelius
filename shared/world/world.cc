@@ -64,6 +64,11 @@ void World::set_generator(const GeneratorDefinition* generator)
     m_generator = generator;
 }
 
+void World::set_generator_state(std::shared_ptr<void> state)
+{
+    m_generator_state = std::move(state);
+}
+
 void World::load_config(void)
 {
     std::ifstream in(m_root / "world.conf", std::ios::in);

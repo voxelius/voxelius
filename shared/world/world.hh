@@ -121,10 +121,14 @@ public:
 
     constexpr const GeneratorDefinition* generator(void) const;
 
+    constexpr void* generator_state(void);
+    constexpr const void* generator_state(void) const;
+
     void load_config(void);
     void save_config(void);
 
     void set_generator(const GeneratorDefinition* generator);
+    void set_generator_state(std::shared_ptr<void> state);
 
     constexpr WeatherState& weather(void);
     constexpr const WeatherState& weather(void) const;
@@ -197,6 +201,7 @@ private:
     std::filesystem::path m_chunk_dir;
     std::filesystem::path m_entity_dir;
     const GeneratorDefinition* m_generator { nullptr }; // server only
+    std::shared_ptr<void> m_generator_state;            // server only
 };
 
 constexpr const WorldDefinition& World::definition(void) const
@@ -247,6 +252,16 @@ constexpr const std::filesystem::path& World::entity_dir(void) const
 constexpr const GeneratorDefinition* World::generator(void) const
 {
     return m_generator;
+}
+
+constexpr void* World::generator_state(void)
+{
+    return m_generator_state.get();
+}
+
+constexpr const void* World::generator_state(void) const
+{
+    return m_generator_state.get();
 }
 
 constexpr WeatherState& World::weather(void)

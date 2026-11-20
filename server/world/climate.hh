@@ -5,6 +5,17 @@
 
 class World;
 
+constexpr static std::size_t CLIMATE_DIMS = 5;
+
+using ClimatePos = std::array<std::uint8_t, CLIMATE_DIMS>;
+
+struct ClimateSeed final {
+    ClimatePos target;
+    biome_id_type id;
+    unsigned priority;
+    float offset;
+};
+
 struct ClimateSample final {
     float temperature;
     float humidity;
