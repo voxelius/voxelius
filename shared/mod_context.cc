@@ -18,6 +18,7 @@
 #include "shared/api/tints_library.hh"
 #include "shared/api/weather_library.hh"
 #include "shared/api/world_library.hh"
+#include "shared/api/worlds_library.hh"
 #include "shared/constant.hh"
 
 ModVersion ModVersion::parse(std::string_view string)
@@ -146,6 +147,7 @@ bool ModContext::initialize(void)
     api::open_weather_library(m_lua_state, this);
     api::open_entities_library(m_lua_state, this);
     api::open_world_library(m_lua_state, this);
+    api::open_worlds_library(m_lua_state, this);
 
     auto entry = Identifier::from_parts(name_space(), "init.lua");
     auto entry_path = entry.as_file_path("scripts", {});

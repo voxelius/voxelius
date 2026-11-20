@@ -297,12 +297,14 @@ void MeshingTask::finalize(void)
 {
     ZoneScopedN("chunk_mesher::finalize");
 
-    if(!world::chunk_registry.valid(m_entity) || !world::chunk_registry.all_of<Chunk_Component>(m_entity)) {
+    auto& chunk_registry = globals::world->chunk_registry();
+
+    if(!chunk_registry.valid(m_entity) || !chunk_registry.all_of<Chunk_Component>(m_entity)) {
         s_pending.erase(m_cpos);
         return;
     }
 
-    const auto& chunk = world::chunk_registry.get<Chunk_Component>(m_entity);
+    const auto& chunk = chunk_registry.get<Chunk_Component>(m_entity);
 
     if(chunk.position != m_cpos) {
         s_pending.erase(m_cpos);
@@ -310,12 +312,12 @@ void MeshingTask::finalize(void)
     }
 
     if(m_opaque.empty() && m_alpha.empty() && m_fluid.empty()) {
-        world::chunk_registry.remove<ChunkMesh>(m_entity);
+        chunk_registry.remove<ChunkMesh>(m_entity);
         s_pending.erase(m_cpos);
         return;
     }
 
-    auto& component = world::chunk_registry.get_or_emplace<ChunkMesh>(m_entity);
+    auto& component = chunk_registry.get_or_emplace<ChunkMesh>(m_entity);
 
     component.opaque.vertices = std::move(m_opaque);
     sync_part(component.opaque, component.slot);
@@ -332,7 +334,7 @@ void MeshingTask::finalize(void)
     component.opaque.vertices.clear();
     component.opaque.vertices.shrink_to_fit();
 
-    world::chunk_registry.patch<ChunkMesh>(m_entity);
+    chunk_registry.patch<ChunkMesh>(m_entity);
 
     s_pending.erase(m_cpos);
 }
@@ -1107,12 +1109,13 @@ void MeshingTask::reset_tint_cache(void)
 
 static void mark_dirty(entt::entity entity)
 {
-    world::chunk_registry.emplace_or_replace<ChunkMesh_DirtyMarker>(entity);
+    auto& chunk_registry = globals::world->chunk_registry();
+    chunk_registry.emplace_or_replace<ChunkMesh_DirtyMarker>(entity);
 }
 
 static void mark_dirty(const ChunkPos& cpos)
 {
-    if(auto chunk = world::find_chunk(cpos)) {
+    if(auto chunk = globals::world->find_chunk(cpos)) {
         mark_dirty(chunk->entity());
     }
 }
@@ -1201,9 +1204,11 @@ static void on_chunk_remove(const ChunkRemoveEvent& event)
     auto chunk = event.chunk();
     auto entity = chunk->entity();
 
-    if(world::chunk_registry.valid(entity)) {
-        world::chunk_registry.remove<ChunkMesh_DirtyMarker>(entity);
-        world::chunk_registry.remove<ChunkMesh>(entity);
+    auto& chunk_registry = globals::world->chunk_registry();
+
+    if(chunk_registry.valid(entity)) {
+        chunk_registry.remove<ChunkMesh_DirtyMarker>(entity);
+        chunk_registry.remove<ChunkMesh>(entity);
     }
 }
 
@@ -1244,7 +1249,8 @@ void chunk_mesher::update(void)
 
     TracyPlot("Mesh queue", static_cast<int64_t>(s_pending.size()));
 
-    auto group = world::chunk_registry.group<ChunkMesh_DirtyMarker>(entt::get<Chunk_Component>);
+    auto& chunk_registry = globals::world->chunk_registry();
+    auto group = chunk_registry.group<ChunkMesh_DirtyMarker>(entt::get<Chunk_Component>);
 
     batch.clear();
 
@@ -1269,7 +1275,7 @@ void chunk_mesher::update(void)
     for(std::size_t i = 0; i < submit_count; ++i) {
         const auto& [entity, position, dist_sq] = batch[i];
         s_pending.emplace(position);
-        world::chunk_registry.remove<ChunkMesh_DirtyMarker>(entity);
+        chunk_registry.remove<ChunkMesh_DirtyMarker>(entity);
         threading::submit<MeshingTask>(entity, position);
     }
 }

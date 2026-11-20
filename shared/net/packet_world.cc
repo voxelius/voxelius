@@ -149,6 +149,7 @@ void packet::World_Timings::decode(World_Timings& packet, ReadBuffer& buffer)
 
 void packet::World_Info::encode(const World_Info& packet, WriteBuffer& buffer)
 {
+    buffer.write<std::string_view>(packet.id);
     buffer.write<std::uint64_t>(packet.seed);
     buffer.write<std::uint32_t>(packet.star_seed);
 
@@ -171,6 +172,7 @@ void packet::World_Info::encode(const World_Info& packet, WriteBuffer& buffer)
 
 void packet::World_Info::decode(World_Info& packet, ReadBuffer& buffer)
 {
+    packet.id = buffer.read<std::string>();
     packet.seed = buffer.read<std::uint64_t>();
     packet.star_seed = buffer.read<std::uint32_t>();
 

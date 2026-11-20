@@ -9,6 +9,7 @@
 #include "shared/component/head.hh"
 #include "shared/component/transform.hh"
 #include "shared/component/velocity.hh"
+#include "shared/globals.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
@@ -150,7 +151,7 @@ void camera::update(void)
     s_eye_lpos = camera::local.array().floor().cast<LocalPos::value_type>();
     s_eye_bpos = utils::to_block(camera::chunk, s_eye_lpos);
 
-    inside_block = world::get_block(s_eye_bpos);
+    inside_block = globals::world->get_block(s_eye_bpos);
     inside_fluid = FLUID_ID_NULL;
 
     auto block_def = block_registry::find_definition(inside_block);
@@ -170,7 +171,7 @@ void camera::update(void)
                 above.y() -= 1;
             }
 
-            auto above_def = block_registry::find_definition(world::get_block(above));
+            auto above_def = block_registry::find_definition(globals::world->get_block(above));
 
             if(above_def && above_def->fluid == block_def->fluid) {
                 height = 1.0f;

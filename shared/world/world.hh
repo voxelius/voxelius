@@ -1,65 +1,85 @@
 #ifndef AC10DC15_9E3A_4C9E_B8B4_E6C5CAE5BB89
 #define AC10DC15_9E3A_4C9E_B8B4_E6C5CAE5BB89
 
-#include "shared/world/biome.hh"
+#include "shared/world/biome_map.hh"
 #include "shared/world/chunk.hh"
+#include "shared/world/world_definition.hh"
+
+class World;
 
 class ChunkCreateEvent final {
 public:
-    explicit ChunkCreateEvent(const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk);
+    ChunkCreateEvent(World* world, const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk);
+
+    constexpr World* world(void) const;
     constexpr const std::shared_ptr<Chunk>& chunk(void) const;
     constexpr const ChunkPos& pos(void) const;
 
 private:
+    World* m_world;
     std::shared_ptr<Chunk> m_chunk;
     ChunkPos m_pos;
 };
 
 class ChunkRemoveEvent final {
 public:
-    explicit ChunkRemoveEvent(const ChunkPos& pos, const std::shared_ptr<const Chunk>& chunk);
+    ChunkRemoveEvent(World* world, const ChunkPos& pos, const std::shared_ptr<const Chunk>& chunk);
+
+    constexpr World* world(void) const;
     constexpr const std::shared_ptr<const Chunk>& chunk(void) const;
     constexpr const ChunkPos& pos(void) const;
 
 private:
+    World* m_world;
     std::shared_ptr<const Chunk> m_chunk;
     ChunkPos m_pos;
 };
 
 class ChunkUpdateEvent final {
 public:
-    explicit ChunkUpdateEvent(const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk);
+    ChunkUpdateEvent(World* world, const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk);
+
+    constexpr World* world(void) const;
     constexpr const std::shared_ptr<Chunk>& chunk(void) const;
     constexpr const ChunkPos& pos(void) const;
 
 private:
+    World* m_world;
     std::shared_ptr<Chunk> m_chunk;
     ChunkPos m_pos;
 };
 
 class ChunkReadyEvent final {
 public:
-    explicit ChunkReadyEvent(const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk);
+    ChunkReadyEvent(World* world, const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk);
+
+    constexpr World* world(void) const;
     constexpr const std::shared_ptr<Chunk>& chunk(void) const;
     constexpr const ChunkPos& pos(void) const;
 
 private:
+    World* m_world;
     std::shared_ptr<Chunk> m_chunk;
     ChunkPos m_pos;
 };
 
 class ChunkLightUpdateEvent final {
 public:
-    explicit ChunkLightUpdateEvent(const ChunkPos& pos);
+    ChunkLightUpdateEvent(World* world, const ChunkPos& pos);
+
+    constexpr World* world(void) const;
     constexpr const ChunkPos& pos(void) const;
 
 private:
+    World* m_world;
     ChunkPos m_pos;
 };
 
 class BlockUpdateEvent final {
 public:
-    explicit BlockUpdateEvent(const BlockPos& pos, block_id_type id, const std::shared_ptr<Chunk>& chunk);
+    BlockUpdateEvent(World* world, const BlockPos& pos, block_id_type id, const std::shared_ptr<Chunk>& chunk);
+
+    constexpr World* world(void) const;
     constexpr const std::shared_ptr<Chunk>& chunk(void) const;
     constexpr const BlockPos& bpos(void) const;
     constexpr const ChunkPos& cpos(void) const;
@@ -67,6 +87,7 @@ public:
     constexpr block_id_type id(void) const;
 
 private:
+    World* m_world;
     std::shared_ptr<Chunk> m_chunk;
     block_id_type m_id;
     BlockPos m_bpos;
@@ -74,107 +95,89 @@ private:
     LocalPos m_lpos;
 };
 
-namespace world
-{
-extern vx::hash_map<ChunkPos, std::shared_ptr<Chunk>> chunk_map;
-extern entt::registry chunk_registry;
-} // namespace world
+class World final {
+public:
+    explicit World(std::shared_ptr<const WorldDefinition> definition);
 
-namespace world
-{
-std::shared_ptr<Chunk> create_chunk(const ChunkPos& pos);
-std::shared_ptr<Chunk> find_chunk(const ChunkPos& pos);
-std::shared_ptr<Chunk> find_chunk(entt::entity entity);
-} // namespace world
+    const WorldDefinition& definition(void) const;
+    const Identifier& id(void) const;
 
-namespace world
-{
-void remove_chunk(const std::shared_ptr<const Chunk>& chunk);
-void remove_chunk(const ChunkPos& pos);
-void remove_chunk(entt::entity entity);
-} // namespace world
+    std::uint64_t seed { 0 };
 
-namespace world
-{
-block_id_type get_block(const ChunkPos& cpos, const LocalPos& lpos);
-block_id_type get_block(const BlockPos& pos);
-} // namespace world
+    entt::registry& chunk_registry(void);
+    const vx::hash_map<ChunkPos, std::shared_ptr<Chunk>>& chunks(void) const;
 
-namespace world
-{
-fluid_id_type get_fluid(const ChunkPos& cpos, const LocalPos& lpos);
-fluid_id_type get_fluid(const BlockPos& pos);
-} // namespace world
+    std::array<WeatherRealmState, NUM_BIOME_REALMS>& weather(void);
+    const std::array<WeatherRealmState, NUM_BIOME_REALMS>& weather(void) const;
 
-namespace world
-{
-std::uint32_t get_fluid_faces(const ChunkPos& cpos, const LocalPos& lpos);
-std::uint32_t get_fluid_faces(const BlockPos& pos);
-} // namespace world
+public:
+    std::shared_ptr<Chunk> create_chunk(const ChunkPos& pos);
+    std::shared_ptr<Chunk> find_chunk(const ChunkPos& pos) const;
+    std::shared_ptr<Chunk> find_chunk(entt::entity entity) const;
 
-namespace world
-{
-fluid_id_type get_state_fluid(const ChunkPos& cpos, const LocalPos& lpos, std::string_view state, std::string_view value);
-fluid_id_type get_state_fluid(const BlockPos& pos, std::string_view state, std::string_view value);
-} // namespace world
+public:
+    void remove_chunk(const std::shared_ptr<const Chunk>& chunk);
+    void remove_chunk(const ChunkPos& pos);
+    void remove_chunk(entt::entity entity);
 
-namespace world
-{
-bool set_block(const ChunkPos& cpos, const LocalPos& lpos, block_id_type id);
-bool set_block(const BlockPos& pos, block_id_type id);
-} // namespace world
+public:
+    block_id_type get_block(const ChunkPos& cpos, const LocalPos& lpos) const;
+    block_id_type get_block(const BlockPos& pos) const;
 
-namespace world
-{
-block_light_type get_light(const ChunkPos& cpos, const LocalPos& lpos);
-block_light_type get_light(const BlockPos& pos);
-} // namespace world
+    fluid_id_type get_fluid(const ChunkPos& cpos, const LocalPos& lpos) const;
+    fluid_id_type get_fluid(const BlockPos& pos) const;
 
-namespace world
-{
-std::optional<std::string_view> get_state(const ChunkPos& cpos, const LocalPos& lpos, std::string_view state);
-std::optional<std::string_view> get_state(const BlockPos& pos, std::string_view state);
-} // namespace world
+    std::uint32_t get_fluid_faces(const ChunkPos& cpos, const LocalPos& lpos) const;
+    std::uint32_t get_fluid_faces(const BlockPos& pos) const;
 
-namespace world
-{
-bool set_state(const ChunkPos& cpos, const LocalPos& lpos, std::string_view state, std::string_view value);
-bool set_state(const BlockPos& pos, std::string_view state, std::string_view value);
-} // namespace world
+    fluid_id_type get_state_fluid(const ChunkPos& cpos, const LocalPos& lpos, std::string_view state, std::string_view value) const;
+    fluid_id_type get_state_fluid(const BlockPos& pos, std::string_view state, std::string_view value) const;
 
-namespace world
-{
-std::int32_t get_temperature_base(const ChunkPos& cpos, const LocalPos& lpos);
-std::int32_t get_temperature_base(const BlockPos& pos);
-} // namespace world
+    bool set_block(const ChunkPos& cpos, const LocalPos& lpos, block_id_type id);
+    bool set_block(const BlockPos& pos, block_id_type id);
 
-namespace world
-{
-std::int32_t get_temperature(const ChunkPos& cpos, const LocalPos& lpos);
-std::int32_t get_temperature(const BlockPos& pos);
-} // namespace world
+    block_light_type get_light(const ChunkPos& cpos, const LocalPos& lpos) const;
+    block_light_type get_light(const BlockPos& pos) const;
 
-namespace world
-{
-biome_id_type get_biome(const ChunkPos& cpos, const LocalPos& lpos);
-biome_id_type get_biome(const BlockPos& pos);
-} // namespace world
+    std::optional<std::string_view> get_state(const ChunkPos& cpos, const LocalPos& lpos, std::string_view state) const;
+    std::optional<std::string_view> get_state(const BlockPos& pos, std::string_view state) const;
 
-namespace world
-{
-void schedule(const ChunkPos& cpos, const LocalPos& lpos, std::uint64_t deadline, block_tick_source source);
-void schedule(const BlockPos& pos, std::uint64_t deadline, block_tick_source source);
-} // namespace world
+    bool set_state(const ChunkPos& cpos, const LocalPos& lpos, std::string_view state, std::string_view value);
+    bool set_state(const BlockPos& pos, std::string_view state, std::string_view value);
 
-namespace world
-{
-void fixed_update(void);
-} // namespace world
+    std::int32_t get_temperature_base(const ChunkPos& cpos, const LocalPos& lpos) const;
+    std::int32_t get_temperature_base(const BlockPos& pos) const;
 
-namespace world
+    std::int32_t get_temperature(const ChunkPos& cpos, const LocalPos& lpos) const;
+    std::int32_t get_temperature(const BlockPos& pos) const;
+
+    biome_id_type biome(const ChunkPos& cpos, const LocalPos& lpos) const;
+    biome_id_type biome(const BlockPos& pos) const;
+
+    void insert_biomes(biome_realm realm, const ChunkPosXZ& pos, BiomeSlice biomes);
+    const BiomeSlice& biomes(const ChunkPos& pos) const;
+    const BiomeSlice& biomes(biome_realm realm, const ChunkPosXZ& pos) const;
+    biome_id_type biome_slow(const BlockPos& pos) const;
+
+    void schedule(const ChunkPos& cpos, const LocalPos& lpos, std::uint64_t deadline, block_tick_source source);
+    void schedule(const BlockPos& pos, std::uint64_t deadline, block_tick_source source);
+
+public:
+    void fixed_update(void);
+    void purge(void);
+
+private:
+    std::shared_ptr<const WorldDefinition> m_definition;
+    vx::hash_map<ChunkPos, std::shared_ptr<Chunk>> m_chunks;
+    entt::registry m_chunk_registry;
+    BiomeMap m_biomes;
+    std::array<WeatherRealmState, NUM_BIOME_REALMS> m_weather {};
+};
+
+constexpr World* ChunkCreateEvent::world(void) const
 {
-void purge(void);
-} // namespace world
+    return m_world;
+}
 
 constexpr const std::shared_ptr<Chunk>& ChunkCreateEvent::chunk(void) const
 {
@@ -184,6 +187,11 @@ constexpr const std::shared_ptr<Chunk>& ChunkCreateEvent::chunk(void) const
 constexpr const ChunkPos& ChunkCreateEvent::pos(void) const
 {
     return m_pos;
+}
+
+constexpr World* ChunkRemoveEvent::world(void) const
+{
+    return m_world;
 }
 
 constexpr const std::shared_ptr<const Chunk>& ChunkRemoveEvent::chunk(void) const
@@ -196,6 +204,11 @@ constexpr const ChunkPos& ChunkRemoveEvent::pos(void) const
     return m_pos;
 }
 
+constexpr World* ChunkUpdateEvent::world(void) const
+{
+    return m_world;
+}
+
 constexpr const std::shared_ptr<Chunk>& ChunkUpdateEvent::chunk(void) const
 {
     return m_chunk;
@@ -204,6 +217,11 @@ constexpr const std::shared_ptr<Chunk>& ChunkUpdateEvent::chunk(void) const
 constexpr const ChunkPos& ChunkUpdateEvent::pos(void) const
 {
     return m_pos;
+}
+
+constexpr World* ChunkReadyEvent::world(void) const
+{
+    return m_world;
 }
 
 constexpr const std::shared_ptr<Chunk>& ChunkReadyEvent::chunk(void) const
@@ -216,9 +234,19 @@ constexpr const ChunkPos& ChunkReadyEvent::pos(void) const
     return m_pos;
 }
 
+constexpr World* ChunkLightUpdateEvent::world(void) const
+{
+    return m_world;
+}
+
 constexpr const ChunkPos& ChunkLightUpdateEvent::pos(void) const
 {
     return m_pos;
+}
+
+constexpr World* BlockUpdateEvent::world(void) const
+{
+    return m_world;
 }
 
 constexpr const std::shared_ptr<Chunk>& BlockUpdateEvent::chunk(void) const

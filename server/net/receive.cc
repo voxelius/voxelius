@@ -4,6 +4,7 @@
 
 #include "shared/component/transform.hh"
 #include "shared/cvar/gamerules.hh"
+#include "shared/globals.hh"
 #include "shared/net/packet_player.hh"
 #include "shared/net/packet_world.hh"
 #include "shared/net/protocol.hh"
@@ -71,7 +72,7 @@ static void enqueue_peer(const ChunkPos& cpos, ENetPeer* peer)
 
 static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos)
 {
-    auto chunk = world::find_chunk(cpos);
+    auto chunk = globals::world->find_chunk(cpos);
 
     if(chunk == nullptr) {
         // The chunk was unloaded between queueing and sending. Ask for it
@@ -87,7 +88,7 @@ static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos)
         packet::World_Biomes biomes_packet;
         biomes_packet.realm = realm;
         biomes_packet.cpos = ChunkPosXZ(cpos.x(), cpos.z());
-        biomes_packet.biomes = biome_map::get(realm, biomes_packet.cpos);
+        biomes_packet.biomes = globals::world->biomes(realm, biomes_packet.cpos);
         protocol::send(biomes_packet, peer);
     }
 
@@ -111,7 +112,7 @@ static void send_waiting(const ChunkPos& cpos)
         return;
     }
 
-    auto chunk = world::find_chunk(cpos);
+    auto chunk = globals::world->find_chunk(cpos);
 
     if(chunk == nullptr) {
         // Still loading/generating; retry on the next sweep.
@@ -153,7 +154,7 @@ static void on_chunk_light(const ChunkLightUpdateEvent& event)
         return;
     }
 
-    auto chunk = world::find_chunk(event.pos());
+    auto chunk = globals::world->find_chunk(event.pos());
 
     if(chunk == nullptr || !chunk->has_light()) {
         return;
@@ -176,8 +177,10 @@ static void on_chunk_light(const ChunkLightUpdateEvent& event)
         entry.indices = std::move(change.indices);
         entry.values.reserve(entry.indices.size());
 
+        auto& light = chunk->light();
+
         for(auto index : entry.indices) {
-            entry.values.push_back(chunk->light().get_packed(index));
+            entry.values.push_back(light.get_packed(index));
         }
     }
 
@@ -208,7 +211,7 @@ static bool in_reach(entt::entity player, const BlockPos& bpos)
 static void send_correction(ENetPeer* peer, const BlockPos& bpos)
 {
     auto cpos = utils::to_chunk(bpos);
-    auto chunk = world::find_chunk(cpos);
+    auto chunk = globals::world->find_chunk(cpos);
 
     if(chunk == nullptr) {
         // The client kept a chunk the server no longer has. Resending the
@@ -257,12 +260,13 @@ static void on_player_attack_b(const packet::Player_AttackB& packet)
         return;
     }
 
-    if(world::get_block(packet.bpos) != packet.expected) {
+    if(globals::world->get_block(packet.bpos) != packet.expected) {
         reject_break(packet.peer, packet.bpos);
         return;
     }
 
     physics::BlockHit hit {};
+    hit.world = globals::world.get();
     hit.block_pos = packet.bpos;
     hit.id = packet.expected;
 
@@ -291,12 +295,13 @@ static void on_player_interact_b(const packet::Player_InteractB& packet)
         return;
     }
 
-    if(world::get_block(packet.bpos) != packet.expected) {
+    if(globals::world->get_block(packet.bpos) != packet.expected) {
         reject_place(packet.peer, packet);
         return;
     }
 
     physics::BlockHit hit {};
+    hit.world = globals::world.get();
     hit.block_pos = packet.bpos;
     hit.id = packet.expected;
     hit.face = packet.face;
@@ -387,7 +392,9 @@ static std::size_t light_entry_size(const packet::World_Light::Entry& entry)
     constexpr auto HEADER = 3 * sizeof(std::int32_t) + sizeof(std::uint8_t);
 
     if(entry.full) {
-        return HEADER + entry.light.data().size();
+        auto& light = entry.light;
+        auto light_data = light.data();
+        return HEADER + light_data.size();
     }
 
     constexpr auto CELL = sizeof(std::uint16_t) + sizeof(std::uint8_t);
@@ -489,7 +496,7 @@ void receive::forget_peer(ENetPeer* peer)
 
 void receive::enqueue_chunk(ENetPeer* peer, const ChunkPos& cpos)
 {
-    if(world::find_chunk(cpos)) {
+    if(globals::world->find_chunk(cpos)) {
         enqueue_send(peer, cpos);
         return;
     }

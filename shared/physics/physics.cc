@@ -40,7 +40,7 @@ std::optional<physics::BlockHit> physics::raycast_block(const Ray& ray, block_fi
     std::optional<physics::BlockHit> closest = std::nullopt;
     auto closest_distance = std::numeric_limits<float>::max();
 
-    Ray_DDA dda(ray.start_chunk, ray.start, ray.direction);
+    Ray_DDA dda(ray.world, ray.start_chunk, ray.start, ray.direction);
 
     while(dda.distance() < ray.max_distance) {
         auto block_id = dda.step();
@@ -75,6 +75,7 @@ std::optional<physics::BlockHit> physics::raycast_block(const Ray& ray, block_fi
                 if(hit->distance <= ray.max_distance) {
                     if(hit->distance < closest_distance) {
                         physics::BlockHit new_hit {};
+                        new_hit.world = ray.world;
 
                         new_hit.distance = hit->distance;
                         new_hit.point = utils::to_relative(hit_cpos, ray.start_chunk, hit->point);

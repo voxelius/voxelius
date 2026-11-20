@@ -10,6 +10,7 @@
 #include "shared/component/head.hh"
 #include "shared/component/transform.hh"
 #include "shared/component/velocity.hh"
+#include "shared/globals.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/world.hh"
 
@@ -357,8 +358,12 @@ static ImVec2 layout_head(ImDrawList* draw_list, ImVec2 position, ImU32 text, Im
     // Loaded chunks against meshed ones against what still waits for a mesh:
     // a hole in the world is either a chunk nobody asked for or a mesh that
     // never got built, and the three numbers tell them apart.
-    auto loaded_chunks = world::chunk_map.size();
-    auto meshed_chunks = world::chunk_registry.view<ChunkMesh>().size();
+    auto& chunks = globals::world->chunks();
+    auto& chunk_registry = globals::world->chunk_registry();
+    auto meshed = chunk_registry.view<ChunkMesh>();
+
+    auto loaded_chunks = chunks.size();
+    auto meshed_chunks = meshed.size();
 
     auto mesh_line = std::format("mesh:  {}/{} backlog {}", meshed_chunks, loaded_chunks, chunk_mesher::backlog());
     draw_text(draw_list, mesh_line, position, text, shadow);

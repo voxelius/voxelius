@@ -3,6 +3,7 @@
 #include "client/world/biome_cache.hh"
 
 #include "shared/constant.hh"
+#include "shared/globals.hh"
 #include "shared/world/biome_slice.hh"
 #include "shared/world/chunk.hh"
 #include "shared/world/world.hh"
@@ -14,13 +15,14 @@ void BiomeCache::init(const ChunkPos& cpos)
     for(ChunkPos::value_type dz = -1; dz <= 1; dz += 1) {
         for(ChunkPos::value_type dx = -1; dx <= 1; dx += 1) {
             auto query_pos = ChunkPos(cpos.x() + dx, cpos.y(), cpos.z() + dz);
-            auto chunk = world::find_chunk(query_pos);
+            auto chunk = globals::world->find_chunk(query_pos);
 
             if(chunk == nullptr) {
                 continue;
             }
 
-            auto* component = world::chunk_registry.try_get<BiomeSlice_Component>(chunk->entity());
+            auto& chunk_registry = globals::world->chunk_registry();
+            auto component = chunk_registry.try_get<BiomeSlice_Component>(chunk->entity());
 
             if(component == nullptr || component->ptr == nullptr) {
                 continue;

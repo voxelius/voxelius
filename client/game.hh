@@ -3,6 +3,7 @@
 
 namespace client_game
 {
+void init_world(void);
 void init(void);
 void init_late(void);
 void shutdown(void);

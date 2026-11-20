@@ -3,9 +3,11 @@
 #include "shared/globals.hh"
 
 #include "shared/constant.hh"
+#include "shared/world/world.hh"
 
 entt::dispatcher globals::dispatcher;
 entt::registry globals::registry;
+std::shared_ptr<World> globals::world;
 
 std::uint64_t globals::curtime_us;
 std::uint64_t globals::current_tick;

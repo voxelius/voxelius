@@ -5,11 +5,22 @@
 #include "core/utils/interpolation.hh"
 
 #include "shared/cvar/gamerules.hh"
+#include "shared/globals.hh"
 #include "shared/net/packet_world.hh"
 #include "shared/utils/biome.hh"
 #include "shared/world/weather_registry.hh"
+#include "shared/world/world.hh"
 
-static std::array<WeatherRealmState, NUM_BIOME_REALMS> s_states {};
+static std::array<WeatherRealmState, NUM_BIOME_REALMS>& active_states(void)
+{
+    static std::array<WeatherRealmState, NUM_BIOME_REALMS> fallback {};
+
+    if(globals::world) {
+        return globals::world->weather();
+    }
+
+    return fallback;
+}
 
 static std::uint32_t lattice_hash(std::int32_t x, std::int32_t z, std::uint32_t seed)
 {
@@ -121,7 +132,7 @@ static WeatherBlend blend_at_height(float x, float y, float z)
 
 std::span<WeatherRealmState, NUM_BIOME_REALMS> weather::states(void)
 {
-    return s_states;
+    return active_states();
 }
 
 WeatherRealmState& weather::state(biome_realm realm)
@@ -132,12 +143,13 @@ WeatherRealmState& weather::state(biome_realm realm)
         return fallback;
     }
 
-    return s_states.at(static_cast<std::size_t>(realm));
+    auto& states = active_states();
+    return states.at(static_cast<std::size_t>(realm));
 }
 
 void weather::reset(void)
 {
-    for(auto& state : s_states) {
+    for(auto& state : active_states()) {
         state = WeatherRealmState {};
     }
 }
@@ -148,7 +160,7 @@ void weather::advance(float delta_time)
         return;
     }
 
-    for(auto& state : s_states) {
+    for(auto& state : active_states()) {
         state.types.drift += state.wind * delta_time;
         state.detail.drift += state.wind * delta_time;
     }
@@ -487,29 +499,29 @@ WeatherBlend weather::blend_region(float x, float y, float z, float radius)
 void weather::fill_info(packet::World_Info& packet)
 {
     for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        packet.types_seed[i] = s_states[i].types.seed;
-        packet.types_scale[i] = s_states[i].types.scale;
-        packet.detail_seed[i] = s_states[i].detail.seed;
-        packet.detail_scale[i] = s_states[i].detail.scale;
+        packet.types_seed[i] = active_states()[i].types.seed;
+        packet.types_scale[i] = active_states()[i].types.scale;
+        packet.detail_seed[i] = active_states()[i].detail.seed;
+        packet.detail_scale[i] = active_states()[i].detail.scale;
     }
 }
 
 void weather::apply_info(const packet::World_Info& packet)
 {
     for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        s_states[i].types.seed = packet.types_seed[i];
-        s_states[i].types.scale = packet.types_scale[i];
-        s_states[i].detail.seed = packet.detail_seed[i];
-        s_states[i].detail.scale = packet.detail_scale[i];
+        active_states()[i].types.seed = packet.types_seed[i];
+        active_states()[i].types.scale = packet.types_scale[i];
+        active_states()[i].detail.seed = packet.detail_seed[i];
+        active_states()[i].detail.scale = packet.detail_scale[i];
     }
 }
 
 void weather::fill_packet(packet::World_Weather& packet)
 {
     for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        packet.types_drift[i] = s_states[i].types.drift;
-        packet.detail_drift[i] = s_states[i].detail.drift;
-        packet.wind[i] = s_states[i].wind;
+        packet.types_drift[i] = active_states()[i].types.drift;
+        packet.detail_drift[i] = active_states()[i].detail.drift;
+        packet.wind[i] = active_states()[i].wind;
     }
 }
 
@@ -523,7 +535,7 @@ void weather::apply_packet(const packet::World_Weather& packet, bool baseline)
     constexpr static float DRIFT_SNAP = 64.0f;
 
     for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        auto& target = s_states[i];
+        auto& target = active_states()[i];
 
         if(baseline || (packet.types_drift[i] - target.types.drift).norm() > DRIFT_SNAP) {
             target.types.drift = packet.types_drift[i];

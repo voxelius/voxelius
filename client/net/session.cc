@@ -13,6 +13,7 @@
 #include "core/version.hh"
 
 #include "shared/entity/class_registry.hh"
+#include "shared/globals.hh"
 #include "shared/net/packet_auth.hh"
 #include "shared/net/packet_session.hh"
 #include "shared/net/protocol.hh"
@@ -80,12 +81,15 @@ static void handle_disconnect(std::uint32_t reason)
 
     globals::registry.clear();
     globals::player = entt::null;
-    biome_map::purge();
+
+    if(globals::world) {
+        globals::world->purge();
+    }
+
     weather::reset();
     fog::reset();
     skybox::reset();
     cloud_renderer::reset();
-    world::purge();
     lighting::reset();
 
     video::update_window_title();

@@ -70,7 +70,7 @@ void WorldgenTask::finalize(void)
 {
     ZoneScopedN("worldgen::finalize");
 
-    auto chunk = world::create_chunk(m_pos);
+    auto chunk = globals::world->create_chunk(m_pos);
     chunk->set_blocks(std::move(m_blocks));
 
     if(m_biomes) {
@@ -81,14 +81,14 @@ void WorldgenTask::finalize(void)
         if(has_biome) {
             auto realm = utils::realm(m_pos.y());
             auto cpos_xz = ChunkPosXZ(m_pos.x(), m_pos.z());
-            biome_map::insert(realm, cpos_xz, std::move(*m_biomes));
+            globals::world->insert_biomes(realm, cpos_xz, std::move(*m_biomes));
         }
 
         m_biomes.reset();
     }
 
-    globals::dispatcher.trigger(ChunkUpdateEvent(m_pos, chunk));
-    globals::dispatcher.trigger(ChunkReadyEvent(m_pos, chunk));
+    globals::dispatcher.trigger(ChunkUpdateEvent(globals::world.get(), m_pos, chunk));
+    globals::dispatcher.trigger(ChunkReadyEvent(globals::world.get(), m_pos, chunk));
 }
 
 void worldgen::init(void)

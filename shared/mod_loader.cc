@@ -13,6 +13,7 @@
 #include "shared/world/fluid_registry.hh"
 #include "shared/world/tint_registry.hh"
 #include "shared/world/weather_registry.hh"
+#include "shared/world/world_registry.hh"
 
 static std::vector<ModContext> s_mods;
 
@@ -188,6 +189,8 @@ void mod_loader::init(void)
     biome_registry::resolve_features();
     biome_registry::resolve_tint_colors();
 
+    world_registry::resolve();
+
     required_class::resolve();
 }
 
@@ -195,6 +198,7 @@ void mod_loader::shutdown(void)
 {
     s_mods.clear();
 
+    world_registry::purge();
     class_registry::purge();
     weather_registry::purge();
     biome_registry::purge();

@@ -75,6 +75,7 @@ struct packet::World_Info final : public packet::Base<packet::WORLD_INFO> {
     static void encode(const World_Info& packet, WriteBuffer& buffer);
     static void decode(World_Info& packet, ReadBuffer& buffer);
 
+    std::string id;
     std::uint64_t seed;
     std::uint32_t star_seed;
 

@@ -4,12 +4,14 @@
 
 #include "core/cvar/context.hh"
 #include "core/cvar/host.hh"
+#include "core/identifier.hh"
 #include "core/msg/log.hh"
 
 #include "shared/constant.hh"
 #include "shared/cvar/server.hh"
 #include "shared/entity/class_registry.hh"
 #include "shared/entity/component_map.hh"
+#include "shared/globals.hh"
 #include "shared/net/packet_entity.hh"
 #include "shared/net/packet_session.hh"
 #include "shared/net/packet_world.hh"
@@ -20,6 +22,7 @@
 #include "shared/world/weather_registry.hh"
 #include "shared/world/world.hh"
 #include "shared/world/world_clock.hh"
+#include "shared/world/world_registry.hh"
 
 #include "client/camera.hh"
 #include "client/globals.hh"
@@ -96,10 +99,10 @@ static void on_world_blocks(const packet::World_Blocks& packet)
     // resync the server sends to roll a stale client world back. Block edits
     // made after the packet was queued arrive as SetBlock on the same reliable
     // channel, so applying the whole chunk here cannot win over a newer prediction
-    auto chunk = world::find_chunk(packet.cpos);
+    auto chunk = globals::world->find_chunk(packet.cpos);
 
     if(chunk == nullptr) {
-        chunk = world::create_chunk(packet.cpos);
+        chunk = globals::world->create_chunk(packet.cpos);
     }
 
     chunk->set_blocks(packet.blocks);
@@ -111,18 +114,18 @@ static void on_world_blocks(const packet::World_Blocks& packet)
         chunk->clear_light();
     }
 
-    globals::dispatcher.trigger(ChunkUpdateEvent(packet.cpos, chunk));
+    globals::dispatcher.trigger(ChunkUpdateEvent(globals::world.get(), packet.cpos, chunk));
 }
 
 static void on_world_biomes(const packet::World_Biomes& packet)
 {
-    biome_map::insert(packet.realm, packet.cpos, packet.biomes);
+    globals::world->insert_biomes(packet.realm, packet.cpos, packet.biomes);
 }
 
 static void on_world_light(const packet::World_Light& packet)
 {
     for(const auto& entry : packet.entries) {
-        auto chunk = world::find_chunk(entry.cpos);
+        auto chunk = globals::world->find_chunk(entry.cpos);
 
         if(chunk == nullptr) {
             continue;
@@ -143,13 +146,13 @@ static void on_world_light(const packet::World_Light& packet)
             }
         }
 
-        globals::dispatcher.trigger(ChunkLightUpdateEvent(entry.cpos));
+        globals::dispatcher.trigger(ChunkLightUpdateEvent(globals::world.get(), entry.cpos));
     }
 }
 
 static void on_world_set_block(const packet::World_SetBlock& packet)
 {
-    world::set_block(packet.bpos, packet.block);
+    globals::world->set_block(packet.bpos, packet.block);
 }
 
 static void on_world_timings(const packet::World_Timings& packet)
@@ -170,6 +173,20 @@ static void on_world_timings(const packet::World_Timings& packet)
 
 static void on_world_info(const packet::World_Info& packet)
 {
+    auto id = Identifier::from_string(packet.id);
+    auto definition = world_registry::find(id);
+
+    if(!definition) {
+        session::disconnect(packet::Session_Disconnect::WORLD_UNKNOWN);
+        return;
+    }
+
+    if(!globals::world || globals::world->id() != id) {
+        globals::world = std::make_shared<World>(definition);
+    }
+
+    globals::world->seed = packet.seed;
+
     weather::apply_info(packet);
 
     skybox::set_star_seed(packet.star_seed);

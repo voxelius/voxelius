@@ -6,13 +6,16 @@
 #include "shared/world/chunk.hh"
 #include "shared/world/world.hh"
 
-Ray_DDA::Ray_DDA(const ChunkPos& start_chunk, const Eigen::Vector3f& start_pos, const Eigen::Vector3f& direction)
+Ray_DDA::Ray_DDA(World* world, const ChunkPos& start_chunk, const Eigen::Vector3f& start_pos, const Eigen::Vector3f& direction)
+    : m_world(world)
 {
     reset(start_chunk, start_pos, direction);
 }
 
 void Ray_DDA::reset(const ChunkPos& start_chunk, const Eigen::Vector3f& start_pos, const Eigen::Vector3f& direction)
 {
+    assert(m_world);
+
     m_start_chunk = start_chunk;
     m_start_pos = start_pos;
     m_direction = direction.normalized();
@@ -55,7 +58,7 @@ void Ray_DDA::reset(const ChunkPos& start_chunk, const Eigen::Vector3f& start_po
     }
 
     m_last_chunk_pos = m_start_chunk;
-    m_last_chunk = world::find_chunk(m_last_chunk_pos);
+    m_last_chunk = m_world->find_chunk(m_last_chunk_pos);
 }
 
 block_id_type Ray_DDA::step(void)
@@ -94,7 +97,7 @@ block_id_type Ray_DDA::step(void)
 
     if(m_last_chunk == nullptr || !m_last_chunk_pos.isApprox(new_chunk_pos)) {
         m_last_chunk_pos = new_chunk_pos;
-        m_last_chunk = world::find_chunk(m_last_chunk_pos);
+        m_last_chunk = m_world->find_chunk(m_last_chunk_pos);
     }
 
     if(m_last_chunk == nullptr) {

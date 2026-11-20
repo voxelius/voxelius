@@ -184,7 +184,8 @@ static void update_chunk_positions_tbo(void)
 {
     std::uint32_t max_slot = 0;
 
-    auto view = world::chunk_registry.view<Chunk_Component, ChunkMesh>();
+    auto& chunk_registry = globals::world->chunk_registry();
+    auto view = chunk_registry.view<Chunk_Component, ChunkMesh>();
 
     for(const auto [entity, chunk, mesh] : view.each()) {
         if(mesh.slot == std::numeric_limits<std::uint32_t>::max()) {
@@ -256,7 +257,8 @@ static void batch_append(const ChunkMesh_Part& part)
 
 static float chunk_distance_sq(entt::entity entity)
 {
-    const auto& chunk = world::chunk_registry.get<Chunk_Component>(entity);
+    auto& chunk_registry = globals::world->chunk_registry();
+    const auto& chunk = chunk_registry.get<Chunk_Component>(entity);
     Eigen::Vector3f position = utils::to_fvec(chunk.position - camera::chunk) * static_cast<float>(constant::CHUNK_SIZE);
     Eigen::Vector3f delta = position - camera::local;
     return delta.squaredNorm();
@@ -264,7 +266,8 @@ static float chunk_distance_sq(entt::entity entity)
 
 static void update_sorted_chunks(void)
 {
-    auto view = world::chunk_registry.view<Chunk_Component, ChunkMesh>();
+    auto& chunk_registry = globals::world->chunk_registry();
+    auto view = chunk_registry.view<Chunk_Component, ChunkMesh>();
 
     s_sorted_chunks.clear();
     s_sorted_chunks.reserve(view.size_hint());
@@ -420,8 +423,10 @@ void chunk_renderer::init(void)
     globals::dispatcher.sink<ChunkCreateEvent>().connect<&on_chunk_create>();
     globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
     globals::dispatcher.sink<ChunkUpdateEvent>().connect<&on_chunk_update>();
-    world::chunk_registry.on_update<ChunkMesh>().connect<&on_chunk_mesh>();
-    world::chunk_registry.on_destroy<ChunkMesh>().connect<&on_chunk_mesh>();
+
+    auto& chunk_registry = globals::world->chunk_registry();
+    chunk_registry.on_update<ChunkMesh>().connect<&on_chunk_mesh>();
+    chunk_registry.on_destroy<ChunkMesh>().connect<&on_chunk_mesh>();
 }
 
 void chunk_renderer::shutdown(void)
@@ -485,9 +490,11 @@ void chunk_renderer::render_opaque(void)
     glCullFace(GL_BACK);
     glDisable(GL_BLEND);
 
+    auto& chunk_registry = globals::world->chunk_registry();
+
     for(const auto& it : s_sorted_chunks) {
-        const auto& mesh = world::chunk_registry.get<ChunkMesh>(it.first);
-        const auto& chunk = world::chunk_registry.get<Chunk_Component>(it.first);
+        const auto& mesh = chunk_registry.get<ChunkMesh>(it.first);
+        const auto& chunk = chunk_registry.get<Chunk_Component>(it.first);
 
         if(mesh.opaque.count && frustum.intersects(utils::bounds(chunk.position - camera::chunk))) {
             batch_append(mesh.opaque);
@@ -517,9 +524,11 @@ void chunk_renderer::render_alpha(void)
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
+    auto& chunk_registry = globals::world->chunk_registry();
+
     for(auto it = s_sorted_chunks.rbegin(); it != s_sorted_chunks.rend(); it = std::next(it)) {
-        const auto& mesh = world::chunk_registry.get<ChunkMesh>(it->first);
-        const auto& chunk = world::chunk_registry.get<Chunk_Component>(it->first);
+        const auto& mesh = chunk_registry.get<ChunkMesh>(it->first);
+        const auto& chunk = chunk_registry.get<Chunk_Component>(it->first);
 
         if(mesh.alpha.count && frustum.intersects(utils::bounds(chunk.position - camera::chunk))) {
             batch_append(mesh.alpha);
@@ -552,9 +561,11 @@ void chunk_renderer::render_fluid(void)
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
+    auto& chunk_registry = globals::world->chunk_registry();
+
     for(auto it = s_sorted_chunks.rbegin(); it != s_sorted_chunks.rend(); it = std::next(it)) {
-        const auto& mesh = world::chunk_registry.get<ChunkMesh>(it->first);
-        const auto& chunk = world::chunk_registry.get<Chunk_Component>(it->first);
+        const auto& mesh = chunk_registry.get<ChunkMesh>(it->first);
+        const auto& chunk = chunk_registry.get<Chunk_Component>(it->first);
 
         if(mesh.fluid.count && frustum.intersects(utils::bounds(chunk.position - camera::chunk))) {
             batch_append(mesh.fluid);

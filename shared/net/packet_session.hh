@@ -17,6 +17,7 @@ struct packet::Session_Disconnect final : public packet::Base<packet::SESSION_DI
     constexpr static std::uint32_t SERVER_SHUTDOWN = 0x0000000A;
     constexpr static std::uint32_t CVAR_REJECTED = 0x0000000B;
     constexpr static std::uint32_t KICKED = 0x0000000C;
+    constexpr static std::uint32_t WORLD_UNKNOWN = 0x0000000D;
 
     static void encode(const Session_Disconnect& packet, WriteBuffer& buffer);
     static void decode(Session_Disconnect& packet, ReadBuffer& buffer);

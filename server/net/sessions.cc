@@ -21,6 +21,7 @@
 #include "shared/world/tint_registry.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
+#include "shared/world/world.hh"
 #include "shared/world/world_clock.hh"
 
 #include "server/globals.hh"
@@ -215,8 +216,12 @@ static void on_auth_response(const packet::Auth_Response& packet)
     // time, drift and cloud deck before the first periodic update
     auto world_seed = universe::seed();
 
+    auto world = universe::world();
+    const auto& world_id = world->id();
+
     packet::World_Info world_info {};
     weather::fill_info(world_info);
+    world_info.id = std::string(world_id.full_string());
     world_info.seed = world_seed;
     world_info.star_seed = star_seed_of(world_seed);
     protocol::send(world_info, packet.peer);

@@ -2,83 +2,62 @@
 
 #include "shared/world/biome_map.hh"
 
-#include "shared/globals.hh"
 #include "shared/utils/biome.hh"
 #include "shared/utils/coord.hh"
-#include "shared/world/world.hh"
 
-struct MapEntry final {
-    std::shared_ptr<BiomeSlice> ptr;
-    bool initialized { false };
-};
-
-static std::mutex s_mutex;
-static std::array<vx::hash_map<ChunkPosXZ, MapEntry>, NUM_BIOME_REALMS> s_biomes;
-static BiomeSlice s_empty_slice {};
-static std::shared_ptr<BiomeSlice> s_void_slice;
-
-static ChunkPosXZ to_column(const ChunkPos& cpos)
+BiomeMap::BiomeMap(void)
 {
-    return ChunkPosXZ(cpos.x(), cpos.z());
+    m_void = std::make_shared<BiomeSlice>();
 }
 
-static void on_chunk_create(const ChunkCreateEvent& event)
+void BiomeMap::purge(void)
 {
-    auto& chunk = event.chunk();
-    auto entity = chunk->entity();
-    auto& cpos = event.pos();
+    std::scoped_lock lock(m_mutex);
+
+    for(auto& slices : m_slices) {
+        slices.clear();
+    }
+}
+
+void BiomeMap::attach(entt::registry& registry, entt::entity entity, const ChunkPos& cpos)
+{
     auto realm = utils::realm(cpos.y());
 
     BiomeSlice_Component component {};
 
     if(realm == BIOME_REALM_VOID) {
-        component.ptr = s_void_slice;
-        world::chunk_registry.emplace<BiomeSlice_Component>(entity, std::move(component));
+        component.ptr = m_void;
+        registry.emplace<BiomeSlice_Component>(entity, std::move(component));
         return;
     }
 
     auto index = static_cast<std::size_t>(realm);
     assert(index < NUM_BIOME_REALMS);
 
-    auto cpos_xz = to_column(cpos);
+    auto cpos_xz = ChunkPosXZ(cpos.x(), cpos.z());
 
-    std::scoped_lock lock(s_mutex);
+    std::scoped_lock lock(m_mutex);
 
-    auto& map = s_biomes[index];
-    auto it = map.find(cpos_xz);
+    auto& slices = m_slices[index];
+    auto it = slices.find(cpos_xz);
 
-    if(it == map.end()) {
+    if(it == slices.end()) {
         component.ptr = std::make_shared<BiomeSlice>();
 
-        MapEntry entry {};
+        Entry entry {};
         entry.ptr = component.ptr;
         entry.initialized = false;
 
-        map.insert_or_assign(cpos_xz, std::move(entry));
+        slices.insert_or_assign(cpos_xz, std::move(entry));
     }
     else {
         component.ptr = it->second.ptr;
     }
 
-    world::chunk_registry.emplace<BiomeSlice_Component>(entity, std::move(component));
+    registry.emplace<BiomeSlice_Component>(entity, std::move(component));
 }
 
-void biome_map::init(void)
-{
-    s_void_slice = std::make_shared<BiomeSlice>();
-    globals::dispatcher.sink<ChunkCreateEvent>().connect<&on_chunk_create>();
-}
-
-void biome_map::purge(void)
-{
-    std::scoped_lock lock(s_mutex);
-
-    for(auto& realm_map : s_biomes) {
-        realm_map.clear();
-    }
-}
-
-void biome_map::insert(biome_realm realm, const ChunkPosXZ& pos, BiomeSlice biomes)
+void BiomeMap::insert(biome_realm realm, const ChunkPosXZ& pos, BiomeSlice biomes)
 {
     if(realm == BIOME_REALM_VOID) {
         return;
@@ -87,20 +66,20 @@ void biome_map::insert(biome_realm realm, const ChunkPosXZ& pos, BiomeSlice biom
     auto index = static_cast<std::size_t>(realm);
     assert(index < NUM_BIOME_REALMS);
 
-    std::scoped_lock lock(s_mutex);
+    std::scoped_lock lock(m_mutex);
 
-    auto& map = s_biomes[index];
-    auto it = map.find(pos);
+    auto& slices = m_slices[index];
+    auto it = slices.find(pos);
 
-    if(it == map.end()) {
-        MapEntry entry {};
+    if(it == slices.end()) {
+        Entry entry {};
         entry.ptr = std::make_shared<BiomeSlice>(std::move(biomes));
         entry.initialized = true;
-        map.insert_or_assign(pos, std::move(entry));
+        slices.insert_or_assign(pos, std::move(entry));
         return;
     }
 
-    // First successful write wins for the realm column.
+    // First successful write wins for the column
     if(it->second.initialized) {
         return;
     }
@@ -109,15 +88,14 @@ void biome_map::insert(biome_realm realm, const ChunkPosXZ& pos, BiomeSlice biom
     it->second.initialized = true;
 }
 
-biome_id_type biome_map::get_slow(const BlockPos& pos)
+biome_id_type BiomeMap::get_slow(const BlockPos& pos) const
 {
-    auto pos_xz = BlockPosXZ(pos.x(), pos.z());
     auto cpos = utils::to_chunk(pos);
     auto realm = utils::realm(cpos.y());
-    return get_slow(realm, pos_xz);
+    return get_slow(realm, BlockPosXZ(pos.x(), pos.z()));
 }
 
-biome_id_type biome_map::get_slow(biome_realm realm, const BlockPosXZ& pos)
+biome_id_type BiomeMap::get_slow(biome_realm realm, const BlockPosXZ& pos) const
 {
     if(realm == BIOME_REALM_VOID) {
         return BIOME_ID_NULL;
@@ -130,40 +108,40 @@ biome_id_type biome_map::get_slow(biome_realm realm, const BlockPosXZ& pos)
     auto index = static_cast<std::size_t>(realm);
     assert(index < NUM_BIOME_REALMS);
 
-    std::scoped_lock lock(s_mutex);
+    std::scoped_lock lock(m_mutex);
 
-    auto& map = s_biomes[index];
-    auto it = map.find(cpos_xz);
+    auto& slices = m_slices[index];
+    auto it = slices.find(cpos_xz);
 
-    if(it == map.end()) {
+    if(it == slices.end()) {
         return BIOME_ID_NULL;
     }
 
     return (*it->second.ptr)[index_xz];
 }
 
-const BiomeSlice& biome_map::get(const ChunkPos& pos)
+const BiomeSlice& BiomeMap::get(const ChunkPos& pos) const
 {
     auto realm = utils::realm(pos.y());
-    return get(realm, to_column(pos));
+    return get(realm, ChunkPosXZ(pos.x(), pos.z()));
 }
 
-const BiomeSlice& biome_map::get(biome_realm realm, const ChunkPosXZ& pos)
+const BiomeSlice& BiomeMap::get(biome_realm realm, const ChunkPosXZ& pos) const
 {
     if(realm == BIOME_REALM_VOID) {
-        return s_empty_slice;
+        return *m_void;
     }
 
     auto index = static_cast<std::size_t>(realm);
     assert(index < NUM_BIOME_REALMS);
 
-    std::scoped_lock lock(s_mutex);
+    std::scoped_lock lock(m_mutex);
 
-    auto& map = s_biomes[index];
-    auto it = map.find(pos);
+    auto& slices = m_slices[index];
+    auto it = slices.find(pos);
 
-    if(it == map.end()) {
-        return s_empty_slice;
+    if(it == slices.end()) {
+        return *m_void;
     }
 
     return *it->second.ptr;

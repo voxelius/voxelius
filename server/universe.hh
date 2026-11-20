@@ -6,9 +6,16 @@ namespace config
 class Map;
 } // namespace config
 
+class World;
+
 namespace universe
 {
 config::Map& world_config(void);
+} // namespace universe
+
+namespace universe
+{
+World* world(void);
 } // namespace universe
 
 namespace universe

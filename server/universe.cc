@@ -6,9 +6,13 @@
 #include "core/config/map.hh"
 #include "core/config/ref.hh"
 #include "core/core.hh"
+#include "core/exception.hh"
+#include "core/identifier.hh"
 
 #include "shared/constant.hh"
 #include "shared/globals.hh"
+#include "shared/world/world.hh"
+#include "shared/world/world_registry.hh"
 
 #include "server/globals.hh"
 
@@ -27,6 +31,12 @@ config::Map& universe::world_config(void)
     return s_world_config;
 }
 
+World* universe::world(void)
+{
+    assert(globals::world);
+    return globals::world.get();
+}
+
 std::uint64_t universe::seed(void)
 {
     return s_seed.value();
@@ -34,7 +44,8 @@ std::uint64_t universe::seed(void)
 
 void universe::init(void)
 {
-    auto default_path = std::filesystem::path(core::userpath() / "save").string();
+    auto default_dir = core::userpath() / "save";
+    auto default_path = default_dir.string();
     auto argument = cmdline::value_or("universe", default_path);
     auto argument_path = std::filesystem::absolute(argument);
 
@@ -67,12 +78,25 @@ void universe::init(void)
     // that has never been saved starts at noon
     globals::current_tick = s_tick.value();
     globals::daylight_tick = s_daylight_tick.value();
+
+    auto definitions = world_registry::all();
+    vx::throw_if(definitions.empty(), "no world is registered");
+
+    auto definition = world_registry::find(Identifier::from_string("builtin:overworld"));
+
+    if(definition == nullptr) {
+        definition = definitions.front();
+    }
+
+    globals::world = std::make_shared<World>(definition);
+    globals::world->seed = s_seed.value();
 }
 
 void universe::init_late(void)
 {
+    const auto& world_id = globals::world->id();
     msg::log_info("set world root={}", s_root_dir.string());
-    msg::log_info("set world seed={}", s_seed.value());
+    msg::log_info("set world id={} seed={}", world_id.full_string(), s_seed.value());
 }
 
 void universe::shutdown(void)

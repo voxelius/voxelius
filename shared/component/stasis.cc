@@ -11,7 +11,7 @@ void Stasis::fixed_update(void)
     auto view = globals::registry.view<Transform>();
 
     for(auto [entity, transform] : view.each()) {
-        if(world::find_chunk(transform.chunk)) {
+        if(globals::world->find_chunk(transform.chunk)) {
             globals::registry.remove<Stasis>(entity);
         }
         else {

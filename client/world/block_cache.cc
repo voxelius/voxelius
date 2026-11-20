@@ -2,6 +2,7 @@
 
 #include "client/world/block_cache.hh"
 
+#include "shared/globals.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/chunk.hh"
 #include "shared/world/light_material.hh"
@@ -32,7 +33,7 @@ void BlockCache::init(const ChunkPos& cpos)
                 auto delta = ChunkPos(dx, dy, dz);
                 auto query_pos = cpos + delta;
 
-                if(auto chunk = world::find_chunk(query_pos)) {
+                if(auto chunk = globals::world->find_chunk(query_pos)) {
                     chunks[dx + 1][dy + 1][dz + 1] = chunk;
                 }
             }
@@ -52,7 +53,8 @@ void BlockCache::init(const ChunkPos& cpos)
                 }
 
                 auto& blocks = chunk->blocks();
-                auto light = chunk->light().data();
+                auto& light_storage = chunk->light();
+                auto light = light_storage.data();
 
                 // A neighbour only contributes the slice that lands inside the
                 // cache, so clip the range instead of walking its whole volume

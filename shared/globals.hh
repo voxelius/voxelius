@@ -1,10 +1,16 @@
 #ifndef E3CA7055_91BF_4C7D_ACF9_C112C07BA574
 #define E3CA7055_91BF_4C7D_ACF9_C112C07BA574
 
+class World;
+
 namespace globals
 {
 extern entt::dispatcher dispatcher;
+
+// Entities still share one registry; they move into World in a later stage
 extern entt::registry registry;
+
+extern std::shared_ptr<World> world;
 } // namespace globals
 
 namespace globals

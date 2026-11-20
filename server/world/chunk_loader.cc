@@ -172,20 +172,32 @@ static void finish_save(const ChunkPos& pos)
 
 static void on_chunk_update(const ChunkUpdateEvent& event)
 {
-    world::chunk_registry.emplace_or_replace<ChunkDirtyMarker>(event.chunk()->entity());
+    auto world = event.world();
+    auto& chunk_registry = world->chunk_registry();
+    auto chunk = event.chunk();
+
+    chunk_registry.emplace_or_replace<ChunkDirtyMarker>(chunk->entity());
 }
 
 static void on_block_update(const BlockUpdateEvent& event)
 {
-    world::chunk_registry.emplace_or_replace<ChunkDirtyMarker>(event.chunk()->entity());
+    auto world = event.world();
+    auto& chunk_registry = world->chunk_registry();
+    auto chunk = event.chunk();
+
+    chunk_registry.emplace_or_replace<ChunkDirtyMarker>(chunk->entity());
 }
 
 static void on_chunk_light(const ChunkLightUpdateEvent& event)
 {
     // The light lives in the chunk snapshot, so a chunk whose light changed
     // has to be saved even when its blocks did not.
-    if(auto chunk = world::find_chunk(event.pos())) {
-        world::chunk_registry.emplace_or_replace<ChunkDirtyMarker>(chunk->entity());
+    auto world = event.world();
+    auto chunk = world->find_chunk(event.pos());
+
+    if(chunk) {
+        auto& chunk_registry = world->chunk_registry();
+        chunk_registry.emplace_or_replace<ChunkDirtyMarker>(chunk->entity());
     }
 }
 
@@ -235,12 +247,12 @@ void LoadTask::finalize(void)
     ZoneScopedN("chunk_loader::load_finalize");
 
     if(m_found) {
-        auto chunk = world::create_chunk(m_pos);
+        auto chunk = globals::world->create_chunk(m_pos);
         chunk->restore(std::move(m_snapshot), globals::current_tick);
 
         // Not ChunkUpdateEvent: loaded-from-disk chunks are identical
         // to what's saved and must NOT be marked ChunkDirtyMarker.
-        globals::dispatcher.trigger(ChunkReadyEvent(m_pos, chunk));
+        globals::dispatcher.trigger(ChunkReadyEvent(globals::world.get(), m_pos, chunk));
 
         entity_loader::load(m_pos);
     }
@@ -279,7 +291,8 @@ void chunk_loader::shutdown(void)
     // queued when the pool is cancelled and the chunks are lost.
     threading::wait();
 
-    auto view = world::chunk_registry.view<Chunk_Component, ChunkDirtyMarker>();
+    auto& chunk_registry = globals::world->chunk_registry();
+    auto view = chunk_registry.view<Chunk_Component, ChunkDirtyMarker>();
 
     for(auto [entity, component] : view.each()) {
         write_chunk(component.position, component.ptr->snapshot(globals::current_tick));
@@ -296,7 +309,7 @@ void chunk_loader::fixed_update(void)
 
 void chunk_loader::request(const ChunkPos& pos)
 {
-    if(world::find_chunk(pos)) {
+    if(globals::world->find_chunk(pos)) {
         return;
     }
 
@@ -321,7 +334,7 @@ bool chunk_loader::pending(const ChunkPos& pos)
 
 bool chunk_loader::save(const ChunkPos& pos)
 {
-    auto chunk = world::find_chunk(pos);
+    auto chunk = globals::world->find_chunk(pos);
 
     if(chunk == nullptr) {
         return false;
@@ -329,8 +342,10 @@ bool chunk_loader::save(const ChunkPos& pos)
 
     auto entity = chunk->entity();
 
-    if(world::chunk_registry.all_of<ChunkDirtyMarker>(entity)) {
-        world::chunk_registry.remove<ChunkDirtyMarker>(entity);
+    auto& chunk_registry = globals::world->chunk_registry();
+
+    if(chunk_registry.all_of<ChunkDirtyMarker>(entity)) {
+        chunk_registry.remove<ChunkDirtyMarker>(entity);
         s_saving.emplace(pos);
         threading::submit<SaveTask>(pos, chunk->snapshot(globals::current_tick));
         return true;

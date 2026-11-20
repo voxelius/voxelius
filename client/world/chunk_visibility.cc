@@ -55,7 +55,8 @@ void chunk_visibility::fixed_update_late(void)
     packet.chunk_budget = static_cast<std::uint16_t>(budget);
     protocol::send(packet, globals::peer);
 
-    auto view = world::chunk_registry.view<Chunk_Component>();
+    auto& chunk_registry = globals::world->chunk_registry();
+    auto view = chunk_registry.view<Chunk_Component>();
 
     to_remove.clear();
 
@@ -68,6 +69,6 @@ void chunk_visibility::fixed_update_late(void)
     }
 
     for(const auto& cpos : to_remove) {
-        world::remove_chunk(cpos);
+        globals::world->remove_chunk(cpos);
     }
 }

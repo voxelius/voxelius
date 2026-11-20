@@ -247,6 +247,7 @@ static void wrapped_main(int argc, char** argv)
     replication::init();
 
     shared_game::init();
+    client_game::init_world();
 
     splash::init(SPLASH_CLIENT);
 

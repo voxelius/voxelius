@@ -45,7 +45,8 @@ void chunk_unloader::fixed_update_late(void)
     std::vector<ChunkPos> to_unload;
     std::size_t autosaved = 0;
 
-    auto chunks = world::chunk_registry.view<Chunk_Component>();
+    auto& chunk_registry = globals::world->chunk_registry();
+    auto chunks = chunk_registry.view<Chunk_Component>();
 
     for(const auto [entity, component] : chunks.each()) {
         auto inside_view = false;
@@ -96,6 +97,6 @@ void chunk_unloader::fixed_update_late(void)
         }
 
         chunk_loader::save(pos);
-        world::remove_chunk(pos);
+        globals::world->remove_chunk(pos);
     }
 }

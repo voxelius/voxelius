@@ -36,7 +36,6 @@ void shared_game::init(void)
     Player::register_component();
     MoveMode::register_component();
 
-    biome_map::init();
     mod_loader::init();
 
     lighting::init();
@@ -52,7 +51,9 @@ void shared_game::shutdown(void)
 {
     lighting::shutdown();
 
-    world::purge();
+    if(globals::world) {
+        globals::world->purge();
+    }
 
     light_material::shutdown();
     block_collisions::shutdown();
@@ -71,7 +72,10 @@ void shared_game::fixed_update(void)
     Transform::fixed_update();
     Velocity::fixed_update();
 
-    world::fixed_update();
+    if(globals::world) {
+        globals::world->fixed_update();
+    }
+
     lighting::fixed_update();
 }
 
