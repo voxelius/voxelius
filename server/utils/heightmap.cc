@@ -6,21 +6,25 @@
 
 #include "shared/world/world.hh"
 
-#include "server/world/realm_surface.hh"
+#include "server/world/generator_map.hh"
+#include "server/world/world.hh"
 
-const ColumnSlice& utils::heightmap_probe(World* world, const ChunkPosXZ& pos)
+const ColumnSlice& utils::heightmap_probe(ServerWorld* world, const ChunkPosXZ& pos)
 {
+    auto generator = world->generator();
     auto& heightmap = world->heightmap();
     auto entry = heightmap.get_or_create(pos);
 
-    std::call_once(entry->init_flag, [pos, entry] {
-        entry->data = realm_surface::probe(pos);
+    assert(generator);
+
+    std::call_once(entry->init_flag, [pos, entry, world, generator] {
+        entry->data = generator->probe(world, pos);
     });
 
     return entry->data;
 }
 
-const Column& utils::heightmap_probe_slow(World* world, const BlockPosXZ& pos)
+const Column& utils::heightmap_probe_slow(ServerWorld* world, const BlockPosXZ& pos)
 {
     ChunkPosXZ cpos;
     cpos[0] = static_cast<ChunkPosXZ::value_type>(pos[0] >> constant::CHUNK_SIZE_LOG2);

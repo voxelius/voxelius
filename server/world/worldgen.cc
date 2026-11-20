@@ -15,7 +15,6 @@
 #include "server/world/feature_placer.hh"
 #include "server/world/feature_scatter.hh"
 #include "server/world/generator_map.hh"
-#include "server/world/realm_surface.hh"
 #include "server/world/world.hh"
 
 class WorldgenTask final : public Task {
@@ -98,8 +97,6 @@ void worldgen::init(void)
     entropy_cache::init(seeder);
     climate_noise::init(seeder);
 
-    realm_surface::init(seeder);
-
     feature_placer::init();
 
     FeatureScatter::init();
@@ -114,8 +111,6 @@ void worldgen::shutdown(void)
     threading::wait();
 
     feature_placer::shutdown();
-
-    realm_surface::shutdown();
 
     climate_noise::shutdown();
     entropy_cache::shutdown();

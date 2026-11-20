@@ -158,7 +158,7 @@ static cvar::status cmd_weather_force(const cvar::Context&, std::span<const std:
     return cvar::status::OK;
 }
 
-static void strike(World* world, const WeatherTypeDefinition& def)
+static void strike(ServerWorld* world, const WeatherTypeDefinition& def)
 {
     auto& registry = world->registry();
 
@@ -214,7 +214,7 @@ static void strike(World* world, const WeatherTypeDefinition& def)
     call_strike_callback(def.on_strike, bpos);
 }
 
-static void update_world(World* world)
+static void update_world(ServerWorld* world)
 {
     auto& state = weather::state();
 
