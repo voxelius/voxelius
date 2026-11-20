@@ -102,6 +102,8 @@ add_executable(vclient
     "${CMAKE_CURRENT_LIST_DIR}/world/chunk_renderer.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/chunk_vbo.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/chunk_vbo.hh"
+    "${CMAKE_CURRENT_LIST_DIR}/utils/world.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/utils/world.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/cloud_field.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/cloud_field.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/cloud_mesher.cc"

@@ -104,6 +104,7 @@ public:
     virtual ~World(void) = default;
 
     constexpr const WorldDefinition& definition(void) const;
+    constexpr const WorldVisuals& visuals(void) const;
     constexpr const Identifier& id(void) const;
 
     std::uint64_t seed { 0 };
@@ -200,6 +201,11 @@ private:
 constexpr const WorldDefinition& World::definition(void) const
 {
     return *m_definition;
+}
+
+constexpr const WorldVisuals& World::visuals(void) const
+{
+    return m_definition->visuals;
 }
 
 constexpr const Identifier& World::id(void) const

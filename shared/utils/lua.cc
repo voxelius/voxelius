@@ -316,6 +316,17 @@ std::optional<lua_Number> utils::require_number(lua_State* L, int idx)
     return std::nullopt;
 }
 
+std::optional<bool> utils::require_bool(lua_State* L, int idx)
+{
+    if(lua_isboolean(L, idx)) {
+        return static_cast<bool>(lua_toboolean(L, idx));
+    }
+
+    lua_pushfstring(L, "expected a boolean, got %s", lua_typename(L, lua_type(L, idx)));
+
+    return std::nullopt;
+}
+
 std::optional<std::string_view> utils::require_string(lua_State* L, int idx)
 {
     auto type = lua_type(L, idx);
@@ -329,6 +340,19 @@ std::optional<std::string_view> utils::require_string(lua_State* L, int idx)
     lua_pushfstring(L, "expected a string, got %s", lua_typename(L, type));
 
     return std::nullopt;
+}
+
+std::optional<bool> utils::require_bool(lua_State* L, int idx, const char* key)
+{
+    lua_getfield(L, idx, key);
+
+    auto result = require_bool(L, -1);
+
+    if(result.has_value()) {
+        lua_pop(L, 1);
+    }
+
+    return result;
 }
 
 std::optional<lua_Integer> utils::require_integer(lua_State* L, int idx, const char* key)
@@ -370,6 +394,13 @@ std::optional<std::string_view> utils::require_string(lua_State* L, int idx, con
     return result;
 }
 
+std::optional<bool> utils::opt_bool(lua_State* L, int idx, bool default_value)
+{
+    if(lua_isnoneornil(L, idx))
+        return default_value;
+    return require_bool(L, idx);
+}
+
 std::optional<lua_Integer> utils::opt_integer(lua_State* L, int idx, lua_Integer default_value)
 {
     if(lua_isnoneornil(L, idx))
@@ -389,6 +420,25 @@ std::optional<std::string_view> utils::opt_string(lua_State* L, int idx, std::st
     if(lua_isnoneornil(L, idx))
         return default_value;
     return require_string(L, idx);
+}
+
+std::optional<bool> utils::opt_bool(lua_State* L, int idx, const char* key, bool default_value)
+{
+    lua_getfield(L, idx, key);
+
+    if(lua_isnoneornil(L, -1)) {
+        lua_pop(L, 1);
+
+        return default_value;
+    }
+
+    auto result = require_bool(L, -1);
+
+    if(result.has_value()) {
+        lua_pop(L, 1);
+    }
+
+    return result;
 }
 
 std::optional<lua_Integer> utils::opt_integer(lua_State* L, int idx, const char* key, lua_Integer default_value)

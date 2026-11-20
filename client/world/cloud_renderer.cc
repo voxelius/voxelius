@@ -13,6 +13,7 @@
 #include "shared/constant.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/weather.hh"
+#include "shared/world/world_definition.hh"
 
 #include "client/camera.hh"
 #include "client/fog.hh"
@@ -21,6 +22,7 @@
 #include "client/gui/container.hh"
 #include "client/settings.hh"
 #include "client/shader_program.hh"
+#include "client/utils/world.hh"
 #include "client/world/cloud_field.hh"
 #include "client/world/cloud_mesher.hh"
 #include "client/world/skybox.hh"
@@ -361,6 +363,12 @@ void cloud_renderer::render(void)
     ZoneScoped;
 
     if(!s_clouds.value()) {
+        return;
+    }
+
+    auto& visuals = utils::world_visuals();
+
+    if(!visuals.clouds) {
         return;
     }
 

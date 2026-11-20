@@ -9,14 +9,14 @@
 #include "core/utils/angles.hh"
 
 #include "shared/constant.hh"
+#include "shared/world/world.hh"
 
 #include "client/camera.hh"
 #include "client/globals.hh"
 #include "client/res/texture2D.hh"
 #include "client/shader_program.hh"
+#include "client/utils/world.hh"
 #include "client/world/skybox.hh"
-
-constexpr static std::size_t STAR_COUNT = 1500;
 
 // The sky spheres have to stay inside the camera's far plane
 // even at the shortest view distance, which is twenty blocks
@@ -84,7 +84,7 @@ static GLuint s_quad_vao;
 static GLuint s_star_vao;
 static GLuint s_star_vbo;
 static GLsizei s_star_vertices;
-static std::uint32_t s_built_seed;
+static std::optional<std::pair<std::uint32_t, std::uint32_t>> s_built_stars;
 
 static float next_float(std::mt19937_64& random)
 {
@@ -130,12 +130,15 @@ static void push_vertex(std::vector<StarVertex>& vertices, const Eigen::Vector3f
 // star angle moves the whole field, so a still sky costs no upload
 static void build_stars(void)
 {
+    auto& visuals = utils::world_visuals();
+    auto count = static_cast<std::size_t>(visuals.stars ? visuals.stars->count : 0U);
+
     std::mt19937_64 random(skybox::star_seed);
     std::vector<StarVertex> vertices;
 
-    vertices.reserve(STAR_COUNT * 6);
+    vertices.reserve(count * 6);
 
-    for(std::size_t i = 0; i < STAR_COUNT; ++i) {
+    for(std::size_t i = 0; i < count; ++i) {
         Eigen::Vector3f direction;
 
         for(;;) {
@@ -183,7 +186,7 @@ static void build_stars(void)
     glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(vertices.size() * sizeof(StarVertex)), vertices.data(), GL_STATIC_DRAW);
 
     s_star_vertices = static_cast<GLsizei>(vertices.size());
-    s_built_seed = skybox::star_seed;
+    s_built_stars = std::make_pair(skybox::star_seed, static_cast<std::uint32_t>(count));
 }
 
 static void draw_stars(const Eigen::Matrix4f& sky_view_projection)
@@ -319,8 +322,6 @@ void sky_renderer::init(void)
 
     glBindVertexArray(0);
 
-    s_built_seed = skybox::star_seed;
-
     build_stars();
 }
 
@@ -349,7 +350,13 @@ void sky_renderer::render(void)
         return;
     }
 
-    if(skybox::star_seed != s_built_seed) {
+    auto& visuals = utils::world_visuals();
+    auto expected_count = visuals.stars ? visuals.stars->count : 0U;
+
+    if(!s_built_stars.has_value()) {
+        build_stars();
+    }
+    else if(s_built_stars->first != skybox::star_seed || s_built_stars->second != expected_count) {
         build_stars();
     }
 

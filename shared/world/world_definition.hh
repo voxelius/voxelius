@@ -8,16 +8,39 @@
 #include "shared/world/weather.hh"
 
 struct WorldVisuals final {
-    Eigen::Vector3f day_horizon { 0.64f, 0.76f, 0.94f };
-    Eigen::Vector3f day_zenith { 0.26f, 0.46f, 0.85f };
-    Eigen::Vector3f night_horizon { 0.020f, 0.030f, 0.060f };
-    Eigen::Vector3f night_zenith { 0.004f, 0.007f, 0.018f };
-    Eigen::Vector3f moon_color { 0.86f, 0.90f, 1.0f };
+    struct Sky final {
+        struct Gradient final {
+            Eigen::Vector3f horizon;
+            Eigen::Vector3f zenith;
+        };
 
-    float sun_tilt { 0.0f };
-    float twilight_height { 0.35f };
+        Gradient day;
+        Gradient night;
 
-    std::uint32_t star_count { 1500 };
+        float twilight_height;
+    };
+
+    struct Sun final {
+        float tilt;
+    };
+
+    struct Moon final {
+        Eigen::Vector3f color;
+    };
+
+    struct Stars final {
+        std::uint32_t count;
+    };
+
+    struct Clouds final {
+        // empty
+    };
+
+    std::optional<Sky> sky;
+    std::optional<Sun> sun;
+    std::optional<Moon> moon;
+    std::optional<Stars> stars;
+    std::optional<Clouds> clouds;
 };
 
 struct WorldDefinition final {
