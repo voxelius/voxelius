@@ -3,7 +3,7 @@
 
 #include "shared/world/biome.hh"
 
-class World;
+class ServerWorld;
 
 constexpr static std::size_t CLIMATE_DIMS = 5;
 
@@ -27,12 +27,12 @@ struct ClimateSample final {
 namespace climate
 {
 void rebuild(void);
-void rebuild(World* world);
+void rebuild(ServerWorld* world);
 } // namespace climate
 
 namespace climate
 {
-biome_id_type find(World* world, const ClimateSample& sample);
+biome_id_type find(ServerWorld* world, const ClimateSample& sample);
 float peaks_valleys(float weirdness);
 float normalize_01(float sample);
 } // namespace climate

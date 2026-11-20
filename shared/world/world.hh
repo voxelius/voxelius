@@ -5,6 +5,7 @@
 
 #include "shared/world/biome_map.hh"
 #include "shared/world/chunk.hh"
+#include "shared/world/heightmap.hh"
 #include "shared/world/world_definition.hh"
 
 class World;
@@ -97,12 +98,10 @@ private:
     LocalPos m_lpos;
 };
 
-// Only the server resolves and fills this; on the client it stays null
-struct GeneratorDefinition;
-
-class World final {
+class World {
 public:
     explicit World(std::shared_ptr<const WorldDefinition> definition);
+    virtual ~World(void) = default;
 
     constexpr const WorldDefinition& definition(void) const;
     constexpr const Identifier& id(void) const;
@@ -119,16 +118,11 @@ public:
     constexpr const std::filesystem::path& chunk_dir(void) const;
     constexpr const std::filesystem::path& entity_dir(void) const;
 
-    constexpr const GeneratorDefinition* generator(void) const;
-
-    constexpr void* generator_state(void);
-    constexpr const void* generator_state(void) const;
+    constexpr Heightmap& heightmap(void);
+    constexpr const Heightmap& heightmap(void) const;
 
     void load_config(void);
     void save_config(void);
-
-    void set_generator(const GeneratorDefinition* generator);
-    void set_generator_state(std::shared_ptr<void> state);
 
     constexpr WeatherState& weather(void);
     constexpr const WeatherState& weather(void) const;
@@ -196,12 +190,11 @@ private:
     entt::registry m_chunk_registry;
     BiomeMap m_biomes;
     WeatherState m_weather {};
+    Heightmap m_heightmap;
     config::Map m_config;
     std::filesystem::path m_root;
     std::filesystem::path m_chunk_dir;
     std::filesystem::path m_entity_dir;
-    const GeneratorDefinition* m_generator { nullptr }; // server only
-    std::shared_ptr<void> m_generator_state;            // server only
 };
 
 constexpr const WorldDefinition& World::definition(void) const
@@ -249,19 +242,14 @@ constexpr const std::filesystem::path& World::entity_dir(void) const
     return m_entity_dir;
 }
 
-constexpr const GeneratorDefinition* World::generator(void) const
+constexpr Heightmap& World::heightmap(void)
 {
-    return m_generator;
+    return m_heightmap;
 }
 
-constexpr void* World::generator_state(void)
+constexpr const Heightmap& World::heightmap(void) const
 {
-    return m_generator_state.get();
-}
-
-constexpr const void* World::generator_state(void) const
-{
-    return m_generator_state.get();
+    return m_heightmap;
 }
 
 constexpr WeatherState& World::weather(void)

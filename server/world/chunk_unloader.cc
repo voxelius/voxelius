@@ -18,6 +18,7 @@
 #include "server/net/sessions.hh"
 #include "server/universe.hh"
 #include "server/world/chunk_loader.hh"
+#include "server/world/world.hh"
 
 constexpr static std::size_t UNLOAD_BUDGET = constant::REGION_VOLUME;
 
@@ -42,7 +43,7 @@ void chunk_unloader::fixed_update_late(void)
         boxes.clear();
 
         for(const auto& session : all_sessions) {
-            if(session.world != world) {
+            if(session.world.get() != static_cast<World*>(world.get())) {
                 continue;
             }
 

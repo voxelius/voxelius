@@ -7,12 +7,12 @@
 #include "shared/utils/coord.hh"
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
-#include "shared/world/world.hh"
 
+#include "server/utils/heightmap.hh"
 #include "server/world/climate.hh"
 #include "server/world/climate_noise.hh"
 #include "server/world/entropy_cache.hh"
-#include "server/world/heightmap.hh"
+#include "server/world/world.hh"
 
 struct WouldPlaceKey final {
     constexpr bool operator==(const WouldPlaceKey& other) const
@@ -146,7 +146,7 @@ static bool can_place(const PlacementContext& context, const BlockPos& origin, c
     return true;
 }
 
-static biome_id_type biome_at(ScatterScanCache& cache, World* world, BlockPos::value_type bx, BlockPos::value_type bz)
+static biome_id_type biome_at(ScatterScanCache& cache, ServerWorld* world, BlockPos::value_type bx, BlockPos::value_type bz)
 {
     BlockPosXZ key(bx, bz);
     auto it = cache.biome.find(key);
@@ -160,8 +160,8 @@ static biome_id_type biome_at(ScatterScanCache& cache, World* world, BlockPos::v
     return it->second;
 }
 
-static bool check_footprint(ScatterScanCache& cache, World* world, BlockPos::value_type bx, BlockPos::value_type bz, const Feature& feature,
-    unsigned edge, const BiomeDefinition* biome)
+static bool check_footprint(ScatterScanCache& cache, ServerWorld* world, BlockPos::value_type bx, BlockPos::value_type bz,
+    const Feature& feature, unsigned edge, const BiomeDefinition* biome)
 {
     auto& bounds = feature.bounds;
     auto pad = static_cast<int>(edge);
@@ -202,7 +202,7 @@ static bool would_place_uncached(BlockPos::value_type bx, BlockPos::value_type b
     sample_xz[0] = bx;
     sample_xz[1] = bz;
 
-    auto& column = heightmap::probe_slow(sample_xz);
+    auto& column = utils::heightmap_probe_slow(context.world, sample_xz);
     auto position = BlockPos(bx, column.surface_y, bz);
 
     if(!can_place(context, position, biome, entry, column)) {
@@ -347,7 +347,7 @@ static bool resolve_padding_tie(BlockPos::value_type bx, BlockPos::value_type bz
             neighbour_xz[0] = ox;
             neighbour_xz[1] = oz;
 
-            auto& neighbour_column = heightmap::probe_slow(neighbour_xz);
+            auto& neighbour_column = utils::heightmap_probe_slow(context.world, neighbour_xz);
 
             if(!neighbour_column.is_valid()) {
                 continue;
@@ -407,7 +407,7 @@ void FeatureScatter::collect(const ChunkPos& pos, const PlacementContext& contex
             sample_pos.x() = wx;
             sample_pos.y() = wz;
 
-            auto& column = heightmap::probe_slow(sample_pos);
+            auto& column = utils::heightmap_probe_slow(context.world, sample_pos);
 
             if(!column.is_valid()) {
                 continue;

@@ -16,9 +16,9 @@ struct ScatterCacheEntry final {
 static std::size_t s_max_extent;
 static std::vector<std::unique_ptr<PlacementRule>> s_rules;
 static std::shared_mutex s_scatter_mutex;
-static vx::hash_map<const World*, vx::hash_map<ChunkPosXZ, std::shared_ptr<ScatterCacheEntry>>> s_scatter_cache;
+static vx::hash_map<const ServerWorld*, vx::hash_map<ChunkPosXZ, std::shared_ptr<ScatterCacheEntry>>> s_scatter_cache;
 
-static std::shared_ptr<ScatterCacheEntry> find_scatter_entry(World* world, const ChunkPosXZ& pos)
+static std::shared_ptr<ScatterCacheEntry> find_scatter_entry(ServerWorld* world, const ChunkPosXZ& pos)
 {
     std::shared_lock lock(s_scatter_mutex);
 
@@ -38,7 +38,7 @@ static std::shared_ptr<ScatterCacheEntry> find_scatter_entry(World* world, const
     return it->second;
 }
 
-static std::shared_ptr<ScatterCacheEntry> get_scatter_entry(World* world, const ChunkPosXZ& pos)
+static std::shared_ptr<ScatterCacheEntry> get_scatter_entry(ServerWorld* world, const ChunkPosXZ& pos)
 {
     if(auto entry = find_scatter_entry(world, pos)) {
         return entry;
@@ -52,7 +52,7 @@ static std::shared_ptr<ScatterCacheEntry> get_scatter_entry(World* world, const 
     return entry;
 }
 
-static const std::vector<FeatureInstance>& collect_cached(World* world, const ChunkPosXZ& pos)
+static const std::vector<FeatureInstance>& collect_cached(ServerWorld* world, const ChunkPosXZ& pos)
 {
     auto entry = get_scatter_entry(world, pos);
 
@@ -121,7 +121,7 @@ static bool check_intersection(const FeatureInstance& instance, const ChunkPos& 
     return chunk_bounds.intersects(local_bounds);
 }
 
-static void collect_candidates(World* world, const ChunkPos& cpos, std::vector<FeatureInstance>& out)
+static void collect_candidates(ServerWorld* world, const ChunkPos& cpos, std::vector<FeatureInstance>& out)
 {
     auto cpos_xz = ChunkPosXZ(cpos.x(), cpos.z());
     auto& cached = collect_cached(world, cpos_xz);
@@ -214,7 +214,7 @@ void feature_placer::shutdown(void)
     s_scatter_cache.clear();
 }
 
-void feature_placer::commit(World* world, BlockStorage& storage, const ChunkPos& cpos)
+void feature_placer::commit(ServerWorld* world, BlockStorage& storage, const ChunkPos& cpos)
 {
     thread_local std::vector<FeatureInstance> candidates;
 
@@ -224,7 +224,7 @@ void feature_placer::commit(World* world, BlockStorage& storage, const ChunkPos&
     commit(world, storage, cpos, candidates);
 }
 
-void feature_placer::commit(World* world, BlockStorage& storage, const ChunkPos& cpos, std::span<const FeatureInstance> instances)
+void feature_placer::commit(ServerWorld* world, BlockStorage& storage, const ChunkPos& cpos, std::span<const FeatureInstance> instances)
 {
     for(auto& instance : instances) {
         if(check_intersection(instance, cpos)) {

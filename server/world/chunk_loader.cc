@@ -13,6 +13,7 @@
 #include "server/entity/entity_loader.hh"
 #include "server/universe.hh"
 #include "server/utils/region.hh"
+#include "server/world/world.hh"
 #include "server/world/worldgen.hh"
 #include "server/world/zvox_file.hh"
 

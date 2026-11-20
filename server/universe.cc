@@ -1,6 +1,7 @@
 #include "server/pch.hh"
 
 #include "server/universe.hh"
+#include "server/world/world.hh"
 
 #include "core/cmdline.hh"
 #include "core/config/map.hh"
@@ -27,10 +28,10 @@ static config::Ref<std::uint64_t> s_seed { 0 };
 static config::Ref<std::uint64_t> s_tick { 0 };
 static config::Ref<std::uint64_t> s_daylight_tick { constant::DAY_LENGTH_TICKS / 4 };
 
-static std::vector<std::shared_ptr<World>> s_worlds;
-static std::shared_ptr<World> s_default_world;
+static std::vector<std::shared_ptr<ServerWorld>> s_worlds;
+static std::shared_ptr<ServerWorld> s_default_world;
 
-static std::shared_ptr<World> find_world(const Identifier& id)
+static std::shared_ptr<ServerWorld> find_world(const Identifier& id)
 {
     for(const auto& world : s_worlds) {
         const auto& world_id = world->id();
@@ -43,17 +44,17 @@ static std::shared_ptr<World> find_world(const Identifier& id)
     return nullptr;
 }
 
-std::span<const std::shared_ptr<World>> universe::worlds(void)
+std::span<const std::shared_ptr<ServerWorld>> universe::worlds(void)
 {
     return s_worlds;
 }
 
-std::shared_ptr<World> universe::find(const Identifier& id)
+std::shared_ptr<ServerWorld> universe::find(const Identifier& id)
 {
     return find_world(id);
 }
 
-const std::shared_ptr<World>& universe::default_world(void)
+const std::shared_ptr<ServerWorld>& universe::default_world(void)
 {
     return s_default_world;
 }
@@ -109,7 +110,7 @@ void universe::init(void)
 
         vx::throw_if_not_fmt(generator, "world {}: unknown generator {}", definition->id.full_string(), definition->generator);
 
-        auto world = std::make_shared<World>(definition);
+        auto world = std::make_shared<ServerWorld>(definition);
         auto full_id = definition->id.full_string();
         auto id_hash = utils::crc64(std::span<const char>(full_id.data(), full_id.size()));
 

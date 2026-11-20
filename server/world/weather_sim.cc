@@ -20,7 +20,8 @@
 #include "server/globals.hh"
 #include "server/net/sessions.hh"
 #include "server/universe.hh"
-#include "server/world/heightmap.hh"
+#include "server/utils/heightmap.hh"
+#include "server/world/world.hh"
 
 constexpr static std::uint64_t CONTENT_TICK_INTERVAL = constant::FIXED_TICKRATE;
 
@@ -198,7 +199,7 @@ static void strike(World* world, const WeatherTypeDefinition& def)
         return;
     }
 
-    auto column = heightmap::probe_slow(BlockPosXZ(x, z));
+    auto column = utils::heightmap_probe_slow(world, BlockPosXZ(x, z));
     auto y = static_cast<BlockPos::value_type>(origin.y());
 
     // A strike lands on the surface; without a column to stand on it keeps the player's own height

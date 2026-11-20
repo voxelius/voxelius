@@ -13,7 +13,6 @@
 #include "server/world/climate.hh"
 #include "server/world/climate_noise.hh"
 #include "server/world/feature_placer.hh"
-#include "server/world/heightmap.hh"
 #include "server/world/noise_cache_3D.hh"
 #include "server/world/terrain.hh"
 
@@ -116,7 +115,7 @@ void realm_surface::shutdown(void)
     s_terrain.reset();
 }
 
-void realm_surface::generate(World* world, BlockStorage& blocks, BiomeSlice& biomes, const ChunkPos& pos)
+void realm_surface::generate(ServerWorld* world, BlockStorage& blocks, BiomeSlice& biomes, const ChunkPos& pos)
 {
     thread_local std::array<block_id_type, constant::CHUNK_AREA> palette_basic_array;
     thread_local std::array<block_id_type, constant::CHUNK_AREA> palette_filler_array;

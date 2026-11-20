@@ -15,8 +15,8 @@
 #include "server/world/feature_placer.hh"
 #include "server/world/feature_scatter.hh"
 #include "server/world/generator_map.hh"
-#include "server/world/heightmap.hh"
 #include "server/world/realm_surface.hh"
+#include "server/world/world.hh"
 
 class WorldgenTask final : public Task {
 public:
@@ -50,14 +50,15 @@ void WorldgenTask::process(void)
 
     auto biomes = std::make_unique<BiomeSlice>();
 
-    auto generator = m_world->generator();
+    auto world = std::static_pointer_cast<ServerWorld>(m_world);
+    auto generator = world->generator();
 
     if(generator == nullptr) {
         status.store(task_status::CANCELLED, std::memory_order_release);
         return;
     }
 
-    if(!generator->generate(m_world.get(), m_pos, m_blocks, *biomes)) {
+    if(!generator->generate(world.get(), m_pos, m_blocks, *biomes)) {
         status.store(task_status::CANCELLED, std::memory_order_release);
         return;
     }
@@ -117,7 +118,6 @@ void worldgen::shutdown(void)
     realm_surface::shutdown();
 
     climate_noise::shutdown();
-    heightmap::purge();
     entropy_cache::shutdown();
 }
 

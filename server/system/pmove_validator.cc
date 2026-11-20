@@ -19,6 +19,7 @@
 #include "server/globals.hh"
 #include "server/net/sessions.hh"
 #include "server/universe.hh"
+#include "server/world/world.hh"
 
 static cvar::Number<float> s_pos_threshold { 10.0f, 0.0f, 100.0f };
 static cvar::Number<float> s_vel_threshold { 10.0f, 0.0f, 100.0f };

@@ -6,7 +6,7 @@
 #include "shared/world/world.hh"
 
 #include "server/universe.hh"
-#include "server/world/generator_vox17.hh"
+#include "server/world/world.hh"
 
 constexpr static int CLIMATE_SIZE = 100;
 constexpr static std::size_t MAX_NUDGE_STEPS = 1000000;
@@ -146,9 +146,9 @@ static bool nudge(vx::hash_map<std::uint64_t, biome_id_type>& occupied, ClimateP
     return false;
 }
 
-static void build_seeds(World* world)
+static void build_seeds(ServerWorld* world)
 {
-    auto& out = Vox17::climate_seeds(world);
+    auto& out = world->climate_seeds();
     auto definitions = biome_registry::all_definitions();
 
     out.clear();
@@ -206,7 +206,7 @@ float climate::normalize_01(float sample)
     return std::clamp((sample + 1.0f) * 0.5f, 0.0f, 1.0f);
 }
 
-void climate::rebuild(World* world)
+void climate::rebuild(ServerWorld* world)
 {
     std::call_once(s_neighbour_dirs_once, &build_neighbour_dirs);
 
@@ -220,9 +220,9 @@ void climate::rebuild(void)
     }
 }
 
-biome_id_type climate::find(World* world, const ClimateSample& sample)
+biome_id_type climate::find(ServerWorld* world, const ClimateSample& sample)
 {
-    const auto& seeds = Vox17::climate_seeds(world);
+    const auto& seeds = world->climate_seeds();
 
     if(seeds.empty()) {
         return BIOME_ID_NULL;

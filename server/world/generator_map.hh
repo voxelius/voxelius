@@ -5,11 +5,11 @@
 #include "shared/world/biome_slice.hh"
 #include "shared/world/block_storage.hh"
 
-class World;
+class ServerWorld;
 
 struct GeneratorDefinition final {
-    bool (*generate)(World* world, const ChunkPos& pos, BlockStorage& blocks, BiomeSlice& biomes);
-    std::shared_ptr<void> (*attach)(World* world);
+    std::shared_ptr<void> (*attach)(ServerWorld* world);
+    bool (*generate)(ServerWorld* world, const ChunkPos& pos, BlockStorage& blocks, BiomeSlice& biomes);
 };
 
 namespace generator_map::detail

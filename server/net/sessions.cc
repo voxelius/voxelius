@@ -31,6 +31,7 @@
 #include "server/net/replication.hh"
 #include "server/net/whitelist.hh"
 #include "server/universe.hh"
+#include "server/world/world.hh"
 
 static std::vector<Session> s_sessions;
 static vx::hash_map<std::string, Session*> s_username_map;

@@ -3,7 +3,6 @@
 
 #include "shared/constant.hh"
 #include "shared/coord.hh"
-#include "shared/world/biome.hh"
 
 constexpr static BlockPos::value_type HEIGHTMAP_UNSET = std::numeric_limits<BlockPos::value_type>::min();
 
@@ -18,16 +17,21 @@ struct Column final {
 
 using ColumnSlice = std::array<Column, constant::CHUNK_AREA>;
 
-namespace heightmap
-{
-void purge(void);
-} // namespace heightmap
+class Heightmap final {
+public:
+    struct Entry final {
+        std::once_flag init_flag;
+        ColumnSlice data;
+    };
 
-namespace heightmap
-{
-const Column& probe_slow(const BlockPosXZ& pos);
-const ColumnSlice& probe(const ChunkPosXZ& pos);
-} // namespace heightmap
+    std::shared_ptr<Entry> find(const ChunkPosXZ& pos) const;
+    std::shared_ptr<Entry> get_or_create(const ChunkPosXZ& pos);
+    void purge(void);
+
+private:
+    mutable std::shared_mutex m_mutex;
+    vx::hash_map<ChunkPosXZ, std::shared_ptr<Entry>> m_entries;
+};
 
 constexpr bool Column::is_valid(void) const
 {

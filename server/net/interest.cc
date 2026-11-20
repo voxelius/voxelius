@@ -17,6 +17,7 @@
 #include "server/globals.hh"
 #include "server/net/sessions.hh"
 #include "server/universe.hh"
+#include "server/world/world.hh"
 
 cvar::Number<unsigned> interest::view_distance { 8, 1, 32 };
 
@@ -57,7 +58,7 @@ static void update_visibility(void)
         auto entities = registry.view<EntityClass, Transform>();
 
         for(auto& session : sessions::all()) {
-            if(session.world != world || session.peer == nullptr) {
+            if(session.world.get() != static_cast<World*>(world.get()) || session.peer == nullptr) {
                 continue;
             }
 

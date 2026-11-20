@@ -13,6 +13,7 @@
 #include "server/net/interest.hh"
 #include "server/net/sessions.hh"
 #include "server/universe.hh"
+#include "server/world/world.hh"
 
 static void on_create_entity(entt::registry& registry, entt::entity entity)
 {

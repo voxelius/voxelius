@@ -57,18 +57,6 @@ void World::set_root(std::filesystem::path root)
     m_entity_dir = m_root / "entity";
 }
 
-void World::set_generator(const GeneratorDefinition* generator)
-{
-    assert(generator);
-
-    m_generator = generator;
-}
-
-void World::set_generator_state(std::shared_ptr<void> state)
-{
-    m_generator_state = std::move(state);
-}
-
 void World::load_config(void)
 {
     std::ifstream in(m_root / "world.conf", std::ios::in);
@@ -484,6 +472,7 @@ void World::purge(void)
     m_chunk_registry.clear();
     m_registry.clear();
     m_biomes.purge();
+    m_heightmap.purge();
     m_weather = {};
 }
 

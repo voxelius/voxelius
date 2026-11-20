@@ -109,6 +109,8 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/world/block.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/chunk.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/chunk.hh"
+    "${CMAKE_CURRENT_LIST_DIR}/world/heightmap.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/world/heightmap.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/fluid_registry.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/fluid_registry.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/fluid.hh"

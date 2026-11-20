@@ -3,13 +3,13 @@
 
 #include "core/identifier.hh"
 
-class World;
+class ServerWorld;
 
 namespace universe
 {
-std::span<const std::shared_ptr<World>> worlds(void);
-std::shared_ptr<World> find(const Identifier& id);
-const std::shared_ptr<World>& default_world(void);
+std::span<const std::shared_ptr<ServerWorld>> worlds(void);
+std::shared_ptr<ServerWorld> find(const Identifier& id);
+const std::shared_ptr<ServerWorld>& default_world(void);
 } // namespace universe
 
 namespace universe

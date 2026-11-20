@@ -3,11 +3,10 @@
 
 #include "shared/coord.hh"
 #include "shared/world/biome_slice.hh"
-
-class World;
 #include "shared/world/block_storage.hh"
+#include "shared/world/heightmap.hh"
 
-#include "server/world/heightmap.hh"
+class ServerWorld;
 
 namespace realm_surface
 {
@@ -17,7 +16,7 @@ void shutdown(void);
 
 namespace realm_surface
 {
-void generate(World* world, BlockStorage& blocks, BiomeSlice& biomes, const ChunkPos& pos);
+void generate(ServerWorld* world, BlockStorage& blocks, BiomeSlice& biomes, const ChunkPos& pos);
 } // namespace realm_surface
 
 namespace realm_surface
