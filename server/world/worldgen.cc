@@ -10,7 +10,6 @@
 #include "shared/world/chunk.hh"
 #include "shared/world/world.hh"
 
-#include "server/universe.hh"
 #include "server/world/climate_noise.hh"
 #include "server/world/entropy_cache.hh"
 #include "server/world/feature_placer.hh"
@@ -94,7 +93,7 @@ void WorldgenTask::finalize(void)
 void worldgen::init(void)
 {
     std::mt19937_64 seeder;
-    seeder.seed(universe::seed());
+    seeder.seed(globals::world->seed);
 
     entropy_cache::init(seeder);
     climate_noise::init(seeder);

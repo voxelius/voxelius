@@ -7,6 +7,8 @@
 #include "shared/net/ed25519.hh"
 #include "shared/utils/view.hh"
 
+class World;
+
 namespace sessions
 {
 extern cvar::Boolean strict_version;
@@ -35,6 +37,8 @@ struct Session final {
     std::uint64_t identity;
     std::string username;
     entt::entity player;
+
+    std::shared_ptr<World> world;
 
     ENetPeer* peer;
 

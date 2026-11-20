@@ -15,10 +15,10 @@
 #include "shared/utils/coord.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
+#include "shared/world/world.hh"
 
 #include "server/globals.hh"
 #include "server/net/sessions.hh"
-#include "server/universe.hh"
 #include "server/world/heightmap.hh"
 
 constexpr static std::uint64_t CONTENT_TICK_INTERVAL = constant::FIXED_TICKRATE;
@@ -292,16 +292,18 @@ template<typename T>
 static void save_value(biome_realm realm, std::string_view field, const T& value)
 {
     auto key = realm_key(realm, field);
+    auto& config = globals::world->config();
 
-    universe::world_config().set_value<T>(key, value);
+    config.set_value<T>(key, value);
 }
 
 template<typename T>
 static T load_value(biome_realm realm, std::string_view field, const T& fallback)
 {
     auto key = realm_key(realm, field);
+    auto& config = globals::world->config();
 
-    return universe::world_config().value<T>(key).value_or(fallback);
+    return config.value<T>(key).value_or(fallback);
 }
 
 // A world keeps its fronts in world.conf next to the seed, so a restart
@@ -359,7 +361,7 @@ void weather_sim::init(void)
     force_binding.set_flags(FCVAR_RECALL | FCVAR_ADMIN);
     force_binding.connect<&cmd_weather_force>();
 
-    s_random.seed(universe::seed() ^ UINT64_C(0x9E3779B97F4A7C15));
+    s_random.seed(globals::world->seed ^ UINT64_C(0x9E3779B97F4A7C15));
     s_strike_budget.fill(0.0f);
     weather::reset();
 

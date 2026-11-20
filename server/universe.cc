@@ -8,6 +8,7 @@
 #include "core/core.hh"
 #include "core/exception.hh"
 #include "core/identifier.hh"
+#include "core/utils/crc64.hh"
 
 #include "shared/constant.hh"
 #include "shared/globals.hh"
@@ -17,24 +18,42 @@
 #include "server/globals.hh"
 
 static std::filesystem::path s_root_dir;
-static std::filesystem::path s_chunk_dir;
-static std::filesystem::path s_entity_dir;
 static std::filesystem::path s_conf_path;
 
-static config::Map s_world_config;
+static config::Map s_universe_config;
 static config::Ref<std::uint64_t> s_seed { 0 };
 static config::Ref<std::uint64_t> s_tick { 0 };
 static config::Ref<std::uint64_t> s_daylight_tick { constant::DAY_LENGTH_TICKS / 4 };
 
-config::Map& universe::world_config(void)
+static std::vector<std::shared_ptr<World>> s_worlds;
+static std::shared_ptr<World> s_default_world;
+
+static std::shared_ptr<World> find_world(const Identifier& id)
 {
-    return s_world_config;
+    for(const auto& world : s_worlds) {
+        const auto& world_id = world->id();
+
+        if(world_id == id) {
+            return world;
+        }
+    }
+
+    return nullptr;
 }
 
-World* universe::world(void)
+std::span<const std::shared_ptr<World>> universe::worlds(void)
 {
-    assert(globals::world);
-    return globals::world.get();
+    return s_worlds;
+}
+
+std::shared_ptr<World> universe::find(const Identifier& id)
+{
+    return find_world(id);
+}
+
+const std::shared_ptr<World>& universe::default_world(void)
+{
+    return s_default_world;
 }
 
 std::uint64_t universe::seed(void)
@@ -50,22 +69,19 @@ void universe::init(void)
     auto argument_path = std::filesystem::absolute(argument);
 
     s_root_dir = argument_path;
-    s_chunk_dir = s_root_dir / "chunk";
-    s_entity_dir = s_root_dir / "entity";
-    s_conf_path = s_root_dir / "world.conf";
+    s_conf_path = s_root_dir / "universe.conf";
 
-    std::filesystem::create_directories(s_chunk_dir);
-    std::filesystem::create_directories(s_entity_dir);
+    std::filesystem::create_directories(s_root_dir);
 
-    s_seed.bind(s_world_config, "seed");
-    s_tick.bind(s_world_config, "tick");
-    s_daylight_tick.bind(s_world_config, "daylight_tick");
+    s_seed.bind(s_universe_config, "seed");
+    s_tick.bind(s_universe_config, "tick");
+    s_daylight_tick.bind(s_universe_config, "daylight_tick");
 
     std::ifstream config_stream(s_conf_path, std::ios::in);
     auto existing_save = config_stream.is_open();
 
     if(existing_save) {
-        s_world_config.load(config_stream);
+        s_universe_config.load(config_stream);
         config_stream.close();
     }
     else {
@@ -74,29 +90,60 @@ void universe::init(void)
         s_seed.set_value(seeder());
     }
 
-    // The world clock continues from the save; a world
+    // The universe clock continues from the save; a universe
     // that has never been saved starts at noon
     globals::current_tick = s_tick.value();
     globals::daylight_tick = s_daylight_tick.value();
 
     auto definitions = world_registry::all();
+
     vx::throw_if(definitions.empty(), "no world is registered");
 
-    auto definition = world_registry::find(Identifier::from_string("builtin:overworld"));
+    s_worlds.clear();
+    s_worlds.reserve(definitions.size());
 
-    if(definition == nullptr) {
-        definition = definitions.front();
+    for(const auto& definition : definitions) {
+        auto world = std::make_shared<World>(definition);
+        auto full_id = definition->id.full_string();
+        auto id_hash = utils::crc64(std::span<const char>(full_id.data(), full_id.size()));
+
+        world->seed = s_seed.value() ^ id_hash;
+        world->set_root(s_root_dir / definition->directory);
+
+        std::filesystem::create_directories(world->chunk_dir());
+        std::filesystem::create_directories(world->entity_dir());
+
+        world->load_config();
+
+        s_worlds.push_back(std::move(world));
     }
 
-    globals::world = std::make_shared<World>(definition);
-    globals::world->seed = s_seed.value();
+    auto configured_name = s_universe_config.value<std::string>("default_world");
+    auto default_name = configured_name.value_or(std::string("builtin:overworld"));
+
+    s_default_world = find_world(Identifier::from_string(default_name));
+
+    if(s_default_world == nullptr) {
+        s_default_world = s_worlds.front();
+    }
+
+    const auto& default_id = s_default_world->id();
+    auto default_id_string = std::string(default_id.full_string());
+
+    s_universe_config.set_value<std::string>("default_world", default_id_string);
+
+    globals::world = s_default_world;
 }
 
 void universe::init_late(void)
 {
-    const auto& world_id = globals::world->id();
-    msg::log_info("set world root={}", s_root_dir.string());
-    msg::log_info("set world id={} seed={}", world_id.full_string(), s_seed.value());
+    msg::log_info("set universe root={} worlds={}", s_root_dir.string(), s_worlds.size());
+
+    for(const auto& world : s_worlds) {
+        const auto& world_id = world->id();
+        const auto& root = world->root();
+        msg::log_info("world {} seed={} dir={}", world_id.full_string(), world->seed, root.string());
+    }
 }
 
 void universe::shutdown(void)
@@ -107,16 +154,10 @@ void universe::shutdown(void)
     std::ofstream out(s_conf_path, std::ios::binary | std::ios::trunc);
 
     if(out.is_open()) {
-        s_world_config.save(out);
+        s_universe_config.save(out);
     }
-}
 
-const std::filesystem::path& universe::chunk_dir(void)
-{
-    return s_chunk_dir;
-}
-
-const std::filesystem::path& universe::entity_dir(void)
-{
-    return s_entity_dir;
+    for(const auto& world : s_worlds) {
+        world->save_config();
+    }
 }

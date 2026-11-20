@@ -12,7 +12,6 @@
 #include "shared/world/world.hh"
 
 #include "server/entity/entity_loader.hh"
-#include "server/universe.hh"
 #include "server/utils/region.hh"
 #include "server/world/worldgen.hh"
 #include "server/world/zvox_file.hh"
@@ -64,7 +63,7 @@ static std::filesystem::path region_path(biome_realm realm, const RegionPos& reg
     auto uy = std::bit_cast<std::uint32_t>(region.y());
     auto uz = std::bit_cast<std::uint32_t>(region.z());
     auto name = std::format("R{}X{:08X}Y{:08X}Z{:08X}.zvox", static_cast<unsigned>(realm), ux, uy, uz);
-    return universe::chunk_dir() / name;
+    return globals::world->chunk_dir() / name;
 }
 
 static std::shared_ptr<RegionEntry> find_region(biome_realm realm, const RegionPos& pos)

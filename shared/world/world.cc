@@ -48,34 +48,29 @@ World::World(std::shared_ptr<const WorldDefinition> definition) : m_definition(s
     // empty
 }
 
-const WorldDefinition& World::definition(void) const
+void World::set_root(std::filesystem::path root)
 {
-    return *m_definition;
+    m_root = std::move(root);
+    m_chunk_dir = m_root / "chunk";
+    m_entity_dir = m_root / "entity";
 }
 
-const Identifier& World::id(void) const
+void World::load_config(void)
 {
-    return m_definition->id;
+    std::ifstream in(m_root / "world.conf", std::ios::in);
+
+    if(in.is_open()) {
+        m_config.load(in);
+    }
 }
 
-entt::registry& World::chunk_registry(void)
+void World::save_config(void)
 {
-    return m_chunk_registry;
-}
+    std::ofstream out(m_root / "world.conf", std::ios::binary | std::ios::trunc);
 
-const vx::hash_map<ChunkPos, std::shared_ptr<Chunk>>& World::chunks(void) const
-{
-    return m_chunks;
-}
-
-std::array<WeatherRealmState, NUM_BIOME_REALMS>& World::weather(void)
-{
-    return m_weather;
-}
-
-const std::array<WeatherRealmState, NUM_BIOME_REALMS>& World::weather(void) const
-{
-    return m_weather;
+    if(out.is_open()) {
+        m_config.save(out);
+    }
 }
 
 std::shared_ptr<Chunk> World::create_chunk(const ChunkPos& pos)

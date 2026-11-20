@@ -209,15 +209,16 @@ static void on_auth_response(const packet::Auth_Response& packet)
     response.username = session->username;
     protocol::send(response, packet.peer);
 
+    session->world = universe::default_world();
+
     replication::synchronize(session);
 
     // The world seed and the weather seeds do not change, so they
     // travel once. The one-shot state packets then fix the client's
     // time, drift and cloud deck before the first periodic update
-    auto world_seed = universe::seed();
-
-    auto world = universe::world();
+    auto world = session->world;
     const auto& world_id = world->id();
+    auto world_seed = world->seed;
 
     packet::World_Info world_info {};
     weather::fill_info(world_info);
@@ -532,6 +533,7 @@ Session* sessions::create(ENetPeer* peer, std::string_view username)
             session.identity = UINT64_MAX;
             session.username = sanitize_username(username);
             session.player = entt::null;
+            session.world = nullptr;
             session.peer = peer;
             session.known_entities.clear();
             session.cvar_ratelimit_tick = globals::current_tick;
@@ -634,6 +636,7 @@ void sessions::destroy(Session* session, std::optional<std::uint32_t> reason)
         session->identity = UINT64_MAX;
         session->username = std::string {};
         session->player = entt::null;
+        session->world = nullptr;
         session->peer = nullptr;
         session->known_entities.clear();
         session->stream_sent_chunks.clear();

@@ -11,10 +11,10 @@
 #include "shared/globals.hh"
 #include "shared/utils/biome.hh"
 #include "shared/utils/entity.hh"
+#include "shared/world/world.hh"
 
 #include "server/constant.hh"
 #include "server/entity/zent_file.hh"
-#include "server/universe.hh"
 #include "server/utils/region.hh"
 
 constexpr static std::size_t MAX_REGIONS = 32;
@@ -40,7 +40,7 @@ static std::filesystem::path region_path(biome_realm realm, const RegionPos& reg
     auto uy = std::bit_cast<std::uint32_t>(region.y());
     auto uz = std::bit_cast<std::uint32_t>(region.z());
     auto name = std::format("R{}X{:08X}Y{:08X}Z{:08X}.zent", static_cast<unsigned>(realm), ux, uy, uz);
-    return universe::entity_dir() / name;
+    return globals::world->entity_dir() / name;
 }
 
 static std::shared_ptr<EntityRegionEntry> find_region(biome_realm realm, const RegionPos& pos)

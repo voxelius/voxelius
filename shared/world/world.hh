@@ -1,6 +1,8 @@
 #ifndef AC10DC15_9E3A_4C9E_B8B4_E6C5CAE5BB89
 #define AC10DC15_9E3A_4C9E_B8B4_E6C5CAE5BB89
 
+#include "core/config/map.hh"
+
 #include "shared/world/biome_map.hh"
 #include "shared/world/chunk.hh"
 #include "shared/world/world_definition.hh"
@@ -99,16 +101,55 @@ class World final {
 public:
     explicit World(std::shared_ptr<const WorldDefinition> definition);
 
-    const WorldDefinition& definition(void) const;
-    const Identifier& id(void) const;
+    constexpr const WorldDefinition& definition(void) const
+    {
+        return *m_definition;
+    }
+    constexpr const Identifier& id(void) const
+    {
+        return m_definition->id;
+    }
 
     std::uint64_t seed { 0 };
 
-    entt::registry& chunk_registry(void);
-    const vx::hash_map<ChunkPos, std::shared_ptr<Chunk>>& chunks(void) const;
+    constexpr entt::registry& chunk_registry(void)
+    {
+        return m_chunk_registry;
+    }
+    constexpr const vx::hash_map<ChunkPos, std::shared_ptr<Chunk>>& chunks(void) const
+    {
+        return m_chunks;
+    }
+    constexpr config::Map& config(void)
+    {
+        return m_config;
+    }
 
-    std::array<WeatherRealmState, NUM_BIOME_REALMS>& weather(void);
-    const std::array<WeatherRealmState, NUM_BIOME_REALMS>& weather(void) const;
+    void set_root(std::filesystem::path root);
+    constexpr const std::filesystem::path& root(void) const
+    {
+        return m_root;
+    }
+    constexpr const std::filesystem::path& chunk_dir(void) const
+    {
+        return m_chunk_dir;
+    }
+    constexpr const std::filesystem::path& entity_dir(void) const
+    {
+        return m_entity_dir;
+    }
+
+    void load_config(void);
+    void save_config(void);
+
+    constexpr std::array<WeatherRealmState, NUM_BIOME_REALMS>& weather(void)
+    {
+        return m_weather;
+    }
+    constexpr const std::array<WeatherRealmState, NUM_BIOME_REALMS>& weather(void) const
+    {
+        return m_weather;
+    }
 
 public:
     std::shared_ptr<Chunk> create_chunk(const ChunkPos& pos);
@@ -172,6 +213,10 @@ private:
     entt::registry m_chunk_registry;
     BiomeMap m_biomes;
     std::array<WeatherRealmState, NUM_BIOME_REALMS> m_weather {};
+    config::Map m_config;
+    std::filesystem::path m_root;
+    std::filesystem::path m_chunk_dir;
+    std::filesystem::path m_entity_dir;
 };
 
 constexpr World* ChunkCreateEvent::world(void) const
