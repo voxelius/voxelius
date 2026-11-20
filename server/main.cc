@@ -33,6 +33,7 @@
 #include "server/world/chunk_loader.hh"
 #include "server/world/chunk_unloader.hh"
 #include "server/world/climate.hh"
+#include "server/world/generator_vox17.hh"
 #include "server/world/worldgen.hh"
 
 static std::atomic_bool s_is_running;
@@ -97,6 +98,9 @@ static void wrapped_main(int argc, char** argv)
 
     shared_game::init();
     server_game::init();
+
+    // Generators register before the universe resolves the world definitions
+    Vox17::register_generator();
 
     // The universe seed has to be loaded before worldgen
     // derives its noise and feature seeds from it

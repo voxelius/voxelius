@@ -97,6 +97,9 @@ private:
     LocalPos m_lpos;
 };
 
+// Only the server resolves and fills this; on the client it stays null
+struct GeneratorDefinition;
+
 class World final {
 public:
     explicit World(std::shared_ptr<const WorldDefinition> definition);
@@ -116,8 +119,12 @@ public:
     constexpr const std::filesystem::path& chunk_dir(void) const;
     constexpr const std::filesystem::path& entity_dir(void) const;
 
+    constexpr const GeneratorDefinition* generator(void) const;
+
     void load_config(void);
     void save_config(void);
+
+    void set_generator(const GeneratorDefinition* generator);
 
     constexpr WeatherState& weather(void);
     constexpr const WeatherState& weather(void) const;
@@ -189,6 +196,7 @@ private:
     std::filesystem::path m_root;
     std::filesystem::path m_chunk_dir;
     std::filesystem::path m_entity_dir;
+    const GeneratorDefinition* m_generator { nullptr }; // server only
 };
 
 constexpr const WorldDefinition& World::definition(void) const
@@ -234,6 +242,11 @@ constexpr const std::filesystem::path& World::chunk_dir(void) const
 constexpr const std::filesystem::path& World::entity_dir(void) const
 {
     return m_entity_dir;
+}
+
+constexpr const GeneratorDefinition* World::generator(void) const
+{
+    return m_generator;
 }
 
 constexpr WeatherState& World::weather(void)

@@ -3,6 +3,7 @@
 #include "server/net/streaming.hh"
 
 #include "shared/component/transform.hh"
+#include "shared/constant.hh"
 #include "shared/globals.hh"
 #include "shared/net/packet_world.hh"
 #include "shared/utils/view.hh"
@@ -164,6 +165,13 @@ void streaming::subscribe(Session& session, const packet::World_Request& packet)
 
     auto allowed_view = utils::view_box(player, static_cast<ChunkPos::value_type>(interest::view_distance.value()));
     auto view = intersect_boxes(packet.view, allowed_view);
+
+    auto& definition = session.world->definition();
+    auto min_y = static_cast<ChunkPos::value_type>(definition.min_y >> constant::CHUNK_SIZE_LOG2);
+    auto max_y = static_cast<ChunkPos::value_type>(definition.max_y >> constant::CHUNK_SIZE_LOG2);
+
+    view.min().y() = std::max(view.min().y(), min_y);
+    view.max().y() = std::min(view.max().y(), max_y);
 
     auto changed = !box_is_same(session.stream_view_box, view);
     changed = changed || (session.stream_player_chunk.array() != player.array()).any();

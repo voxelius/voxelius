@@ -14,9 +14,9 @@
 #include "server/world/entropy_cache.hh"
 #include "server/world/feature_placer.hh"
 #include "server/world/feature_scatter.hh"
+#include "server/world/generator_map.hh"
 #include "server/world/heightmap.hh"
 #include "server/world/realm_surface.hh"
-#include "server/world/terrain.hh"
 
 class WorldgenTask final : public Task {
 public:
@@ -50,7 +50,14 @@ void WorldgenTask::process(void)
 
     auto biomes = std::make_unique<BiomeSlice>();
 
-    if(!terrain::generate(m_world.get(), m_pos, m_blocks, *biomes)) {
+    auto generator = m_world->generator();
+
+    if(generator == nullptr) {
+        status.store(task_status::CANCELLED, std::memory_order_release);
+        return;
+    }
+
+    if(!generator->generate(m_world.get(), m_pos, m_blocks, *biomes)) {
         status.store(task_status::CANCELLED, std::memory_order_release);
         return;
     }

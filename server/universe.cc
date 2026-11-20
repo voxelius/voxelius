@@ -15,6 +15,8 @@
 #include "shared/world/world.hh"
 #include "shared/world/world_registry.hh"
 
+#include "server/world/generator_map.hh"
+
 #include "server/globals.hh"
 
 static std::filesystem::path s_root_dir;
@@ -103,6 +105,10 @@ void universe::init(void)
     s_worlds.reserve(definitions.size());
 
     for(const auto& definition : definitions) {
+        auto generator = generator_map::find(definition->generator);
+
+        vx::throw_if_not_fmt(generator, "world {}: unknown generator {}", definition->id.full_string(), definition->generator);
+
         auto world = std::make_shared<World>(definition);
         auto full_id = definition->id.full_string();
         auto id_hash = utils::crc64(std::span<const char>(full_id.data(), full_id.size()));
@@ -114,6 +120,7 @@ void universe::init(void)
         std::filesystem::create_directories(world->entity_dir());
 
         world->load_config();
+        world->set_generator(generator);
 
         s_worlds.push_back(std::move(world));
     }
