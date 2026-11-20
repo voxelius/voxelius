@@ -2,9 +2,29 @@
 #define B7D9F1C3_3E5A_4B2D_9C6F_8A0E2C4D6F71
 
 #include "server/constant.hh"
-#include "server/world/climate.hh"
 #include "server/world/noise_cache_2D.hh"
+#include "server/world/placement_rule.hh"
+#include "shared/world/biome.hh"
 #include "shared/world/world.hh"
+
+constexpr static std::size_t CLIMATE_DIMS = 5;
+
+using ClimatePos = std::array<std::uint8_t, CLIMATE_DIMS>;
+
+struct ClimateSeed final {
+    ClimatePos target;
+    biome_id_type id;
+    unsigned priority;
+    float offset;
+};
+
+struct ClimateSample final {
+    float temperature;
+    float humidity;
+    float continentalness;
+    float erosion;
+    float weirdness;
+};
 
 using ClimateSampleArray = std::array<ClimateSample, constant::CHUNK_AREA>;
 using CachedEntropy = std::array<std::uint64_t, constant::CHUNK_AREA>;
@@ -13,6 +33,11 @@ struct GeneratorDefinition;
 
 class ServerWorld final : public World {
 public:
+    struct ScatterEntry final {
+        std::once_flag init_flag;
+        std::vector<FeatureInstance> data;
+    };
+
     explicit ServerWorld(std::shared_ptr<const WorldDefinition> definition);
 
     constexpr const GeneratorDefinition* generator(void) const;
@@ -30,6 +55,12 @@ public:
     std::uint64_t entropy_at(const BlockPosXZ& pos);
 
     biome_id_type biome_at(const BlockPosXZ& pos);
+    biome_id_type find_climate_biome(const ClimateSample& sample) const;
+
+    std::shared_ptr<ScatterEntry> scatter_entry(const ChunkPosXZ& pos);
+
+    void commit_placements(BlockStorage& storage, const ChunkPos& cpos);
+    void commit_placements(BlockStorage& storage, const ChunkPos& cpos, std::span<const FeatureInstance> instances);
 
     void init_generation(std::shared_ptr<void> state);
 
@@ -44,6 +75,10 @@ private:
 
     std::optional<biome_id_type> find_biome(const BlockPosXZ& pos) const;
     void store_biome(const BlockPosXZ& pos, biome_id_type biome);
+
+    std::shared_ptr<ScatterEntry> find_scatter(const ChunkPosXZ& pos) const;
+
+    const std::vector<FeatureInstance>& collect_placements(const ChunkPosXZ& pos);
 
     const GeneratorDefinition* m_generator { nullptr };
 
@@ -62,6 +97,12 @@ private:
 
     mutable std::shared_mutex m_biome_mutex;
     vx::hash_map<BlockPosXZ, biome_id_type> m_biome_cache;
+
+    mutable std::shared_mutex m_scatter_mutex;
+    vx::hash_map<ChunkPosXZ, std::shared_ptr<ScatterEntry>> m_scatter_cache;
+
+    std::vector<std::unique_ptr<PlacementRule>> m_placement_rules;
+    std::size_t m_placement_extent { 0 };
 };
 
 constexpr const GeneratorDefinition* ServerWorld::generator(void) const

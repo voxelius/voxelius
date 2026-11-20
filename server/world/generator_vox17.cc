@@ -11,8 +11,7 @@
 #include "shared/world/heightmap.hh"
 #include "shared/world/world.hh"
 
-#include "server/world/climate.hh"
-#include "server/world/feature_placer.hh"
+#include "server/utils/climate.hh"
 #include "server/world/generator_map.hh"
 #include "server/world/noise_cache_3D.hh"
 #include "server/world/world.hh"
@@ -143,13 +142,13 @@ ColumnSlice Generator<Vox17>::probe(ServerWorld* world, const ChunkPosXZ& pos)
     for(std::size_t i = 0; i < constant::CHUNK_AREA; ++i) {
         auto& sample = climate_array[i];
 
-        auto continentalness = climate::normalize_01(sample.continentalness);
-        auto erosion = climate::normalize_01(sample.erosion);
-        auto pv = climate::peaks_valleys(sample.weirdness);
+        auto continentalness = utils::normalize_01(sample.continentalness);
+        auto erosion = utils::normalize_01(sample.erosion);
+        auto pv = utils::peaks_valleys(sample.weirdness);
 
         variation_array[i] = std::lerp(VARIATION_MAX, VARIATION_MIN, erosion);
         base_array[i] = std::lerp(BASE_MIN, BASE_MAX, continentalness);
-        base_array[i] += std::lerp(PV_VALLEY_OFFSET, PV_PEAK_OFFSET, climate::normalize_01(pv));
+        base_array[i] += std::lerp(PV_VALLEY_OFFSET, PV_PEAK_OFFSET, utils::normalize_01(pv));
     }
 
     for(LocalPos::value_type lz = 0; lz < constant::CHUNK_SIZE; lz += 1) {
@@ -197,7 +196,7 @@ bool Generator<Vox17>::generate(ServerWorld* world, const ChunkPos& pos, BlockSt
 
     for(std::size_t i = 0; i < constant::CHUNK_AREA; ++i) {
         auto& sample = climate_array[i];
-        auto biome = climate::find(world, sample);
+        auto biome = world->find_climate_biome(sample);
         auto biome_def = biome_registry::find_definition(biome);
 
         if(biome && biome_def) {
@@ -208,13 +207,13 @@ bool Generator<Vox17>::generate(ServerWorld* world, const ChunkPos& pos, BlockSt
             biomes[i] = biome;
         }
 
-        auto continentalness = climate::normalize_01(sample.continentalness);
-        auto erosion = climate::normalize_01(sample.erosion);
-        auto pv = climate::peaks_valleys(sample.weirdness);
+        auto continentalness = utils::normalize_01(sample.continentalness);
+        auto erosion = utils::normalize_01(sample.erosion);
+        auto pv = utils::peaks_valleys(sample.weirdness);
 
         variation_array[i] = std::lerp(VARIATION_MAX, VARIATION_MIN, erosion);
         base_array[i] = std::lerp(BASE_MIN, BASE_MAX, continentalness);
-        base_array[i] += std::lerp(PV_VALLEY_OFFSET, PV_PEAK_OFFSET, climate::normalize_01(pv));
+        base_array[i] += std::lerp(PV_VALLEY_OFFSET, PV_PEAK_OFFSET, utils::normalize_01(pv));
     }
 
     auto& terrain_array = state->terrain_noise->get(pos);
@@ -314,7 +313,7 @@ bool Generator<Vox17>::generate(ServerWorld* world, const ChunkPos& pos, BlockSt
         }
     }
 
-    feature_placer::commit(world, blocks, pos);
+    world->commit_placements(blocks, pos);
 
     return true;
 }

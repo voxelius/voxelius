@@ -1,15 +1,16 @@
 #include "server/pch.hh"
 
-#include "server/world/feature_scatter.hh"
+#include "server/world/placement_scatter.hh"
 
 #include "shared/constant.hh"
 #include "shared/res/feature.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
+#include "shared/world/block_storage.hh"
 
 #include "server/utils/heightmap.hh"
-#include "server/world/climate.hh"
+#include "server/utils/rotate.hh"
 #include "server/world/world.hh"
 
 struct WouldPlaceKey final {
@@ -203,7 +204,7 @@ static bool would_place(BlockPos::value_type bx, BlockPos::value_type bz, const 
 
 static BlockAlignedBox scatter_bounds(const BlockPos& origin, const Feature& feature, block_face facing)
 {
-    const auto bounds = feature_placer::rotate_bounds(feature.bounds, facing);
+    const auto bounds = utils::rotate_bounds(feature.bounds, facing);
 
     BlockAlignedBox world;
     world.min() = origin + bounds.min().cast<BlockPos::value_type>();
@@ -345,12 +346,7 @@ static bool resolve_padding_tie(BlockPos::value_type bx, BlockPos::value_type bz
     return false;
 }
 
-void FeatureScatter::init(void)
-{
-    feature_placer::add_rule<FeatureScatter>();
-}
-
-void FeatureScatter::collect(const ChunkPos& pos, const PlacementContext& context, std::vector<FeatureInstance>& out) const
+void PlacementScatter::collect(const ChunkPos& pos, const PlacementContext& context, std::vector<FeatureInstance>& out) const
 {
     ScatterScanCache cache;
 

@@ -10,8 +10,6 @@
 #include "shared/world/chunk.hh"
 #include "shared/world/world.hh"
 
-#include "server/world/feature_placer.hh"
-#include "server/world/feature_scatter.hh"
 #include "server/world/generator_map.hh"
 #include "server/world/world.hh"
 
@@ -89,9 +87,6 @@ void WorldgenTask::finalize(void)
 
 void worldgen::init(void)
 {
-    feature_placer::init();
-
-    FeatureScatter::init();
 }
 
 void worldgen::shutdown(void)
@@ -101,8 +96,6 @@ void worldgen::shutdown(void)
     // worker can outlive the teardown and keep feature handles alive (or
     // use the destroyed state outright).
     threading::wait();
-
-    feature_placer::shutdown();
 }
 
 void worldgen::request(const std::shared_ptr<World>& world, const ChunkPos& pos)
