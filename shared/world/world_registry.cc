@@ -1,6 +1,7 @@
 #include "shared/pch.hh"
 
 #include "shared/world/biome_registry.hh"
+#include "shared/world/weather_registry.hh"
 #include "shared/world/world_registry.hh"
 
 #include "core/exception.hh"
@@ -105,6 +106,14 @@ void world_registry::resolve(void)
             auto biome = biome_registry::find(name);
             vx::throw_if_not_fmt(biome, "world {}: unknown biome {}", full_id, name.full_string());
             definition->biomes.push_back(biome);
+        }
+
+        definition->weather.clear();
+
+        for(const auto& name : definition->weather_names) {
+            auto weather = weather_registry::find(name);
+            vx::throw_if_not_fmt(weather, "world {}: unknown weather {}", full_id, name.full_string());
+            definition->weather.push_back(weather);
         }
     }
 }

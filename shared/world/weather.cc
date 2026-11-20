@@ -46,6 +46,15 @@ static float type_noise_in_field(const WeatherState& state, float fx, float fz)
     return weather::noise_at(fx / scale, fz / scale, state.types.seed);
 }
 
+static std::span<const weather_type_id> allowed_weather(void)
+{
+    if(globals::world == nullptr) {
+        return {};
+    }
+
+    return globals::world->definition().weather;
+}
+
 static float type_noise(float x, float z)
 {
     auto& state = weather::state();
@@ -58,17 +67,18 @@ static float interval_weight(weather_type_id type, float roll)
     // The band is what turns a hard slice boundary into a gradual fade
     constexpr static float BAND = 0.05f;
 
-    float start = 0.0f;
-    float end = 0.0f;
+    auto allowed = allowed_weather();
 
-    if(!weather_registry::type_interval(type, start, end)) {
-        return 0.0f;
+    if(auto interval = weather_registry::type_interval(allowed, type)) {
+        auto [start, end] = interval.value();
+
+        auto fade_in = utils::smoothstep(start - BAND, start + BAND, roll);
+        auto fade_out = 1.0f - utils::smoothstep(end - BAND, end + BAND, roll);
+
+        return fade_in * fade_out;
     }
 
-    auto fade_in = utils::smoothstep(start - BAND, start + BAND, roll);
-    auto fade_out = 1.0f - utils::smoothstep(end - BAND, end + BAND, roll);
-
-    return fade_in * fade_out;
+    return 0.0f;
 }
 
 static float detail_coverage_in_field(const WeatherState& state, float intensity, float fx, float fz)
@@ -116,12 +126,13 @@ void weather::force_at(weather_type_id type, float x, float z)
     auto& state = weather::state();
     auto type_scale = std::max(state.types.scale, 1.0f);
 
-    float interval_start = 0.0f;
-    float interval_end = 0.0f;
+    auto interval = weather_registry::type_interval(allowed_weather(), type);
 
-    if(!weather_registry::type_interval(type, interval_start, interval_end)) {
+    if(!interval) {
         return;
     }
+
+    auto [interval_start, interval_end] = interval.value();
 
     // Put the roll at the middle of the type's slice,
     // then slide the field so that point lands on the players

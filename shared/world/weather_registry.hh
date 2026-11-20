@@ -42,7 +42,7 @@ namespace weather_registry
 {
 // The slice of the [0, 1) roll range this type owns; the slices
 // of all types tile the range, which is what makes the spatial weights continuous
-bool type_interval(weather_type_id type, float& start, float& end);
+std::optional<std::pair<float, float>> type_interval(std::span<const weather_type_id> allowed, weather_type_id type);
 } // namespace weather_registry
 
 #endif /* B7D3E2A8_5C41_4D9B_8E27_3A9F1C6D0B52 */

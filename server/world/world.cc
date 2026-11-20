@@ -336,7 +336,7 @@ void ServerWorld::init_generation(std::shared_ptr<void> state)
     const auto& allowed = definition().biomes;
 
     for(biome_id_type id = 1; id < definitions.size(); id += 1) {
-        if(!allowed.empty() && std::find(allowed.cbegin(), allowed.cend(), id) == allowed.cend()) {
+        if(!allowed.empty() && !std::ranges::contains(allowed, id)) {
             continue;
         }
 

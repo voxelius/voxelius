@@ -199,37 +199,46 @@ weather_type_id weather_registry::resolve(std::string_view name)
     return WEATHER_ID_NULL;
 }
 
-bool weather_registry::type_interval(weather_type_id type, float& start, float& end)
+std::optional<std::pair<float, float>> weather_registry::type_interval(std::span<const weather_type_id> allowed, weather_type_id type)
 {
+    auto is_allowed = [&allowed](const WeatherTypeDefinition& def) {
+        if(allowed.empty()) {
+            return true;
+        }
+        else {
+            return std::ranges::contains(allowed, def.id);
+        }
+    };
+
     std::uint32_t total = 0;
 
     for(const auto& def : s_definitions) {
-        if(def.id) {
+        if(def.id && is_allowed(def)) {
             total += std::max<std::uint32_t>(def.weight, 1);
         }
     }
 
     if(total == 0) {
-        return false;
+        return std::nullopt;
     }
 
     std::uint32_t offset = 0;
 
     for(const auto& def : s_definitions) {
-        if(def.id == WEATHER_ID_NULL) {
+        if(def.id == WEATHER_ID_NULL || !is_allowed(def)) {
             continue;
         }
 
         auto weight = std::max<std::uint32_t>(def.weight, 1);
 
         if(def.id == type) {
-            start = static_cast<float>(offset) / static_cast<float>(total);
-            end = static_cast<float>(offset + weight) / static_cast<float>(total);
-            return true;
+            auto start = static_cast<float>(offset) / static_cast<float>(total);
+            auto end = static_cast<float>(offset + weight) / static_cast<float>(total);
+            return std::make_pair(start, end);
         }
 
         offset += weight;
     }
 
-    return false;
+    return std::nullopt;
 }
