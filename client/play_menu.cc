@@ -796,20 +796,11 @@ void play_menu::init(void)
     s_error_popup.add_choice("play_menu.connect.error.ok");
     screen.add_child(s_error_popup, 3);
 
-    auto language_sink = globals::dispatcher.sink<LanguageUpdateEvent>();
-    language_sink.connect<&on_language_update>();
-
-    auto keyboard_sink = globals::dispatcher.sink<SDL_KeyboardEvent>();
-    keyboard_sink.connect<&on_keyboard_event>();
-
-    auto bother_sink = globals::dispatcher.sink<BotherResponseEvent>();
-    bother_sink.connect<&on_bother_response>();
-
-    auto session_state_sink = globals::dispatcher.sink<SessionStateEvent>();
-    session_state_sink.connect<&on_session_state>();
-
-    auto session_error_sink = globals::dispatcher.sink<SessionErrorEvent>();
-    session_error_sink.connect<&on_session_error>();
+    globals::dispatcher.sink<LanguageUpdateEvent>().connect<&on_language_update>();
+    globals::dispatcher.sink<SDL_KeyboardEvent>().connect<&on_keyboard_event>();
+    globals::dispatcher.sink<BotherResponseEvent>().connect<&on_bother_response>();
+    globals::dispatcher.sink<SessionStateEvent>().connect<&on_session_state>();
+    globals::dispatcher.sink<SessionErrorEvent>().connect<&on_session_error>();
 
     load_servers_json();
 }

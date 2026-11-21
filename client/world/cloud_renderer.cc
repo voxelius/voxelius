@@ -285,9 +285,9 @@ void cloud_renderer::init(void)
 {
     update_depth_range(0.0f);
 
-    auto& clouds_binding = cvar::bind_var(s_clouds, "r_clouds");
-    clouds_binding.set_help("Draw the cloud deck: 0 = off, 1 = on");
-    clouds_binding.set_flags(FCVAR_ARCHIVE);
+    auto& r_clouds_binding = cvar::bind_var(s_clouds, "r_clouds");
+    r_clouds_binding.set_help("Draw the cloud deck: 0 = off, 1 = on");
+    r_clouds_binding.set_flags(FCVAR_ARCHIVE);
 
     s_clouds_gui.bind("r_clouds");
     settings::video_atmosphere.add_child(s_clouds_gui, 1);

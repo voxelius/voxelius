@@ -41,7 +41,7 @@ static bool parse_definition(lua_State* L, int def_idx, TintDefinition& def, Mod
     }
 
     def.default_color = default_color->cast<float>();
-    Eigen::Vector3f color = def.default_color.cwiseMin(1.0f);
+    auto color = Eigen::Vector3f(def.default_color.cwiseMin(1.0f));
     def.default_color = color.cwiseMax(0.0f);
 
     return true;

@@ -112,9 +112,9 @@ static Eigen::Vector3f tilt_about_x(const Eigen::Vector3f& direction, float tilt
 
 void skybox::init(void)
 {
-    auto& sun_angle_binding = cvar::bind_var(s_sun_angle, "r_sun_angle");
-    sun_angle_binding.set_help("Tilt of the sun's path in degrees; 0 rises due east and sets due west");
-    sun_angle_binding.set_flags(FCVAR_ARCHIVE);
+    auto& r_sun_angle_binding = cvar::bind_var(s_sun_angle, "r_sun_angle");
+    r_sun_angle_binding.set_help("Tilt of the sun's path in degrees; 0 rises due east and sets due west");
+    r_sun_angle_binding.set_flags(FCVAR_ARCHIVE);
 
     s_sun_angle_gui.set_range(-90.0f, 90.0f);
     s_sun_angle_gui.set_format("%.0f");

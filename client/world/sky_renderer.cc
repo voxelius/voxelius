@@ -158,7 +158,7 @@ static void build_stars(void)
         auto size = STAR_MIN_SIZE + (STAR_MAX_SIZE - STAR_MIN_SIZE) * next_float(random);
         auto brightness = STAR_MIN_BRIGHTNESS + (STAR_MAX_BRIGHTNESS - STAR_MIN_BRIGHTNESS) * next_float(random);
 
-        Eigen::Vector3f helper = Eigen::Vector3f::UnitX();
+        auto helper = Eigen::Vector3f::UnitX().eval();
 
         if(std::abs(direction.y()) < 0.99f) {
             helper = Eigen::Vector3f::UnitY();
@@ -297,14 +297,14 @@ void sky_renderer::init(void)
     auto sun_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "sun");
     s_sun_texture = res::load<Texture2D>(sun_id, "textures/environment", ".png", RESFLAG_TEX_NEAREST);
 
-    if(!s_sun_texture) {
+    if(s_sun_texture == nullptr) {
         msg::log_warning("{}: texture load failed", sun_id.full_string());
     }
 
     auto moon_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "moon_phases");
     s_moon_texture = res::load<Texture2D>(moon_id, "textures/environment", ".png", RESFLAG_TEX_NEAREST);
 
-    if(!s_moon_texture) {
+    if(s_moon_texture == nullptr) {
         msg::log_warning("{}: texture load failed", moon_id.full_string());
     }
 

@@ -45,14 +45,9 @@ void interpolation::init(void)
 {
     auto& registry = globals::world->registry();
 
-    auto transform_sink = registry.on_construct<Transform>();
-    transform_sink.connect<&on_transform_construct>();
-
-    auto head_sink = registry.on_construct<Head>();
-    head_sink.connect<&on_head_construct>();
-
-    auto velocity_sink = registry.on_construct<Velocity>();
-    velocity_sink.connect<&on_velocity_construct>();
+    registry.on_construct<Transform>().connect<&on_transform_construct>();
+    registry.on_construct<Head>().connect<&on_head_construct>();
+    registry.on_construct<Velocity>().connect<&on_velocity_construct>();
 }
 
 void interpolation::update(void)

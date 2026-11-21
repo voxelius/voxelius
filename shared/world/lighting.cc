@@ -872,14 +872,10 @@ static void on_block_update(const BlockUpdateEvent& event)
 
 void lighting::init(void)
 {
-    auto chunk_update_sink = globals::dispatcher.sink<ChunkUpdateEvent>();
-    chunk_update_sink.connect<&on_chunk_update>();
-    auto chunk_ready_sink = globals::dispatcher.sink<ChunkReadyEvent>();
-    chunk_ready_sink.connect<&on_chunk_ready>();
-    auto chunk_remove_sink = globals::dispatcher.sink<ChunkRemoveEvent>();
-    chunk_remove_sink.connect<&on_chunk_remove>();
-    auto block_update_sink = globals::dispatcher.sink<BlockUpdateEvent>();
-    block_update_sink.connect<&on_block_update>();
+    globals::dispatcher.sink<ChunkUpdateEvent>().connect<&on_chunk_update>();
+    globals::dispatcher.sink<ChunkReadyEvent>().connect<&on_chunk_ready>();
+    globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
+    globals::dispatcher.sink<BlockUpdateEvent>().connect<&on_block_update>();
 }
 
 void lighting::set_replica(bool value)

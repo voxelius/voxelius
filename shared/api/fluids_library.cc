@@ -119,7 +119,7 @@ static bool parse_definition(lua_State* L, int def_idx, FluidDefinition& def, Mo
     }
 
     def.fog_color = fog_color->cast<float>();
-    Eigen::Vector3f color = def.fog_color.cwiseMax(0.0f);
+    auto color = Eigen::Vector3f(def.fog_color.cwiseMax(0.0f));
     def.fog_color = color.cwiseMin(1.0f);
 
     auto tint_name = utils::opt_string(L, def_idx, "tint", {});

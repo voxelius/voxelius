@@ -32,9 +32,9 @@ static bool s_primed { false };
 
 void fog::init(void)
 {
-    auto& binding = cvar::bind_var(fog::model, "r_fog");
-    binding.set_help("Fog style: 0 = off, 1 = simple, 2 = fancy");
-    binding.set_flags(FCVAR_ARCHIVE);
+    auto& r_fog_binding = cvar::bind_var(fog::model, "r_fog");
+    r_fog_binding.set_help("Fog style: 0 = off, 1 = simple, 2 = fancy");
+    r_fog_binding.set_flags(FCVAR_ARCHIVE);
 
     s_fog_model_gui.set_range(0, 2, 1);
     s_fog_model_gui.bind("r_fog");

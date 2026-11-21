@@ -280,14 +280,9 @@ void SaveTask::finalize(void)
 
 void chunk_loader::init(void)
 {
-    auto chunk_update_sink = globals::dispatcher.sink<ChunkUpdateEvent>();
-    chunk_update_sink.connect<&on_chunk_update>();
-
-    auto block_update_sink = globals::dispatcher.sink<BlockUpdateEvent>();
-    block_update_sink.connect<&on_block_update>();
-
-    auto chunk_light_sink = globals::dispatcher.sink<ChunkLightUpdateEvent>();
-    chunk_light_sink.connect<&on_chunk_light>();
+    globals::dispatcher.sink<ChunkUpdateEvent>().connect<&on_chunk_update>();
+    globals::dispatcher.sink<BlockUpdateEvent>().connect<&on_block_update>();
+    globals::dispatcher.sink<ChunkLightUpdateEvent>().connect<&on_chunk_light>();
 }
 
 void chunk_loader::shutdown(void)

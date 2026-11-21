@@ -43,7 +43,7 @@ static void on_sdl_window_event(const SDL_WindowEvent& event)
     globals::height = event.data2;
     globals::aspect = static_cast<float>(event.data1) / static_cast<float>(event.data2);
 
-    if(!SDL_GetWindowFullscreenMode(globals::window)) {
+    if(SDL_GetWindowFullscreenMode(globals::window) == nullptr) {
         s_last_windowed_size.x() = event.data1;
         s_last_windowed_size.y() = event.data2;
     }
@@ -126,19 +126,19 @@ void video::init(void)
 {
     s_last_windowed_size = Eigen::Vector2i(constant::MIN_WIDTH, constant::MIN_HEIGHT);
 
-    auto& vsync_binding = cvar::bind_var(s_enable_vsync, "r_vsync");
-    vsync_binding.set_help("Enable vertical synchronization");
-    vsync_binding.set_flags(FCVAR_ARCHIVE);
-    auto vsync_changed = vsync_binding.changed();
+    auto& r_vsync_binding = cvar::bind_var(s_enable_vsync, "r_vsync");
+    r_vsync_binding.set_help("Enable vertical synchronization");
+    r_vsync_binding.set_flags(FCVAR_ARCHIVE);
+    auto vsync_changed = r_vsync_binding.changed();
     vsync_changed.connect<&update_present_mode>();
 
     s_enable_vsync_gui.enable_tooltip();
     s_enable_vsync_gui.bind("r_vsync");
     settings::video.add_child(s_enable_vsync_gui, 1);
 
-    auto& current_mode_binding = cvar::bind_var(s_current_mode, "r_mode");
-    current_mode_binding.set_help("Video mode");
-    current_mode_binding.set_flags(FCVAR_ARCHIVE);
+    auto& r_mode_binding = cvar::bind_var(s_current_mode, "r_mode");
+    r_mode_binding.set_help("Video mode");
+    r_mode_binding.set_flags(FCVAR_ARCHIVE);
 
     s_video_mode_control.on_change(&settings::detail::video_mode_popup);
     s_video_mode_control.set_key("r_mode");
@@ -163,11 +163,8 @@ void video::init(void)
 
     SDL_SetWindowMinimumSize(globals::window, constant::MIN_WIDTH, constant::MIN_HEIGHT);
 
-    auto window_sink = globals::dispatcher.sink<SDL_WindowEvent>();
-    window_sink.connect<&on_sdl_window_event>();
-
-    auto keyboard_sink = globals::dispatcher.sink<SDL_KeyboardEvent>();
-    keyboard_sink.connect<&on_sdl_key>();
+    globals::dispatcher.sink<SDL_WindowEvent>().connect<&on_sdl_window_event>();
+    globals::dispatcher.sink<SDL_KeyboardEvent>().connect<&on_sdl_key>();
 
     update_window_title();
 }

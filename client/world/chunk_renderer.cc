@@ -420,18 +420,13 @@ void chunk_renderer::init(void)
 
     s_last_camera_chunk = camera::chunk + ChunkPos::Ones();
 
-    auto chunk_create_sink = globals::dispatcher.sink<ChunkCreateEvent>();
-    chunk_create_sink.connect<&on_chunk_create>();
-    auto chunk_remove_sink = globals::dispatcher.sink<ChunkRemoveEvent>();
-    chunk_remove_sink.connect<&on_chunk_remove>();
-    auto chunk_update_sink = globals::dispatcher.sink<ChunkUpdateEvent>();
-    chunk_update_sink.connect<&on_chunk_update>();
+    globals::dispatcher.sink<ChunkCreateEvent>().connect<&on_chunk_create>();
+    globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
+    globals::dispatcher.sink<ChunkUpdateEvent>().connect<&on_chunk_update>();
 
     auto& chunk_registry = globals::world->chunk_registry();
-    auto chunk_mesh_update_sink = chunk_registry.on_update<ChunkMesh>();
-    chunk_mesh_update_sink.connect<&on_chunk_mesh>();
-    auto chunk_mesh_destroy_sink = chunk_registry.on_destroy<ChunkMesh>();
-    chunk_mesh_destroy_sink.connect<&on_chunk_mesh>();
+    chunk_registry.on_update<ChunkMesh>().connect<&on_chunk_mesh>();
+    chunk_registry.on_destroy<ChunkMesh>().connect<&on_chunk_mesh>();
 }
 
 void chunk_renderer::shutdown(void)

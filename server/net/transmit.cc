@@ -26,8 +26,7 @@ static void on_block_update(const BlockUpdateEvent& event)
 
 void transmit::init(void)
 {
-    auto block_update_sink = globals::dispatcher.sink<BlockUpdateEvent>();
-    block_update_sink.connect<&on_block_update>();
+    globals::dispatcher.sink<BlockUpdateEvent>().connect<&on_block_update>();
 }
 
 void transmit::fixed_update_late(void)

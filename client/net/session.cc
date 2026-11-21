@@ -183,9 +183,9 @@ static cvar::status cmd_whoami(const cvar::Context&, std::span<const std::string
 
 void session::init(void)
 {
-    auto& username_binding = cvar::bind_var(s_desired_username, "net_username");
-    username_binding.set_help("Name sent to the server");
-    username_binding.set_flags(FCVAR_ARCHIVE);
+    auto& net_username_binding = cvar::bind_var(s_desired_username, "net_username");
+    net_username_binding.set_help("Name sent to the server");
+    net_username_binding.set_flags(FCVAR_ARCHIVE);
 
     s_desired_username_gui.enable_tooltip();
     s_desired_username_gui.set_flags(ImGuiInputTextFlags_CharsNoBlank);
@@ -239,16 +239,11 @@ void session::init(void)
         }
     }
 
-    auto host_connect_sink = globals::dispatcher.sink<HostConnectEvent>();
-    host_connect_sink.connect<&on_host_connect>();
-    auto host_disconnect_sink = globals::dispatcher.sink<HostDisconnectEvent>();
-    host_disconnect_sink.connect<&on_host_disconnect>();
-    auto auth_challenge_sink = globals::dispatcher.sink<packet::Auth_Challenge>();
-    auth_challenge_sink.connect<&on_auth_challenge>();
-    auto auth_admission_sink = globals::dispatcher.sink<packet::Auth_Admission>();
-    auth_admission_sink.connect<&on_auth_admission>();
-    auto session_disconnect_sink = globals::dispatcher.sink<packet::Session_Disconnect>();
-    session_disconnect_sink.connect<&on_session_disconnect>();
+    globals::dispatcher.sink<HostConnectEvent>().connect<&on_host_connect>();
+    globals::dispatcher.sink<HostDisconnectEvent>().connect<&on_host_disconnect>();
+    globals::dispatcher.sink<packet::Auth_Challenge>().connect<&on_auth_challenge>();
+    globals::dispatcher.sink<packet::Auth_Admission>().connect<&on_auth_admission>();
+    globals::dispatcher.sink<packet::Session_Disconnect>().connect<&on_session_disconnect>();
 }
 
 void session::shutdown(void)

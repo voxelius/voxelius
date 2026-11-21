@@ -40,6 +40,5 @@ static void on_status_request(const packet::Status_Request& packet)
 
 void status::init(void)
 {
-    auto status_request_sink = globals::dispatcher.sink<packet::Status_Request>();
-    status_request_sink.connect<&on_status_request>();
+    globals::dispatcher.sink<packet::Status_Request>().connect<&on_status_request>();
 }

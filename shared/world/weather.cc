@@ -51,7 +51,7 @@ bool WeatherState::force_at(std::span<const weather_type_id> allowed, weather_ty
 
     auto interval = weather_registry::type_interval(allowed, type);
 
-    if(!interval) {
+    if(!interval.has_value()) {
         return false;
     }
 

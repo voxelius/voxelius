@@ -23,8 +23,7 @@ std::any Component<Head>::prepare(lua_State* L, int config_idx)
 template<>
 void Component<Head>::connect(entt::registry& registry)
 {
-    auto on_update = registry.on_update<Head>();
-    on_update.connect<&component_map::on_update<Head>>();
+    registry.on_update<Head>().connect<&component_map::on_update<Head>>();
 }
 
 template<>

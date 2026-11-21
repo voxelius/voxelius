@@ -204,14 +204,9 @@ void buttons::init(void)
 
     cvar::add_write_hook<&write_config>();
 
-    auto keyboard_sink = globals::dispatcher.sink<SDL_KeyboardEvent>();
-    keyboard_sink.connect<&on_keyboard_event>();
-
-    auto mouse_button_sink = globals::dispatcher.sink<SDL_MouseButtonEvent>();
-    mouse_button_sink.connect<&on_mouse_button_event>();
-
-    auto mouse_wheel_sink = globals::dispatcher.sink<SDL_MouseWheelEvent>();
-    mouse_wheel_sink.connect<&on_mouse_wheel_event>();
+    globals::dispatcher.sink<SDL_KeyboardEvent>().connect<&on_keyboard_event>();
+    globals::dispatcher.sink<SDL_MouseButtonEvent>().connect<&on_mouse_button_event>();
+    globals::dispatcher.sink<SDL_MouseWheelEvent>().connect<&on_mouse_wheel_event>();
 }
 
 void buttons::bind(ButtonSource source, std::string command, bool overwrite)

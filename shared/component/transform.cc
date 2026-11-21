@@ -37,8 +37,7 @@ std::any Component<Transform>::prepare(lua_State*, int)
 template<>
 void Component<Transform>::connect(entt::registry& registry)
 {
-    auto on_update = registry.on_update<Transform>();
-    on_update.connect<&component_map::on_update<Transform>>();
+    registry.on_update<Transform>().connect<&component_map::on_update<Transform>>();
 }
 
 template<>

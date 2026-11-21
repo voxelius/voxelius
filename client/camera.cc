@@ -93,9 +93,9 @@ Eigen::Vector3f camera::lookahead(float chunks)
 
 void camera::init(void)
 {
-    auto& vertical_fov_binding = cvar::bind_var(vertical_fov, "r_fov");
-    vertical_fov_binding.set_help("Vertical field of view");
-    vertical_fov_binding.set_flags(FCVAR_ARCHIVE);
+    auto& r_fov_binding = cvar::bind_var(vertical_fov, "r_fov");
+    r_fov_binding.set_help("Vertical field of view");
+    r_fov_binding.set_flags(FCVAR_ARCHIVE);
 
     s_vertical_fov_gui.set_range(45.0f, 110.0f);
     s_vertical_fov_gui.set_format("%.0f");
@@ -103,17 +103,17 @@ void camera::init(void)
     s_vertical_fov_gui.bind("r_fov");
     settings::general.add_child(s_vertical_fov_gui, 1);
 
-    auto& view_distance_binding = cvar::bind_var(view_distance, "r_view_distance");
-    view_distance_binding.set_help("View distance, in chunks");
-    view_distance_binding.set_flags(FCVAR_ARCHIVE);
+    auto& r_view_distance_binding = cvar::bind_var(view_distance, "r_view_distance");
+    r_view_distance_binding.set_help("View distance, in chunks");
+    r_view_distance_binding.set_flags(FCVAR_ARCHIVE);
 
     s_view_distance_gui.set_range(1, 32);
     s_view_distance_gui.bind("r_view_distance");
     settings::video.add_child(s_view_distance_gui, 3);
 
-    auto& cloud_range_binding = cvar::bind_var(cloud_range, "r_cloud_range");
-    cloud_range_binding.set_help("Cloud render range, in chunks");
-    cloud_range_binding.set_flags(FCVAR_ARCHIVE);
+    auto& r_cloud_range_binding = cvar::bind_var(cloud_range, "r_cloud_range");
+    r_cloud_range_binding.set_help("Cloud render range, in chunks");
+    r_cloud_range_binding.set_flags(FCVAR_ARCHIVE);
 
     s_cloud_range_gui.set_range(8, 256);
     s_cloud_range_gui.bind("r_cloud_range");

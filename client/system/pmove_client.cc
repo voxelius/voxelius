@@ -117,8 +117,7 @@ void player_move::init(void)
     buttons::bind(ButtonSource(input_device::KEYBOARD, SDL_SCANCODE_LSHIFT, input_edge::DOWN), "+sneak");
     buttons::bind(ButtonSource(input_device::KEYBOARD, SDL_SCANCODE_LSHIFT, input_edge::UP), "-sneak");
 
-    auto sdl_window_sink = globals::dispatcher.sink<SDL_WindowEvent>();
-    sdl_window_sink.connect<&on_window_event>();
+    globals::dispatcher.sink<SDL_WindowEvent>().connect<&on_window_event>();
 }
 
 void player_move::fixed_update(void)
@@ -149,7 +148,7 @@ void player_move::update(void)
 
     Eigen::Vector3f wishdir = Eigen::Vector3f::Zero();
 
-    if(!globals::gui_screen) {
+    if(globals::gui_screen == nullptr) {
         if(s_input_held & IN_FORWARD) {
             wishdir.z() -= 1.0f;
         }

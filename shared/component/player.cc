@@ -13,8 +13,7 @@ std::any Component<Player>::prepare(lua_State*, int)
 template<>
 void Component<Player>::connect(entt::registry& registry)
 {
-    auto on_update = registry.on_update<Player>();
-    on_update.connect<&component_map::on_update<Player>>();
+    registry.on_update<Player>().connect<&component_map::on_update<Player>>();
 }
 
 template<>

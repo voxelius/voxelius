@@ -151,7 +151,7 @@ static void sample_netgraph(void)
     s_netgraph_cursor += 1;
     s_netgraph_cursor %= NETGRAPH_SAMPLES;
 
-    if(!globals::peer) {
+    if(globals::peer == nullptr) {
         sample.ping_ms = 0.0f;
         sample.jitter_ms = 0.0f;
         sample.has_loss = false;
@@ -169,13 +169,13 @@ static void sample_netgraph(void)
 
 static void sample_rates(void)
 {
-    if(!globals::host) {
+    if(globals::host == nullptr) {
         return;
     }
 
     auto curtime = enet_time_get();
 
-    if(!globals::peer) {
+    if(globals::peer == nullptr) {
         s_rates_calc_in_kbps = 0.0f;
         s_rates_calc_out_kbps = 0.0f;
         s_rates_calc_in_pktps = 0.0f;

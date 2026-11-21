@@ -139,12 +139,9 @@ static void on_msg_log(const packet::Msg_Log& packet)
 
 void replication::init(void)
 {
-    auto cvar_server_vars_sink = globals::dispatcher.sink<packet::Cvar_ServerVars>();
-    cvar_server_vars_sink.connect<&on_cvar_server_vars>();
-    auto cvar_server_cmds_sink = globals::dispatcher.sink<packet::Cvar_ServerCmds>();
-    cvar_server_cmds_sink.connect<&on_cvar_server_cmds>();
-    auto msg_log_sink = globals::dispatcher.sink<packet::Msg_Log>();
-    msg_log_sink.connect<&on_msg_log>();
+    globals::dispatcher.sink<packet::Cvar_ServerVars>().connect<&on_cvar_server_vars>();
+    globals::dispatcher.sink<packet::Cvar_ServerCmds>().connect<&on_cvar_server_cmds>();
+    globals::dispatcher.sink<packet::Msg_Log>().connect<&on_msg_log>();
 }
 
 void replication::clear(void)

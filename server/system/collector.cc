@@ -99,11 +99,8 @@ void collector::init(void)
 {
     for(const auto& world : universe::worlds()) {
         auto& registry = world->registry();
-        auto create_sink = registry.on_construct<EntityClass>();
-        create_sink.connect<&on_create_entity>();
-
-        auto destroy_sink = registry.on_destroy<EntityClass>();
-        destroy_sink.connect<&on_destroy_entity>();
+        registry.on_construct<EntityClass>().connect<&on_create_entity>();
+        registry.on_destroy<EntityClass>().connect<&on_destroy_entity>();
     }
 }
 

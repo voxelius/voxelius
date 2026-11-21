@@ -136,8 +136,7 @@ void axes::init(void)
 
     cvar::add_write_hook<&write_config>();
 
-    auto sink = globals::dispatcher.sink<SDL_MouseMotionEvent>();
-    sink.connect<&on_mouse_motion_event>();
+    globals::dispatcher.sink<SDL_MouseMotionEvent>().connect<&on_mouse_motion_event>();
 }
 
 void axes::bind(AxisSource source, std::string slot, bool overwrite)

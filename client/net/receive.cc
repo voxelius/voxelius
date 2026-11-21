@@ -260,32 +260,20 @@ static void on_session_state(const SessionStateEvent& event)
 
 void receive::init(void)
 {
-    auto entity_spawn_sink = globals::dispatcher.sink<packet::Entity_Spawn>();
-    entity_spawn_sink.connect<&on_entity_spawn>();
-    auto entity_patch_sink = globals::dispatcher.sink<packet::Entity_Patch>();
-    entity_patch_sink.connect<&on_entity_patch>();
-    auto entity_remove_sink = globals::dispatcher.sink<packet::Entity_Remove>();
-    entity_remove_sink.connect<&on_entity_remove>();
-    auto entity_client_sink = globals::dispatcher.sink<packet::Entity_Client>();
-    entity_client_sink.connect<&on_entity_client>();
+    globals::dispatcher.sink<packet::Entity_Spawn>().connect<&on_entity_spawn>();
+    globals::dispatcher.sink<packet::Entity_Patch>().connect<&on_entity_patch>();
+    globals::dispatcher.sink<packet::Entity_Remove>().connect<&on_entity_remove>();
+    globals::dispatcher.sink<packet::Entity_Client>().connect<&on_entity_client>();
 
-    auto world_blocks_sink = globals::dispatcher.sink<packet::World_Blocks>();
-    world_blocks_sink.connect<&on_world_blocks>();
-    auto world_biomes_sink = globals::dispatcher.sink<packet::World_Biomes>();
-    world_biomes_sink.connect<&on_world_biomes>();
-    auto world_light_sink = globals::dispatcher.sink<packet::World_Light>();
-    world_light_sink.connect<&on_world_light>();
-    auto world_set_block_sink = globals::dispatcher.sink<packet::World_SetBlock>();
-    world_set_block_sink.connect<&on_world_set_block>();
-    auto world_timings_sink = globals::dispatcher.sink<packet::World_Timings>();
-    world_timings_sink.connect<&on_world_timings>();
-    auto world_info_sink = globals::dispatcher.sink<packet::World_Info>();
-    world_info_sink.connect<&on_world_info>();
-    auto world_weather_sink = globals::dispatcher.sink<packet::World_Weather>();
-    world_weather_sink.connect<&on_world_weather>();
+    globals::dispatcher.sink<packet::World_Blocks>().connect<&on_world_blocks>();
+    globals::dispatcher.sink<packet::World_Biomes>().connect<&on_world_biomes>();
+    globals::dispatcher.sink<packet::World_Light>().connect<&on_world_light>();
+    globals::dispatcher.sink<packet::World_SetBlock>().connect<&on_world_set_block>();
+    globals::dispatcher.sink<packet::World_Timings>().connect<&on_world_timings>();
+    globals::dispatcher.sink<packet::World_Info>().connect<&on_world_info>();
+    globals::dispatcher.sink<packet::World_Weather>().connect<&on_world_weather>();
 
-    auto session_state_sink = globals::dispatcher.sink<SessionStateEvent>();
-    session_state_sink.connect<&on_session_state>();
+    globals::dispatcher.sink<SessionStateEvent>().connect<&on_session_state>();
 
     auto& status_binding = cvar::bind_cmd("weather_status");
     status_binding.set_help("Print the weather state the client currently has");

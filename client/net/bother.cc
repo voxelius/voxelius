@@ -126,8 +126,7 @@ static void thread_main(std::stop_token stop_token)
     }
 
     entt::dispatcher dispatcher;
-    auto status_response_sink = dispatcher.sink<packet::Status_Response>();
-    status_response_sink.connect<&on_status_response>();
+    dispatcher.sink<packet::Status_Response>().connect<&on_status_response>();
 
     while(!stop_token.stop_requested()) {
         auto jobs = take_incoming();

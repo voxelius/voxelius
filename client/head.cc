@@ -240,10 +240,10 @@ static void on_pixel_size_changed(void)
 
 void head::init(void)
 {
-    auto& pixel_size_binding = cvar::bind_var(s_head_pixel_size, "r_pixel_size");
-    pixel_size_binding.set_help("Internal render scale, in pixels");
-    pixel_size_binding.set_flags(FCVAR_ARCHIVE);
-    auto pixel_size_changed = pixel_size_binding.changed();
+    auto& r_pixel_size_binding = cvar::bind_var(s_head_pixel_size, "r_pixel_size");
+    r_pixel_size_binding.set_help("Internal render scale, in pixels");
+    r_pixel_size_binding.set_flags(FCVAR_ARCHIVE);
+    auto pixel_size_changed = r_pixel_size_binding.changed();
     pixel_size_changed.connect<&on_pixel_size_changed>();
 
     s_pixel_size_gui.set_range(1, 4);
@@ -300,8 +300,7 @@ void head::init(void)
 
     SDL_ShowWindow(globals::window);
 
-    auto window_sink = globals::dispatcher.sink<SDL_WindowEvent>();
-    window_sink.connect<&on_sdl_window_event>();
+    globals::dispatcher.sink<SDL_WindowEvent>().connect<&on_sdl_window_event>();
 }
 
 void head::init_late(void)

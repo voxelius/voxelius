@@ -112,9 +112,12 @@ differently.
 - Do not repeat a `const` that the initializer already carries. When a function returns a const reference, `auto&` is enough:
   `auto& palette = style::palette();`, not `const auto&`. Keep `const auto&` when the reference binds a temporary.
 - Write `auto` even when the deduction yields a pointer (`auto world = WorldScope::active();`), not `auto*`.
-- Never compare against zero or `nullptr` from the negative side: no `!= 0`, `!= nullptr`, `0 !=` or `nullptr !=`. Test the value itself:
-  `if(count)`, `if(ptr)`, `bool taken = *prev;`. `== 0` and `== nullptr` stay, and so does negating a call that only reports failure:
-  `if(!load(path))`.
+- When a block of locals comes from deduction, keep them all on `auto`. Do not spell the type between them; put it in the
+  initializer instead: `auto elapsed = std::chrono::system_clock::duration(now.time_since_epoch());`.
+- Test a pointer or a handle by itself when it must be present, and compare it with the null value when it must be absent: `if(ptr)` and
+  `if(ptr == nullptr)`, `if(handle)` and `if(handle == BIOME_ID_NULL)`. A count follows the same split: `if(count)` and `if(count == 0)`.
+  Never write the absent case as a negation or an inequality: no `if(!ptr)`, `if(!handle)`, `!= 0`, `!= nullptr`, `0 !=`, `nullptr !=`
+  or `!= HANDLE_NULL`. Negating a call that only reports a condition stays: `if(!load(path))`, `if(!value.has_value())`.
 - Test a bitmask against zero explicitly: `if(0 == (flags & FLAG))`, not `if(!(flags & FLAG))`.
 - Use a ternary only for a short pick between constants, written `cond ? a : b` with spaces around both operators. When either side
   holds a call, a dereference or another non-trivial operand, write `if`/`else`.
@@ -124,9 +127,12 @@ differently.
 - A `for` header has all three parts or none (`for(;;)`). A loop that fills two of them is a `while`, with the step at the end of the
   body.
 - A `switch` case does not open a scope. Move a body that needs locals into a function.
-- Do not chain on the result of a call in place (`registry().find(id)->name`, `world.definition().weather`); put the result in a named
-  local first. Do not put a call in the middle of another call's arguments or nest calls deeper than one level; a call as the only or
-  the last argument is fine.
+- Do not chain on the result of a call through a pointer (`registry().find(id)->name`, `map.find(key)->second`); put the result in a
+  named local first. A short dot chain reads as one operation and may stay in place: `dispatcher.sink<Event>().connect<&handler>()`. A
+  chain of three or more calls goes into named locals. Do not put a call in the middle of another call's arguments or nest calls
+  deeper than one level; a call as the only or the last argument is fine.
+- Keep the registration calls together. A run of `dispatcher.sink<Event>().connect<&handler>()` lines, or of the
+  `on_construct`/`on_update` ones, has no blank lines inside it; one blank line separates a different group of events.
 - Keep a condition to three operands joined by `&&` or `||`, on one line. Name the parts in `bool` locals, or split the test into
   several `if` blocks that each return or continue.
 - Do not initialize a structure with its fields on one line. Either list the designated fields one per line, with a comma after the
@@ -150,6 +156,8 @@ differently.
 |Constants|`UPPER_SNAKE_CASE`|`BASE_WIDTH`|
 
 - Two names must differ by more than capitalization: `world_scope` and `WorldScope` read as the same name, so keep one of them.
+- A cvar binding takes the cvar name and the `_binding` suffix:
+  `auto& gr_weather_cycle_binding = cvar::bind_var(weather, "gr_weather_cycle");`, not `weather_binding`.
 
 ### Headers and includes
 

@@ -143,11 +143,8 @@ void settings::init(void)
 
     screen.add_child(s_video_mode_popup);
 
-    auto language_sink = globals::dispatcher.sink<LanguageUpdateEvent>();
-    language_sink.connect<&on_language_update>();
-
-    auto keyboard_sink = globals::dispatcher.sink<SDL_KeyboardEvent>();
-    keyboard_sink.connect<&on_keyboard_event>();
+    globals::dispatcher.sink<LanguageUpdateEvent>().connect<&on_language_update>();
+    globals::dispatcher.sink<SDL_KeyboardEvent>().connect<&on_keyboard_event>();
 }
 
 void settings::shutdown(void)

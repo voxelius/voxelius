@@ -43,18 +43,18 @@ static void add_angles(float pitch, float yaw)
 
 void player_look::init(void)
 {
-    auto& sensitivity_binding = cvar::bind_var(s_sensitivity, "in_sensitivity");
-    sensitivity_binding.set_help("Mouse sensitivity");
-    sensitivity_binding.set_flags(FCVAR_ARCHIVE);
+    auto& in_sensitivity_binding = cvar::bind_var(s_sensitivity, "in_sensitivity");
+    in_sensitivity_binding.set_help("Mouse sensitivity");
+    in_sensitivity_binding.set_flags(FCVAR_ARCHIVE);
 
     auto& sensitivity_range = s_sensitivity_gui.set_range(25, 100);
     sensitivity_range.enable_tooltip();
     s_sensitivity_gui.bind("in_sensitivity");
     settings::mouse.add_child(s_sensitivity_gui, 0);
 
-    auto& software_cursor_binding = cvar::bind_var(s_software_cursor, "r_software_cursor");
-    software_cursor_binding.set_help("Draw the menu cursor in software");
-    software_cursor_binding.set_flags(FCVAR_ARCHIVE);
+    auto& r_software_cursor_binding = cvar::bind_var(s_software_cursor, "r_software_cursor");
+    r_software_cursor_binding.set_help("Draw the menu cursor in software");
+    r_software_cursor_binding.set_flags(FCVAR_ARCHIVE);
 
     s_software_cursor_gui.enable_tooltip();
     s_software_cursor_gui.bind("r_software_cursor");

@@ -96,8 +96,7 @@ void replication::init(void)
     dbg_echo_binding.set_flags(FCVAR_RECALL | FCVAR_ADMIN | FCVAR_HIDDEN);
     dbg_echo_binding.connect<&cmd_dbg_echo>();
 
-    auto cvar_command_sink = globals::dispatcher.sink<packet::Cvar_Command>();
-    cvar_command_sink.connect<&on_cvar_command>();
+    globals::dispatcher.sink<packet::Cvar_Command>().connect<&on_cvar_command>();
 }
 
 void replication::init_late(void)

@@ -292,7 +292,7 @@ static bool parse_definition(lua_State* L, int def_idx, BiomeDefinition& def, Mo
             }
 
             auto key_id = Identifier::from_string(key_str.value(), ctx->name_space());
-            Eigen::Vector3f color = value_vec->cast<float>();
+            auto color = Eigen::Vector3f(value_vec->cast<float>());
             color = color.cwiseMin(1.0f);
             color = color.cwiseMax(0.0f);
 

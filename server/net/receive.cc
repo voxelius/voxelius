@@ -520,26 +520,17 @@ static void flush_light_updates(void)
 
 void receive::init(void)
 {
-    auto world_request_sink = globals::dispatcher.sink<packet::World_Request>();
-    world_request_sink.connect<&on_world_request>();
+    globals::dispatcher.sink<packet::World_Request>().connect<&on_world_request>();
 
-    auto player_attack_e_sink = globals::dispatcher.sink<packet::Player_AttackE>();
-    player_attack_e_sink.connect<&on_player_attack_e>();
-    auto player_attack_b_sink = globals::dispatcher.sink<packet::Player_AttackB>();
-    player_attack_b_sink.connect<&on_player_attack_b>();
-    auto player_interact_e_sink = globals::dispatcher.sink<packet::Player_InteractE>();
-    player_interact_e_sink.connect<&on_player_interact_e>();
-    auto player_interact_b_sink = globals::dispatcher.sink<packet::Player_InteractB>();
-    player_interact_b_sink.connect<&on_player_interact_b>();
-    auto player_move_data_sink = globals::dispatcher.sink<packet::Player_MoveData>();
-    player_move_data_sink.connect<&on_player_move_data>();
+    globals::dispatcher.sink<packet::Player_AttackE>().connect<&on_player_attack_e>();
+    globals::dispatcher.sink<packet::Player_AttackB>().connect<&on_player_attack_b>();
+    globals::dispatcher.sink<packet::Player_InteractE>().connect<&on_player_interact_e>();
+    globals::dispatcher.sink<packet::Player_InteractB>().connect<&on_player_interact_b>();
+    globals::dispatcher.sink<packet::Player_MoveData>().connect<&on_player_move_data>();
 
-    auto chunk_ready_sink = globals::dispatcher.sink<ChunkReadyEvent>();
-    chunk_ready_sink.connect<&on_chunk_ready>();
-    auto chunk_light_update_sink = globals::dispatcher.sink<ChunkLightUpdateEvent>();
-    chunk_light_update_sink.connect<&on_chunk_light>();
-    auto chunk_remove_sink = globals::dispatcher.sink<ChunkRemoveEvent>();
-    chunk_remove_sink.connect<&on_chunk_remove>();
+    globals::dispatcher.sink<ChunkReadyEvent>().connect<&on_chunk_ready>();
+    globals::dispatcher.sink<ChunkLightUpdateEvent>().connect<&on_chunk_light>();
+    globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
 }
 
 void receive::fixed_update_late(void)

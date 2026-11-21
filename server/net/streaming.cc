@@ -110,10 +110,8 @@ static void on_chunk_sent(const ChunkSentEvent& event)
 
 void streaming::init(void)
 {
-    auto chunk_remove_sink = globals::dispatcher.sink<ChunkRemoveEvent>();
-    chunk_remove_sink.connect<&on_chunk_remove>();
-    auto chunk_sent_sink = globals::dispatcher.sink<ChunkSentEvent>();
-    chunk_sent_sink.connect<&on_chunk_sent>();
+    globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
+    globals::dispatcher.sink<ChunkSentEvent>().connect<&on_chunk_sent>();
 }
 
 void streaming::shutdown(void)

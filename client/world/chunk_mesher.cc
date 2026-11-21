@@ -1230,16 +1230,11 @@ static void on_chunk_light(const ChunkLightUpdateEvent& event)
 
 void chunk_mesher::init(void)
 {
-    auto chunk_create_sink = globals::dispatcher.sink<ChunkCreateEvent>();
-    chunk_create_sink.connect<&on_chunk_create>();
-    auto chunk_update_sink = globals::dispatcher.sink<ChunkUpdateEvent>();
-    chunk_update_sink.connect<&on_chunk_update>();
-    auto chunk_remove_sink = globals::dispatcher.sink<ChunkRemoveEvent>();
-    chunk_remove_sink.connect<&on_chunk_remove>();
-    auto block_update_sink = globals::dispatcher.sink<BlockUpdateEvent>();
-    block_update_sink.connect<&on_block_update>();
-    auto chunk_light_update_sink = globals::dispatcher.sink<ChunkLightUpdateEvent>();
-    chunk_light_update_sink.connect<&on_chunk_light>();
+    globals::dispatcher.sink<ChunkCreateEvent>().connect<&on_chunk_create>();
+    globals::dispatcher.sink<ChunkUpdateEvent>().connect<&on_chunk_update>();
+    globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
+    globals::dispatcher.sink<BlockUpdateEvent>().connect<&on_block_update>();
+    globals::dispatcher.sink<ChunkLightUpdateEvent>().connect<&on_chunk_light>();
 }
 
 void chunk_mesher::reset(void)

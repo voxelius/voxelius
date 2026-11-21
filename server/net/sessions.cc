@@ -492,9 +492,9 @@ void sessions::init(void)
     net_strict_version_binding.set_help("Reject clients with a different protocol version");
     net_strict_version_binding.set_flags(FCVAR_ARCHIVE);
 
-    auto& s_spawn_world_binding = cvar::bind_var(s_spawn_world, "sv_spawn_world");
-    s_spawn_world_binding.set_help("World a new player spawns in; empty uses the default world");
-    s_spawn_world_binding.set_flags(FCVAR_ARCHIVE | FCVAR_ADMIN);
+    auto& sv_spawn_world_binding = cvar::bind_var(s_spawn_world, "sv_spawn_world");
+    sv_spawn_world_binding.set_help("World a new player spawns in; empty uses the default world");
+    sv_spawn_world_binding.set_flags(FCVAR_ARCHIVE | FCVAR_ADMIN);
 
     auto& who_binding = cvar::bind_cmd("who");
     who_binding.set_help("List connected sessions and their access levels");
@@ -519,12 +519,9 @@ void sessions::init(void)
     std::random_device noise;
     s_randomizer.seed(noise());
 
-    auto auth_request_sink = globals::dispatcher.sink<packet::Auth_Request>();
-    auth_request_sink.connect<&on_auth_request>();
-    auto auth_response_sink = globals::dispatcher.sink<packet::Auth_Response>();
-    auth_response_sink.connect<&on_auth_response>();
-    auto session_disconnect_sink = globals::dispatcher.sink<packet::Session_Disconnect>();
-    session_disconnect_sink.connect<&on_disconnect>();
+    globals::dispatcher.sink<packet::Auth_Request>().connect<&on_auth_request>();
+    globals::dispatcher.sink<packet::Auth_Response>().connect<&on_auth_response>();
+    globals::dispatcher.sink<packet::Session_Disconnect>().connect<&on_disconnect>();
 }
 
 void sessions::init_late(void)

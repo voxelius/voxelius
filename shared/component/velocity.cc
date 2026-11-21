@@ -20,8 +20,7 @@ std::any Component<Velocity>::prepare(lua_State*, int)
 template<>
 void Component<Velocity>::connect(entt::registry& registry)
 {
-    auto on_update = registry.on_update<Velocity>();
-    on_update.connect<&component_map::on_update<Velocity>>();
+    registry.on_update<Velocity>().connect<&component_map::on_update<Velocity>>();
 }
 
 template<>
