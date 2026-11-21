@@ -23,4 +23,11 @@ namespace utils
 entt::entity spawn_player(entt::registry& registry, const BlockPos& pos, entt::entity hint = entt::null);
 } // namespace utils
 
+namespace utils
+{
+// Moves an entity to another registry and returns the new entity. The source
+// entity is destroyed. The caller places the new entity.
+entt::entity transfer(entt::registry& from, entt::entity entity, entt::registry& to);
+} // namespace utils
+
 #endif /* FEDE636E_EA8B_465F_8397_6BDB599AA241 */

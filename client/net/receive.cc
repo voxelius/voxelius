@@ -177,6 +177,10 @@ static void on_world_timings(const packet::World_Timings& packet)
 
 static void on_world_info(const packet::World_Info& packet)
 {
+    // A new world also starts a new weather baseline; the next packet must
+    // replace the drift whole instead of sliding the old deck towards it
+    s_weather_synced = false;
+
     client_game::open_world(packet);
 
     auto& state = globals::world->weather();

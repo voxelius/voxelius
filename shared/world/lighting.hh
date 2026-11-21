@@ -21,11 +21,8 @@ namespace lighting
 {
 void init(void);
 void shutdown(void);
-} // namespace lighting
-
-namespace lighting
-{
-void fixed_update(World& world);
+void fixed_update(World* world);
+void reset(World* world);
 } // namespace lighting
 
 namespace lighting
@@ -45,14 +42,7 @@ block_light_type step_level(block_light_type level, block_light_type cost, light
 
 namespace lighting
 {
-LightChange take_change(const ChunkPos& pos);
-} // namespace lighting
-
-namespace lighting
-{
-// Drops every queued and in-flight lighting job. Used when the world is
-// purged; stale jobs must not touch the next world.
-void reset(void);
+LightChange take_change(World* world, const ChunkPos& pos);
 } // namespace lighting
 
 #endif /* EE3F4A5C_6D7E_4F80_91B2_C3D4E5F60718 */

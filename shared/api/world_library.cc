@@ -208,6 +208,25 @@ static int api_get_humidity(lua_State* L)
     return 1;
 }
 
+static int api_get_id(lua_State* L)
+{
+    auto world = WorldScope::active();
+
+    auto& identifier = world->id();
+    auto id = identifier.full_string();
+
+    lua_pushlstring(L, id.data(), id.size());
+    return 1;
+}
+
+static int api_get_seed(lua_State* L)
+{
+    auto world = WorldScope::active();
+
+    lua_pushinteger(L, static_cast<lua_Integer>(world->seed));
+    return 1;
+}
+
 static int api_schedule(lua_State* L)
 {
     auto world = WorldScope::active();
@@ -269,6 +288,12 @@ void api::open_world_library(std::shared_ptr<lua_State>& lua, const ModContext* 
 
     lua_pushcfunction(L, api_get_humidity);
     lua_setfield(L, -2, "get_humidity");
+
+    lua_pushcfunction(L, api_get_id);
+    lua_setfield(L, -2, "id");
+
+    lua_pushcfunction(L, api_get_seed);
+    lua_setfield(L, -2, "seed");
 
     lua_pushcfunction(L, api_schedule);
     lua_setfield(L, -2, "schedule");

@@ -59,7 +59,7 @@ void shared_game::fixed_update(World* world)
     ZoneScoped;
 
     if(world) {
-        lighting::fixed_update(*world);
+        lighting::fixed_update(world);
     }
 }
 

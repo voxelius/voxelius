@@ -3,10 +3,14 @@
 #include "server/net/sessions.hh"
 
 #include "core/cvar/host.hh"
+#include "core/cvar/string.hh"
+#include "core/identifier.hh"
 #include "core/utils/crc64.hh"
 #include "core/utils/epoch.hh"
 #include "core/version.hh"
 
+#include "shared/component/transform.hh"
+#include "shared/constant.hh"
 #include "shared/cvar/server.hh"
 #include "shared/entity/class_registry.hh"
 #include "shared/net/packet_auth.hh"
@@ -14,6 +18,7 @@
 #include "shared/net/packet_session.hh"
 #include "shared/net/packet_world.hh"
 #include "shared/net/protocol.hh"
+#include "shared/utils/coord.hh"
 #include "shared/utils/entity.hh"
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
@@ -28,6 +33,7 @@
 #include "server/net/host.hh"
 #include "server/net/invites.hh"
 #include "server/net/operators.hh"
+#include "server/net/receive.hh"
 #include "server/net/replication.hh"
 #include "server/net/whitelist.hh"
 #include "server/universe.hh"
@@ -40,6 +46,7 @@ static vx::hash_map<std::uint64_t, Session*> s_identity_map;
 cvar::Boolean sessions::strict_version { false };
 
 static std::mt19937_64 s_randomizer;
+static cvar::String s_spawn_world { "" };
 
 // Stars are cosmetic, but two clients of the same world
 // must get the same field, so the seed comes from the world
@@ -49,6 +56,51 @@ static std::uint32_t star_seed_of(std::uint64_t seed)
     mixed ^= mixed >> 29U;
 
     return static_cast<std::uint32_t>(mixed >> 32U);
+}
+
+static std::shared_ptr<ServerWorld> resolve_spawn_world(void)
+{
+    auto name = s_spawn_world.value();
+
+    if(name.empty()) {
+        return universe::default_world();
+    }
+
+    auto id = Identifier::from_string(name, constant::BUILTIN_NAME_SPACE);
+    auto world = universe::find(id);
+
+    if(world == nullptr) {
+        msg::log_error("sv_spawn_world names an unknown world: {}", name);
+
+        return universe::default_world();
+    }
+
+    return world;
+}
+
+static void send_world_state(Session& session)
+{
+    auto world = session.world;
+    auto world_seed = world->seed;
+
+    auto& state = world->weather();
+
+    packet::World_Info world_info {};
+    world_info.fill(world->definition());
+    world_info.seed = world_seed;
+    world_info.star_seed = star_seed_of(world_seed);
+    state.fill_info(world_info);
+    protocol::send(world_info, session.peer);
+
+    packet::World_Weather weather_state {};
+    state.fill_packet(weather_state);
+    protocol::send(weather_state, session.peer);
+
+    packet::World_Timings timings {};
+    timings.current_tick = globals::current_tick;
+    timings.daylight_tick = globals::daylight_tick;
+    timings.day = world_clock::day(globals::daylight_tick, server_vars::day_length_ticks());
+    protocol::send(timings, session.peer);
 }
 
 std::uint16_t sessions::num_players = 0;
@@ -210,7 +262,7 @@ static void on_auth_response(const packet::Auth_Response& packet)
     response.username = session->username;
     protocol::send(response, packet.peer);
 
-    session->world = universe::default_world();
+    session->world = resolve_spawn_world();
 
     auto& registry = session->world->registry();
 
@@ -219,29 +271,10 @@ static void on_auth_response(const packet::Auth_Response& packet)
     // The world shape, the seed and the weather seeds do not change, so they
     // travel once. The one-shot state packets then fix the client's time,
     // drift and cloud deck before the first periodic update
-    auto world = session->world;
-    auto world_seed = world->seed;
-    auto& state = world->weather();
+    send_world_state(*session);
 
-    packet::World_Info world_info {};
-    world_info.fill(world->definition());
-    world_info.seed = world_seed;
-    world_info.star_seed = star_seed_of(world_seed);
-    state.fill_info(world_info);
-    protocol::send(world_info, packet.peer);
-
-    packet::World_Weather weather_state {};
-    state.fill_packet(weather_state);
-    protocol::send(weather_state, packet.peer);
-
-    packet::World_Timings timings {};
-    timings.current_tick = globals::current_tick;
-    timings.daylight_tick = globals::daylight_tick;
-    timings.day = world_clock::day(globals::daylight_tick, server_vars::day_length_ticks());
-    protocol::send(timings, packet.peer);
-
-    auto bpos = BlockPos::Zero(); // TODO: spawn positions?
-    auto player = utils::spawn_player(session->world->registry(), bpos);
+    auto bpos = session->world->definition().spawn;
+    auto player = utils::spawn_player(registry, bpos);
     session->player = player;
 
     SessionRef ref {};
@@ -459,6 +492,10 @@ void sessions::init(void)
     net_strict_version_binding.set_help("Reject clients with a different protocol version");
     net_strict_version_binding.set_flags(FCVAR_ARCHIVE);
 
+    auto& s_spawn_world_binding = cvar::bind_var(s_spawn_world, "sv_spawn_world");
+    s_spawn_world_binding.set_help("World a new player spawns in; empty uses the default world");
+    s_spawn_world_binding.set_flags(FCVAR_ARCHIVE | FCVAR_ADMIN);
+
     auto& who_binding = cvar::bind_cmd("who");
     who_binding.set_help("List connected sessions and their access levels");
     who_binding.set_flags(FCVAR_RECALL | FCVAR_ADMIN);
@@ -656,4 +693,106 @@ void sessions::destroy(Session* session, std::optional<std::uint32_t> reason)
 
         num_players -= 1;
     }
+}
+
+bool sessions::transfer(Session* session, const std::shared_ptr<ServerWorld>& world, std::optional<BlockPos> position)
+{
+    if(session == nullptr || world == nullptr) {
+        return false;
+    }
+
+    if(session->world.get() == world.get()) {
+        auto& registry = world->registry();
+
+        if(!registry.valid(session->player)) {
+            return false;
+        }
+
+        if(!position.has_value() || !registry.all_of<Transform>(session->player)) {
+            return true;
+        }
+
+        registry.patch<Transform>(session->player, [&](Transform& transform) {
+            transform.chunk = utils::to_chunk(position.value());
+            transform.local = utils::to_local(position.value()).cast<float>();
+        });
+
+        return true;
+    }
+
+    if(session->world == nullptr) {
+        return false;
+    }
+
+    auto old_world = session->world;
+    auto old_entity = session->player;
+    auto& old_registry = old_world->registry();
+
+    if(!old_registry.valid(old_entity)) {
+        return false;
+    }
+
+    auto destination = world->definition().spawn;
+
+    if(auto transform = old_registry.try_get<Transform>(old_entity)) {
+        destination = utils::to_block(transform->chunk, transform->local.cast<LocalPos::value_type>());
+    }
+
+    if(position.has_value()) {
+        destination = position.value();
+    }
+
+    // Switch the session before the transfer: the spawn must reach the target
+    // world's sessions, and the old entity's remove must not reach this one.
+    // A remove for the player under its old ID makes the client disconnect.
+    auto previous_view_box = session->view_box;
+    auto previous_known = std::move(session->known_entities);
+
+    session->world = world;
+    session->player = entt::null;
+
+    session->view_box = {};
+    session->known_entities.clear();
+    session->stream_view_box = ChunkAlignedBox { ChunkPos(1, 1, 1), ChunkPos(0, 0, 0) };
+    session->stream_player_chunk = ChunkPos::Zero();
+    session->stream_sent_chunks.clear();
+    session->stream_wanted_chunks.clear();
+    session->stream_cursor_chunks = 0;
+    session->stream_budget_chunks = 0;
+    session->stream_rebuild = true;
+
+    auto& registry = world->registry();
+    auto entity = utils::transfer(old_registry, old_entity, registry);
+
+    if(entity == entt::null) {
+        session->world = old_world;
+        session->player = old_entity;
+        session->view_box = previous_view_box;
+        session->known_entities = std::move(previous_known);
+
+        return false;
+    }
+
+    if(registry.all_of<Transform>(entity)) {
+        registry.patch<Transform>(entity, [&](Transform& transform) {
+            transform.chunk = utils::to_chunk(destination);
+            transform.local = utils::to_local(destination).cast<float>();
+        });
+    }
+
+    session->player = entity;
+
+    SessionRef ref {};
+    ref.ptr = session;
+    registry.emplace<SessionRef>(entity, std::move(ref));
+
+    receive::forget_peer(session->peer);
+
+    send_world_state(*session);
+
+    packet::Entity_Client client {};
+    client.entity = entity;
+    protocol::send(client, session->peer);
+
+    return true;
 }

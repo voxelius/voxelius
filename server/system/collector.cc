@@ -6,10 +6,8 @@
 #include "shared/entity/class.hh"
 #include "shared/entity/component_map.hh"
 #include "shared/net/packet_entity.hh"
-#include "shared/net/protocol.hh"
 #include "shared/world/world.hh"
 
-#include "server/globals.hh"
 #include "server/net/interest.hh"
 #include "server/net/sessions.hh"
 #include "server/universe.hh"
@@ -17,6 +15,8 @@
 
 static void on_create_entity(entt::registry& registry, entt::entity entity)
 {
+    auto world = World::of(registry);
+
     auto& component = registry.get<EntityClass>(entity);
 
     packet::Entity_Spawn packet {};
@@ -24,32 +24,36 @@ static void on_create_entity(entt::registry& registry, entt::entity entity)
     packet.class_id = component.id;
 
     if(auto transform = registry.try_get<Transform>(entity)) {
-        interest::broadcast(packet, transform->chunk);
-        interest::mark_known(entity, transform->chunk);
+        interest::broadcast(world, packet, transform->chunk);
+        interest::mark_known(world, entity, transform->chunk);
     }
     else {
-        protocol::broadcast(packet, globals::host);
-        interest::mark_known(entity);
+        interest::broadcast(world, packet);
+        interest::mark_known(world, entity);
     }
 }
 
 static void on_destroy_entity(entt::registry& registry, entt::entity entity)
 {
+    auto world = World::of(registry);
+
     packet::Entity_Remove packet {};
     packet.entity = entity;
 
     if(auto transform = registry.try_get<Transform>(entity)) {
-        interest::broadcast(packet, transform->chunk);
+        interest::broadcast(world, packet, transform->chunk);
     }
     else {
-        protocol::broadcast(packet, globals::host);
+        interest::broadcast(world, packet);
     }
 
-    interest::forget(entity);
+    interest::forget(world, entity);
 }
 
 static void process_entity(entt::registry& registry, entt::entity entity, DirtyMarker& dirty)
 {
+    auto world = World::of(registry);
+
     static packet::Entity_Patch packet;
 
     packet.entity = entity;
@@ -72,13 +76,13 @@ static void process_entity(entt::registry& registry, entt::entity entity, DirtyM
         auto except = registry.all_of<SessionRef>(entity) ? registry.get<SessionRef>(entity).ptr->peer : nullptr;
 
         if(auto transform = registry.try_get<Transform>(entity)) {
-            interest::broadcast(packet, transform->chunk, except);
+            interest::broadcast(world, packet, transform->chunk, except);
         }
         else if(except) {
-            protocol::broadcast(packet, globals::host, except);
+            interest::broadcast(world, packet, except);
         }
         else {
-            protocol::broadcast(packet, globals::host);
+            interest::broadcast(world, packet);
         }
 
         std::ranges::fill(dirty.markers, false);

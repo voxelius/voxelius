@@ -199,6 +199,22 @@ Retrieves the effective relative humidity of the biome at a block.
 
 Weather and other world-wide effects can add a bias on top of the base humidity.
 
+### Function: `world.id() -> string`
+
+Retrieves the identifier of the world the callback runs in. Callbacks from every world share one Lua state, so a mod that serves more than one world keeps its state per world keyed by this value.
+
+#### Return value
+
+- The world identifier, for example `builtin:overworld`
+
+### Function: `world.seed() -> integer`
+
+Retrieves the world seed.
+
+#### Return value
+
+- The full 64-bit seed. Values above `2^63 - 1` read as negative Lua integers.
+
 ### Function: `world.schedule(bx, by, bz, dt)`
 
 Schedules an `on_tick` call for a block in `dt` ticks. The tick source is `blocks.TICK_SCRIPTED`.

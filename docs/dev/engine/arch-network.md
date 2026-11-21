@@ -34,6 +34,10 @@ If the client sends a login request instead of a status request, the server star
 |5|Server|Client|If the signature matches, the server admits the client with a packet holding its assigned username|
 |6|N/A|N/A|Entity exchange and game packets start here|
 
+##### Spawn world
+
+The server admits the client into the world named by `sv_spawn_world`. An empty value selects the default world. The server sends the world shape, seeds and weather in the admission packets, so the client needs no world name of its own.
+
 ##### Identity
 
 The client proves its identity with an Ed25519 keypair. The server challenges the client with a random nonce, and the client signs it.
@@ -113,7 +117,11 @@ The client sends `RequestChunk` every fixed tick with the chunk-aligned view it 
 
 ##### World info
 
-The server sends `World_Info` once, right after admission. It carries the world's id, its vertical bounds and spawn point, its optional visual groups, the weather types it allows, the universe seed, the seed the client builds its star field from and the weather grid seeds and scales. The client builds its one world from this packet instead of a local world definition. These values never change for a world, so the periodic packets do not repeat them. The length of a day is not here: it is the replicated server variable `sv_day_length`, so a change reaches every connected client without another packet.
+The server sends `World_Info` at admission and again when a session moves to another world. It carries the world's id, its vertical bounds and spawn point, its optional visual groups, the weather types it allows, the universe seed, the seed the client builds its star field from and the weather grid seeds and scales. The client builds its one world from this packet instead of a local world definition. These values never change for a world, so the periodic packets do not repeat them. The length of a day is not here: it is the replicated server variable `sv_day_length`, so a change reaches every connected client without another packet.
+
+##### World switch
+
+A session moves to another world only through `tpe`, which runs on the server. The server moves the player entity into the target registry, then repeats the admission state: `World_Info`, `World_Weather`, `World_Timings` and `Entity_Client` for the new entity. The client purges its world on `World_Info`, drops the player and clears the weather baseline, then streams the new world from its next `World_Request`. Entity, light and block packets carry the world they belong to and never reach a session in another world.
 
 ##### Time
 
@@ -121,7 +129,7 @@ The server owns the world clock. It increments `current_tick` and `daylight_tick
 
 ##### Weather
 
-Weather is a world-wide state rather than a stream of entities. The server drifts two noise grids (one picks the type, one the local strength) and sends `World_Weather` to every admitted client once a second. The packet carries three drift or wind pairs; the seeds and scales arrived once in `World_Info`, so there is nothing constant to repeat. Both sides also advance the drift themselves every frame, so the packet only anchors the field: the client keeps its own continuous drift and snaps to the packet only when the two disagree by more than a chunk, which is what a forced front looks like. The replicated `gr_weather_cycle` gamerule freezes that local advance on both sides. The first weather packet of a connection is special only on the client: the client keeps a local flag and takes that drift whole, then rebuilds the cloud deck instead of sliding the old one towards it. The type definitions themselves travel as part of the mod content and are covered by the login checksum.
+Weather is a world-wide state rather than a stream of entities. The server drifts two noise grids (one picks the type, one the local strength) and sends `World_Weather` to each admitted client once a second, using the weather of that session's world. The packet carries three drift or wind pairs; the seeds and scales arrived once in `World_Info`, so there is nothing constant to repeat. Both sides also advance the drift themselves every frame, so the packet only anchors the field: the client keeps its own continuous drift and snaps to the packet only when the two disagree by more than a chunk, which is what a forced front looks like. The replicated `gr_weather_cycle` gamerule freezes that local advance on both sides. The first weather packet of a connection is special only on the client: the client keeps a local flag and takes that drift whole, then rebuilds the cloud deck instead of sliding the old one towards it. A world switch clears that flag, so the first packet after the switch is a baseline too. The type definitions themselves travel as part of the mod content and are covered by the login checksum.
 
 ##### Block and entity actions
 

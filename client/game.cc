@@ -51,7 +51,9 @@ void client_game::open_world(const packet::World_Info& packet)
 
     s_world->purge();
 
-    lighting::reset();
+    globals::player = entt::null;
+
+    lighting::reset(s_world.get());
 
     s_world->set_definition(std::make_shared<WorldDefinition>(std::move(definition)));
     s_world->seed = packet.seed;

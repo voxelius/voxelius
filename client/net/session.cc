@@ -94,7 +94,7 @@ static void handle_disconnect(std::uint32_t reason)
     fog::reset();
     skybox::reset();
     cloud_renderer::reset();
-    lighting::reset();
+    lighting::reset(globals::world);
 
     video::update_window_title();
 }

@@ -44,6 +44,11 @@ struct ChunkWaitKey final {
     ChunkPos pos;
 };
 
+struct PendingLight final {
+    World* world;
+    packet::World_Light::Entry entry;
+};
+
 template<>
 struct std::hash<ChunkWaitKey> final {
     std::size_t operator()(const ChunkWaitKey& key) const
@@ -55,8 +60,8 @@ struct std::hash<ChunkWaitKey> final {
 };
 
 static vx::hash_map<ChunkWaitKey, std::vector<ChunkRequest>> s_waiting_peers;
-static vx::hash_set<ChunkPos> s_sent_chunks;
-static std::vector<packet::World_Light::Entry> s_pending_light;
+static vx::hash_map<const World*, vx::hash_set<ChunkPos>> s_sent_chunks;
+static std::vector<PendingLight> s_pending_light;
 
 constexpr static std::size_t CHUNK_SEND_BUDGET = 256;
 
@@ -133,7 +138,7 @@ static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos)
     blocks_packet.light_valid = chunk->has_light();
     protocol::send(blocks_packet, peer);
 
-    s_sent_chunks.insert(cpos);
+    s_sent_chunks[world.get()].insert(cpos);
 
     globals::dispatcher.trigger(ChunkSentEvent(peer, cpos));
 }
@@ -186,22 +191,27 @@ static void on_chunk_light(const ChunkLightUpdateEvent& event)
 {
     // Drain the change set even when nothing is sent: a stale entry must not
     // carry over into the next tick.
-    auto change = lighting::take_change(event.pos());
+    auto world = event.world();
+    auto change = lighting::take_change(world, event.pos());
 
-    if(0 == s_sent_chunks.count(event.pos())) {
+    auto& sent = s_sent_chunks[world];
+
+    if(0 == sent.count(event.pos())) {
         // No client knows this chunk yet; it will be sent with fresh
         // light in World_Blocks.
         return;
     }
 
-    auto world = event.world();
     auto chunk = world->find_chunk(event.pos());
 
     if(chunk == nullptr || !chunk->has_light()) {
         return;
     }
 
-    packet::World_Light::Entry entry;
+    PendingLight pending {};
+    pending.world = world;
+
+    auto& entry = pending.entry;
 
     entry.cpos = event.pos();
 
@@ -225,12 +235,16 @@ static void on_chunk_light(const ChunkLightUpdateEvent& event)
         }
     }
 
-    s_pending_light.push_back(std::move(entry));
+    s_pending_light.push_back(std::move(pending));
 }
 
 static void on_chunk_remove(const ChunkRemoveEvent& event)
 {
-    s_sent_chunks.erase(event.pos());
+    auto it = s_sent_chunks.find(event.world());
+
+    if(it != s_sent_chunks.cend()) {
+        it->second.erase(event.pos());
+    }
 }
 
 static void on_player_attack_e(const packet::Player_AttackE& packet)
@@ -469,19 +483,25 @@ static void flush_light_updates(void)
     }
 
     for(auto& session : sessions::all()) {
-        if(session.peer == nullptr) {
+        if(session.peer == nullptr || session.world == nullptr) {
             continue;
         }
+
+        auto world = session.world.get();
 
         packet::World_Light packet;
         std::size_t size = 0;
 
-        for(const auto& entry : s_pending_light) {
-            if(!session.view_box.contains(entry.cpos)) {
+        for(const auto& pending : s_pending_light) {
+            if(pending.world != world) {
                 continue;
             }
 
-            auto entry_size = light_entry_size(entry);
+            if(!session.view_box.contains(pending.entry.cpos)) {
+                continue;
+            }
+
+            auto entry_size = light_entry_size(pending.entry);
 
             if(size > 0 && size + entry_size > LIGHT_BATCH_BYTES) {
                 protocol::send(packet, session.peer);
@@ -490,7 +510,7 @@ static void flush_light_updates(void)
             }
 
             size += entry_size;
-            packet.entries.push_back(entry);
+            packet.entries.push_back(pending.entry);
         }
 
         if(!packet.entries.empty()) {

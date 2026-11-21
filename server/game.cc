@@ -2,20 +2,27 @@
 
 #include "server/game.hh"
 
+#include <charconv>
+#include <system_error>
+
 #include "core/cvar/context.hh"
 #include "core/cvar/host.hh"
 #include "core/identifier.hh"
+#include "core/msg/log.hh"
 
 #include "shared/component/transform.hh"
 #include "shared/component/velocity.hh"
+#include "shared/constant.hh"
 #include "shared/cvar/gamerules.hh"
 #include "shared/cvar/server.hh"
 #include "shared/globals.hh"
 #include "shared/system/pmove.hh"
+#include "shared/utils/coord.hh"
 #include "shared/utils/entity.hh"
 #include "shared/world/lighting.hh"
 #include "shared/world/world.hh"
 
+#include "server/net/sessions.hh"
 #include "server/system/pmove_validator.hh"
 #include "server/universe.hh"
 #include "server/world/time_sim.hh"
@@ -25,6 +32,139 @@
 static cvar::status cmd_stop(const cvar::Context&, std::span<const std::string_view>)
 {
     std::raise(SIGINT);
+
+    return cvar::status::OK;
+}
+
+static bool parse_entity(std::string_view text, entt::entity& entity)
+{
+    std::uint32_t value = 0;
+    auto result = std::from_chars(text.data(), text.data() + text.size(), value);
+
+    if(result.ec != std::errc() || result.ptr != text.data() + text.size()) {
+        return false;
+    }
+
+    entity = static_cast<entt::entity>(value);
+    return true;
+}
+
+static bool parse_position(std::span<const std::string_view> args, BlockPos& position)
+{
+    BlockPos::value_type values[3] {};
+
+    for(std::size_t i = 0; i < 3; ++i) {
+        auto text = args[2 + i];
+        auto result = std::from_chars(text.data(), text.data() + text.size(), values[i]);
+
+        if(result.ec != std::errc() || result.ptr != text.data() + text.size()) {
+            return false;
+        }
+    }
+
+    position = BlockPos(values[0], values[1], values[2]);
+    return true;
+}
+
+static cvar::status cmd_tpe(const cvar::Context& ctx, std::span<const std::string_view> args)
+{
+    if(args.size() != 2 && args.size() != 5) {
+        msg::log_error("usage: tpe <entity> <world> [X Y Z]");
+        return cvar::status::ARGUMENT;
+    }
+
+    entt::entity entity = entt::null;
+
+    if(!parse_entity(args[0], entity)) {
+        msg::log_error("tpe: invalid entity id: {}", args[0]);
+        return cvar::status::ARGUMENT;
+    }
+
+    auto world_id = Identifier::from_string(args[1], constant::BUILTIN_NAME_SPACE);
+    auto world = universe::find(world_id);
+
+    if(world == nullptr) {
+        msg::log_error("tpe: unknown world: {}", args[1]);
+        return cvar::status::ARGUMENT;
+    }
+
+    std::optional<BlockPos> position;
+
+    if(5 == args.size()) {
+        BlockPos parsed {};
+
+        if(!parse_position(args, parsed)) {
+            msg::log_error("tpe: invalid position");
+            return cvar::status::ARGUMENT;
+        }
+
+        position = parsed;
+    }
+
+    auto source = std::shared_ptr<ServerWorld>();
+
+    if(ctx.client_id) {
+        auto session = sessions::find(*ctx.client_id);
+
+        if(session && session->world && session->world->registry().valid(entity)) {
+            source = std::static_pointer_cast<ServerWorld>(session->world);
+        }
+    }
+
+    if(source == nullptr) {
+        for(const auto& candidate : universe::worlds()) {
+            if(candidate->registry().valid(entity)) {
+                source = candidate;
+                break;
+            }
+        }
+    }
+
+    if(source == nullptr) {
+        msg::log_error("tpe: entity {} does not exist", args[0]);
+        return cvar::status::ARGUMENT;
+    }
+
+    auto& registry = source->registry();
+    auto destination = world->definition().spawn;
+
+    if(auto transform = registry.try_get<Transform>(entity)) {
+        destination = utils::to_block(transform->chunk, transform->local.cast<LocalPos::value_type>());
+    }
+
+    if(position.has_value()) {
+        destination = position.value();
+    }
+
+    if(registry.all_of<SessionRef>(entity)) {
+        auto session = registry.get<SessionRef>(entity).ptr;
+
+        if(!sessions::transfer(session, world, position)) {
+            msg::log_error("tpe: failed to transfer the session into {}", args[1]);
+            return cvar::status::UNKNOWN;
+        }
+
+        return cvar::status::OK;
+    }
+
+    if(!registry.all_of<Transform>(entity)) {
+        msg::log_warning("tpe: entity {} has no transform; the position is ignored", args[0]);
+    }
+
+    auto& target_registry = world->registry();
+    auto result = utils::transfer(registry, entity, target_registry);
+
+    if(result == entt::null) {
+        msg::log_error("tpe: failed to transfer entity {}", args[0]);
+        return cvar::status::UNKNOWN;
+    }
+
+    if(target_registry.all_of<Transform>(result)) {
+        target_registry.patch<Transform>(result, [&](Transform& transform) {
+            transform.chunk = utils::to_chunk(destination);
+            transform.local = utils::to_local(destination).cast<float>();
+        });
+    }
 
     return cvar::status::OK;
 }
@@ -43,6 +183,11 @@ void server_game::init(void)
     stop_binding.set_help("Stop the server");
     stop_binding.set_flags(FCVAR_RECALL | FCVAR_ADMIN);
     stop_binding.connect<&cmd_stop>();
+
+    auto& tpe_binding = cvar::bind_cmd("tpe");
+    tpe_binding.set_help("Teleport an entity or a player to another world");
+    tpe_binding.set_flags(FCVAR_RECALL | FCVAR_ADMIN);
+    tpe_binding.connect<&cmd_tpe>();
 }
 
 void server_game::init_late(void)

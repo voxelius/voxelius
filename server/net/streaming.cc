@@ -82,8 +82,10 @@ static void rebuild(Session& session, const ChunkPos& player)
 static void on_chunk_remove(const ChunkRemoveEvent& event)
 {
     for(auto& session : sessions::all()) {
-        if(session.stream_sent_chunks.erase(event.pos())) {
-            session.stream_rebuild = true;
+        if(session.world.get() == event.world()) {
+            if(session.stream_sent_chunks.erase(event.pos())) {
+                session.stream_rebuild = true;
+            }
         }
     }
 }

@@ -2,6 +2,7 @@
 
 #include "shared/utils/entity.hh"
 
+#include "core/buffer.hh"
 #include "core/exception.hh"
 
 #include "shared/component/head.hh"
@@ -175,4 +176,46 @@ entt::entity utils::spawn_player(entt::registry& registry, const BlockPos& pos, 
     }
 
     return entity;
+}
+
+entt::entity utils::transfer(entt::registry& from, entt::entity entity, entt::registry& to)
+{
+    auto class_component = from.try_get<EntityClass>(entity);
+
+    if(class_component == nullptr) {
+        return entt::null;
+    }
+
+    struct SnapshotEntry final {
+        component_id_type id;
+        std::vector<std::byte> data;
+    };
+
+    std::vector<SnapshotEntry> snapshot;
+
+    class_registry::for_each(class_component->id, [&](component_id_type id) {
+        WriteBuffer buffer;
+        component_map::encode_net(from, id, entity, buffer);
+
+        SnapshotEntry entry {};
+        entry.id = id;
+        entry.data = buffer.take();
+
+        snapshot.emplace_back(std::move(entry));
+    });
+
+    auto result = utils::spawn(to, class_component->id);
+
+    if(!to.valid(result)) {
+        return entt::null;
+    }
+
+    for(auto& entry : snapshot) {
+        ReadBuffer buffer(std::span<const std::byte>(entry.data));
+        component_map::decode_net(to, entry.id, result, buffer);
+    }
+
+    from.destroy(entity);
+
+    return result;
 }

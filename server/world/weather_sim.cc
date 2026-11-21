@@ -28,17 +28,15 @@ constexpr static std::uint64_t CONTENT_TICK_INTERVAL = constant::FIXED_TICKRATE;
 constexpr static float TYPE_CELL_SCALE = 1024.0f;
 constexpr static float DETAIL_CELL_SCALE = 512.0f;
 
-static std::mt19937_64 s_random;
-
-static float random_float(void)
+static float random_float(std::mt19937_64& random)
 {
-    auto value = s_random();
+    auto value = random();
     return static_cast<float>(value >> 11) / static_cast<float>(1ULL << 53);
 }
 
-static Eigen::Vector2f random_direction(void)
+static Eigen::Vector2f random_direction(std::mt19937_64& random)
 {
-    auto angle = random_float() * std::numbers::pi_v<float> * 2.0f;
+    auto angle = random_float(random) * std::numbers::pi_v<float> * 2.0f;
 
     return Eigen::Vector2f(std::cos(angle), std::sin(angle));
 }
@@ -125,7 +123,7 @@ static void log_registered_types(void)
     msg::log_error("weather_force: registered types: {}", names);
 }
 
-static cvar::status cmd_weather_force(const cvar::Context&, std::span<const std::string_view> args)
+static cvar::status cmd_weather_force(const cvar::Context& ctx, std::span<const std::string_view> args)
 {
     if(args.empty()) {
         msg::log_error("usage: weather_force <type>");
@@ -140,11 +138,19 @@ static cvar::status cmd_weather_force(const cvar::Context&, std::span<const std:
         return cvar::status::ARGUMENT;
     }
 
-    auto& default_world = universe::default_world();
+    auto world = universe::default_world();
 
-    auto center = player_center(default_world.get());
-    auto& definition = default_world->definition();
-    auto& state = default_world->weather();
+    if(ctx.client_id) {
+        auto session = sessions::find(*ctx.client_id);
+
+        if(session && session->world) {
+            world = std::static_pointer_cast<ServerWorld>(session->world);
+        }
+    }
+
+    auto center = player_center(world.get());
+    auto& definition = world->definition();
+    auto& state = world->weather();
     auto& allowed = definition.weather;
 
     if(!state.force_at(allowed, type, center.x(), center.y())) {
@@ -177,7 +183,7 @@ static void strike(ServerWorld* world, const WeatherTypeDefinition& def)
 
         players += 1;
 
-        if(0 == (s_random() % static_cast<std::uint64_t>(players))) {
+        if(0 == (world->weather_random() % static_cast<std::uint64_t>(players))) {
             target = &session;
         }
     }
@@ -189,8 +195,8 @@ static void strike(ServerWorld* world, const WeatherTypeDefinition& def)
     const auto& transform = registry.get<Transform>(target->player);
     auto origin = utils::to_fvec(transform.chunk) + transform.local;
 
-    auto angle = random_float() * std::numbers::pi_v<float> * 2.0f;
-    auto distance = random_float() * def.strike_radius;
+    auto angle = random_float(world->weather_random) * std::numbers::pi_v<float> * 2.0f;
+    auto distance = random_float(world->weather_random) * def.strike_radius;
     auto x = static_cast<BlockPos::value_type>(std::floor(origin.x() + std::cos(angle) * distance));
     auto z = static_cast<BlockPos::value_type>(std::floor(origin.z() + std::sin(angle) * distance));
 
@@ -277,17 +283,17 @@ static T load_value(World* world, std::string_view field, const T& fallback)
 // A world keeps its fronts in world.conf next to the seed, so a restart
 // picks the sky up where it was left instead of rolling a new one. A world
 // that has never been saved draws its seeds and its wind from the universe seed
-static void load_state(World* world)
+static void load_state(ServerWorld* world)
 {
     auto& state = world->weather();
 
     state.types.drift = load_value<Eigen::Vector2f>(world, "types_drift", Eigen::Vector2f::Zero());
     state.types.scale = load_value<float>(world, "types_scale", TYPE_CELL_SCALE);
-    state.types.seed = load_value<std::uint32_t>(world, "types_seed", static_cast<std::uint32_t>(s_random()));
+    state.types.seed = load_value<std::uint32_t>(world, "types_seed", static_cast<std::uint32_t>(world->weather_random()));
 
     state.detail.drift = load_value<Eigen::Vector2f>(world, "detail_drift", Eigen::Vector2f::Zero());
     state.detail.scale = load_value<float>(world, "detail_scale", DETAIL_CELL_SCALE);
-    state.detail.seed = load_value<std::uint32_t>(world, "detail_seed", static_cast<std::uint32_t>(s_random()));
+    state.detail.seed = load_value<std::uint32_t>(world, "detail_seed", static_cast<std::uint32_t>(world->weather_random()));
 
     auto direction = load_value<Eigen::Vector2f>(world, "wind_direction", Eigen::Vector2f::Zero());
 
@@ -295,7 +301,7 @@ static void load_state(World* world)
         state.wind_direction = direction.normalized();
     }
     else {
-        state.wind_direction = random_direction();
+        state.wind_direction = random_direction(world->weather_random);
     }
 
     state.wind = Eigen::Vector2f::Zero();
@@ -325,7 +331,7 @@ void weather_sim::init(void)
     force_binding.connect<&cmd_weather_force>();
 
     for(const auto& world : universe::worlds()) {
-        s_random.seed(world->seed ^ UINT64_C(0x9E3779B97F4A7C15));
+        world->weather_random.seed(world->seed ^ UINT64_C(0x9E3779B97F4A7C15));
 
         auto& state = world->weather();
         state.reset();
