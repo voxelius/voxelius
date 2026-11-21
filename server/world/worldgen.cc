@@ -53,7 +53,7 @@ void WorldgenTask::process(void)
         return;
     }
 
-    if(!generator->generate(world.get(), m_pos, m_blocks, *biomes)) {
+    if(!generator->generate_blocks(world.get(), m_pos, m_blocks, *biomes)) {
         status.store(task_status::CANCELLED, std::memory_order_release);
         return;
     }

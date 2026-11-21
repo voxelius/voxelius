@@ -112,7 +112,26 @@ biome_id_type BiomeSelector::select(std::span<const float> sample) const
     }
 
     if(strategy == BIOME_SELECTION_GRID) {
-        return BIOME_ID_NULL; // unreachable: finalize() rejects grid
+        if(grid_size == 0 || sample.size() < 2 || lookup.size() != grid_size * grid_size) {
+            return BIOME_ID_NULL;
+        }
+
+        auto quantize = [&](float value) {
+            if(std::isnan(value) || value <= 0.0f) {
+                return std::size_t { 0 };
+            }
+
+            if(value >= 1.0f) {
+                return grid_size - 1;
+            }
+
+            return std::min(static_cast<std::size_t>(value * static_cast<float>(grid_size)), grid_size - 1);
+        };
+
+        auto x = quantize(sample[0]);
+        auto z = quantize(sample[1]);
+
+        return lookup[z * grid_size + x];
     }
 
     auto best_id = BIOME_ID_NULL;
@@ -144,7 +163,13 @@ biome_id_type BiomeSelector::select(std::span<const float> sample) const
 
 void BiomeSelector::finalize(void)
 {
-    vx::throw_if(strategy == BIOME_SELECTION_GRID, "grid biome selection is not implemented");
+    if(strategy == BIOME_SELECTION_GRID) {
+        vx::throw_if_not(axes.size() == 2, "grid biome selector: exactly two axes are required");
+        vx::throw_if_not(grid_size > 0 && grid_size <= BIOME_SELECTOR_MAX_GRID_SIZE, "grid biome selector: invalid grid_size");
+        vx::throw_if_not(lookup_names.size() == grid_size * grid_size, "grid biome selector: lookup size does not match grid_size");
+        vx::throw_if_not(lookup.size() == lookup_names.size(), "grid biome selector: lookup is not resolved");
+        return;
+    }
 
     if(strategy != BIOME_SELECTION_NEAREST) {
         return;

@@ -114,6 +114,17 @@ void world_registry::resolve(void)
             selector.constant_biome = biome;
         }
 
+        if(selector.strategy == BIOME_SELECTION_GRID) {
+            selector.lookup.clear();
+            selector.lookup.reserve(selector.lookup_names.size());
+
+            for(const auto& name : selector.lookup_names) {
+                auto biome = biome_registry::find(name);
+                vx::throw_if_not_fmt(biome, "world {}: unknown biome {}", full_id, name.full_string());
+                selector.lookup.push_back(biome);
+            }
+        }
+
         selector.finalize();
 
         definition->weather.clear();

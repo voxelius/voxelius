@@ -126,8 +126,8 @@ void universe::init(void)
         world->load_config();
         world->set_generator(generator);
 
-        auto state = generator->attach(world.get());
-        vx::throw_if_fmt(state == nullptr, "world {}: generator failed to attach", definition->id.full_string());
+        auto state = std::move(definition->generator_state);
+        vx::throw_if_fmt(state == nullptr, "world {}: generator state is missing", definition->id.full_string());
 
         world->init_generation(std::move(state));
 

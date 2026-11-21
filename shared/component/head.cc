@@ -3,6 +3,7 @@
 #include "shared/component/head.hh"
 
 #include "core/buffer.hh"
+#include "core/utils/crc64.hh"
 
 #include "shared/entity/component_map.hh"
 #include "shared/utils/lua.hh"
@@ -18,6 +19,16 @@ std::any Component<Head>::prepare(lua_State* L, int config_idx)
 
     auto offset_value = offset.value();
     return Eigen::Vector3f(offset_value.cast<float>());
+}
+
+template<>
+void Component<Head>::hash_config(std::uint64_t& hash, const std::any& config)
+{
+    auto value = std::any_cast<Eigen::Vector3f>(&config);
+
+    if(value) {
+        hash = utils::crc64(value, sizeof(*value), hash);
+    }
 }
 
 template<>

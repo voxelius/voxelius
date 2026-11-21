@@ -2,8 +2,6 @@
 
 #include "server/world/generator_superflat.hh"
 
-#include "core/exception.hh"
-
 #include "shared/constant.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/biome_registry.hh"
@@ -12,31 +10,87 @@
 #include "shared/world/world.hh"
 
 #include "server/world/generator_map.hh"
+#include "server/world/generator_settings.hh"
 #include "server/world/world.hh"
 
-constexpr static BlockPos::value_type SURFACE_Y = 0;
-constexpr static BlockPos::value_type FILLER_DEPTH = 3;
+constexpr static std::array<const char*, 2> ALLOWED_KEYS {
+    "surface_y",
+    "filler_depth",
+};
+
+struct SuperflatSettings final {
+    BlockPos::value_type surface_y { 0 };
+    BlockPos::value_type filler_depth { 3 };
+};
 
 struct SuperflatState final {
-    // empty
+    SuperflatSettings settings;
 };
 
 template<>
-std::shared_ptr<void> Generator<Superflat>::attach(ServerWorld* world)
+std::shared_ptr<void> Generator<Superflat>::create_state(lua_State* L, int settings_idx, const WorldDefinition& definition)
 {
-    auto& definition = world->definition();
-    auto& selector = definition.biome_selector;
+    SuperflatSettings settings;
 
-    vx::throw_if(selector.strategy != BIOME_SELECTION_CONSTANT, "superflat requires a constant biome selector");
+    if(settings_idx) {
+        if(!generator_settings::check_keys(L, settings_idx, "superflat", ALLOWED_KEYS)) {
+            return nullptr;
+        }
 
-    return std::make_shared<SuperflatState>();
+        auto surface_y = static_cast<lua_Integer>(settings.surface_y);
+
+        if(!generator_settings::read_integer(L, settings_idx, "superflat", "surface_y", surface_y)) {
+            return nullptr;
+        }
+
+        settings.surface_y = static_cast<BlockPos::value_type>(surface_y);
+
+        auto filler_depth = static_cast<lua_Integer>(settings.filler_depth);
+
+        if(!generator_settings::read_integer(L, settings_idx, "superflat", "filler_depth", filler_depth)) {
+            return nullptr;
+        }
+
+        settings.filler_depth = static_cast<BlockPos::value_type>(filler_depth);
+    }
+
+    if(settings.surface_y < definition.min_y || settings.surface_y > definition.max_y) {
+        lua_pushliteral(L, "superflat: surface_y is outside the world height");
+        return nullptr;
+    }
+
+    if(settings.filler_depth < 0) {
+        lua_pushliteral(L, "superflat: filler_depth must not be negative");
+        return nullptr;
+    }
+
+    auto headroom = static_cast<std::uint64_t>(settings.surface_y) - static_cast<std::uint64_t>(definition.min_y);
+
+    if(static_cast<std::uint64_t>(settings.filler_depth) > headroom) {
+        lua_pushliteral(L, "superflat: filler_depth reaches below the world");
+        return nullptr;
+    }
+
+    if(definition.biome_selector.strategy != BIOME_SELECTION_CONSTANT) {
+        lua_pushliteral(L, "superflat: biome selector must be constant");
+        return nullptr;
+    }
+
+    auto state = std::make_shared<SuperflatState>();
+    state->settings = settings;
+
+    return state;
 }
 
 template<>
-ColumnSlice Generator<Superflat>::probe(ServerWorld*, const ChunkPosXZ&)
+ColumnSlice Generator<Superflat>::sample_heightmap(ServerWorld* world, const ChunkPosXZ&)
 {
+    auto state = static_cast<SuperflatState*>(world->generator_state());
+
+    assert(state);
+
     Column column {};
-    column.surface_y = SURFACE_Y;
+    column.surface_y = state->settings.surface_y;
 
     ColumnSlice slice;
     slice.fill(column);
@@ -45,7 +99,7 @@ ColumnSlice Generator<Superflat>::probe(ServerWorld*, const ChunkPosXZ&)
 }
 
 template<>
-void Generator<Superflat>::fill_biomes(ServerWorld* world, const ChunkPosXZ&, BiomeSlice& out)
+void Generator<Superflat>::generate_biomes(ServerWorld* world, const ChunkPosXZ&, BiomeSlice& out)
 {
     auto& definition = world->definition();
     auto& selector = definition.biome_selector;
@@ -54,7 +108,7 @@ void Generator<Superflat>::fill_biomes(ServerWorld* world, const ChunkPosXZ&, Bi
 }
 
 template<>
-bool Generator<Superflat>::generate(ServerWorld* world, const ChunkPos& pos, BlockStorage& blocks, BiomeSlice& biomes)
+bool Generator<Superflat>::generate_blocks(ServerWorld* world, const ChunkPos& pos, BlockStorage& blocks, BiomeSlice& biomes)
 {
     auto& definition = world->definition();
     auto min_y = definition.min_y >> constant::CHUNK_SIZE_LOG2;
@@ -64,11 +118,18 @@ bool Generator<Superflat>::generate(ServerWorld* world, const ChunkPos& pos, Blo
         return false;
     }
 
+    auto state = static_cast<SuperflatState*>(world->generator_state());
+
+    assert(state);
+
     auto& selector = definition.biome_selector;
     auto biome = selector.constant_biome;
     auto biome_def = biome_registry::find_definition(biome);
 
     biomes.fill(biome);
+
+    auto surface_y = state->settings.surface_y;
+    auto filler_depth = state->settings.filler_depth;
 
     auto surface = BLOCK_ID_NULL;
     auto filler = BLOCK_ID_NULL;
@@ -85,14 +146,14 @@ bool Generator<Superflat>::generate(ServerWorld* world, const ChunkPos& pos, Blo
         auto bpos = utils::to_block(pos, lpos);
         auto y = bpos.y();
 
-        if(y > SURFACE_Y) {
+        if(y > surface_y) {
             continue;
         }
 
-        if(y == SURFACE_Y) {
+        if(y == surface_y) {
             blocks.set(i, surface);
         }
-        else if(y >= SURFACE_Y - FILLER_DEPTH) {
+        else if(y >= surface_y - filler_depth) {
             blocks.set(i, filler);
         }
         else {

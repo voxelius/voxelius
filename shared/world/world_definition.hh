@@ -25,6 +25,9 @@ struct WorldDefinition final {
 
     std::vector<Identifier> weather_names;
     std::vector<weather_type_id> weather;
+
+    // Created by the generator in worlds.add and moved into the server world at universe::init
+    std::shared_ptr<void> generator_state;
 };
 
 #endif /* D6B15C7A_9E42_4F10_B3A7_1C0D8E5F2A64 */

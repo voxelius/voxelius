@@ -3,6 +3,7 @@
 #include "shared/world/fluid_registry.hh"
 
 #include "core/exception.hh"
+#include "core/utils/crc64.hh"
 
 #include "shared/mod_context.hh"
 
@@ -11,9 +12,69 @@ static vx::hash_map<Identifier, fluid_id_type> s_names;
 static vx::hash_map<fluid_id_type, Identifier> s_reverse_names;
 static std::uint64_t s_checksum;
 
+static void hash_trivial(std::uint64_t& hash, const void* data, std::size_t size)
+{
+    hash = utils::crc64(data, size, hash);
+}
+
+template<typename T>
+static void hash_value(std::uint64_t& hash, const T& value)
+{
+    hash_trivial(hash, &value, sizeof(value));
+}
+
+static void hash_text(std::uint64_t& hash, std::string_view text)
+{
+    hash_value(hash, static_cast<std::uint64_t>(text.size()));
+    hash_trivial(hash, text.data(), text.size());
+}
+
 static void update_checksum(void)
 {
-    // TODO: go through each fluid definition and compute a checksum based on its contents
+    auto hash = std::uint64_t { 0 };
+
+    for(std::size_t i = 1; i < s_definitions.size(); ++i) {
+        auto& def = s_definitions[i];
+        auto name = s_reverse_names.find(static_cast<fluid_id_type>(i));
+
+        if(name != s_reverse_names.cend()) {
+            hash_text(hash, name->second.full_string());
+        }
+
+        hash_value(hash, static_cast<std::uint32_t>(def.gravity));
+        hash_value(hash, static_cast<std::uint64_t>(def.albedo_still.size()));
+
+        for(const auto& id : def.albedo_still) {
+            hash_text(hash, id.full_string());
+        }
+
+        hash_value(hash, static_cast<std::uint64_t>(def.albedo_flowing.size()));
+
+        for(const auto& id : def.albedo_flowing) {
+            hash_text(hash, id.full_string());
+        }
+
+        hash_value(hash, static_cast<std::uint8_t>(def.mask_still.has_value()));
+
+        if(def.mask_still) {
+            hash_text(hash, def.mask_still->full_string());
+        }
+
+        hash_value(hash, static_cast<std::uint8_t>(def.mask_flowing.has_value()));
+
+        if(def.mask_flowing) {
+            hash_text(hash, def.mask_flowing->full_string());
+        }
+
+        hash_value(hash, static_cast<std::uint32_t>(def.full_level));
+        hash_value(hash, static_cast<std::uint8_t>(def.opaque));
+        hash_value(hash, def.fog_density);
+        hash_value(hash, def.fog_color);
+        hash_text(hash, def.tint_name.full_string());
+        hash_value(hash, static_cast<std::uint16_t>(def.tint));
+    }
+
+    s_checksum = hash;
 }
 
 std::span<const FluidDefinition> fluid_registry::all_definitions(void)
@@ -85,6 +146,7 @@ void fluid_registry::purge(void)
     s_definitions.clear();
     s_names.clear();
     s_reverse_names.clear();
+    s_checksum = 0;
 }
 
 fluid_id_type fluid_registry::find(const Identifier& id)

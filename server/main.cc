@@ -104,12 +104,11 @@ static void wrapped_main(int argc, char** argv)
 
     api_server::register_libraries();
 
-    shared_game::init();
-    server_game::init();
-
-    // Generators register before the universe resolves the world definitions
     Vox17::register_generator();
     Superflat::register_generator();
+
+    shared_game::init();
+    server_game::init();
 
     // The universe seed has to be loaded before worldgen
     // derives its noise and feature seeds from it

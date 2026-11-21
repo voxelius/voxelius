@@ -15,21 +15,11 @@
 
 #include "server/utils/climate.hh"
 #include "server/world/generator_map.hh"
+#include "server/world/generator_settings.hh"
 #include "server/world/noise_cache_2d.hh"
 #include "server/world/noise_cache_3d.hh"
 #include "server/world/world.hh"
 
-constexpr static float VARIATION_MIN = 16.0f;
-constexpr static float VARIATION_MAX = 96.0f;
-
-constexpr static float BASE_MIN = -24.0f;
-constexpr static float BASE_MAX = 16.0f;
-
-constexpr static float PV_VALLEY_OFFSET = -32.0f;
-constexpr static float PV_PEAK_OFFSET = 12.0f;
-constexpr static float TERRAIN_DENSITY_PEAK = 0.385f;
-
-constexpr static BlockPos::value_type SEA_LEVEL = 0;
 constexpr static LocalPos::value_type CHUNK_SIZE_LP = static_cast<LocalPos::value_type>(constant::CHUNK_SIZE);
 
 constexpr static std::size_t CLIMATE_AXES = 5;
@@ -39,6 +29,20 @@ constexpr static std::array<const char*, CLIMATE_AXES> AXIS_NAMES {
     "continentalness",
     "erosion",
     "weirdness",
+};
+
+constexpr static std::array<const char*, 11> ALLOWED_KEYS {
+    "terrain_frequency",
+    "terrain_octaves",
+    "terrain_density_peak",
+    "sea_level",
+    "base_min",
+    "base_max",
+    "variation_min",
+    "variation_max",
+    "pv_valley_offset",
+    "pv_peak_offset",
+    "climate_frequencies",
 };
 
 struct ClimateSample final {
@@ -51,7 +55,29 @@ struct ClimateSample final {
 
 using ClimateSampleArray = std::array<ClimateSample, constant::CHUNK_AREA>;
 
+struct Vox17Settings final {
+    float terrain_frequency { 0.005f };
+    int terrain_octaves { 4 };
+
+    float terrain_density_peak { 0.385f };
+    BlockPos::value_type sea_level { 0 };
+
+    float base_min { -24.0f };
+    float base_max { 16.0f };
+
+    float variation_min { 16.0f };
+    float variation_max { 96.0f };
+
+    float pv_valley_offset { -32.0f };
+    float pv_peak_offset { 12.0f };
+
+    std::array<float, CLIMATE_AXES> climate_frequencies { 0.0007f, 0.0007f, 0.00035f, 0.00075f, 0.001f };
+};
+
 struct Vox17State final {
+    Vox17Settings settings;
+    std::once_flag seed_once;
+
     std::unique_ptr<NoiseCache3D_4x8x4> terrain_noise;
     std::unique_ptr<NoiseCache2D_8x8> climate_temperature;
     std::unique_ptr<NoiseCache2D_8x8> climate_humidity;
@@ -68,6 +94,38 @@ static fnl_state make_climate_noise(int seed, float frequency)
     noise.seed = seed;
 
     return noise;
+}
+
+// The world seed appears only after universe::init, so the noise starts on first use
+static void seed_state(Vox17State& state, std::uint64_t seed)
+{
+    std::call_once(state.seed_once, [&state, seed] {
+        std::mt19937_64 terrain_seeder;
+        terrain_seeder.seed(seed);
+
+        auto noise_terrain = fnlCreateState();
+        noise_terrain.seed = static_cast<int>(terrain_seeder());
+        noise_terrain.noise_type = FNL_NOISE_OPENSIMPLEX2S;
+        noise_terrain.fractal_type = FNL_FRACTAL_FBM;
+        noise_terrain.frequency = state.settings.terrain_frequency;
+        noise_terrain.octaves = state.settings.terrain_octaves;
+
+        state.terrain_noise = std::make_unique<NoiseCache3D_4x8x4>(std::move(noise_terrain));
+
+        std::mt19937_64 climate_seeder;
+        climate_seeder.seed(seed);
+
+        auto make_noise = [&](std::size_t axis) {
+            auto axis_seed = static_cast<int>(climate_seeder());
+            return make_climate_noise(axis_seed, state.settings.climate_frequencies[axis]);
+        };
+
+        state.climate_temperature = std::make_unique<NoiseCache2D_8x8>(make_noise(0));
+        state.climate_humidity = std::make_unique<NoiseCache2D_8x8>(make_noise(1));
+        state.climate_continentalness = std::make_unique<NoiseCache2D_8x8>(make_noise(2));
+        state.climate_erosion = std::make_unique<NoiseCache2D_8x8>(make_noise(3));
+        state.climate_weirdness = std::make_unique<NoiseCache2D_8x8>(make_noise(4));
+    });
 }
 
 static ClimateSampleArray sample_climate_array(const Vox17State& state, const ChunkPosXZ& pos)
@@ -127,7 +185,7 @@ static bool column_solid_pass_1(const Vox17State& state, BlockPos::value_type wx
     float base, float variation)
 {
     auto y_relative = static_cast<float>(y) - base;
-    auto density_range = variation * TERRAIN_DENSITY_PEAK;
+    auto density_range = variation * state.settings.terrain_density_peak;
 
     if(y_relative > density_range) {
         return false;
@@ -147,7 +205,7 @@ static BlockPos::value_type column_liquid_y(const Vox17State& state, BlockPos::v
 {
     auto liquid_y = Column::UNSET;
 
-    for(auto y = surface_y + 1; y < SEA_LEVEL; ++y) {
+    for(auto y = surface_y + 1; y < state.settings.sea_level; ++y) {
         if(column_solid_pass_1(state, wx, y, wz, base, variation)) {
             break;
         }
@@ -173,70 +231,178 @@ static Column probe_one_column(const Vox17State& state, BlockPos::value_type bx,
 }
 
 template<>
-std::shared_ptr<void> Generator<Vox17>::attach(ServerWorld* world)
+std::shared_ptr<void> Generator<Vox17>::create_state(lua_State* L, int settings_idx, const WorldDefinition& definition)
 {
-    auto state = std::make_shared<Vox17State>();
+    Vox17Settings settings;
 
-    auto& definition = world->definition();
-    auto& selector = definition.biome_selector;
+    if(settings_idx) {
+        if(!generator_settings::check_keys(L, settings_idx, "vox17", ALLOWED_KEYS)) {
+            return nullptr;
+        }
 
-    vx::throw_if(selector.strategy != BIOME_SELECTION_NEAREST, "vox17 requires a nearest biome selector");
-    vx::throw_if(selector.axes.size() != CLIMATE_AXES, "vox17 biome selector must declare five axes");
+        if(!generator_settings::read_number(L, settings_idx, "vox17", "terrain_frequency", settings.terrain_frequency)) {
+            return nullptr;
+        }
 
-    for(std::size_t i = 0; i < CLIMATE_AXES; ++i) {
-        vx::throw_if(selector.axes[i] != AXIS_NAMES[i], "vox17 biome selector has an unexpected axis name");
+        auto terrain_octaves = static_cast<lua_Integer>(settings.terrain_octaves);
+
+        if(!generator_settings::read_integer(L, settings_idx, "vox17", "terrain_octaves", terrain_octaves)) {
+            return nullptr;
+        }
+
+        if(terrain_octaves < 1 || terrain_octaves > 8) {
+            lua_pushliteral(L, "vox17: terrain_octaves must be between 1 and 8");
+            return nullptr;
+        }
+
+        settings.terrain_octaves = static_cast<int>(terrain_octaves);
+
+        if(!generator_settings::read_number(L, settings_idx, "vox17", "terrain_density_peak", settings.terrain_density_peak)) {
+            return nullptr;
+        }
+
+        auto sea_level = static_cast<lua_Integer>(settings.sea_level);
+
+        if(!generator_settings::read_integer(L, settings_idx, "vox17", "sea_level", sea_level)) {
+            return nullptr;
+        }
+
+        settings.sea_level = static_cast<BlockPos::value_type>(sea_level);
+
+        if(!generator_settings::read_number(L, settings_idx, "vox17", "base_min", settings.base_min)) {
+            return nullptr;
+        }
+
+        if(!generator_settings::read_number(L, settings_idx, "vox17", "base_max", settings.base_max)) {
+            return nullptr;
+        }
+
+        if(!generator_settings::read_number(L, settings_idx, "vox17", "variation_min", settings.variation_min)) {
+            return nullptr;
+        }
+
+        if(!generator_settings::read_number(L, settings_idx, "vox17", "variation_max", settings.variation_max)) {
+            return nullptr;
+        }
+
+        if(!generator_settings::read_number(L, settings_idx, "vox17", "pv_valley_offset", settings.pv_valley_offset)) {
+            return nullptr;
+        }
+
+        if(!generator_settings::read_number(L, settings_idx, "vox17", "pv_peak_offset", settings.pv_peak_offset)) {
+            return nullptr;
+        }
+
+        auto climate_idx = 0;
+
+        if(!generator_settings::read_table(L, settings_idx, "vox17", "climate_frequencies", climate_idx)) {
+            return nullptr;
+        }
+
+        if(climate_idx) {
+            if(!generator_settings::check_keys(L, climate_idx, "vox17", AXIS_NAMES)) {
+                return nullptr;
+            }
+
+            for(std::size_t i = 0; i < CLIMATE_AXES; ++i) {
+                if(!generator_settings::read_number(L, climate_idx, "vox17", AXIS_NAMES[i], settings.climate_frequencies[i])) {
+                    return nullptr;
+                }
+            }
+
+            lua_pop(L, 1);
+        }
     }
 
-    std::mt19937_64 terrain_seeder;
-    terrain_seeder.seed(world->seed);
+    if(!std::isfinite(settings.terrain_frequency) || settings.terrain_frequency <= 0.0f) {
+        lua_pushliteral(L, "vox17: terrain_frequency must be positive");
+        return nullptr;
+    }
 
-    fnl_state noise_terrain = fnlCreateState();
-    noise_terrain.seed = static_cast<int>(terrain_seeder());
-    noise_terrain.noise_type = FNL_NOISE_OPENSIMPLEX2S;
-    noise_terrain.fractal_type = FNL_FRACTAL_FBM;
-    noise_terrain.frequency = 0.005f;
-    noise_terrain.octaves = 4;
+    if(!std::isfinite(settings.terrain_density_peak) || settings.terrain_density_peak < 0.0f || settings.terrain_density_peak > 1.0f) {
+        lua_pushliteral(L, "vox17: terrain_density_peak must be between 0 and 1");
+        return nullptr;
+    }
 
-    state->terrain_noise = std::make_unique<NoiseCache3D_4x8x4>(std::move(noise_terrain));
+    if(settings.sea_level < definition.min_y || settings.sea_level > definition.max_y) {
+        lua_pushliteral(L, "vox17: sea_level is outside the world height");
+        return nullptr;
+    }
 
-    std::mt19937_64 climate_seeder;
-    climate_seeder.seed(world->seed);
+    if(!std::isfinite(settings.base_min) || !std::isfinite(settings.base_max) || settings.base_min > settings.base_max) {
+        lua_pushliteral(L, "vox17: base_min must not be greater than base_max");
+        return nullptr;
+    }
 
-    auto temperature_seed = static_cast<int>(climate_seeder());
-    auto temperature_noise = make_climate_noise(temperature_seed, 0.0007f);
-    state->climate_temperature = std::make_unique<NoiseCache2D_8x8>(temperature_noise);
+    if(!std::isfinite(settings.variation_min) || !std::isfinite(settings.variation_max)) {
+        lua_pushliteral(L, "vox17: variation_min and variation_max must be finite");
+        return nullptr;
+    }
 
-    auto humidity_seed = static_cast<int>(climate_seeder());
-    auto humidity_noise = make_climate_noise(humidity_seed, 0.0007f);
-    state->climate_humidity = std::make_unique<NoiseCache2D_8x8>(humidity_noise);
+    if(settings.variation_min < 0.0f || settings.variation_min > settings.variation_max) {
+        lua_pushliteral(L, "vox17: variation_min must not be greater than variation_max");
+        return nullptr;
+    }
 
-    auto continentalness_seed = static_cast<int>(climate_seeder());
-    auto continentalness_noise = make_climate_noise(continentalness_seed, 0.00035f);
-    state->climate_continentalness = std::make_unique<NoiseCache2D_8x8>(continentalness_noise);
+    if(!std::isfinite(settings.pv_valley_offset) || !std::isfinite(settings.pv_peak_offset)
+        || settings.pv_valley_offset > settings.pv_peak_offset) {
+        lua_pushliteral(L, "vox17: pv_valley_offset must not be greater than pv_peak_offset");
+        return nullptr;
+    }
 
-    auto erosion_seed = static_cast<int>(climate_seeder());
-    auto erosion_noise = make_climate_noise(erosion_seed, 0.00075f);
-    state->climate_erosion = std::make_unique<NoiseCache2D_8x8>(erosion_noise);
+    for(std::size_t i = 0; i < CLIMATE_AXES; ++i) {
+        if(!std::isfinite(settings.climate_frequencies[i]) || settings.climate_frequencies[i] <= 0.0f) {
+            lua_pushliteral(L, "vox17: climate_frequencies must be positive");
+            return nullptr;
+        }
+    }
 
-    auto weirdness_seed = static_cast<int>(climate_seeder());
-    auto weirdness_noise = make_climate_noise(weirdness_seed, 0.001f);
-    state->climate_weirdness = std::make_unique<NoiseCache2D_8x8>(weirdness_noise);
+    auto& selector = definition.biome_selector;
+
+    if(selector.strategy == BIOME_SELECTION_NEAREST) {
+        if(selector.axes.size() != CLIMATE_AXES) {
+            lua_pushliteral(L, "vox17: nearest biome selector must declare five axes");
+            return nullptr;
+        }
+
+        for(std::size_t i = 0; i < CLIMATE_AXES; ++i) {
+            if(selector.axes[i] != AXIS_NAMES[i]) {
+                lua_pushliteral(L, "vox17: nearest biome selector has an unexpected axis name");
+                return nullptr;
+            }
+        }
+    }
+    else if(selector.strategy == BIOME_SELECTION_GRID) {
+        if(selector.axes.size() != 2 || selector.axes[0] != "temperature" || selector.axes[1] != "humidity") {
+            lua_pushliteral(L, "vox17: grid biome selector must name temperature and humidity");
+            return nullptr;
+        }
+    }
+    else {
+        lua_pushliteral(L, "vox17: biome selector must be nearest or grid");
+        return nullptr;
+    }
+
+    auto state = std::make_shared<Vox17State>();
+    state->settings = settings;
 
     return state;
 }
 
 template<>
-ColumnSlice Generator<Vox17>::probe(ServerWorld* world, const ChunkPosXZ& pos)
+ColumnSlice Generator<Vox17>::sample_heightmap(ServerWorld* world, const ChunkPosXZ& pos)
 {
     auto state = static_cast<Vox17State*>(world->generator_state());
 
     assert(state);
 
+    seed_state(*state, world->seed);
+
     thread_local std::array<float, constant::CHUNK_AREA> variation_array;
     thread_local std::array<float, constant::CHUNK_AREA> base_array;
 
-    variation_array.fill(VARIATION_MIN);
-    base_array.fill(BASE_MIN);
+    variation_array.fill(state->settings.variation_min);
+    base_array.fill(state->settings.base_min);
 
     ColumnSlice slice {};
     auto climate_array = sample_climate_array(*state, pos);
@@ -250,9 +416,9 @@ ColumnSlice Generator<Vox17>::probe(ServerWorld* world, const ChunkPosXZ& pos)
         auto erosion = utils::normalize_01(sample.erosion);
         auto pv = utils::peaks_valleys(sample.weirdness);
 
-        variation_array[i] = std::lerp(VARIATION_MAX, VARIATION_MIN, erosion);
-        base_array[i] = std::lerp(BASE_MIN, BASE_MAX, continentalness);
-        base_array[i] += std::lerp(PV_VALLEY_OFFSET, PV_PEAK_OFFSET, utils::normalize_01(pv));
+        variation_array[i] = std::lerp(state->settings.variation_max, state->settings.variation_min, erosion);
+        base_array[i] = std::lerp(state->settings.base_min, state->settings.base_max, continentalness);
+        base_array[i] += std::lerp(state->settings.pv_valley_offset, state->settings.pv_peak_offset, utils::normalize_01(pv));
     }
 
     for(LocalPos::value_type lz = 0; lz < constant::CHUNK_SIZE; lz += 1) {
@@ -267,11 +433,13 @@ ColumnSlice Generator<Vox17>::probe(ServerWorld* world, const ChunkPosXZ& pos)
 }
 
 template<>
-void Generator<Vox17>::fill_biomes(ServerWorld* world, const ChunkPosXZ& pos, BiomeSlice& out)
+void Generator<Vox17>::generate_biomes(ServerWorld* world, const ChunkPosXZ& pos, BiomeSlice& out)
 {
     auto state = static_cast<Vox17State*>(world->generator_state());
 
     assert(state);
+
+    seed_state(*state, world->seed);
 
     auto& definition = world->definition();
     auto& selector = definition.biome_selector;
@@ -285,7 +453,7 @@ void Generator<Vox17>::fill_biomes(ServerWorld* world, const ChunkPosXZ& pos, Bi
 }
 
 template<>
-bool Generator<Vox17>::generate(ServerWorld* world, const ChunkPos& pos, BlockStorage& blocks, BiomeSlice& biomes)
+bool Generator<Vox17>::generate_blocks(ServerWorld* world, const ChunkPos& pos, BlockStorage& blocks, BiomeSlice& biomes)
 {
     auto& definition = world->definition();
     auto min_y = definition.min_y >> constant::CHUNK_SIZE_LOG2;
@@ -298,6 +466,8 @@ bool Generator<Vox17>::generate(ServerWorld* world, const ChunkPos& pos, BlockSt
     auto state = static_cast<Vox17State*>(world->generator_state());
 
     assert(state);
+
+    seed_state(*state, world->seed);
 
     auto& selector = definition.biome_selector;
 
@@ -312,8 +482,8 @@ bool Generator<Vox17>::generate(ServerWorld* world, const ChunkPos& pos, BlockSt
     palette_filler_array.fill(BLOCK_ID_NULL);
     palette_surface_array.fill(BLOCK_ID_NULL);
     palette_fluid_array.fill(BLOCK_ID_NULL);
-    variation_array.fill(VARIATION_MIN);
-    base_array.fill(BASE_MIN);
+    variation_array.fill(state->settings.variation_min);
+    base_array.fill(state->settings.base_min);
 
     auto cpos_xz = ChunkPosXZ(pos.x(), pos.z());
     auto climate_array = sample_climate_array(*state, cpos_xz);
@@ -336,9 +506,9 @@ bool Generator<Vox17>::generate(ServerWorld* world, const ChunkPos& pos, BlockSt
         auto erosion = utils::normalize_01(sample.erosion);
         auto pv = utils::peaks_valleys(sample.weirdness);
 
-        variation_array[i] = std::lerp(VARIATION_MAX, VARIATION_MIN, erosion);
-        base_array[i] = std::lerp(BASE_MIN, BASE_MAX, continentalness);
-        base_array[i] += std::lerp(PV_VALLEY_OFFSET, PV_PEAK_OFFSET, utils::normalize_01(pv));
+        variation_array[i] = std::lerp(state->settings.variation_max, state->settings.variation_min, erosion);
+        base_array[i] = std::lerp(state->settings.base_min, state->settings.base_max, continentalness);
+        base_array[i] += std::lerp(state->settings.pv_valley_offset, state->settings.pv_peak_offset, utils::normalize_01(pv));
     }
 
     auto& terrain_array = state->terrain_noise->get(pos);
@@ -355,7 +525,7 @@ bool Generator<Vox17>::generate(ServerWorld* world, const ChunkPos& pos, BlockSt
         auto base = base_array[index_xz];
         auto variation = variation_array[index_xz];
         auto y_relative = static_cast<float>(bpos.y()) - base;
-        auto density_range = variation * TERRAIN_DENSITY_PEAK;
+        auto density_range = variation * state->settings.terrain_density_peak;
 
         auto solid = false;
 
@@ -369,7 +539,7 @@ bool Generator<Vox17>::generate(ServerWorld* world, const ChunkPos& pos, BlockSt
         if(solid) {
             blocks.set(i, palette_basic_array[index_xz]);
         }
-        else if(bpos.y() < SEA_LEVEL) {
+        else if(bpos.y() < state->settings.sea_level) {
             blocks.set(i, palette_fluid_array[index_xz]);
         }
     }
@@ -386,7 +556,7 @@ bool Generator<Vox17>::generate(ServerWorld* world, const ChunkPos& pos, BlockSt
         auto base = base_array[index_xz];
         auto variation = variation_array[index_xz];
         auto y_relative = static_cast<float>(bpos.y()) - base;
-        auto density_range = variation * TERRAIN_DENSITY_PEAK;
+        auto density_range = variation * state->settings.terrain_density_peak;
 
         if(y_relative > density_range) {
             continue;
@@ -410,7 +580,7 @@ bool Generator<Vox17>::generate(ServerWorld* world, const ChunkPos& pos, BlockSt
                 auto y_relative_above = static_cast<float>(d_bpos.y()) - base;
 
                 if(!is_inside_terrain(*state, d_bpos, y_relative_above, variation)) {
-                    underwater = dy == 0 && d_bpos.y() < SEA_LEVEL;
+                    underwater = dy == 0 && d_bpos.y() < state->settings.sea_level;
                     break;
                 }
 

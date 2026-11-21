@@ -360,6 +360,7 @@ void sky_renderer::render(void)
 
     auto& visuals = utils::world_visuals();
     auto expected_count = visuals.stars ? visuals.stars->count : 0U;
+    auto draw_sky = visuals.sky.has_value();
 
     if(!s_built_stars.has_value()) {
         build_stars();
@@ -368,16 +369,6 @@ void sky_renderer::render(void)
         build_stars();
     }
 
-    vx::throw_if_not(s_sky.update());
-
-    auto half_fov = 0.5f * utils::radians(camera::vertical_fov.value());
-    auto tan_half_fov = std::tan(half_fov);
-    auto ground_color = Eigen::Vector3f(skybox::horizon_color * 0.35f);
-
-    auto forward = camera::instance.forward_vector();
-    auto right = camera::instance.right_vector();
-    auto up = camera::instance.up_vector();
-
     // The sky spheres turn with the camera, so the view
     // matrix loses its translation and keeps only its rotation
     auto view_rotation = camera::instance.view();
@@ -385,30 +376,45 @@ void sky_renderer::render(void)
     view_rotation(1, 3) = 0.0f;
     view_rotation(2, 3) = 0.0f;
 
-    Eigen::Matrix4f sky_view_projection = camera::instance.projection() * view_rotation;
-
-    glUseProgram(s_sky.handle);
-    glUniform3fv(s_sky.uniforms[su_CameraForward].location, 1, forward.data());
-    glUniform3fv(s_sky.uniforms[su_CameraRight].location, 1, right.data());
-    glUniform3fv(s_sky.uniforms[su_CameraUp].location, 1, up.data());
-    glUniform1f(s_sky.uniforms[su_TanHalfFov].location, tan_half_fov);
-    glUniform1f(s_sky.uniforms[su_Aspect].location, globals::aspect);
-    glUniform3fv(s_sky.uniforms[su_HorizonColor].location, 1, skybox::horizon_color.data());
-    glUniform3fv(s_sky.uniforms[su_SunHorizonColor].location, 1, skybox::sun_horizon_color.data());
-    glUniform3fv(s_sky.uniforms[su_ZenithColor].location, 1, skybox::zenith_color.data());
-    glUniform3fv(s_sky.uniforms[su_GroundColor].location, 1, ground_color.data());
-    glUniform3fv(s_sky.uniforms[su_SunDirection].location, 1, skybox::sun_direction.data());
-    glUniform3fv(s_sky.uniforms[su_SunTint].location, 1, skybox::sun_tint.data());
-    glUniform1f(s_sky.uniforms[su_SunStrength].location, skybox::sun_strength);
-    glUniform1f(s_sky.uniforms[su_Twilight].location, skybox::twilight);
+    Eigen::Matrix4f sky_view_projection = projection * view_rotation;
 
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
     glDisable(GL_CULL_FACE);
     glDisable(GL_BLEND);
 
-    glBindVertexArray(s_quad_vao);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    if(draw_sky) {
+        vx::throw_if_not(s_sky.update());
+
+        auto half_fov = 0.5f * utils::radians(camera::vertical_fov.value());
+        auto tan_half_fov = std::tan(half_fov);
+        auto ground_color = Eigen::Vector3f(skybox::horizon_color * 0.35f);
+
+        auto forward = camera::instance.forward_vector();
+        auto right = camera::instance.right_vector();
+        auto up = camera::instance.up_vector();
+
+        glUseProgram(s_sky.handle);
+        glUniform3fv(s_sky.uniforms[su_CameraForward].location, 1, forward.data());
+        glUniform3fv(s_sky.uniforms[su_CameraRight].location, 1, right.data());
+        glUniform3fv(s_sky.uniforms[su_CameraUp].location, 1, up.data());
+        glUniform1f(s_sky.uniforms[su_TanHalfFov].location, tan_half_fov);
+        glUniform1f(s_sky.uniforms[su_Aspect].location, globals::aspect);
+        glUniform3fv(s_sky.uniforms[su_HorizonColor].location, 1, skybox::horizon_color.data());
+        glUniform3fv(s_sky.uniforms[su_SunHorizonColor].location, 1, skybox::sun_horizon_color.data());
+        glUniform3fv(s_sky.uniforms[su_ZenithColor].location, 1, skybox::zenith_color.data());
+        glUniform3fv(s_sky.uniforms[su_GroundColor].location, 1, ground_color.data());
+        glUniform3fv(s_sky.uniforms[su_SunDirection].location, 1, skybox::sun_direction.data());
+        glUniform3fv(s_sky.uniforms[su_SunTint].location, 1, skybox::sun_tint.data());
+        glUniform1f(s_sky.uniforms[su_SunStrength].location, skybox::sun_strength);
+        glUniform1f(s_sky.uniforms[su_Twilight].location, skybox::twilight);
+
+        glBindVertexArray(s_quad_vao);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        globals::num_draw_calls += 1;
+        globals::num_draw_vertices += 3;
+    }
 
     auto draw_star_field = skybox::star_visibility > 0.001f;
 
@@ -435,9 +441,6 @@ void sky_renderer::render(void)
     glBindVertexArray(0);
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
-
-    globals::num_draw_calls += 1;
-    globals::num_draw_vertices += 3;
 
     if(draw_star_field) {
         globals::num_draw_calls += 1;

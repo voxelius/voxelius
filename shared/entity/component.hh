@@ -23,6 +23,7 @@ struct Component final {
     static void encode_net(entt::registry& registry, entt::entity entity, WriteBuffer& buffer);
     static void decode_dat(entt::registry& registry, entt::entity entity, ReadBuffer& buffer);
     static void interpolate(entt::registry& registry, entt::entity entity, float alpha) = delete;
+    static void hash_config(std::uint64_t& hash, const std::any& config) = delete;
     static void connect(entt::registry& registry);
 };
 

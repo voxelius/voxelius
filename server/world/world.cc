@@ -128,7 +128,7 @@ biome_id_type ServerWorld::biome_at(const BlockPosXZ& pos)
     auto entry = get_biome_entry(cpos);
 
     std::call_once(entry->init_flag, [this, cpos, entry] {
-        m_generator->fill_biomes(this, cpos, entry->data);
+        m_generator->generate_biomes(this, cpos, entry->data);
     });
 
     auto lx = static_cast<std::size_t>(pos[0] & (constant::CHUNK_SIZE - 1));

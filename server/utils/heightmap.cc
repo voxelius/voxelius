@@ -18,7 +18,7 @@ const ColumnSlice& utils::heightmap_probe(ServerWorld* world, const ChunkPosXZ& 
     assert(generator);
 
     std::call_once(entry->init_flag, [pos, entry, world, generator] {
-        entry->data = generator->probe(world, pos);
+        entry->data = generator->sample_heightmap(world, pos);
     });
 
     return entry->data;

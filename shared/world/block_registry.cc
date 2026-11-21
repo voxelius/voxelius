@@ -121,9 +121,120 @@ static BlockDefinition apply_matching_variant(const BlockDefinition& base_def, c
     return resolved;
 }
 
+static void hash_trivial(std::uint64_t& hash, const void* data, std::size_t size)
+{
+    hash = utils::crc64(data, size, hash);
+}
+
+template<typename T>
+static void hash_value(std::uint64_t& hash, const T& value)
+{
+    hash_trivial(hash, &value, sizeof(value));
+}
+
+static void hash_text(std::uint64_t& hash, std::string_view text)
+{
+    hash_value(hash, static_cast<std::uint64_t>(text.size()));
+    hash_trivial(hash, text.data(), text.size());
+}
+
 static void update_checksum(void)
 {
-    // TODO: go through each block definition and compute a checksum based on its contents
+    auto hash = std::uint64_t { 0 };
+
+    for(std::size_t i = 1; i < s_definitions.size(); ++i) {
+        auto& def = s_definitions[i];
+        auto name = s_reverse_names.find(static_cast<block_id_type>(i));
+
+        if(name != s_reverse_names.cend()) {
+            hash_text(hash, name->second.full_string());
+        }
+
+        hash_value(hash, static_cast<std::uint32_t>(def.render));
+
+        std::vector<std::pair<std::string, std::vector<Identifier>>> albedo(def.albedo.begin(), def.albedo.end());
+
+        std::sort(albedo.begin(), albedo.end(), [](const auto& a, const auto& b) {
+            return a.first < b.first;
+        });
+
+        hash_value(hash, static_cast<std::uint64_t>(albedo.size()));
+
+        for(const auto& entry : albedo) {
+            hash_text(hash, entry.first);
+            hash_value(hash, static_cast<std::uint64_t>(entry.second.size()));
+
+            for(const auto& id : entry.second) {
+                hash_text(hash, id.full_string());
+            }
+        }
+
+        std::vector<std::pair<std::string, Identifier>> masks(def.masks.begin(), def.masks.end());
+
+        std::sort(masks.begin(), masks.end(), [](const auto& a, const auto& b) {
+            return a.first < b.first;
+        });
+
+        hash_value(hash, static_cast<std::uint64_t>(masks.size()));
+
+        for(const auto& entry : masks) {
+            hash_text(hash, entry.first);
+            hash_text(hash, entry.second.full_string());
+        }
+
+        hash_value(hash, static_cast<std::uint8_t>(def.animated));
+
+        hash_text(hash, def.model_name.full_string());
+        hash_value(hash, def.model_offset);
+        hash_value(hash, static_cast<std::uint32_t>(def.model_facing));
+
+        hash_text(hash, def.bcoll_name.full_string());
+        hash_value(hash, def.bcoll_offset);
+        hash_value(hash, static_cast<std::uint32_t>(def.bcoll_facing));
+
+        hash_value(hash, static_cast<std::uint32_t>(def.fluid));
+        hash_value(hash, static_cast<std::uint32_t>(def.fluid_level));
+        hash_value(hash, def.fluid_faces);
+        hash_value(hash, static_cast<std::uint8_t>(def.fluid_name.has_value()));
+
+        if(def.fluid_name) {
+            hash_text(hash, def.fluid_name->full_string());
+        }
+
+        hash_value(hash, static_cast<std::uint32_t>(def.health));
+        hash_value(hash, static_cast<std::uint32_t>(def.tools));
+        hash_text(hash, def.sound_set.full_string());
+        hash_value(hash, static_cast<std::uint8_t>(def.emission));
+        hash_value(hash, static_cast<std::uint8_t>(def.dissipation));
+        hash_value(hash, static_cast<std::uint32_t>(def.touch));
+        hash_value(hash, def.touch_coeffs);
+        hash_value(hash, static_cast<std::uint32_t>(def.tags));
+        hash_value(hash, static_cast<std::uint8_t>(def.replaceable));
+
+        hash_value(hash, static_cast<std::uint64_t>(def.drops.size()));
+
+        for(const auto& drop : def.drops) {
+            hash_value(hash, static_cast<std::uint64_t>(drop.items.size()));
+
+            for(const auto& item : drop.items) {
+                hash_text(hash, item.name.full_string());
+                hash_value(hash, static_cast<std::uint32_t>(item.count));
+            }
+
+            hash_value(hash, static_cast<std::uint64_t>(drop.cond_effects.size()));
+
+            for(const auto& effect : drop.cond_effects) {
+                hash_text(hash, effect.full_string());
+            }
+
+            hash_value(hash, static_cast<std::uint32_t>(drop.cond_tool_bits));
+        }
+
+        hash_value(hash, static_cast<std::uint32_t>(def.family));
+        hash_value(hash, static_cast<std::uint8_t>(def.is_stem));
+    }
+
+    s_checksum = hash;
 }
 
 BlockDefinition BlockOverridePatch::apply(BlockDefinition base, const BlockOverridePatch& patch)
@@ -387,6 +498,7 @@ void block_registry::purge(void)
     s_names.clear();
     s_reverse_names.clear();
     s_state_fluid_cache.clear();
+    s_checksum = 0;
 }
 
 block_id_type block_registry::find(const Identifier& id)

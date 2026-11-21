@@ -9,6 +9,8 @@
 #include "shared/world/world_definition.hh"
 #include "shared/world/world_registry.hh"
 
+#include "server/world/generator_map.hh"
+
 static bool fail(lua_State* L, int base, std::string_view message)
 {
     lua_settop(L, base);
@@ -437,6 +439,98 @@ static bool parse_nearest_selector(lua_State* L, int base, int sel_idx, const Mo
     return true;
 }
 
+static bool parse_grid_selector(lua_State* L, int base, int sel_idx, const ModContext* ctx, BiomeSelector& selector)
+{
+    if(!parse_string_list(L, base, sel_idx, "axes", selector.axes)) {
+        return false;
+    }
+
+    if(selector.axes.size() != 2) {
+        return fail(L, base, "biome_selector grid requires exactly two axes");
+    }
+
+    lua_getfield(L, sel_idx, "weights");
+
+    if(!lua_isnoneornil(L, -1)) {
+        lua_pop(L, 1);
+        return fail(L, base, "biome_selector grid does not use weights");
+    }
+
+    lua_pop(L, 1);
+
+    lua_getfield(L, sel_idx, "entries");
+
+    if(!lua_isnoneornil(L, -1)) {
+        lua_pop(L, 1);
+        return fail(L, base, "biome_selector grid does not use entries");
+    }
+
+    lua_pop(L, 1);
+
+    auto grid_size = utils::opt_integer(L, sel_idx, "grid_size", 0);
+
+    if(!grid_size.has_value() || grid_size.value() < 1 || grid_size.value() > static_cast<lua_Integer>(BIOME_SELECTOR_MAX_GRID_SIZE)) {
+        return fail(L, base, "biome_selector grid_size is out of range");
+    }
+
+    selector.grid_size = static_cast<std::size_t>(grid_size.value());
+
+    lua_getfield(L, sel_idx, "lookup");
+
+    if(!lua_istable(L, -1)) {
+        return fail(L, base, "biome_selector grid lookup must be a table");
+    }
+
+    auto lookup_idx = lua_gettop(L);
+    auto rows = static_cast<std::size_t>(lua_rawlen(L, lookup_idx));
+
+    if(rows != selector.grid_size) {
+        return fail(L, base, "biome_selector grid lookup row count does not match grid_size");
+    }
+
+    selector.lookup_names.reserve(selector.grid_size * selector.grid_size);
+
+    for(std::size_t row = 0; row < selector.grid_size; row += 1) {
+        lua_rawgeti(L, lookup_idx, static_cast<lua_Integer>(row + 1));
+
+        if(!lua_istable(L, -1)) {
+            return fail(L, base, "biome_selector grid lookup row must be a table");
+        }
+
+        auto row_idx = lua_gettop(L);
+        auto columns = static_cast<std::size_t>(lua_rawlen(L, row_idx));
+
+        if(columns != selector.grid_size) {
+            return fail(L, base, "biome_selector grid lookup column count does not match grid_size");
+        }
+
+        for(std::size_t column = 0; column < selector.grid_size; column += 1) {
+            lua_rawgeti(L, row_idx, static_cast<lua_Integer>(column + 1));
+
+            auto name = utils::require_string(L, -1);
+
+            if(!name.has_value()) {
+                return fail(L, base, "biome_selector grid lookup entry must be a string");
+            }
+
+            auto id = Identifier::from_string(name.value(), ctx->name_space());
+
+            if(!id.is_valid()) {
+                return fail(L, base, "biome_selector grid lookup entry is not a valid identifier");
+            }
+
+            selector.lookup_names.push_back(id);
+
+            lua_pop(L, 1);
+        }
+
+        lua_pop(L, 1);
+    }
+
+    lua_pop(L, 1);
+    return true;
+}
+
 static bool parse_biome_selector(lua_State* L, int base, int table_idx, const ModContext* ctx, BiomeSelector& selector)
 {
     lua_getfield(L, table_idx, "biome_selector");
@@ -477,7 +571,11 @@ static bool parse_biome_selector(lua_State* L, int base, int table_idx, const Mo
         selector.constant_biome_name = Identifier::from_string(biome.value(), ctx->name_space());
     }
     else if(strategy.value() == BIOME_SELECTION_GRID) {
-        return fail(L, base, "biome_selector grid strategy is not implemented");
+        selector.strategy = BIOME_SELECTION_GRID;
+
+        if(!parse_grid_selector(L, base, sel_idx, ctx, selector)) {
+            return false;
+        }
     }
     else {
         return fail(L, base, "biome_selector unknown strategy");
@@ -487,41 +585,55 @@ static bool parse_biome_selector(lua_State* L, int base, int table_idx, const Mo
     return true;
 }
 
-static int api_add(lua_State* L)
+static void push_world_error(lua_State* L, std::string_view prefix, std::string_view name, std::string_view suffix)
 {
-    auto ctx = static_cast<ModContext*>(lua_touserdata(L, lua_upvalueindex(1)));
+    lua_pushlstring(L, prefix.data(), prefix.size());
+    lua_pushlstring(L, name.data(), name.size());
+    lua_pushlstring(L, suffix.data(), suffix.size());
+    lua_concat(L, 3);
+}
+
+static bool do_add(lua_State* L, ModContext* ctx)
+{
     auto base = lua_gettop(L);
 
-    auto raw_name = luaL_checkstring(L, 1);
+    auto raw_name = utils::require_string(L, 1);
 
-    luaL_checktype(L, 2, LUA_TTABLE);
+    if(!raw_name.has_value()) {
+        return false;
+    }
 
-    auto id = Identifier::from_string(raw_name, ctx->name_space());
+    if(!lua_istable(L, 2)) {
+        lua_pushliteral(L, "worlds.add: config must be a table");
+        return false;
+    }
+
+    auto id = Identifier::from_string(raw_name.value(), ctx->name_space());
 
     if(!id.is_valid()) {
-        lua_pushfstring(L, "worlds.add: malformed name: %s", raw_name);
-        return lua_error(L);
+        push_world_error(L, "worlds.add: malformed name: ", raw_name.value(), "");
+        return false;
     }
 
     auto definition = world_registry::add(id);
 
     if(definition == nullptr) {
-        lua_pushfstring(L, "worlds.add: %s is already registered", raw_name);
-        return lua_error(L);
+        push_world_error(L, "worlds.add: ", raw_name.value(), " is already registered");
+        return false;
     }
 
     auto generator = utils::opt_string(L, 2, "generator", {});
 
     if(!generator.has_value()) {
         world_registry::remove(id);
-        lua_pushfstring(L, "worlds.add: %s: invalid generator", raw_name);
-        return lua_error(L);
+        push_world_error(L, "worlds.add: ", raw_name.value(), ": invalid generator");
+        return false;
     }
 
     if(generator->empty()) {
         world_registry::remove(id);
-        lua_pushfstring(L, "worlds.add: %s: generator is required", raw_name);
-        return lua_error(L);
+        push_world_error(L, "worlds.add: ", raw_name.value(), ": generator is required");
+        return false;
     }
 
     definition->generator = std::string(generator.value());
@@ -530,8 +642,8 @@ static int api_add(lua_State* L)
 
     if(!directory.has_value()) {
         world_registry::remove(id);
-        lua_pushfstring(L, "worlds.add: %s: invalid directory", raw_name);
-        return lua_error(L);
+        push_world_error(L, "worlds.add: ", raw_name.value(), ": invalid directory");
+        return false;
     }
 
     definition->directory = std::string(directory.value());
@@ -540,8 +652,8 @@ static int api_add(lua_State* L)
 
     if(!min_y.has_value()) {
         world_registry::remove(id);
-        lua_pushfstring(L, "worlds.add: %s: invalid min_y", raw_name);
-        return lua_error(L);
+        push_world_error(L, "worlds.add: ", raw_name.value(), ": invalid min_y");
+        return false;
     }
 
     definition->min_y = static_cast<BlockPos::value_type>(min_y.value());
@@ -550,8 +662,8 @@ static int api_add(lua_State* L)
 
     if(!max_y.has_value()) {
         world_registry::remove(id);
-        lua_pushfstring(L, "worlds.add: %s: invalid max_y", raw_name);
-        return lua_error(L);
+        push_world_error(L, "worlds.add: ", raw_name.value(), ": invalid max_y");
+        return false;
     }
 
     definition->max_y = static_cast<BlockPos::value_type>(max_y.value());
@@ -560,24 +672,73 @@ static int api_add(lua_State* L)
 
     if(!spawn.has_value()) {
         world_registry::remove(id);
-        lua_pushfstring(L, "worlds.add: %s: invalid spawn", raw_name);
-        return lua_error(L);
+        push_world_error(L, "worlds.add: ", raw_name.value(), ": invalid spawn");
+        return false;
     }
 
     definition->spawn = BlockPos(spawn->x(), spawn->y(), spawn->z());
 
     if(!parse_biome_selector(L, base, 2, ctx, definition->biome_selector)) {
         world_registry::remove(id);
-        return lua_error(L);
+        return false;
     }
 
     if(!parse_name_list(L, base, 2, "weather", ctx, definition->weather_names)) {
         world_registry::remove(id);
-        return lua_error(L);
+        return false;
     }
 
     if(!parse_visuals(L, base, 2, definition->visuals)) {
         world_registry::remove(id);
+        return false;
+    }
+
+    auto generator_def = generator_map::find(definition->generator);
+
+    if(generator_def == nullptr) {
+        world_registry::remove(id);
+        lua_pushliteral(L, "worlds.add: ");
+        lua_pushlstring(L, raw_name->data(), raw_name->size());
+        lua_pushliteral(L, ": unknown generator \"");
+        lua_pushlstring(L, definition->generator.data(), definition->generator.size());
+        lua_pushliteral(L, "\"");
+        lua_concat(L, 5);
+
+        return false;
+    }
+
+    lua_getfield(L, 2, "generator_settings");
+
+    auto settings_idx = 0;
+
+    if(lua_istable(L, -1)) {
+        settings_idx = lua_gettop(L);
+    }
+    else if(!lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        world_registry::remove(id);
+        push_world_error(L, "worlds.add: ", raw_name.value(), ": generator_settings must be a table");
+        return false;
+    }
+
+    auto state = generator_def->create_state(L, settings_idx, *definition);
+
+    if(state == nullptr) {
+        world_registry::remove(id);
+        return false;
+    }
+
+    definition->generator_state = std::move(state);
+    lua_pop(L, 1);
+
+    return true;
+}
+
+static int api_add(lua_State* L)
+{
+    auto ctx = static_cast<ModContext*>(lua_touserdata(L, lua_upvalueindex(1)));
+
+    if(!do_add(L, ctx)) {
         return lua_error(L);
     }
 

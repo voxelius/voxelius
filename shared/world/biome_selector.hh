@@ -11,6 +11,8 @@ enum biome_selection_strategy : unsigned {
     BIOME_SELECTION_CONSTANT,
 };
 
+constexpr static std::size_t BIOME_SELECTOR_MAX_GRID_SIZE = 128;
+
 struct BiomeSelector final {
     struct Entry final {
         Identifier biome_name;
@@ -31,6 +33,7 @@ struct BiomeSelector final {
 
     std::size_t grid_size { 0 };
     std::vector<Identifier> lookup_names;
+    std::vector<biome_id_type> lookup;
 
     Identifier constant_biome_name;
     biome_id_type constant_biome { BIOME_ID_NULL };

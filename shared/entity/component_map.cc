@@ -21,6 +21,17 @@ static const component_map::detail::FunctionTable* find_functions(component_id_t
     return &s_functions[index];
 }
 
+void component_map::hash_config(std::uint64_t& hash, component_id_type id, const std::any& config)
+{
+    auto functions = find_functions(id);
+
+    if(functions == nullptr || functions->hash_config == nullptr) {
+        return;
+    }
+
+    functions->hash_config(hash, config);
+}
+
 component_id_type component_map::detail::add(const std::type_info& type, std::string_view name, FunctionTable functions)
 {
     if(s_names.empty()) {

@@ -2,6 +2,8 @@
 
 #include "shared/world/biome_registry.hh"
 
+#include "core/utils/crc64.hh"
+
 #include "shared/mod_context.hh"
 #include "shared/res/feature.hh"
 
@@ -10,9 +12,98 @@ static vx::hash_map<Identifier, biome_id_type> s_names;
 static vx::hash_map<biome_id_type, Identifier> s_reverse_names;
 static std::uint64_t s_checksum;
 
+static void hash_trivial(std::uint64_t& hash, const void* data, std::size_t size)
+{
+    hash = utils::crc64(data, size, hash);
+}
+
+template<typename T>
+static void hash_value(std::uint64_t& hash, const T& value)
+{
+    hash_trivial(hash, &value, sizeof(value));
+}
+
+static void hash_text(std::uint64_t& hash, std::string_view text)
+{
+    hash_value(hash, static_cast<std::uint64_t>(text.size()));
+    hash_trivial(hash, text.data(), text.size());
+}
+
+static void hash_states(std::uint64_t& hash, const vx::hash_map<std::string, std::string>& states)
+{
+    std::vector<std::pair<std::string, std::string>> entries(states.begin(), states.end());
+
+    std::sort(entries.begin(), entries.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+    });
+
+    hash_value(hash, static_cast<std::uint64_t>(entries.size()));
+
+    for(const auto& entry : entries) {
+        hash_text(hash, entry.first);
+        hash_text(hash, entry.second);
+    }
+}
+
+static void hash_palette(std::uint64_t& hash, const BiomePaletteEntry& palette)
+{
+    hash_text(hash, palette.name.full_string());
+    hash_states(hash, palette.states);
+}
+
 static void update_checksum(void)
 {
-    // TODO: go through each biome definition and compute a checksum based on its contents
+    auto hash = std::uint64_t { 0 };
+
+    for(std::size_t i = 1; i < s_definitions.size(); ++i) {
+        auto& def = s_definitions[i];
+        auto name = s_reverse_names.find(static_cast<biome_id_type>(i));
+
+        if(name != s_reverse_names.cend()) {
+            hash_text(hash, name->second.full_string());
+        }
+
+        hash_value(hash, def.temperature);
+        hash_value(hash, def.humidity);
+
+        hash_palette(hash, def.palette_basic);
+        hash_palette(hash, def.palette_filler);
+        hash_palette(hash, def.palette_surface);
+        hash_palette(hash, def.palette_fluid);
+
+        hash_value(hash, static_cast<std::uint64_t>(def.scatter.size()));
+
+        for(const auto& entry : def.scatter) {
+            hash_text(hash, entry.feature.full_string());
+            hash_value(hash, entry.chance);
+            hash_value(hash, static_cast<std::uint32_t>(entry.need_above));
+            hash_value(hash, static_cast<std::uint32_t>(entry.need_below));
+            hash_value(hash, static_cast<std::uint64_t>(entry.group_hash));
+            hash_value(hash, static_cast<std::uint32_t>(entry.padding));
+            hash_value(hash, static_cast<std::uint32_t>(entry.edge));
+        }
+
+        std::vector<std::pair<Identifier, Eigen::Vector3f>> tints(def.tint_map.begin(), def.tint_map.end());
+
+        std::sort(tints.begin(), tints.end(), [](const auto& a, const auto& b) {
+            return a.first.full_string() < b.first.full_string();
+        });
+
+        hash_value(hash, static_cast<std::uint64_t>(tints.size()));
+
+        for(const auto& entry : tints) {
+            hash_text(hash, entry.first.full_string());
+            hash_value(hash, entry.second);
+        }
+
+        hash_value(hash, static_cast<std::uint64_t>(def.tint_colors.size()));
+
+        for(const auto& color : def.tint_colors) {
+            hash_value(hash, color);
+        }
+    }
+
+    s_checksum = hash;
 }
 
 std::span<const BiomeDefinition> biome_registry::all_definitions(void)
@@ -68,6 +159,7 @@ void biome_registry::purge(void)
     s_definitions.clear();
     s_names.clear();
     s_reverse_names.clear();
+    s_checksum = 0;
 }
 
 void biome_registry::resolve_palettes(void)

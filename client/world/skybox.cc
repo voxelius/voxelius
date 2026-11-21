@@ -277,7 +277,7 @@ void skybox::update(void)
         alignment = camera_flat.dot(sun_flat) / (camera_length * sun_length);
     }
 
-    auto warmth = std::pow(std::max(alignment, 0.0f), 2.0f) * twilight * visibility;
+    auto warmth = std::pow(std::max(alignment, 0.0f), 2.0f) * twilight * visibility * sun_factor;
 
     skybox::horizon_color = s_horizon;
     skybox::sun_horizon_color = s_warm_horizon;

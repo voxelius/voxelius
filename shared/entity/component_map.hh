@@ -19,6 +19,7 @@ struct FunctionTable final {
     void (*decode_dat)(entt::registry& registry, entt::entity entity, ReadBuffer& buffer);
     void (*interpolate)(entt::registry& registry, entt::entity entity, float alpha);
     void (*connect)(entt::registry& registry);
+    void (*hash_config)(std::uint64_t& hash, const std::any& config);
 };
 } // namespace component_map::detail
 
@@ -62,6 +63,7 @@ void encode_net(entt::registry& registry, component_id_type id, entt::entity ent
 void decode_net(entt::registry& registry, component_id_type id, entt::entity entity, ReadBuffer& buffer);
 void encode_dat(entt::registry& registry, component_id_type id, entt::entity entity, WriteBuffer& buffer);
 void decode_dat(entt::registry& registry, component_id_type id, entt::entity entity, ReadBuffer& buffer);
+void hash_config(std::uint64_t& hash, component_id_type id, const std::any& config);
 } // namespace component_map
 
 namespace component_map
@@ -102,6 +104,10 @@ component_id_type component_map::add(std::string_view name)
 
     if constexpr(requires { &Component<T>::interpolate; }) {
         functions.interpolate = &Component<T>::interpolate;
+    }
+
+    if constexpr(requires { &Component<T>::hash_config; }) {
+        functions.hash_config = &Component<T>::hash_config;
     }
 
     return detail::add(typeid(T), std::move(name), std::move(functions));

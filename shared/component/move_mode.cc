@@ -3,6 +3,7 @@
 #include "shared/component/move_mode.hh"
 
 #include "core/buffer.hh"
+#include "core/utils/crc64.hh"
 
 #include "shared/entity/class.hh"
 #include "shared/entity/component_map.hh"
@@ -50,6 +51,16 @@ std::any Component<MoveMode>::prepare(lua_State* L, int config_idx)
     }
 
     return value.value();
+}
+
+template<>
+void Component<MoveMode>::hash_config(std::uint64_t& hash, const std::any& config)
+{
+    auto value = std::any_cast<unsigned>(&config);
+
+    if(value) {
+        hash = utils::crc64(value, sizeof(*value), hash);
+    }
 }
 
 template<>
