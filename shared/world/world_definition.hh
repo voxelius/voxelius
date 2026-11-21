@@ -6,42 +6,7 @@
 #include "shared/coord.hh"
 #include "shared/world/biome_selector.hh"
 #include "shared/world/weather.hh"
-
-struct WorldVisuals final {
-    struct Sky final {
-        struct Gradient final {
-            Eigen::Vector3f horizon;
-            Eigen::Vector3f zenith;
-        };
-
-        Gradient day;
-        Gradient night;
-
-        float twilight_height;
-    };
-
-    struct Sun final {
-        float tilt;
-    };
-
-    struct Moon final {
-        Eigen::Vector3f color;
-    };
-
-    struct Stars final {
-        std::uint32_t count;
-    };
-
-    struct Clouds final {
-        // empty
-    };
-
-    std::optional<Sky> sky;
-    std::optional<Sun> sun;
-    std::optional<Moon> moon;
-    std::optional<Stars> stars;
-    std::optional<Clouds> clouds;
-};
+#include "shared/world/world_visuals.hh"
 
 struct WorldDefinition final {
     Identifier id;

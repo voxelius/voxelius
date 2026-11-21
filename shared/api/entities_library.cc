@@ -8,11 +8,11 @@
 #include "shared/entity/class_registry.hh"
 #include "shared/entity/component_map.hh"
 #include "shared/entity/required_class.hh"
-#include "shared/globals.hh"
 #include "shared/mod_context.hh"
 #include "shared/utils/entity.hh"
 #include "shared/utils/lua.hh"
 #include "shared/world/world.hh"
+#include "shared/world/world_scope.hh"
 
 static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
 {
@@ -173,7 +173,8 @@ static int api_add(lua_State* L)
 
 static std::optional<entt::entity> spawn_entity(lua_State* L, ModContext* ctx, const char* raw_name, int kv_idx)
 {
-    auto& registry = globals::world->registry();
+    auto world = WorldScope::active();
+    auto& registry = world->registry();
 
     auto id = Identifier::from_string(raw_name, ctx->name_space());
 
@@ -245,7 +246,8 @@ static int api_set_player(lua_State* L)
 
 static int api_patch(lua_State* L)
 {
-    auto& registry = globals::world->registry();
+    auto world = WorldScope::active();
+    auto& registry = world->registry();
 
     auto raw_entity = luaL_checkinteger(L, 1);
     auto entity = static_cast<entt::entity>(raw_entity);
@@ -279,7 +281,8 @@ static int api_patch(lua_State* L)
 
 static int api_despawn(lua_State* L)
 {
-    auto& registry = globals::world->registry();
+    auto world = WorldScope::active();
+    auto& registry = world->registry();
 
     auto raw_entity = luaL_checkinteger(L, 1);
     auto entity = static_cast<entt::entity>(raw_entity);

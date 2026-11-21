@@ -89,7 +89,8 @@ static void handle_disconnect(std::uint32_t reason)
         globals::world->purge();
     }
 
-    weather::reset();
+    auto& state = globals::world->weather();
+    state.reset();
     fog::reset();
     skybox::reset();
     cloud_renderer::reset();

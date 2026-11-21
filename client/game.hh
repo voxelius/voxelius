@@ -1,14 +1,17 @@
 #ifndef D9B8669A_B6E3_4F38_A689_3AC3A988CE25
 #define D9B8669A_B6E3_4F38_A689_3AC3A988CE25
 
-class Identifier;
 class World;
+
+namespace packet
+{
+struct World_Info;
+} // namespace packet
 
 namespace client_game
 {
 void init_world(void);
-void open_world(const Identifier& id);
-std::span<const std::shared_ptr<World>> worlds(void);
+void open_world(const packet::World_Info& packet);
 } // namespace client_game
 
 namespace client_game

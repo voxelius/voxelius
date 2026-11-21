@@ -61,7 +61,7 @@ struct NeighbourCell final {
 
 class ChunkLightTask final : public Task {
 public:
-    explicit ChunkLightTask(ChunkPos pos);
+    ChunkLightTask(World* world, ChunkPos pos);
     virtual ~ChunkLightTask(void) override;
     virtual void process(void) override;
     virtual void finalize(void) override;
@@ -69,6 +69,7 @@ public:
 private:
     std::size_t index(int x, int y, int z) const;
 
+    World* m_world;
     ChunkPos m_cpos;
     std::array<block_id_type, LIGHT_GRID_VOLUME> m_blocks;
     std::array<std::uint8_t, LIGHT_GRID_VOLUME> m_light;
@@ -78,6 +79,7 @@ private:
     bool m_ready { false };
     bool m_empty { true };
     bool m_open_sky { false };
+    bool m_realm_top { false };
 };
 
 constexpr static std::array<std::array<int, 4>, 6> NEIGHBOURS = { {
@@ -145,28 +147,28 @@ static bool needs_seed(const std::array<std::uint8_t, LIGHT_GRID_VOLUME>& light,
     return false;
 }
 
-static bool registry_valid(entt::entity entity)
+static bool registry_valid(World& world, entt::entity entity)
 {
-    auto& chunk_registry = globals::world->chunk_registry();
+    auto& chunk_registry = world.chunk_registry();
     return chunk_registry.valid(entity);
 }
 
-static bool realm_top(ChunkPos::value_type y)
+static bool realm_top(const World& world, ChunkPos::value_type y)
 {
-    auto& definition = globals::world->definition();
+    auto& definition = world.definition();
     auto top = static_cast<ChunkPos::value_type>(definition.max_y >> constant::CHUNK_SIZE_LOG2);
     return y == top;
 }
 
-static bool sky_ready(const ChunkPos& pos)
+static bool sky_ready(const World& world, const ChunkPos& pos)
 {
     // Sunlight enters a chunk through the bottom row of the chunk above, so
     // a chunk below an unlit one has to wait for it.
-    if(realm_top(pos.y())) {
+    if(realm_top(world, pos.y())) {
         return true;
     }
 
-    auto above = globals::world->find_chunk(ChunkPos(pos.x(), pos.y() + 1, pos.z()));
+    auto above = world.find_chunk(ChunkPos(pos.x(), pos.y() + 1, pos.z()));
 
     // A chunk at the top of the loaded world has nothing above it and the
     // column pass already treats that as open sky. Waiting for a neighbour
@@ -175,9 +177,9 @@ static bool sky_ready(const ChunkPos& pos)
     return above == nullptr || above->has_light();
 }
 
-static std::int64_t chunk_distance(const ChunkPos& pos)
+static std::int64_t chunk_distance(World& world, const ChunkPos& pos)
 {
-    auto& registry = globals::world->registry();
+    auto& registry = world.registry();
 
     auto best = std::numeric_limits<std::int64_t>::max();
     auto players = registry.view<Player, Transform>();
@@ -274,7 +276,7 @@ static bool same_light(const LightStorage& first, const LightStorage& second)
     return std::equal(left.begin(), left.end(), right.begin());
 }
 
-ChunkLightTask::ChunkLightTask(ChunkPos pos) : m_cpos(std::move(pos)), m_generation(s_generation)
+ChunkLightTask::ChunkLightTask(World* world, ChunkPos pos) : m_world(world), m_cpos(std::move(pos)), m_generation(s_generation)
 {
     m_blocks.fill(BLOCK_ID_NULL);
     m_light.fill(0x00);
@@ -285,9 +287,9 @@ ChunkLightTask::ChunkLightTask(ChunkPos pos) : m_cpos(std::move(pos)), m_generat
         for(int dz = -1; dz <= 1; dz += 1) {
             for(int dx = -1; dx <= 1; dx += 1) {
                 auto cpos = ChunkPos(m_cpos.x() + dx, m_cpos.y() + dy, m_cpos.z() + dz);
-                auto chunk = globals::world->find_chunk(cpos);
+                auto chunk = world->find_chunk(cpos);
 
-                if(chunk == nullptr || !registry_valid(chunk->entity())) {
+                if(chunk == nullptr || !registry_valid(*world, chunk->entity())) {
                     continue;
                 }
 
@@ -338,7 +340,8 @@ ChunkLightTask::ChunkLightTask(ChunkPos pos) : m_cpos(std::move(pos)), m_generat
     // Sunlight enters through the row above the chunk, so an empty chunk is
     // uniformly lit only when that row is already at full level. At the top
     // of a realm the sky is open by definition.
-    m_open_sky = realm_top(m_cpos.y());
+    m_realm_top = realm_top(*world, m_cpos.y());
+    m_open_sky = m_realm_top;
 
     if(!m_open_sky) {
         m_open_sky = true;
@@ -380,7 +383,7 @@ void ChunkLightTask::process(void)
     // bottom of the chunk above, or open sky at the top of a realm. A
     // missing above chunk can only happen if it unloaded after the task was
     // submitted; treating it as open sky keeps the chunk from going black.
-    auto seed_sky = !realm_top(m_cpos.y()) && m_above;
+    auto seed_sky = !m_realm_top && m_above;
 
     for(int z = 0; z < chunk_size; ++z) {
         for(int x = 0; x < chunk_size; ++x) {
@@ -539,9 +542,9 @@ void ChunkLightTask::finalize(void)
         return;
     }
 
-    auto chunk = globals::world->find_chunk(m_cpos);
+    auto chunk = m_world->find_chunk(m_cpos);
 
-    if(chunk == nullptr || !registry_valid(chunk->entity())) {
+    if(chunk == nullptr || !registry_valid(*m_world, chunk->entity())) {
         return;
     }
 
@@ -550,7 +553,7 @@ void ChunkLightTask::finalize(void)
 
         mark_full_light_change(m_cpos);
 
-        globals::dispatcher.trigger(ChunkLightUpdateEvent(globals::world, m_cpos));
+        globals::dispatcher.trigger(ChunkLightUpdateEvent(m_world, m_cpos));
 
         // A changed border is a seed for the six chunks that share a face
         // with this one; the diagonal chunks are reached through them.
@@ -558,9 +561,9 @@ void ChunkLightTask::finalize(void)
     }
 }
 
-static bool node_alive(const LightNode& node)
+static bool node_alive(const World& world, const LightNode& node)
 {
-    auto& chunks = globals::world->chunks();
+    auto& chunks = world.chunks();
     auto it = chunks.find(node.cpos);
     return it != chunks.cend() && it->second.get() == node.chunk.get();
 }
@@ -589,8 +592,8 @@ static void push_remove(const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpo
     s_queued += 1;
 }
 
-static std::optional<NeighbourCell> find_neighbour(const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpos, std::size_t index,
-    const std::array<int, 4>& offset)
+static std::optional<NeighbourCell> find_neighbour(World& world, const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpos,
+    std::size_t index, const std::array<int, 4>& offset)
 {
     auto lpos = utils::to_local(index);
     auto shifted = LocalPos(lpos.x() + offset[0], lpos.y() + offset[1], lpos.z() + offset[2]);
@@ -605,10 +608,10 @@ static std::optional<NeighbourCell> find_neighbour(const std::shared_ptr<Chunk>&
         neighbour = chunk;
     }
     else {
-        neighbour = globals::world->find_chunk(ncpos);
+        neighbour = world.find_chunk(ncpos);
     }
 
-    if(neighbour == nullptr || !registry_valid(neighbour->entity())) {
+    if(neighbour == nullptr || !registry_valid(world, neighbour->entity())) {
         return std::nullopt;
     }
 
@@ -638,12 +641,12 @@ static void seed_cell(const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpos,
     push_add(chunk, cpos, index, chunk->get_light(index, LIGHT_BLOCK), LIGHT_BLOCK);
 }
 
-static void relight_position(const BlockPos& bpos)
+static void relight_position(World& world, const BlockPos& bpos)
 {
     auto cpos = utils::to_chunk(bpos);
-    auto chunk = globals::world->find_chunk(cpos);
+    auto chunk = world.find_chunk(cpos);
 
-    if(chunk == nullptr || !registry_valid(chunk->entity())) {
+    if(chunk == nullptr || !registry_valid(world, chunk->entity())) {
         return;
     }
 
@@ -701,7 +704,7 @@ static void relight_position(const BlockPos& bpos)
     }
 
     for(const auto& offset : NEIGHBOURS) {
-        auto cell = find_neighbour(chunk, cpos, index, offset);
+        auto cell = find_neighbour(world, chunk, cpos, index, offset);
 
         if(!cell.has_value()) {
             continue;
@@ -711,7 +714,7 @@ static void relight_position(const BlockPos& bpos)
     }
 }
 
-static void process_remove(std::size_t& budget)
+static void process_remove(World& world, std::size_t& budget)
 {
     while(!s_remove.empty()) {
         if(budget == 0) {
@@ -724,12 +727,12 @@ static void process_remove(std::size_t& budget)
         s_queued -= 1;
         budget -= 1;
 
-        if(!node_alive(node)) {
+        if(!node_alive(world, node)) {
             continue;
         }
 
         for(const auto& offset : NEIGHBOURS) {
-            auto cell = find_neighbour(node.chunk, node.cpos, node.index, offset);
+            auto cell = find_neighbour(world, node.chunk, node.cpos, node.index, offset);
 
             if(!cell.has_value()) {
                 continue;
@@ -757,7 +760,7 @@ static void process_remove(std::size_t& budget)
     }
 }
 
-static void process_add(std::size_t& budget)
+static void process_add(World& world, std::size_t& budget)
 {
     for(auto level = static_cast<int>(BLOCK_LIGHT_MAX); level > 0; level -= 1) {
         auto& bucket = s_add[static_cast<std::size_t>(level)];
@@ -773,7 +776,7 @@ static void process_add(std::size_t& budget)
             s_queued -= 1;
             budget -= 1;
 
-            if(!node_alive(node)) {
+            if(!node_alive(world, node)) {
                 continue;
             }
 
@@ -782,7 +785,7 @@ static void process_add(std::size_t& budget)
             }
 
             for(const auto& offset : NEIGHBOURS) {
-                auto cell = find_neighbour(node.chunk, node.cpos, node.index, offset);
+                auto cell = find_neighbour(world, node.chunk, node.cpos, node.index, offset);
 
                 if(!cell.has_value()) {
                     continue;
@@ -892,7 +895,7 @@ lighting::LightChange lighting::take_change(const ChunkPos& pos)
     return result;
 }
 
-void lighting::fixed_update(void)
+void lighting::fixed_update(World& world)
 {
     ZoneScoped;
 
@@ -904,17 +907,17 @@ void lighting::fixed_update(void)
         s_pending_relight.clear();
 
         for(const auto& bpos : positions) {
-            relight_position(bpos);
+            relight_position(world, bpos);
         }
     }
 
     auto budget = LOCAL_BUDGET;
 
-    process_remove(budget);
-    process_add(budget);
+    process_remove(world, budget);
+    process_add(world, budget);
 
     for(const auto& cpos : s_changed) {
-        globals::dispatcher.trigger(ChunkLightUpdateEvent(globals::world, cpos));
+        globals::dispatcher.trigger(ChunkLightUpdateEvent(&world, cpos));
     }
 
     s_changed.clear();
@@ -928,11 +931,11 @@ void lighting::fixed_update(void)
     ordered.reserve(s_dirty.size());
 
     for(const auto& pos : s_dirty) {
-        if(globals::world->find_chunk(pos) == nullptr) {
+        if(world.find_chunk(pos) == nullptr) {
             continue;
         }
 
-        ordered.emplace_back(chunk_distance(pos), pos);
+        ordered.emplace_back(chunk_distance(world, pos), pos);
     }
 
     s_dirty.clear();
@@ -946,7 +949,7 @@ void lighting::fixed_update(void)
     for(const auto& entry : ordered) {
         auto pos = entry.second;
 
-        if(submitted >= LIGHT_TASKS_PER_TICK || s_in_flight.contains(pos) || !sky_ready(pos)) {
+        if(submitted >= LIGHT_TASKS_PER_TICK || s_in_flight.contains(pos) || !sky_ready(world, pos)) {
             // Not this tick: the budget is spent, a task is already running,
             // or the chunk above has not been lit yet.
             s_dirty.insert(pos);
@@ -954,7 +957,7 @@ void lighting::fixed_update(void)
         }
 
         s_in_flight.insert(pos);
-        threading::submit<ChunkLightTask>(pos);
+        threading::submit<ChunkLightTask>(&world, pos);
         submitted += 1;
     }
 }

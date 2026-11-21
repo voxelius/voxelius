@@ -3,7 +3,6 @@
 #include "client/game.hh"
 
 #include "core/camera.hh"
-#include "core/identifier.hh"
 #include "core/threading.hh"
 #include "core/utils/angles.hh"
 
@@ -14,6 +13,7 @@
 #include "shared/cvar/gamerules.hh"
 #include "shared/cvar/server.hh"
 #include "shared/globals.hh"
+#include "shared/net/packet_world.hh"
 #include "shared/physics/physics.hh"
 #include "shared/system/pmove.hh"
 #include "shared/utils/coord.hh"
@@ -21,7 +21,7 @@
 #include "shared/world/block_registry.hh"
 #include "shared/world/lighting.hh"
 #include "shared/world/world.hh"
-#include "shared/world/world_registry.hh"
+#include "shared/world/world_definition.hh"
 
 #include "client/camera.hh"
 #include "client/globals.hh"
@@ -34,18 +34,14 @@
 #include "client/system/pmove_look.hh"
 #include "client/world/chunk_mesher.hh"
 
-static std::vector<std::shared_ptr<World>> s_worlds;
+static std::unique_ptr<World> s_world;
 
-std::span<const std::shared_ptr<World>> client_game::worlds(void)
+void client_game::open_world(const packet::World_Info& packet)
 {
-    return s_worlds;
-}
+    assert(globals::world);
 
-void client_game::open_world(const Identifier& id)
-{
-    if(globals::world && id == globals::world->id()) {
-        return;
-    }
+    WorldDefinition definition {};
+    packet.to_definition(definition);
 
     // In-flight meshing and light
     // tasks still hold the old world
@@ -53,50 +49,21 @@ void client_game::open_world(const Identifier& id)
 
     chunk_mesher::reset();
 
-    if(globals::world) {
-        globals::world->purge();
-    }
+    s_world->purge();
 
     lighting::reset();
 
-    for(const auto& world : s_worlds) {
-        if(id == world->id()) {
-            globals::world = world.get();
-            return;
-        }
-    }
-
-    auto definition = world_registry::find(id);
-
-    if(definition == nullptr) {
-        return;
-    }
-
-    auto world = std::make_shared<World>(definition);
-    s_worlds.push_back(world);
-    globals::world = world.get();
+    s_world->set_definition(std::make_shared<WorldDefinition>(std::move(definition)));
+    s_world->seed = packet.seed;
 }
 
 void client_game::init_world(void)
 {
-    // Every registered world gets a runtime, so the renderers can connect
-    // to all of them once and a world switch only moves globals::world
-    s_worlds.clear();
+    auto definition = std::make_shared<WorldDefinition>();
 
-    for(const auto& definition : world_registry::all()) {
-        s_worlds.push_back(std::make_shared<World>(definition));
-    }
+    s_world = std::make_unique<World>(std::move(definition));
 
-    if(s_worlds.empty()) {
-        return;
-    }
-
-    auto default_id = Identifier::from_string("builtin:overworld");
-    client_game::open_world(default_id);
-
-    if(globals::world == nullptr) {
-        globals::world = s_worlds.front().get();
-    }
+    globals::world = s_world.get();
 }
 
 void client_game::init(void)
@@ -123,7 +90,11 @@ void client_game::init_late(void)
 
 void client_game::shutdown(void)
 {
-    // empty
+    threading::wait();
+
+    if(globals::world) {
+        globals::world->purge();
+    }
 }
 
 void client_game::update(void)

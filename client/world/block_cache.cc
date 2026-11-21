@@ -9,6 +9,8 @@
 #include "shared/world/lighting.hh"
 #include "shared/world/world.hh"
 
+#include "client/globals.hh"
+
 static std::size_t cache_index(std::size_t x, std::size_t y, std::size_t z, std::size_t size)
 {
     return x + y * size + z * size * size;

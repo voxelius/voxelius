@@ -189,8 +189,6 @@ void mod_loader::init(void)
     biome_registry::resolve_features();
     biome_registry::resolve_tint_colors();
 
-    world_registry::resolve();
-
     required_class::resolve();
 }
 

@@ -140,23 +140,20 @@ static cvar::status cmd_weather_force(const cvar::Context&, std::span<const std:
         return cvar::status::ARGUMENT;
     }
 
-    auto world = globals::world;
+    auto& default_world = universe::default_world();
 
-    if(world == nullptr) {
-        world = universe::default_world().get();
-    }
+    auto center = player_center(default_world.get());
+    auto& definition = default_world->definition();
+    auto& state = default_world->weather();
+    auto& allowed = definition.weather;
 
-    WorldScope scope(world);
-
-    auto center = player_center(world);
-
-    if(!weather::force_at(type, center.x(), center.y())) {
+    if(!state.force_at(allowed, type, center.x(), center.y())) {
         msg::log_error("weather_force: {} is not part of this world", args[0]);
 
         return cvar::status::ARGUMENT;
     }
 
-    auto coverage = weather::coverage(center.x(), center.y());
+    auto coverage = state.coverage(allowed, center.x(), center.y());
 
     msg::log_info("weather_force: {} is now active (coverage {:.2f} at {:.0f}, {:.0f})", args[0], coverage, center.x(), center.y());
     return cvar::status::OK;
@@ -199,7 +196,11 @@ static void strike(ServerWorld* world, const WeatherTypeDefinition& def)
 
     // Only strike where the field has a storm
     // patch and the point still belongs to the same type
-    if(weather::coverage(static_cast<float>(x), static_cast<float>(z)) < 0.25f) {
+    auto& definition = world->definition();
+    auto& state = world->weather();
+    auto& allowed = definition.weather;
+
+    if(state.coverage(allowed, static_cast<float>(x), static_cast<float>(z)) < 0.25f) {
         return;
     }
 
@@ -220,10 +221,12 @@ static void strike(ServerWorld* world, const WeatherTypeDefinition& def)
 
 static void update_world(ServerWorld* world)
 {
-    auto& state = weather::state();
+    auto& definition = world->definition();
+    auto& state = world->weather();
+    auto& allowed = definition.weather;
 
     auto center = player_center(world);
-    auto def = weather_registry::find_definition(weather::type_at(center.x(), center.y()));
+    auto def = weather_registry::find_definition(state.type_at(allowed, center.x(), center.y()));
 
     if(def == nullptr) {
         return;
@@ -322,10 +325,10 @@ void weather_sim::init(void)
     force_binding.connect<&cmd_weather_force>();
 
     for(const auto& world : universe::worlds()) {
-        WorldScope scope(world.get());
-
         s_random.seed(world->seed ^ UINT64_C(0x9E3779B97F4A7C15));
-        weather::reset();
+
+        auto& state = world->weather();
+        state.reset();
 
         load_state(world.get());
     }
@@ -334,8 +337,6 @@ void weather_sim::init(void)
 void weather_sim::shutdown(void)
 {
     for(const auto& world : universe::worlds()) {
-        WorldScope scope(world.get());
-
         save_state(world.get());
     }
 }
@@ -349,7 +350,9 @@ void weather_sim::fixed_update(void)
     for(const auto& world : universe::worlds()) {
         WorldScope scope(world.get());
 
-        weather::advance(globals::fixed_frametime);
+        auto& state = world->weather();
+        state.advance(globals::fixed_frametime);
+
         update_world(world.get());
     }
 }

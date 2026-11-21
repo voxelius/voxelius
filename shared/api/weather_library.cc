@@ -5,11 +5,12 @@
 #include "core/identifier.hh"
 #include "core/msg/log.hh"
 
-#include "shared/globals.hh"
 #include "shared/mod_context.hh"
 #include "shared/utils/lua.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
+#include "shared/world/world.hh"
+#include "shared/world/world_scope.hh"
 
 static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
 {
@@ -310,7 +311,8 @@ static int api_add(lua_State* L)
 
 static int api_state(lua_State* L)
 {
-    auto& state = weather::state();
+    auto world = WorldScope::active();
+    auto& state = world->weather();
 
     lua_newtable(L);
 
@@ -338,13 +340,15 @@ static int api_state(lua_State* L)
 static int api_sample(lua_State* L)
 {
     auto x = luaL_checknumber(L, 1);
-    auto y = luaL_checknumber(L, 2);
-    auto z = luaL_checknumber(L, 3);
+    auto z = luaL_checknumber(L, 2);
 
-    (void)y;
+    auto world = WorldScope::active();
+    auto& definition = world->definition();
+    auto& state = world->weather();
+    auto& allowed = definition.weather;
 
-    auto coverage = weather::coverage(static_cast<float>(x), static_cast<float>(z));
-    auto type = weather::type_at(static_cast<float>(x), static_cast<float>(z));
+    auto coverage = state.coverage(allowed, static_cast<float>(x), static_cast<float>(z));
+    auto type = state.type_at(allowed, static_cast<float>(x), static_cast<float>(z));
 
     lua_newtable(L);
 
@@ -381,7 +385,11 @@ static int api_force(lua_State* L)
     auto x = luaL_optnumber(L, 2, 0.0);
     auto z = luaL_optnumber(L, 3, 0.0);
 
-    auto success = weather::force_at(type, static_cast<float>(x), static_cast<float>(z));
+    auto world = WorldScope::active();
+    auto& definition = world->definition();
+    auto& state = world->weather();
+
+    auto success = state.force_at(definition.weather, type, static_cast<float>(x), static_cast<float>(z));
 
     lua_pushboolean(L, success);
     return 1;

@@ -1,16 +1,9 @@
 #ifndef E3CA7055_91BF_4C7D_ACF9_C112C07BA574
 #define E3CA7055_91BF_4C7D_ACF9_C112C07BA574
 
-class World;
-
 namespace globals
 {
 extern entt::dispatcher dispatcher;
-} // namespace globals
-
-namespace globals
-{
-extern World* world;
 } // namespace globals
 
 namespace globals

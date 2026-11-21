@@ -3,6 +3,9 @@
 #include "shared/net/packet_world.hh"
 
 #include "core/buffer.hh"
+#include "core/identifier.hh"
+
+#include "shared/world/world_definition.hh"
 
 void packet::World_Request::encode(const World_Request& packet, WriteBuffer& buffer)
 {
@@ -145,6 +148,26 @@ void packet::World_Timings::decode(World_Timings& packet, ReadBuffer& buffer)
     packet.day = buffer.read<std::uint64_t>();
 }
 
+void packet::World_Info::fill(const WorldDefinition& definition)
+{
+    id = std::string(definition.id.full_string());
+    min_y = definition.min_y;
+    max_y = definition.max_y;
+    spawn = definition.spawn;
+    weather = definition.weather;
+    visuals = definition.visuals;
+}
+
+void packet::World_Info::to_definition(WorldDefinition& definition) const
+{
+    definition.id = Identifier::from_string(id);
+    definition.min_y = min_y;
+    definition.max_y = max_y;
+    definition.spawn = spawn;
+    definition.weather = weather;
+    definition.visuals = visuals;
+}
+
 void packet::World_Info::encode(const World_Info& packet, WriteBuffer& buffer)
 {
     buffer.write<std::string_view>(packet.id);
@@ -155,6 +178,18 @@ void packet::World_Info::encode(const World_Info& packet, WriteBuffer& buffer)
     buffer.write<float>(packet.types_scale);
     buffer.write<std::uint32_t>(packet.detail_seed);
     buffer.write<float>(packet.detail_scale);
+
+    buffer.write<std::int64_t>(packet.min_y);
+    buffer.write<std::int64_t>(packet.max_y);
+    buffer.write_vector<std::int64_t, 3>(packet.spawn);
+
+    buffer.write<std::uint16_t>(static_cast<std::uint16_t>(packet.weather.size()));
+
+    for(auto type : packet.weather) {
+        buffer.write<std::uint32_t>(type);
+    }
+
+    WorldVisuals::encode(packet.visuals, buffer);
 }
 
 void packet::World_Info::decode(World_Info& packet, ReadBuffer& buffer)
@@ -167,6 +202,26 @@ void packet::World_Info::decode(World_Info& packet, ReadBuffer& buffer)
     packet.types_scale = buffer.read<float>();
     packet.detail_seed = buffer.read<std::uint32_t>();
     packet.detail_scale = buffer.read<float>();
+
+    packet.min_y = buffer.read<std::int64_t>();
+    packet.max_y = buffer.read<std::int64_t>();
+    packet.spawn = buffer.read_vector<std::int64_t, 3>();
+
+    packet.weather.clear();
+
+    if(buffer.has_records(1, sizeof(std::uint16_t))) {
+        auto count = buffer.read<std::uint16_t>();
+
+        if(buffer.has_records(count, sizeof(std::uint32_t))) {
+            packet.weather.reserve(count);
+
+            for(std::uint16_t i = 0; i < count; ++i) {
+                packet.weather.push_back(buffer.read<std::uint32_t>());
+            }
+        }
+    }
+
+    WorldVisuals::decode(packet.visuals, buffer);
 }
 
 void packet::World_Weather::encode(const World_Weather& packet, WriteBuffer& buffer)

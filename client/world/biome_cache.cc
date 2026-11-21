@@ -8,6 +8,8 @@
 #include "shared/world/chunk.hh"
 #include "shared/world/world.hh"
 
+#include "client/globals.hh"
+
 void BiomeCache::init(const ChunkPos& cpos)
 {
     m_biomes.fill(BIOME_ID_NULL);

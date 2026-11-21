@@ -28,6 +28,7 @@ struct CloudDeck final {
     weather_type_id type;
     CloudBody body;
     const WeatherState* state;
+    std::span<const weather_type_id> allowed;
     Eigen::Vector2f anchor; // Field drift when the deck was anchored
     Eigen::Vector3f center; // World point the window is meshed around, in the frame the vertices use
     float cell;
@@ -53,6 +54,7 @@ struct CloudGroup final {
 // window belongs to
 struct CloudInput final {
     WeatherState state;
+    std::vector<weather_type_id> allowed;
     Eigen::Vector2f anchor;
     Eigen::Vector2f offset;
     Eigen::Vector3f center;

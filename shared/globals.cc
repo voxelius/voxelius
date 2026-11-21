@@ -6,8 +6,6 @@
 
 entt::dispatcher globals::dispatcher;
 
-World* globals::world { nullptr };
-
 std::uint64_t globals::curtime_us;
 std::uint64_t globals::current_tick;
 

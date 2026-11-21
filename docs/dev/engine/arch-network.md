@@ -113,7 +113,7 @@ The client sends `RequestChunk` every fixed tick with the chunk-aligned view it 
 
 ##### World info
 
-The server sends `World_Info` once, right after admission. It carries the universe seed, the seed the client builds its star field from and the weather grid seeds and scales. These values never change for a world, so the periodic packets do not repeat them. The length of a day is not here: it is the replicated server variable `sv_day_length`, so a change reaches every connected client without another packet.
+The server sends `World_Info` once, right after admission. It carries the world's id, its vertical bounds and spawn point, its optional visual groups, the weather types it allows, the universe seed, the seed the client builds its star field from and the weather grid seeds and scales. The client builds its one world from this packet instead of a local world definition. These values never change for a world, so the periodic packets do not repeat them. The length of a day is not here: it is the replicated server variable `sv_day_length`, so a change reaches every connected client without another packet.
 
 ##### Time
 

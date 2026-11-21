@@ -26,6 +26,7 @@
 #include "client/world/fluid_cache.hh"
 
 #include "client/camera.hh"
+#include "client/globals.hh"
 
 constexpr static std::size_t MAX_SUBMIT_PER_FRAME = 64;
 

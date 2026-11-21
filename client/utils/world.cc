@@ -5,6 +5,8 @@
 #include "shared/globals.hh"
 #include "shared/world/world.hh"
 
+#include "client/globals.hh"
+
 static const WorldVisuals s_fallback_visuals {};
 
 const WorldVisuals& utils::world_visuals(void)

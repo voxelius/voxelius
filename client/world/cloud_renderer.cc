@@ -13,6 +13,7 @@
 #include "shared/constant.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/weather.hh"
+#include "shared/world/world.hh"
 #include "shared/world/world_definition.hh"
 
 #include "client/camera.hh"
@@ -105,7 +106,7 @@ static void upload_mesh(const CloudMesh& mesh, std::size_t slot)
 static std::uint64_t state_signature(void)
 {
     std::uint64_t hash = 0;
-    auto& state = weather::state();
+    auto& state = globals::world->weather();
 
     hash ^= static_cast<std::uint64_t>((state.types.drift.x() + 4096.0f) / 16.0f);
     hash ^= static_cast<std::uint64_t>((state.types.drift.y() + 4096.0f) / 16.0f) << 1;
@@ -149,7 +150,7 @@ static bool needs_rebuild(void)
 static void advance_wind_offsets(void)
 {
     auto step = 1.0f - std::exp(-WIND_EASE_PER_SECOND * std::min(globals::window_frametime, 0.1f));
-    auto& state = weather::state();
+    auto& state = globals::world->weather();
     auto& drift = s_drift;
 
     if(!drift.anchored) {
@@ -249,8 +250,11 @@ static void submit_build(void)
 
     update_depth_range(radius);
 
+    auto& definition = globals::world->definition();
+
     CloudInput input {};
-    input.state = weather::state();
+    input.state = globals::world->weather();
+    input.allowed = definition.weather;
     input.anchor = s_drift.anchor;
     input.offset = s_drift.offset;
     input.center = camera_position;

@@ -9,7 +9,6 @@
 #include "shared/component/player.hh"
 #include "shared/component/transform.hh"
 #include "shared/component/velocity.hh"
-#include "shared/globals.hh"
 #include "shared/mod_loader.hh"
 #include "shared/res/block_collision.hh"
 #include "shared/res/block_model.hh"
@@ -19,7 +18,6 @@
 #include "shared/world/block_collisions.hh"
 #include "shared/world/light_material.hh"
 #include "shared/world/lighting.hh"
-#include "shared/world/world.hh"
 
 void shared_game::init(void)
 {
@@ -50,21 +48,19 @@ void shared_game::shutdown(void)
 {
     lighting::shutdown();
 
-    if(globals::world) {
-        globals::world->purge();
-    }
-
     light_material::shutdown();
     block_collisions::shutdown();
 
     mod_loader::shutdown();
 }
 
-void shared_game::fixed_update(void)
+void shared_game::fixed_update(World* world)
 {
     ZoneScoped;
 
-    lighting::fixed_update();
+    if(world) {
+        lighting::fixed_update(*world);
+    }
 }
 
 void shared_game::fixed_update_late(void)

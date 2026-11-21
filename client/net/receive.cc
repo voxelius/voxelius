@@ -4,7 +4,6 @@
 
 #include "core/cvar/context.hh"
 #include "core/cvar/host.hh"
-#include "core/identifier.hh"
 #include "core/msg/log.hh"
 
 #include "shared/constant.hh"
@@ -22,7 +21,6 @@
 #include "shared/world/weather_registry.hh"
 #include "shared/world/world.hh"
 #include "shared/world/world_clock.hh"
-#include "shared/world/world_registry.hh"
 
 #include "client/camera.hh"
 #include "client/game.hh"
@@ -179,19 +177,10 @@ static void on_world_timings(const packet::World_Timings& packet)
 
 static void on_world_info(const packet::World_Info& packet)
 {
-    auto id = Identifier::from_string(packet.id);
-    auto definition = world_registry::find(id);
+    client_game::open_world(packet);
 
-    if(!definition) {
-        session::disconnect(packet::Session_Disconnect::WORLD_UNKNOWN);
-        return;
-    }
-
-    client_game::open_world(id);
-
-    globals::world->seed = packet.seed;
-
-    weather::apply_info(packet);
+    auto& state = globals::world->weather();
+    state.apply_info(packet);
 
     skybox::set_star_seed(packet.star_seed);
 }
@@ -203,7 +192,8 @@ static void on_world_weather(const packet::World_Weather& packet)
     auto baseline = !s_weather_synced;
     s_weather_synced = true;
 
-    weather::apply_packet(packet, baseline);
+    auto& state = globals::world->weather();
+    state.apply_packet(packet, baseline);
 
     if(baseline) {
         cloud_renderer::reset();
@@ -225,9 +215,12 @@ static cvar::status cmd_weather_status(const cvar::Context& ctx, std::span<const
 {
     auto world = utils::to_fvec(camera::chunk) + camera::local;
 
-    auto& state = weather::state();
-    auto type = weather::type_at(world.x(), world.z());
-    auto coverage = weather::coverage(world.x(), world.z());
+    auto& definition = globals::world->definition();
+    auto& state = globals::world->weather();
+    auto& allowed = definition.weather;
+
+    auto type = state.type_at(allowed, world.x(), world.z());
+    auto coverage = state.coverage(allowed, world.x(), world.z());
 
     std::string description = "none";
 

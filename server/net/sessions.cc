@@ -216,22 +216,22 @@ static void on_auth_response(const packet::Auth_Response& packet)
 
     replication::synchronize(session);
 
-    // The world seed and the weather seeds do not change, so they
-    // travel once. The one-shot state packets then fix the client's
-    // time, drift and cloud deck before the first periodic update
+    // The world shape, the seed and the weather seeds do not change, so they
+    // travel once. The one-shot state packets then fix the client's time,
+    // drift and cloud deck before the first periodic update
     auto world = session->world;
-    const auto& world_id = world->id();
     auto world_seed = world->seed;
+    auto& state = world->weather();
 
     packet::World_Info world_info {};
-    weather::fill_info(world_info);
-    world_info.id = std::string(world_id.full_string());
+    world_info.fill(world->definition());
     world_info.seed = world_seed;
     world_info.star_seed = star_seed_of(world_seed);
+    state.fill_info(world_info);
     protocol::send(world_info, packet.peer);
 
     packet::World_Weather weather_state {};
-    weather::fill_packet(weather_state);
+    state.fill_packet(weather_state);
     protocol::send(weather_state, packet.peer);
 
     packet::World_Timings timings {};

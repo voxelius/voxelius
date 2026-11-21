@@ -3,6 +3,7 @@
 #include "client/world/cloud_field.hh"
 
 #include "shared/constant.hh"
+#include "shared/utils/weather.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
 
@@ -46,6 +47,7 @@ CloudDeck cloud_field::make_deck(const CloudInput& input, const CloudGroup& grou
     deck.height = ring.height;
 
     deck.state = &input.state;
+    deck.allowed = input.allowed;
     deck.anchor = input.anchor;
     deck.center = input.center - Eigen::Vector3f(input.offset.x(), 0.0f, input.offset.y());
 
@@ -67,10 +69,10 @@ static float cell_coverage(const CloudDeck& deck, float field_x, float field_z)
     auto step = deck.cell * 0.25f;
     auto state = *deck.state;
 
-    auto a = weather::coverage_in_field(state, deck.type, field_x - step, field_z - step);
-    auto b = weather::coverage_in_field(state, deck.type, field_x + step, field_z - step);
-    auto c = weather::coverage_in_field(state, deck.type, field_x - step, field_z + step);
-    auto d = weather::coverage_in_field(state, deck.type, field_x + step, field_z + step);
+    auto a = state.coverage_in_field(deck.allowed, deck.type, field_x - step, field_z - step);
+    auto b = state.coverage_in_field(deck.allowed, deck.type, field_x + step, field_z - step);
+    auto c = state.coverage_in_field(deck.allowed, deck.type, field_x - step, field_z + step);
+    auto d = state.coverage_in_field(deck.allowed, deck.type, field_x + step, field_z + step);
 
     return (a + b + c + d) * 0.25f;
 }
@@ -81,7 +83,7 @@ static float column_coverage(const CloudDeck& deck, float field_x, float field_z
         return cell_coverage(deck, field_x, field_z);
     }
 
-    return weather::coverage_in_field(*deck.state, deck.type, field_x, field_z);
+    return deck.state->coverage_in_field(deck.allowed, deck.type, field_x, field_z);
 }
 
 static float shell_hash(std::int32_t x, std::int32_t y, std::int32_t z, std::uint32_t seed)
@@ -145,8 +147,8 @@ CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_
 
     // Two coarse octaves: the broad one carries the weight of the deck, the
     // smaller one keeps a thin deck from collapsing.
-    auto clump = weather::noise_at(field_x / (deck.scale * 2.0f), field_z / (deck.scale * 2.0f), deck.body.seed + 5);
-    auto mass = weather::noise_at(field_x / deck.scale, field_z / deck.scale, deck.body.seed);
+    auto clump = utils::weather_noise(field_x / (deck.scale * 2.0f), field_z / (deck.scale * 2.0f), deck.body.seed + 5);
+    auto mass = utils::weather_noise(field_x / deck.scale, field_z / deck.scale, deck.body.seed);
     auto clump_weight = 0.45f + 0.30f * std::clamp(coverage, 0.0f, 1.0f);
     auto density = clump * clump_weight + mass * (1.0f - clump_weight);
 
@@ -160,7 +162,7 @@ CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_
     auto hash_z = static_cast<std::int32_t>(std::floor(field_z / deck.cell));
     auto open = 1.0f - std::clamp(coverage, 0.0f, 1.0f);
     auto seam = 1.0f - std::clamp(headroom / 0.18f, 0.0f, 1.0f);
-    auto bias = weather::cell_random(hash_x, hash_z, deck.body.seed + 17) - 0.5f;
+    auto bias = utils::weather_cell(hash_x, hash_z, deck.body.seed + 17) - 0.5f;
     auto value = headroom + bias * 0.5f * std::max(open, seam * 0.4f);
 
     if(value <= 0.0f) {
@@ -184,7 +186,7 @@ CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_
 
     // The column's own brightness, kept in the field's frame like everything
     // else so a rebuild never repaints the deck.
-    auto shade = 1.0f + (weather::cell_random(hash_x, hash_z, deck.body.seed + 41) - 0.5f) * CLOUD_SHADE_VARIATION;
+    auto shade = 1.0f + (utils::weather_cell(hash_x, hash_z, deck.body.seed + 41) - 0.5f) * CLOUD_SHADE_VARIATION;
 
     CloudColumn column {};
     column.bottom = static_cast<std::int16_t>(step);

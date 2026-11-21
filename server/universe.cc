@@ -98,9 +98,9 @@ void universe::init(void)
     globals::current_tick = s_tick.value();
     globals::daylight_tick = s_daylight_tick.value();
 
-    auto definitions = world_registry::all();
+    world_registry::resolve();
 
-    vx::throw_if(definitions.empty(), "no world is registered");
+    auto definitions = world_registry::all();
 
     s_worlds.clear();
     s_worlds.reserve(definitions.size());
@@ -144,8 +144,6 @@ void universe::init(void)
     auto default_id_string = std::string(default_id.full_string());
 
     s_universe_config.set_value<std::string>("default_world", default_id_string);
-
-    globals::world = s_default_world.get();
 }
 
 void universe::init_late(void)

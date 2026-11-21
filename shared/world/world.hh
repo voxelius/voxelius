@@ -115,6 +115,7 @@ public:
     constexpr config::Map& config(void);
 
     void set_root(std::filesystem::path root);
+    void set_definition(std::shared_ptr<const WorldDefinition> definition);
     constexpr const std::filesystem::path& root(void) const;
     constexpr const std::filesystem::path& chunk_dir(void) const;
     constexpr const std::filesystem::path& entity_dir(void) const;

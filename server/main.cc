@@ -50,7 +50,10 @@ static void zoned_fixed_update(void)
 {
     ZoneScopedN("server::fixed_update");
 
-    shared_game::fixed_update();
+    // The light queue still belongs to one world; the per-world queue
+    // is the next step, so the default world keeps today's behavior
+    auto& default_world = universe::default_world();
+    shared_game::fixed_update(default_world.get());
 
     for(const auto& world : universe::worlds()) {
         server_game::fixed_update(world.get());

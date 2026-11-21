@@ -13,6 +13,7 @@
 #include "shared/game.hh"
 #include "shared/splash.hh"
 #include "shared/world/weather.hh"
+#include "shared/world/world.hh"
 
 #include "client/camera.hh"
 #include "client/console.hh"
@@ -127,7 +128,7 @@ static void zoned_fixed_update(void)
         FrameMarkStart("Fixed");
 
         client_game::fixed_update(globals::world);
-        shared_game::fixed_update();
+        shared_game::fixed_update(globals::world);
 
         FrameMarkEnd("Fixed");
     }
@@ -147,7 +148,8 @@ static void zoned_update(void)
 
     // The snapshot only says where the field started; the
     // drift is advanced here, every frame, so it never steps
-    weather::advance(globals::window_frametime);
+    auto& state = globals::world->weather();
+    state.advance(globals::window_frametime);
 
     skybox::update();
     fog::update();

@@ -58,6 +58,13 @@ void World::set_root(std::filesystem::path root)
     m_entity_dir = m_root / "entity";
 }
 
+void World::set_definition(std::shared_ptr<const WorldDefinition> definition)
+{
+    assert(definition);
+
+    m_definition = std::move(definition);
+}
+
 void World::load_config(void)
 {
     std::ifstream in(m_root / "world.conf", std::ios::in);

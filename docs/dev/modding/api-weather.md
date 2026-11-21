@@ -1,6 +1,6 @@
 # Weather
 
-Weather in Voxelius belongs to a world, not to an entity. The server owns one state per world; the seeds and scales travel once with `World_Info`, and the drift and wind follow once a second in `World_Weather`. Clients reconstruct the same field from it and draw it.
+Weather in Voxelius belongs to a world, not to an entity. The server owns one state per world; the allowed types, the seeds and scales travel once with `World_Info`, and the drift and wind follow once a second in `World_Weather`. Clients reconstruct the same field from it and draw it.
 
 ## Registering a type
 
@@ -48,7 +48,7 @@ Two drifting noise grids decide what the weather is and how strong it is at a po
 - the **type grid** (1024 blocks per cell) turns a continuous noise value into a weighted mix of the registered types; every type owns a slice of the `[0, 1)` range and the slices cross-fade over a narrow band, so a type change is a gradient, not a step;
 - the **detail grid** (512 blocks per cell) decides how much of that mix is present, so the world can hold several storms with clear sky between them.
 
-Both grids drift with the wind. The seeds and scales travel once in `World_Info`; only the drift and the wind follow over the network, once a second. Both sides advance the drift on their own every frame, and the client only snaps to a packet when the two differ by more than a chunk, so a forced front lands where it was forced and ordinary drift never steps. The server gamerule `gr_weather_cycle` stops that advance on both sides. After a connection the client takes the first weather packet whole and rebuilds the cloud deck instead of sliding the old one towards it; it tracks that locally, so the packet carries no flag for it.
+Both grids drift with the wind. The seeds, the scales and the allowed type list travel once in `World_Info`; only the drift and the wind follow over the network, once a second. Both sides advance the drift on their own every frame, and the client only snaps to a packet when the two differ by more than a chunk, so a forced front lands where it was forced and ordinary drift never steps. The server gamerule `gr_weather_cycle` stops that advance on both sides. After a connection the client takes the first weather packet whole and rebuilds the cloud deck instead of sliding the old one towards it; it tracks that locally, so the packet carries no flag for it.
 
 ## Where the weather is kept
 
@@ -156,8 +156,10 @@ There is no per-type duration or transition schedule: a type covers whatever par
 local state = weather.state()
 -- state.types_scale, state.types_seed, state.detail_scale, state.detail_seed, state.wind_x, state.wind_z
 
-local sample = weather.sample(x, y, z)
+local sample = weather.sample(x, z)
 -- sample.coverage, sample.type, sample.precipitation
 ```
+
+`weather.sample` and `weather.force` take the block X and Z: the field is two-dimensional and does not depend on height.
 
 `weather.force("builtin:rain", x, z)` slides both grids so that the point gets the requested type and a strong detail value; on the server the `weather_force` command does the same around the players.

@@ -208,7 +208,10 @@ void skybox::update(void)
     auto moon_vector = tilt_about_x(world_clock::sun_direction(s_phase + 0.5f), tilt);
 
     Eigen::Vector3f world = utils::to_fvec(camera::chunk) + camera::local;
-    auto blend = weather::blend_region(world.x(), world.y(), world.z(), WEATHER_RADIUS);
+    auto& definition = globals::world->definition();
+    auto& state = globals::world->weather();
+    auto& allowed = definition.weather;
+    auto blend = state.blend_region(allowed, world.x(), world.y(), world.z(), WEATHER_RADIUS);
     auto visibility = std::clamp(blend.sky_visibility, 0.0f, 1.0f);
 
     // The sunlight crosses more air as the sun sinks, losing blue

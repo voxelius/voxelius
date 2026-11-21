@@ -17,8 +17,10 @@
 #include "shared/world/world.hh"
 
 #include "server/system/pmove_validator.hh"
+#include "server/universe.hh"
 #include "server/world/time_sim.hh"
 #include "server/world/weather_sim.hh"
+#include "server/world/world.hh"
 
 static cvar::status cmd_stop(const cvar::Context&, std::span<const std::string_view>)
 {
@@ -45,7 +47,8 @@ void server_game::init(void)
 
 void server_game::init_late(void)
 {
-    auto& registry = globals::world->registry();
+    auto& default_world = universe::default_world();
+    auto& registry = default_world->registry();
 
     utils::spawn(registry, Identifier::from_string("builtin:test_entity"));
 

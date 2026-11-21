@@ -1,10 +1,15 @@
 #ifndef BD2D77E8_727E_4B4C_83D6_92E1569F5B4D
 #define BD2D77E8_727E_4B4C_83D6_92E1569F5B4D
 
+#include "shared/coord.hh"
 #include "shared/net/packet.hh"
 #include "shared/world/biome_slice.hh"
 #include "shared/world/block_storage.hh"
 #include "shared/world/light_storage.hh"
+#include "shared/world/weather.hh"
+#include "shared/world/world_visuals.hh"
+
+struct WorldDefinition;
 
 struct packet::World_Request final : public packet::Base<packet::WORLD_REQUEST_CHUNK> {
     static void encode(const World_Request& packet, WriteBuffer& buffer);
@@ -74,6 +79,9 @@ struct packet::World_Info final : public packet::Base<packet::WORLD_INFO> {
     static void encode(const World_Info& packet, WriteBuffer& buffer);
     static void decode(World_Info& packet, ReadBuffer& buffer);
 
+    void fill(const WorldDefinition& definition);
+    void to_definition(WorldDefinition& definition) const;
+
     std::string id;
     std::uint64_t seed;
     std::uint32_t star_seed;
@@ -82,6 +90,12 @@ struct packet::World_Info final : public packet::Base<packet::WORLD_INFO> {
     float types_scale;
     std::uint32_t detail_seed;
     float detail_scale;
+
+    BlockPos::value_type min_y { -64 };
+    BlockPos::value_type max_y { 255 };
+    BlockPos spawn { BlockPos::Zero() };
+    std::vector<weather_type_id> weather;
+    WorldVisuals visuals;
 };
 
 struct packet::World_Weather final : public packet::Base<packet::WORLD_WEATHER> {
