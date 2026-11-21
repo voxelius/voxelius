@@ -198,6 +198,15 @@ Every translation unit keeps the same top-level order:
   globals, then function declarations and out-of-line definitions. A header that only declares functions still keeps its constants above
   them. A `constexpr` body stays right after its declaration as "Language" says.
 
+#### Class bodies
+
+A class body follows the same idea:
+
+- one access block per class: `public`, then `protected`, then `private`; do not repeat a specifier;
+- statics come first: the constants and the static methods;
+- after them the constructor and destructor (plus `operator=`), the non-static methods, then the fields;
+- a static member comes before a non-static one, and a field comes after every method.
+
 ### Comments
 
 Code documents itself through names. A comment is worth having only when it says something the code cannot: why it is done this way and

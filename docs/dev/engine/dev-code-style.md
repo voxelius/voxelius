@@ -187,6 +187,13 @@ Every translation unit keeps the same top-level order:
 - Function-like macros and `static_assert`s stay next to what they belong to.
 - Headers follow the same order. A `constexpr` body stays right after its declaration.
 
+### Class bodies
+
+- Use one access block per class: `public`, then `protected`, then `private`. Do not repeat a specifier.
+- Statics come first: the constants and the static methods.
+- After them the constructor and destructor (plus `operator=`), the non-static methods, then the fields.
+- A static member comes before a non-static one. A field comes after every method.
+
 ## Comments
 
 - Use plain C++ comments (except for include guards).
