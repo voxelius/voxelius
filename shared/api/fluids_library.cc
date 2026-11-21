@@ -19,7 +19,8 @@ static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
     }
 
     for(unsigned n = 1; n < 10000; ++n) {
-        auto candidate = Identifier::from_parts(id.name_space(), std::format("{}~{}", id.value(), n));
+        auto suffix = std::format("{}~{}", id.value(), n);
+        auto candidate = Identifier::from_parts(id.name_space(), suffix);
 
         if(is_free(candidate)) {
             msg::log_warning("fluids.add: {} is already registered, using {} instead", id.full_string(), candidate.full_string());
@@ -39,7 +40,8 @@ static bool parse_textures(lua_State* L, int idx, std::vector<Identifier>& out, 
     }
 
     if(!lua_istable(L, idx)) {
-        lua_pushfstring(L, "expected a table, got %s", lua_typename(L, lua_type(L, idx)));
+        auto type_name = lua_typename(L, lua_type(L, idx));
+        lua_pushfstring(L, "expected a table, got %s", type_name);
         return false;
     }
 
@@ -92,7 +94,8 @@ static bool parse_definition(lua_State* L, int def_idx, FluidDefinition& def, Mo
 
     if(!lua_isnil(L, -1)) {
         if(!lua_isboolean(L, -1)) {
-            lua_pushfstring(L, "expected a boolean, got %s", lua_typename(L, lua_type(L, -1)));
+            auto type_name = lua_typename(L, lua_type(L, -1));
+            lua_pushfstring(L, "expected a boolean, got %s", type_name);
             return false;
         }
 
@@ -116,7 +119,8 @@ static bool parse_definition(lua_State* L, int def_idx, FluidDefinition& def, Mo
     }
 
     def.fog_color = fog_color->cast<float>();
-    def.fog_color = def.fog_color.cwiseMax(0.0f).cwiseMin(1.0f);
+    Eigen::Vector3f color = def.fog_color.cwiseMax(0.0f);
+    def.fog_color = color.cwiseMin(1.0f);
 
     auto tint_name = utils::opt_string(L, def_idx, "tint", {});
 
@@ -136,13 +140,16 @@ static bool parse_definition(lua_State* L, int def_idx, FluidDefinition& def, Mo
     }
 
     if(!lua_istable(L, -1)) {
-        lua_pushfstring(L, "expected a table, got %s", lua_typename(L, lua_type(L, -1)));
+        auto type_name = lua_typename(L, lua_type(L, -1));
+        lua_pushfstring(L, "expected a table, got %s", type_name);
         return false;
     }
 
     lua_getfield(L, -1, "still");
 
-    if(!parse_textures(L, lua_gettop(L), def.albedo_still, ctx)) {
+    auto still_idx = lua_gettop(L);
+
+    if(!parse_textures(L, still_idx, def.albedo_still, ctx)) {
         return false;
     }
 
@@ -155,7 +162,9 @@ static bool parse_definition(lua_State* L, int def_idx, FluidDefinition& def, Mo
 
     lua_getfield(L, -1, "flowing");
 
-    if(!parse_textures(L, lua_gettop(L), def.albedo_flowing, ctx)) {
+    auto flowing_idx = lua_gettop(L);
+
+    if(!parse_textures(L, flowing_idx, def.albedo_flowing, ctx)) {
         return false;
     }
 
@@ -166,13 +175,14 @@ static bool parse_definition(lua_State* L, int def_idx, FluidDefinition& def, Mo
         return false;
     }
 
-    lua_pop(L, 1); // albedo
+    lua_pop(L, 1); // Albedo
 
     lua_getfield(L, def_idx, "masks");
 
     if(!lua_isnil(L, -1)) {
         if(!lua_istable(L, -1)) {
-            lua_pushfstring(L, "expected a table, got %s", lua_typename(L, lua_type(L, -1)));
+            auto type_name = lua_typename(L, lua_type(L, -1));
+            lua_pushfstring(L, "expected a table, got %s", type_name);
             return false;
         }
 
@@ -209,7 +219,7 @@ static bool parse_definition(lua_State* L, int def_idx, FluidDefinition& def, Mo
         }
     }
 
-    lua_pop(L, 1); // masks
+    lua_pop(L, 1); // Masks
 
     return true;
 }
@@ -285,7 +295,7 @@ void api::open_fluids_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 {
     auto L = lua.get();
 
-    lua_newtable(L); // fluids
+    lua_newtable(L); // Fluids
 
     lua_pushinteger(L, FLUID_GRAVITY_DOWN);
     lua_setfield(L, -2, "GRAVITY_DOWN");

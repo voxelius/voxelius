@@ -15,7 +15,7 @@
 constexpr static float PMOVE_EPS = 1.0e-6f;
 constexpr static float FLY_SPEED = 16.0f;
 constexpr static float FLY_ACCEL_H = 64.0f;
-constexpr static float FLY_ACCEL_V = 96.0f; // sharper movement vertically
+constexpr static float FLY_ACCEL_V = 96.0f; // Sharper movement vertically
 
 static Eigen::Vector3f accelerate(const Eigen::Vector3f& target, const Eigen::Vector3f& velocity, float accel, float frametime)
 {
@@ -54,7 +54,7 @@ static void update_fly(entt::registry& registry, entt::entity entity, const Eige
     });
 }
 
-static void update_walk(entt::entity entity, const Eigen::Vector3f& wishdir, float frametime)
+static void update_walk(entt::entity, const Eigen::Vector3f&, float)
 {
     msg::log_warning("no walk move implemented yet");
 }

@@ -3,7 +3,7 @@
 #include "client/style.hh"
 
 // Blocky dark stone: everything is a flat slab with a one pixel
-// bevel. Light goes to the top left, shadow to the bottom right.
+// bevel. Light goes to the top left, shadow to the bottom right
 static const style::Palette PALETTE = {
     .text = ImVec4(0.929f, 0.929f, 0.929f, 1.000f),
     .text_disabled = ImVec4(0.549f, 0.549f, 0.549f, 1.000f),

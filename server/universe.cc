@@ -34,7 +34,7 @@ static std::shared_ptr<ServerWorld> s_default_world;
 static std::shared_ptr<ServerWorld> find_world(const Identifier& id)
 {
     for(const auto& world : s_worlds) {
-        const auto& world_id = world->id();
+        auto& world_id = world->id();
 
         if(world_id == id) {
             return world;
@@ -108,11 +108,14 @@ void universe::init(void)
     for(const auto& definition : definitions) {
         auto generator = generator_map::find(definition->generator);
 
-        vx::throw_if_not_fmt(generator, "world {}: unknown generator {}", definition->id.full_string(), definition->generator);
+        auto id_text = definition->id.full_string();
+
+        vx::throw_if_not_fmt(generator, "world {}: unknown generator {}", id_text, definition->generator);
 
         auto world = std::make_shared<ServerWorld>(definition);
         auto full_id = definition->id.full_string();
-        auto id_hash = utils::crc64(std::span<const char>(full_id.data(), full_id.size()));
+        auto bytes = std::span<const char>(full_id);
+        auto id_hash = utils::crc64(bytes);
 
         world->seed = s_seed.value() ^ id_hash;
         world->set_root(s_root_dir / definition->directory);
@@ -140,7 +143,7 @@ void universe::init(void)
         s_default_world = s_worlds.front();
     }
 
-    const auto& default_id = s_default_world->id();
+    auto& default_id = s_default_world->id();
     auto default_id_string = std::string(default_id.full_string());
 
     s_universe_config.set_value<std::string>("default_world", default_id_string);
@@ -148,12 +151,17 @@ void universe::init(void)
 
 void universe::init_late(void)
 {
-    msg::log_info("set universe root={} worlds={}", s_root_dir.string(), s_worlds.size());
+    auto root_text = s_root_dir.string();
+
+    msg::log_info("set universe root={} worlds={}", root_text, s_worlds.size());
 
     for(const auto& world : s_worlds) {
-        const auto& world_id = world->id();
-        const auto& root = world->root();
-        msg::log_info("world {} seed={} dir={}", world_id.full_string(), world->seed, root.string());
+        auto& world_id = world->id();
+        auto& root = world->root();
+        auto id_text = world_id.full_string();
+        auto dir_text = root.string();
+
+        msg::log_info("world {} seed={} dir={}", id_text, world->seed, dir_text);
     }
 }
 

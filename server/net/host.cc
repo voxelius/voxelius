@@ -40,13 +40,9 @@ void host::init(void)
 
 void host::init_late(void)
 {
-    auto max_players_v = max_players.value();
-    max_players_v = std::max(max_players_v, 1U);
-    max_players_v = std::min(max_players_v, 128U);
+    auto max_players_v = std::clamp(max_players.value(), 1U, 128U);
 
-    auto status_peers = s_status_peers.value();
-    status_peers = std::max(status_peers, 1U);
-    status_peers = std::min(status_peers, 16U);
+    auto status_peers = std::clamp(s_status_peers.value(), 1U, 16U);
 
     auto listen_port = s_port.value();
     listen_port = std::max<std::uint16_t>(listen_port, 1024);
@@ -58,7 +54,8 @@ void host::init_late(void)
     ENetAddress address {};
     address.host = ENET_HOST_ANY;
     address.port = s_port.value();
-    enet_address_set_host(&address, s_bind.string().c_str());
+    auto bind_address = s_bind.string();
+    enet_address_set_host(&address, bind_address.c_str());
 
     globals::host = enet_host_create(&address, max_players.value() + s_status_peers.value(), protocol::CHANNEL_COUNT, 0, 0);
     vx::throw_if_not(globals::host, "enet_host_create failed");

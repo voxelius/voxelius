@@ -33,13 +33,15 @@ void class_registry::commit(ModContext& ctx)
     auto classes = ctx.take_classes();
     auto names = ctx.take_class_names();
 
+    auto class_count = static_cast<class_id_type>(s_definitions.size());
+
     class_id_type class_offset;
 
     if(classes.empty()) {
-        class_offset = static_cast<class_id_type>(s_definitions.size());
+        class_offset = class_count;
     }
     else {
-        class_offset = static_cast<class_id_type>(s_definitions.size()) - 1;
+        class_offset = class_count - 1;
     }
 
     for(const auto& entry : names) {
@@ -56,7 +58,13 @@ void class_registry::commit(ModContext& ctx)
     }
 
     if(classes.size()) {
-        s_definitions.insert(s_definitions.end(), std::make_move_iterator(classes.begin() + 1), std::make_move_iterator(classes.end()));
+        auto source_begin = std::next(classes.begin());
+        auto source_end = classes.end();
+        auto first = std::make_move_iterator(source_begin);
+        auto last = std::make_move_iterator(source_end);
+        auto destination = s_definitions.end();
+
+        s_definitions.insert(destination, first, last);
     }
 }
 

@@ -29,6 +29,14 @@ void cvar::Number<T>::set_string(std::string_view value)
 }
 
 template<vx::arithmetic T>
+std::string_view cvar::Number<T>::to_string(void) const
+{
+    sync_value();
+
+    return m_string;
+}
+
+template<vx::arithmetic T>
 bool cvar::Number<T>::validate(std::string_view value) const
 {
     T new_value;
@@ -40,14 +48,6 @@ bool cvar::Number<T>::validate(std::string_view value) const
     else {
         return false;
     }
-}
-
-template<vx::arithmetic T>
-std::string_view cvar::Number<T>::to_string(void) const
-{
-    sync_value();
-
-    return m_string;
 }
 
 template<vx::arithmetic T>

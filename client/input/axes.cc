@@ -36,7 +36,7 @@ static void accumulate(input_device device, std::uint32_t code, float value, boo
 }
 
 template<input_device Device>
-static cvar::status cmd_axis(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_axis(const cvar::Context&, std::span<const std::string_view> args)
 {
     if(args.empty()) {
         msg::log_warning("usage: {} <axis> [slot]", input::format_axis_cmd(Device));
@@ -47,7 +47,8 @@ static cvar::status cmd_axis(const cvar::Context& ctx, std::span<const std::stri
     auto code = input::parse_axis_code(Device, args[0]);
 
     if(!code.has_value()) {
-        msg::log_warning("{}: unknown axis {}", input::format_axis_cmd(Device), args[0]);
+        auto command = input::format_axis_cmd(Device);
+        msg::log_warning("{}: unknown axis {}", command, args[0]);
 
         return cvar::status::ARGUMENT;
     }
@@ -64,7 +65,7 @@ static cvar::status cmd_axis(const cvar::Context& ctx, std::span<const std::stri
     return cvar::status::OK;
 }
 
-static cvar::status cmd_list_axes(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_list_axes(const cvar::Context&, std::span<const std::string_view> args)
 {
     for(const auto& it : s_binds) {
         auto device = it.first.device();
@@ -77,7 +78,7 @@ static cvar::status cmd_list_axes(const cvar::Context& ctx, std::span<const std:
     return cvar::status::OK;
 }
 
-static cvar::status cmd_unbind_axes(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_unbind_axes(const cvar::Context&, std::span<const std::string_view>)
 {
     axes::clear();
 
@@ -135,7 +136,8 @@ void axes::init(void)
 
     cvar::add_write_hook<&write_config>();
 
-    globals::dispatcher.sink<SDL_MouseMotionEvent>().connect<&on_mouse_motion_event>();
+    auto sink = globals::dispatcher.sink<SDL_MouseMotionEvent>();
+    sink.connect<&on_mouse_motion_event>();
 }
 
 void axes::bind(AxisSource source, std::string slot, bool overwrite)

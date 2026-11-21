@@ -26,7 +26,8 @@ static void on_block_update(const BlockUpdateEvent& event)
 
 void transmit::init(void)
 {
-    globals::dispatcher.sink<BlockUpdateEvent>().connect<&on_block_update>();
+    auto block_update_sink = globals::dispatcher.sink<BlockUpdateEvent>();
+    block_update_sink.connect<&on_block_update>();
 }
 
 void transmit::fixed_update_late(void)
@@ -38,8 +39,7 @@ void transmit::fixed_update_late(void)
     protocol::broadcast(timings, globals::host);
 
     // One small packet per second keeps both sides on the same front;
-    // the seeds and scales travel once in World_Info, so only the
-    // drift and the wind have to be refreshed here
+    // the seeds and scales travel once in World_Info, so only the drift and the wind have to be refreshed here
     if(0 == (globals::current_tick % WEATHER_SYNC_TICKS)) {
         for(auto& session : sessions::all()) {
             if(session.state != session_state::CONNECTED || session.world == nullptr) {

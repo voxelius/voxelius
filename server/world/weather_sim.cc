@@ -277,7 +277,9 @@ static T load_value(World* world, std::string_view field, const T& fallback)
     auto key = weather_key(field);
     auto& config = world->config();
 
-    return config.value<T>(key).value_or(fallback);
+    auto stored = config.value<T>(key);
+
+    return stored.value_or(fallback);
 }
 
 // A world keeps its fronts in world.conf next to the seed, so a restart

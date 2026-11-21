@@ -89,57 +89,71 @@ void ServerWorld::set_generator(const GeneratorDefinition* generator)
     m_generator = generator;
 }
 
-void ServerWorld::init_generation(std::shared_ptr<void> state)
+const CachedEntropy& ServerWorld::sample_entropy(const ChunkPosXZ& pos)
 {
-    m_generator_state = std::move(state);
-
-    m_placement_extent = 0;
-
-    for(auto& def : biome_registry::all_definitions()) {
-        for(auto& entry : def.scatter) {
-            if(entry.cached == nullptr) {
-                continue;
-            }
-
-            auto& bounds = entry.cached->bounds;
-            auto min_xz = Eigen::Vector2i(bounds.min().x(), bounds.min().z());
-            auto max_xz = Eigen::Vector2i(bounds.max().x(), bounds.max().z());
-            auto horizontal = std::max(min_xz.cwiseAbs().maxCoeff(), max_xz.cwiseAbs().maxCoeff());
-
-            m_placement_extent = std::max(m_placement_extent, entry.padding + entry.edge + static_cast<std::size_t>(horizontal));
-        }
-    }
-
-    m_placement_rules.clear();
-    m_placement_rules.push_back(std::make_unique<PlacementScatter>());
-
-    // The generator seeds its climate noise from the first five draws of a
-    // seeder keyed by the world seed. Discard them so the entropy seed keeps
-    // its old value and feature placement stays stable across this change.
-    std::mt19937_64 seeder;
-    seeder.seed(seed);
-    seeder.discard(5);
-
-    m_entropy_seed = seeder();
-}
-
-const std::vector<FeatureInstance>& ServerWorld::collect_placements(const ChunkPosXZ& pos)
-{
-    auto entry = scatter_entry(pos);
+    auto entry = get_entropy_entry(pos);
 
     std::call_once(entry->init_flag, [this, pos, entry] {
-        PlacementContext context {};
-        context.world = this;
-        context.position = ChunkPos(pos.x(), 0, pos.y());
-        context.storage = nullptr;
-        context.max_extent = m_placement_extent;
-
-        for(auto& rule : m_placement_rules) {
-            rule->collect(context.position, context, entry->data);
-        }
+        generate_entropy(m_entropy_seed, pos, entry->data);
     });
 
     return entry->data;
+}
+
+std::uint64_t ServerWorld::entropy_at(const BlockPosXZ& pos)
+{
+    ChunkPosXZ cpos;
+    cpos[0] = static_cast<ChunkPosXZ::value_type>(pos[0] >> constant::CHUNK_SIZE_LOG2);
+    cpos[1] = static_cast<ChunkPosXZ::value_type>(pos[1] >> constant::CHUNK_SIZE_LOG2);
+
+    auto& entropy = sample_entropy(cpos);
+
+    auto lx = static_cast<std::size_t>(pos[0] & (constant::CHUNK_SIZE - 1));
+    auto lz = static_cast<std::size_t>(pos[1] & (constant::CHUNK_SIZE - 1));
+
+    auto index = lx + lz * constant::CHUNK_SIZE;
+
+    return entropy[index];
+}
+
+biome_id_type ServerWorld::biome_at(const BlockPosXZ& pos)
+{
+    ChunkPosXZ cpos;
+    cpos[0] = static_cast<ChunkPosXZ::value_type>(pos[0] >> constant::CHUNK_SIZE_LOG2);
+    cpos[1] = static_cast<ChunkPosXZ::value_type>(pos[1] >> constant::CHUNK_SIZE_LOG2);
+
+    auto entry = get_biome_entry(cpos);
+
+    std::call_once(entry->init_flag, [this, cpos, entry] {
+        m_generator->fill_biomes(this, cpos, entry->data);
+    });
+
+    auto lx = static_cast<std::size_t>(pos[0] & (constant::CHUNK_SIZE - 1));
+    auto lz = static_cast<std::size_t>(pos[1] & (constant::CHUNK_SIZE - 1));
+
+    auto index = lx + lz * constant::CHUNK_SIZE;
+
+    return entry->data[index];
+}
+
+std::shared_ptr<ServerWorld::ScatterEntry> ServerWorld::scatter_entry(const ChunkPosXZ& pos)
+{
+    if(auto entry = find_scatter(pos)) {
+        return entry;
+    }
+
+    std::unique_lock lock(m_scatter_mutex);
+
+    auto it = m_scatter_cache.find(pos);
+
+    if(it != m_scatter_cache.end()) {
+        return it->second;
+    }
+
+    auto entry = std::make_shared<ScatterEntry>();
+    m_scatter_cache.emplace(pos, entry);
+
+    return entry;
 }
 
 void ServerWorld::commit_placements(BlockStorage& storage, const ChunkPos& cpos)
@@ -162,6 +176,42 @@ void ServerWorld::commit_placements(BlockStorage& storage, const ChunkPos& cpos,
             commit_instance(storage, cpos, instance);
         }
     }
+}
+
+void ServerWorld::init_generation(std::shared_ptr<void> state)
+{
+    m_generator_state = std::move(state);
+
+    m_placement_extent = 0;
+
+    for(auto& def : biome_registry::all_definitions()) {
+        for(auto& entry : def.scatter) {
+            if(entry.cached == nullptr) {
+                continue;
+            }
+
+            auto& bounds = entry.cached->bounds;
+            auto min_xz = Eigen::Vector2i(bounds.min().x(), bounds.min().z());
+            auto max_xz = Eigen::Vector2i(bounds.max().x(), bounds.max().z());
+            auto min_abs = min_xz.cwiseAbs();
+            auto max_abs = max_xz.cwiseAbs();
+            auto horizontal = std::max(min_abs.maxCoeff(), max_abs.maxCoeff());
+
+            m_placement_extent = std::max(m_placement_extent, entry.padding + entry.edge + static_cast<std::size_t>(horizontal));
+        }
+    }
+
+    m_placement_rules.clear();
+    m_placement_rules.push_back(std::make_unique<PlacementScatter>());
+
+    // The generator seeds its climate noise from the first five draws of a
+    // seeder keyed by the world seed. Discard them so the entropy seed keeps
+    // its old value and feature placement stays stable across this change.
+    std::mt19937_64 seeder;
+    seeder.seed(seed);
+    seeder.discard(5);
+
+    m_entropy_seed = seeder();
 }
 
 std::shared_ptr<ServerWorld::EntropyEntry> ServerWorld::find_entropy_entry(const ChunkPosXZ& pos) const
@@ -195,31 +245,6 @@ std::shared_ptr<ServerWorld::EntropyEntry> ServerWorld::get_entropy_entry(const 
     m_entropy_cache.emplace(pos, entry);
 
     return entry;
-}
-
-const CachedEntropy& ServerWorld::sample_entropy(const ChunkPosXZ& pos)
-{
-    auto entry = get_entropy_entry(pos);
-
-    std::call_once(entry->init_flag, [this, pos, entry] {
-        generate_entropy(m_entropy_seed, pos, entry->data);
-    });
-
-    return entry->data;
-}
-
-std::uint64_t ServerWorld::entropy_at(const BlockPosXZ& pos)
-{
-    ChunkPosXZ cpos;
-    cpos[0] = static_cast<ChunkPosXZ::value_type>(pos[0] >> constant::CHUNK_SIZE_LOG2);
-    cpos[1] = static_cast<ChunkPosXZ::value_type>(pos[1] >> constant::CHUNK_SIZE_LOG2);
-
-    auto& entropy = sample_entropy(cpos);
-
-    auto lx = static_cast<std::size_t>(pos[0] & (constant::CHUNK_SIZE - 1));
-    auto lz = static_cast<std::size_t>(pos[1] & (constant::CHUNK_SIZE - 1));
-
-    return entropy[lx + lz * constant::CHUNK_SIZE];
 }
 
 std::shared_ptr<ServerWorld::BiomeEntry> ServerWorld::find_biome_entry(const ChunkPosXZ& pos) const
@@ -268,40 +293,21 @@ std::shared_ptr<ServerWorld::ScatterEntry> ServerWorld::find_scatter(const Chunk
     return it->second;
 }
 
-std::shared_ptr<ServerWorld::ScatterEntry> ServerWorld::scatter_entry(const ChunkPosXZ& pos)
+const std::vector<FeatureInstance>& ServerWorld::collect_placements(const ChunkPosXZ& pos)
 {
-    if(auto entry = find_scatter(pos)) {
-        return entry;
-    }
+    auto entry = scatter_entry(pos);
 
-    std::unique_lock lock(m_scatter_mutex);
+    std::call_once(entry->init_flag, [this, pos, entry] {
+        PlacementContext context {};
+        context.world = this;
+        context.position = ChunkPos(pos.x(), 0, pos.y());
+        context.storage = nullptr;
+        context.max_extent = m_placement_extent;
 
-    auto it = m_scatter_cache.find(pos);
-
-    if(it != m_scatter_cache.end()) {
-        return it->second;
-    }
-
-    auto entry = std::make_shared<ScatterEntry>();
-    m_scatter_cache.emplace(pos, entry);
-
-    return entry;
-}
-
-biome_id_type ServerWorld::biome_at(const BlockPosXZ& pos)
-{
-    ChunkPosXZ cpos;
-    cpos[0] = static_cast<ChunkPosXZ::value_type>(pos[0] >> constant::CHUNK_SIZE_LOG2);
-    cpos[1] = static_cast<ChunkPosXZ::value_type>(pos[1] >> constant::CHUNK_SIZE_LOG2);
-
-    auto entry = get_biome_entry(cpos);
-
-    std::call_once(entry->init_flag, [this, cpos, entry] {
-        m_generator->fill_biomes(this, cpos, entry->data);
+        for(auto& rule : m_placement_rules) {
+            rule->collect(context.position, context, entry->data);
+        }
     });
 
-    auto lx = static_cast<std::size_t>(pos[0] & (constant::CHUNK_SIZE - 1));
-    auto lz = static_cast<std::size_t>(pos[1] & (constant::CHUNK_SIZE - 1));
-
-    return entry->data[lx + lz * constant::CHUNK_SIZE];
+    return entry->data;
 }

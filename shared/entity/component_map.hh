@@ -62,7 +62,6 @@ void encode_net(entt::registry& registry, component_id_type id, entt::entity ent
 void decode_net(entt::registry& registry, component_id_type id, entt::entity entity, ReadBuffer& buffer);
 void encode_dat(entt::registry& registry, component_id_type id, entt::entity entity, WriteBuffer& buffer);
 void decode_dat(entt::registry& registry, component_id_type id, entt::entity entity, ReadBuffer& buffer);
-void interpolate(entt::registry& registry, entt::entity entity, float alpha);
 } // namespace component_map
 
 namespace component_map
@@ -73,6 +72,11 @@ void connect_all(entt::registry& registry);
 namespace component_map
 {
 void mark_dirty(entt::registry& registry, component_id_type id, entt::entity entity);
+} // namespace component_map
+
+namespace component_map
+{
+void interpolate(entt::registry& registry, entt::entity entity, float alpha);
 } // namespace component_map
 
 template<typename T>

@@ -19,7 +19,7 @@ static Eigen::Vector3i rotate_vector(const Eigen::Vector3i& vector, block_face f
 
         case BLOCK_FACE_TOP:
         case BLOCK_FACE_BOTTOM:
-            return vector; // features are only rotated around the vertical axis
+            return vector; // Features are only rotated around the vertical axis
     }
 
     return vector;

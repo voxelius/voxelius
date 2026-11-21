@@ -11,7 +11,7 @@ cvar::Variable::~Variable(void)
     }
 }
 
-bool cvar::Variable::validate(std::string_view value) const
+bool cvar::Variable::validate(std::string_view) const
 {
     return true;
 }

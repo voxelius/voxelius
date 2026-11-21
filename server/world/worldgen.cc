@@ -87,14 +87,14 @@ void WorldgenTask::finalize(void)
 
 void worldgen::init(void)
 {
+    // empty
 }
 
 void worldgen::shutdown(void)
 {
-    // Pending generators still touch feature rules, noise caches and the
-    // heightmap. Drain them before any of that is destroyed, otherwise a
-    // worker can outlive the teardown and keep feature handles alive (or
-    // use the destroyed state outright).
+    // Pending generators still touch feature rules, noise caches and the heightmap.
+    // Drain them before any of that is destroyed, otherwise a worker can outlive the
+    // teardown and keep feature handles alive (or use the destroyed state outright).
     threading::wait();
 }
 

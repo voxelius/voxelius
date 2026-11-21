@@ -63,21 +63,6 @@ void cvar::detail::VariableBinding::set_flags(flag_bits flags)
     m_flags = flags;
 }
 
-bool cvar::detail::VariableBinding::validate(std::string_view value) const
-{
-    if(m_validator) {
-        return m_validator(value);
-    }
-    else {
-        return true;
-    }
-}
-
-cvar::detail::variable_sink_type cvar::detail::VariableBinding::changed(void)
-{
-    return variable_sink_type { m_changed };
-}
-
 bool cvar::detail::VariableBinding::set_shadow(std::string value)
 {
     if(!validate(value)) {
@@ -111,6 +96,21 @@ void cvar::detail::VariableBinding::set_remote(bool remote)
     m_is_remote = remote;
 }
 
+bool cvar::detail::VariableBinding::validate(std::string_view value) const
+{
+    if(m_validator) {
+        return m_validator(value);
+    }
+    else {
+        return true;
+    }
+}
+
+cvar::detail::variable_sink_type cvar::detail::VariableBinding::changed(void)
+{
+    return variable_sink_type { m_changed };
+}
+
 void cvar::detail::VariableBinding::revert(void)
 {
     if(m_default.has_value()) {
@@ -121,6 +121,11 @@ void cvar::detail::VariableBinding::revert(void)
 cvar::detail::CommandBinding::CommandBinding(std::string name) : m_name(std::move(name))
 {
     // empty
+}
+
+bool cvar::detail::CommandBinding::has_delegate(void) const
+{
+    return static_cast<bool>(m_delegate);
 }
 
 void cvar::detail::CommandBinding::set_help(std::string help)
@@ -146,11 +151,6 @@ void cvar::detail::CommandBinding::set_flags(flag_bits flags)
     }
 
     m_flags = flags;
-}
-
-bool cvar::detail::CommandBinding::has_delegate(void) const
-{
-    return static_cast<bool>(m_delegate);
 }
 
 void cvar::detail::CommandBinding::set_remote(bool remote)

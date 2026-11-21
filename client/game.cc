@@ -99,28 +99,6 @@ void client_game::shutdown(void)
     }
 }
 
-void client_game::update(void)
-{
-    ZoneScoped;
-
-    interpolation::update();
-
-    player_target::update();
-
-    player_look::update();
-    player_move::update();
-    pmove::update(globals::world->registry(), globals::window_frametime);
-
-    metrics::update();
-}
-
-void client_game::update_late(void)
-{
-    ZoneScoped;
-
-    player_look::update_late();
-}
-
 void client_game::fixed_update(World* world)
 {
     ZoneScoped;
@@ -144,9 +122,26 @@ void client_game::fixed_update_late(void)
     transmit::fixed_update_late();
 }
 
-void client_game::layout(void)
+void client_game::update(void)
 {
-    metrics::layout();
+    ZoneScoped;
+
+    interpolation::update();
+
+    player_target::update();
+
+    player_look::update();
+    player_move::update();
+    pmove::update(globals::world->registry(), globals::window_frametime);
+
+    metrics::update();
+}
+
+void client_game::update_late(void)
+{
+    ZoneScoped;
+
+    player_look::update_late();
 }
 
 void client_game::render(void)
@@ -154,4 +149,9 @@ void client_game::render(void)
     ZoneScoped;
 
     player_target::render();
+}
+
+void client_game::layout(void)
+{
+    metrics::layout();
 }

@@ -51,7 +51,7 @@ static std::atomic_bool s_filter_critical { true };
 
 static gui::Screen* s_previous_screen { nullptr };
 
-static cvar::status cmd_clear(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_clear(const cvar::Context&, std::span<const std::string_view>)
 {
     s_log_view.clear();
 
@@ -104,7 +104,7 @@ static void close_console(void)
     s_input.clear();
 }
 
-static void on_language_update(const LanguageUpdateEvent& event)
+static void on_language_update(const LanguageUpdateEvent&)
 {
     console::screen.translate();
 }
@@ -135,32 +135,38 @@ void console::init(void)
     auto& con_history_binding = cvar::bind_var(con_history, "con_history");
     con_history_binding.set_flags(FCVAR_ARCHIVE);
     con_history_binding.set_help("History size, in messages");
-    con_history_binding.changed().connect<&update_history_size>();
+    auto history_changed = con_history_binding.changed();
+    history_changed.connect<&update_history_size>();
 
     auto& con_filter_debug_binding = cvar::bind_var(con_filter_debug, "con_filter_debug");
     con_filter_debug_binding.set_help("Show debug messages in the console");
     con_filter_debug_binding.set_flags(FCVAR_ARCHIVE);
-    con_filter_debug_binding.changed().connect<&update_filters>();
+    auto debug_changed = con_filter_debug_binding.changed();
+    debug_changed.connect<&update_filters>();
 
     auto& con_filter_info_binding = cvar::bind_var(con_filter_info, "con_filter_info");
     con_filter_info_binding.set_help("Show info messages in the console");
     con_filter_info_binding.set_flags(FCVAR_ARCHIVE);
-    con_filter_info_binding.changed().connect<&update_filters>();
+    auto info_changed = con_filter_info_binding.changed();
+    info_changed.connect<&update_filters>();
 
     auto& con_filter_warning_binding = cvar::bind_var(con_filter_warning, "con_filter_warning");
     con_filter_warning_binding.set_help("Show warning messages in the console");
     con_filter_warning_binding.set_flags(FCVAR_ARCHIVE);
-    con_filter_warning_binding.changed().connect<&update_filters>();
+    auto warning_changed = con_filter_warning_binding.changed();
+    warning_changed.connect<&update_filters>();
 
     auto& con_filter_error_binding = cvar::bind_var(con_filter_error, "con_filter_error");
     con_filter_error_binding.set_help("Show error messages in the console");
     con_filter_error_binding.set_flags(FCVAR_ARCHIVE);
-    con_filter_error_binding.changed().connect<&update_filters>();
+    auto error_changed = con_filter_error_binding.changed();
+    error_changed.connect<&update_filters>();
 
     auto& con_filter_critical_binding = cvar::bind_var(con_filter_critical, "con_filter_critical");
     con_filter_critical_binding.set_help("Show critical messages in the console");
     con_filter_critical_binding.set_flags(FCVAR_ARCHIVE);
-    con_filter_critical_binding.changed().connect<&update_filters>();
+    auto critical_changed = con_filter_critical_binding.changed();
+    critical_changed.connect<&update_filters>();
 
     auto& clear_binding = cvar::bind_cmd("clear");
     clear_binding.set_help("Clear the console");
@@ -189,8 +195,11 @@ void console::init(void)
     screen.add_child(s_dimmer, 1);
     screen.add_child(s_panel, 2);
 
-    globals::dispatcher.sink<LanguageUpdateEvent>().connect<&on_language_update>();
-    globals::dispatcher.sink<SDL_KeyboardEvent>().connect<&on_keyboard_event>();
+    auto language_sink = globals::dispatcher.sink<LanguageUpdateEvent>();
+    language_sink.connect<&on_language_update>();
+
+    auto keyboard_sink = globals::dispatcher.sink<SDL_KeyboardEvent>();
+    keyboard_sink.connect<&on_keyboard_event>();
 }
 
 void console::init_late(void)

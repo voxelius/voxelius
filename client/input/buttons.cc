@@ -30,7 +30,7 @@ static std::string join_command(std::span<const std::string_view> args)
 }
 
 template<input_device Device>
-static cvar::status cmd_button(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_button(const cvar::Context&, std::span<const std::string_view> args)
 {
     if(args.size() < 2) {
         msg::log_warning("usage: {} <button> <down|up> [command...]", input::format_button_cmd(Device));
@@ -41,7 +41,8 @@ static cvar::status cmd_button(const cvar::Context& ctx, std::span<const std::st
     auto code = input::parse_button_code(Device, args[0]);
 
     if(!code.has_value()) {
-        msg::log_warning("{}: unknown button {}", input::format_button_cmd(Device), args[0]);
+        auto command = input::format_button_cmd(Device);
+        msg::log_warning("{}: unknown button {}", command, args[0]);
 
         return cvar::status::ARGUMENT;
     }
@@ -49,7 +50,8 @@ static cvar::status cmd_button(const cvar::Context& ctx, std::span<const std::st
     auto edge = input::parse_edge(args[1]);
 
     if(!edge.has_value()) {
-        msg::log_warning("{}: expected down or up, got {}", input::format_button_cmd(Device), args[1]);
+        auto command = input::format_button_cmd(Device);
+        msg::log_warning("{}: expected down or up, got {}", command, args[1]);
 
         return cvar::status::ARGUMENT;
     }
@@ -67,7 +69,7 @@ static cvar::status cmd_button(const cvar::Context& ctx, std::span<const std::st
     return cvar::status::OK;
 }
 
-static cvar::status cmd_list_buttons(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_list_buttons(const cvar::Context&, std::span<const std::string_view> args)
 {
     for(const auto& it : s_binds) {
         auto device = it.first.device();
@@ -81,7 +83,7 @@ static cvar::status cmd_list_buttons(const cvar::Context& ctx, std::span<const s
     return cvar::status::OK;
 }
 
-static cvar::status cmd_unbind_buttons(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_unbind_buttons(const cvar::Context&, std::span<const std::string_view>)
 {
     buttons::clear();
 
@@ -90,7 +92,9 @@ static cvar::status cmd_unbind_buttons(const cvar::Context& ctx, std::span<const
 
 static void execute(input_device device, std::uint32_t code, input_edge edge)
 {
-    if(buttons::is_capturing || globals::gui_screen || ImGui::GetIO().WantCaptureKeyboard) {
+    auto& io = ImGui::GetIO();
+
+    if(buttons::is_capturing || globals::gui_screen || io.WantCaptureKeyboard) {
         return;
     }
 
@@ -200,9 +204,14 @@ void buttons::init(void)
 
     cvar::add_write_hook<&write_config>();
 
-    globals::dispatcher.sink<SDL_KeyboardEvent>().connect<&on_keyboard_event>();
-    globals::dispatcher.sink<SDL_MouseButtonEvent>().connect<&on_mouse_button_event>();
-    globals::dispatcher.sink<SDL_MouseWheelEvent>().connect<&on_mouse_wheel_event>();
+    auto keyboard_sink = globals::dispatcher.sink<SDL_KeyboardEvent>();
+    keyboard_sink.connect<&on_keyboard_event>();
+
+    auto mouse_button_sink = globals::dispatcher.sink<SDL_MouseButtonEvent>();
+    mouse_button_sink.connect<&on_mouse_button_event>();
+
+    auto mouse_wheel_sink = globals::dispatcher.sink<SDL_MouseWheelEvent>();
+    mouse_wheel_sink.connect<&on_mouse_wheel_event>();
 }
 
 void buttons::bind(ButtonSource source, std::string command, bool overwrite)

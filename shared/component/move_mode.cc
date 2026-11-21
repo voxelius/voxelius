@@ -55,7 +55,8 @@ std::any Component<MoveMode>::prepare(lua_State* L, int config_idx)
 template<>
 void Component<MoveMode>::connect(entt::registry& registry)
 {
-    registry.on_update<MoveMode>().connect<&component_map::on_update<MoveMode>>();
+    auto on_update = registry.on_update<MoveMode>();
+    on_update.connect<&component_map::on_update<MoveMode>>();
 }
 
 template<>

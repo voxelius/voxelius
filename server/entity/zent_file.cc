@@ -10,6 +10,7 @@ constexpr static std::uint8_t ZENT_MAGIC_2 = 0x45;
 constexpr static std::uint8_t ZENT_MAGIC_3 = 0x4E;
 constexpr static std::uint8_t ZENT_MAGIC_4 = 0x54;
 constexpr static std::uint32_t ZENT_VERSION = 0x00000001;
+constexpr static std::size_t TABLE_BYTES = constant::REGION_VOLUME * sizeof(std::uint64_t);
 
 struct Payload final {
     std::size_t slot;
@@ -23,7 +24,8 @@ ZentFile::ZentFile(std::filesystem::path path) : m_path(std::move(path))
     m_checksums.fill(0);
 
     std::error_code ec;
-    std::filesystem::create_directories(m_path.parent_path(), ec);
+    auto parent = m_path.parent_path();
+    std::filesystem::create_directories(parent, ec);
 
     if(std::filesystem::exists(m_path)) {
         m_stream.open(m_path, std::ios::in | std::ios::out | std::ios::binary);
@@ -122,7 +124,9 @@ void ZentFile::write_slot(std::size_t slot, const WriteBuffer& buffer)
         m_stream.seekp(static_cast<std::streamoff>(offset), std::ios::beg);
     }
     else {
-        offset = static_cast<std::uint64_t>(m_stream.seekp(0, std::ios::end).tellp());
+        m_stream.seekp(0, std::ios::end);
+        auto end_position = m_stream.tellp();
+        offset = static_cast<std::uint64_t>(end_position);
     }
 
     m_stream.write(reinterpret_cast<const char*>(data), static_cast<std::streamsize>(size));
@@ -182,7 +186,9 @@ bool ZentFile::compact(void)
     save_header();
 
     for(const auto& payload : payloads) {
-        auto offset = static_cast<std::uint64_t>(m_stream.seekp(0, std::ios::end).tellp());
+        m_stream.seekp(0, std::ios::end);
+        auto end_position = m_stream.tellp();
+        auto offset = static_cast<std::uint64_t>(end_position);
         m_stream.write(reinterpret_cast<const char*>(payload.data.data()), static_cast<std::streamsize>(payload.data.size()));
         m_offsets[payload.slot] = offset;
     }
@@ -200,9 +206,9 @@ std::size_t ZentFile::header_size(void)
     result += sizeof(ZENT_MAGIC_3);
     result += sizeof(ZENT_MAGIC_4);
     result += sizeof(ZENT_VERSION);
-    result += constant::REGION_VOLUME * sizeof(std::uint64_t);
-    result += constant::REGION_VOLUME * sizeof(std::uint64_t);
-    result += constant::REGION_VOLUME * sizeof(std::uint64_t);
+    result += TABLE_BYTES;
+    result += TABLE_BYTES;
+    result += TABLE_BYTES;
     return result;
 }
 

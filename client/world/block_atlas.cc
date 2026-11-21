@@ -90,9 +90,7 @@ static std::uint32_t pack_layers(std::vector<stbrp_rect>& rects, std::vector<std
     nodes.resize(LAYER_SIZE);
 
     while(remaining.size()) {
-        if(num_layers >= LAYER_CAP) {
-            throw vx::runtime_error("block_atlas: atlas overflow");
-        }
+        vx::throw_if(num_layers >= LAYER_CAP, "block_atlas: atlas overflow");
 
         std::vector<stbrp_rect> batch;
         batch.resize(remaining.size());
@@ -148,7 +146,10 @@ static res::handle<Image> make_stub_image(const Eigen::Vector4i& color_a, const 
             dest += 4 * y * STUB_SIZE;
             dest += 4 * x;
 
-            if((x < STUB_SIZE / 2 && y < STUB_SIZE / 2) || (x >= STUB_SIZE / 2 && y >= STUB_SIZE / 2)) {
+            auto top_left = x < STUB_SIZE / 2 && y < STUB_SIZE / 2;
+            auto bottom_right = x >= STUB_SIZE / 2 && y >= STUB_SIZE / 2;
+
+            if(top_left || bottom_right) {
                 dest[0] = static_cast<stbi_uc>(color_a.x());
                 dest[1] = static_cast<stbi_uc>(color_a.y());
                 dest[2] = static_cast<stbi_uc>(color_a.z());

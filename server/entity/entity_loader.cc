@@ -26,11 +26,6 @@ struct EntityRegionEntry final {
     std::chrono::steady_clock::time_point last_used;
 };
 
-EntityRegionEntry::EntityRegionEntry(std::filesystem::path path) : region_file(std::move(path))
-{
-    // empty
-}
-
 static vx::hash_map<RegionKey, std::shared_ptr<EntityRegionEntry>> s_cache;
 
 static std::filesystem::path region_path(const World* world, const RegionPos& region)
@@ -170,6 +165,11 @@ static void decode_entity(entt::registry& registry, ReadBuffer& buffer)
 
         component_map::decode_dat(registry, component_id, entity, component_buffer);
     }
+}
+
+EntityRegionEntry::EntityRegionEntry(std::filesystem::path path) : region_file(std::move(path))
+{
+    // empty
 }
 
 void entity_loader::save(World* world, const ChunkPos& pos, std::span<const entt::entity> entities)

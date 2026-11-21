@@ -17,7 +17,7 @@
 constexpr static BlockPos::value_type SURFACE_Y = 0;
 constexpr static BlockPos::value_type FILLER_DEPTH = 3;
 
-struct Superflat_State final {
+struct SuperflatState final {
     // empty
 };
 
@@ -29,11 +29,11 @@ std::shared_ptr<void> Generator<Superflat>::attach(ServerWorld* world)
 
     vx::throw_if(selector.strategy != BIOME_SELECTION_CONSTANT, "superflat requires a constant biome selector");
 
-    return std::make_shared<Superflat_State>();
+    return std::make_shared<SuperflatState>();
 }
 
 template<>
-ColumnSlice Generator<Superflat>::probe(ServerWorld* world, const ChunkPosXZ& pos)
+ColumnSlice Generator<Superflat>::probe(ServerWorld*, const ChunkPosXZ&)
 {
     Column column {};
     column.surface_y = SURFACE_Y;
@@ -45,7 +45,7 @@ ColumnSlice Generator<Superflat>::probe(ServerWorld* world, const ChunkPosXZ& po
 }
 
 template<>
-void Generator<Superflat>::fill_biomes(ServerWorld* world, const ChunkPosXZ& pos, BiomeSlice& out)
+void Generator<Superflat>::fill_biomes(ServerWorld* world, const ChunkPosXZ&, BiomeSlice& out)
 {
     auto& definition = world->definition();
     auto& selector = definition.biome_selector;

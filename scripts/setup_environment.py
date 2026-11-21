@@ -22,7 +22,6 @@ import argparse
 import copy
 import json
 import re
-import sys
 import time
 from pathlib import Path
 
@@ -40,7 +39,7 @@ DEFAULT_SETTINGS = {
 }
 
 # Include-path and define defaults for the Microsoft C/C++ extension. The clangd environment
-# needs no c_cpp_properties.json: it reads compile_commands.json from the repository root instead.
+# needs no c_cpp_properties.json: it reads compile_commands.json from the repository root instead
 CPP_DEFINES = ["TRACY_ENABLE", "NOMINMAX", "_CRT_SECURE_NO_WARNINGS", "_USE_MATH_DEFINES"]
 
 CLANGD_EXTENSION = "llvm-vs-code-extensions.vscode-clangd"
@@ -48,13 +47,13 @@ CPPTOOLS_EXTENSION = "ms-vscode.cpptools"
 
 ENGINE_SETTINGS = {
     "clangd": {
-        # ms-vscode.cpptools has to stay installed for its debugger, only its analysis is off.
+        # ms-vscode.cpptools has to stay installed for its debugger, only its analysis is off
         "C_Cpp.intelliSenseEngine": "disabled",
         "C_Cpp.formatting": "disabled",
         "C_Cpp.codeAnalysis.runAutomatically": False,
         "clangd.enable": True,
         # No --compile-commands-dir: clangd then looks for a database upwards from each file,
-        # so compile_commands.json in the repository root serves the whole project.
+        # so compile_commands.json in the repository root serves the whole project
         "clangd.arguments": [
             "--background-index",
             "--background-index-priority=low",

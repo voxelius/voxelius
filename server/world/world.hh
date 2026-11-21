@@ -3,14 +3,15 @@
 
 #include <random>
 
-#include "server/constant.hh"
-#include "server/world/placement_rule.hh"
 #include "shared/world/biome_slice.hh"
 #include "shared/world/world.hh"
 
-using CachedEntropy = std::array<std::uint64_t, constant::CHUNK_AREA>;
+#include "server/constant.hh"
+#include "server/world/placement_rule.hh"
 
 struct GeneratorDefinition;
+
+using CachedEntropy = std::array<std::uint64_t, constant::CHUNK_AREA>;
 
 class ServerWorld final : public World {
 public:
@@ -38,8 +39,7 @@ public:
 
     void init_generation(std::shared_ptr<void> state);
 
-    // The random source of this world's weather, so one world's strikes do not
-    // depend on how many ticks another world has run
+    // The random source of this world's weather, so one world's strikes do not depend on how many ticks another world has run
     std::mt19937_64 weather_random;
 
 private:

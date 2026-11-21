@@ -14,17 +14,17 @@ std::optional<Eigen::Vector<lua_Integer, N>> require_ivec(lua_State* L, int idx,
 namespace utils
 {
 template<std::size_t N>
-std::optional<Eigen::Vector<lua_Number, N>> require_fvec(lua_State* L, int idx);
+std::optional<Eigen::Vector<lua_Integer, N>> opt_ivec(lua_State* L, int idx, Eigen::Vector<lua_Integer, N> default_value);
 template<std::size_t N>
-std::optional<Eigen::Vector<lua_Number, N>> require_fvec(lua_State* L, int idx, const char* key);
+std::optional<Eigen::Vector<lua_Integer, N>> opt_ivec(lua_State* L, int idx, const char* key, Eigen::Vector<lua_Integer, N> default_value);
 } // namespace utils
 
 namespace utils
 {
 template<std::size_t N>
-std::optional<Eigen::Vector<lua_Integer, N>> opt_ivec(lua_State* L, int idx, Eigen::Vector<lua_Integer, N> default_value);
+std::optional<Eigen::Vector<lua_Number, N>> require_fvec(lua_State* L, int idx);
 template<std::size_t N>
-std::optional<Eigen::Vector<lua_Integer, N>> opt_ivec(lua_State* L, int idx, const char* key, Eigen::Vector<lua_Integer, N> default_value);
+std::optional<Eigen::Vector<lua_Number, N>> require_fvec(lua_State* L, int idx, const char* key);
 } // namespace utils
 
 namespace utils

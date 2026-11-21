@@ -129,7 +129,8 @@ void video::init(void)
     auto& vsync_binding = cvar::bind_var(s_enable_vsync, "r_vsync");
     vsync_binding.set_help("Enable vertical synchronization");
     vsync_binding.set_flags(FCVAR_ARCHIVE);
-    vsync_binding.changed().connect<&update_present_mode>();
+    auto vsync_changed = vsync_binding.changed();
+    vsync_changed.connect<&update_present_mode>();
 
     s_enable_vsync_gui.enable_tooltip();
     s_enable_vsync_gui.bind("r_vsync");
@@ -143,7 +144,8 @@ void video::init(void)
     s_video_mode_control.set_key("r_mode");
     settings::video.add_child(s_video_mode_control, 0);
 
-    vx::throw_if_not_fmt(SDL_InitSubSystem(SDL_INIT_VIDEO), "SDL_InitSubSystem for video failed: {}", SDL_GetError());
+    auto video_ok = SDL_InitSubSystem(SDL_INIT_VIDEO);
+    vx::throw_if_not_fmt(video_ok, "SDL_InitSubSystem for video failed: {}", SDL_GetError());
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -161,8 +163,11 @@ void video::init(void)
 
     SDL_SetWindowMinimumSize(globals::window, constant::MIN_WIDTH, constant::MIN_HEIGHT);
 
-    globals::dispatcher.sink<SDL_WindowEvent>().connect<&on_sdl_window_event>();
-    globals::dispatcher.sink<SDL_KeyboardEvent>().connect<&on_sdl_key>();
+    auto window_sink = globals::dispatcher.sink<SDL_WindowEvent>();
+    window_sink.connect<&on_sdl_window_event>();
+
+    auto keyboard_sink = globals::dispatcher.sink<SDL_KeyboardEvent>();
+    keyboard_sink.connect<&on_sdl_key>();
 
     update_window_title();
 }
@@ -171,7 +176,7 @@ void video::init_late(void)
 {
     update_present_mode();
 
-    const std::string& mode = s_current_mode.string();
+    auto& mode = s_current_mode.string();
 
     if(mode == "windowed") {
         video::request_windowed(s_last_windowed_size.x(), s_last_windowed_size.y());
@@ -246,8 +251,8 @@ const std::vector<SDL_DisplayMode>& video::query_fullscreen_modes(void)
 
 void video::request_fullscreen(int width, int height, int rate)
 {
-    assert(width >= constant::MIN_WIDTH);
-    assert(height >= constant::MIN_HEIGHT);
+    vx::throw_if(width < constant::MIN_WIDTH);
+    vx::throw_if(height < constant::MIN_HEIGHT);
 
     std::size_t best_index = 0;
     auto best_score = std::numeric_limits<int>::max();

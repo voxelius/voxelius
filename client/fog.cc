@@ -22,6 +22,14 @@ cvar::Number<unsigned> fog::model { 0, 0, 2 };
 
 static gui::StepperUnsigned s_fog_model_gui;
 
+float fog::distance;
+Eigen::Vector3f fog::color;
+float fog::light_scale { 1.0f };
+float fog::daylight { 1.0f };
+
+static Eigen::Vector3f s_color;
+static bool s_primed { false };
+
 void fog::init(void)
 {
     auto& binding = cvar::bind_var(fog::model, "r_fog");
@@ -32,14 +40,6 @@ void fog::init(void)
     s_fog_model_gui.bind("r_fog");
     settings::video_atmosphere.add_child(s_fog_model_gui, 3);
 }
-
-float fog::distance;
-Eigen::Vector3f fog::color;
-float fog::light_scale { 1.0f };
-float fog::daylight { 1.0f };
-
-static Eigen::Vector3f s_color;
-static bool s_primed { false };
 
 void fog::update(void)
 {

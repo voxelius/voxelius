@@ -24,7 +24,7 @@
 #include "client/language.hh"
 #include "client/net/session.hh"
 #include "client/play_menu.hh"
-#include "client/res/texture2D.hh"
+#include "client/res/texture_2d.hh"
 #include "client/settings.hh"
 
 gui::Screen main_menu::screen;
@@ -37,7 +37,7 @@ static gui::Menu s_menu;
 static gui::Title s_title;
 static std::string s_splash {};
 
-static void on_language_update(const LanguageUpdateEvent& event)
+static void on_language_update(const LanguageUpdateEvent&)
 {
     main_menu::screen.translate();
 }
@@ -125,17 +125,30 @@ void main_menu::init(void)
 
     screen.add_child(s_menu);
 
-    globals::dispatcher.sink<LanguageUpdateEvent>().connect<&on_language_update>();
-    globals::dispatcher.sink<SDL_KeyboardEvent>().connect<&on_keyboard_event>();
+    auto language_sink = globals::dispatcher.sink<LanguageUpdateEvent>();
+    language_sink.connect<&on_language_update>();
+
+    auto keyboard_sink = globals::dispatcher.sink<SDL_KeyboardEvent>();
+    keyboard_sink.connect<&on_keyboard_event>();
 }
 
 void main_menu::init_late(void)
 {
-    if(std::ranges::any_of(mod_loader::all(), std::bind_front(std::equal_to {}, mod_status::FAILED), &ModContext::status)) {
+    auto mods = mod_loader::all();
+    auto is_failed = std::bind_front(std::equal_to {}, mod_status::FAILED);
+
+    if(std::ranges::any_of(mods, is_failed, &ModContext::status)) {
         s_popup_mods.open();
     }
 
     main_menu::show();
+}
+
+void main_menu::shutdown(void)
+{
+    s_title.set_texture(0, ImVec2(0.0f, 0.0f));
+
+    s_title_texture.reset();
 }
 
 void main_menu::show(void)
@@ -144,11 +157,4 @@ void main_menu::show(void)
     s_title.set_splash(s_splash);
 
     globals::gui_screen = &screen;
-}
-
-void main_menu::shutdown(void)
-{
-    s_title.set_texture(0, ImVec2(0.0f, 0.0f));
-
-    s_title_texture.reset();
 }

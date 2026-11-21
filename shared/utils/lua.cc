@@ -288,6 +288,17 @@ template std::optional<unsigned> utils::opt_bitmask(lua_State* L, int idx, const
 template std::optional<unsigned long> utils::opt_bitmask(lua_State* L, int idx, const char* key, unsigned long default_value);
 template std::optional<unsigned long long> utils::opt_bitmask(lua_State* L, int idx, const char* key, unsigned long long default_value);
 
+std::optional<bool> utils::require_bool(lua_State* L, int idx)
+{
+    if(lua_isboolean(L, idx)) {
+        return static_cast<bool>(lua_toboolean(L, idx));
+    }
+
+    lua_pushfstring(L, "expected a boolean, got %s", lua_typename(L, lua_type(L, idx)));
+
+    return std::nullopt;
+}
+
 std::optional<lua_Integer> utils::require_integer(lua_State* L, int idx)
 {
     int is_num = 0;
@@ -312,17 +323,6 @@ std::optional<lua_Number> utils::require_number(lua_State* L, int idx)
     }
 
     lua_pushfstring(L, "expected a number, got %s", lua_typename(L, lua_type(L, idx)));
-
-    return std::nullopt;
-}
-
-std::optional<bool> utils::require_bool(lua_State* L, int idx)
-{
-    if(lua_isboolean(L, idx)) {
-        return static_cast<bool>(lua_toboolean(L, idx));
-    }
-
-    lua_pushfstring(L, "expected a boolean, got %s", lua_typename(L, lua_type(L, idx)));
 
     return std::nullopt;
 }

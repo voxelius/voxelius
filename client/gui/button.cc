@@ -55,7 +55,13 @@ void gui::Button::layout(void)
     auto& palette = style::palette();
 
     if(m_font) {
-        ImGui::PushFont(m_font, (m_font_size > 0.0f) ? m_font_size : m_font->LegacySize);
+        auto font_size = m_font->LegacySize;
+
+        if(m_font_size > 0.0f) {
+            font_size = m_font_size;
+        }
+
+        ImGui::PushFont(m_font, font_size);
     }
 
     auto frame_padding = ImGui::GetStyle().FramePadding;

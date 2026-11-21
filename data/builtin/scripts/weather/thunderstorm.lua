@@ -6,7 +6,7 @@ weather.add("thunderstorm", {
   wind = 3.0,
 
   -- The storm gets its darkness from the sky tint and the hidden sun,
-  -- not from the albedo: the cloud stays white and the light goes away.
+  -- not from the albedo: the cloud stays white and the light goes away
   cloud = {
     height = 160,
     thickness = 64,

@@ -53,11 +53,18 @@ static void builtin_sink(std::FILE* fd, const msg::Record& record)
 {
     assert(fd);
 
-    auto path_file = std::filesystem::path(record.where.file_name()).filename().string();
+    auto file_path = std::filesystem::path(record.where.file_name());
+    auto file_name = file_path.filename();
+    auto path_file = file_name.string();
     auto message_size = static_cast<int>(record.message.size());
 
-    std::fprintf(fd, "\033[%sm[%s]\033[0m %s:%lu: %.*s\r\n", level_ansi(record.level), level_name(record.level), path_file.c_str(),
-        static_cast<unsigned long>(record.where.line()), message_size, record.message.data());
+    auto ansi_text = level_ansi(record.level);
+    auto level_text = level_name(record.level);
+    auto path_text = path_file.c_str();
+    auto line = static_cast<unsigned long>(record.where.line());
+    auto message_text = record.message.data();
+
+    std::fprintf(fd, "\033[%sm[%s]\033[0m %s:%lu: %.*s\r\n", ansi_text, level_text, path_text, line, message_size, message_text);
 }
 
 void msg::detail::stderr_sink(const Record& record)

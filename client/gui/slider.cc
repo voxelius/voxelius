@@ -2,20 +2,22 @@
 
 #include "client/gui/slider.hh"
 
+#include "core/cvar/host.hh"
+
 #include "client/globals.hh"
 #include "client/gui/stone.hh"
 #include "client/style.hh"
-#include "core/cvar/host.hh"
 
 constexpr static float HANDLE_WIDTH = 7.0f;
 
-// Draws the trough and the handle, updates the fraction while the mouse is
-// held down. Returns true while the slider is being dragged.
 static bool layout_slider(const std::string& id, std::string_view text, float& fraction, float snap_steps)
 {
     auto& palette = style::palette();
 
-    auto size = ImVec2(ImGui::CalcItemWidth(), ImGui::GetFrameHeight());
+    auto width = ImGui::CalcItemWidth();
+    auto height = ImGui::GetFrameHeight();
+
+    auto size = ImVec2(width, height);
     auto item_min = ImGui::GetCursorScreenPos();
 
     ImGui::InvisibleButton(id.c_str(), size);
@@ -127,10 +129,20 @@ void gui::Slider<int>::layout_control(void)
     auto current = m_value.value();
     auto range = m_max - m_min;
 
-    auto fraction = (0 == range) ? 0.0f : static_cast<float>(current - m_min) / static_cast<float>(range);
+    auto fraction = 0.0f;
+
+    if(range) {
+        fraction = static_cast<float>(current - m_min) / static_cast<float>(range);
+    }
 
     char buffer[64];
-    std::snprintf(buffer, sizeof(buffer), m_format.empty() ? "%d" : m_format.c_str(), current);
+    auto format = "%d";
+
+    if(!m_format.empty()) {
+        format = m_format.c_str();
+    }
+
+    std::snprintf(buffer, sizeof(buffer), format, current);
 
     if(layout_slider(this->imgui_id(), buffer, fraction, static_cast<float>(range))) {
         auto next = m_min + static_cast<int>(std::lround(fraction * static_cast<float>(range)));
@@ -143,10 +155,20 @@ void gui::Slider<float>::layout_control(void)
 {
     auto current = m_value.value();
 
-    auto fraction = (m_max <= m_min) ? 0.0f : (current - m_min) / (m_max - m_min);
+    auto fraction = 0.0f;
+
+    if(m_max > m_min) {
+        fraction = (current - m_min) / (m_max - m_min);
+    }
 
     char buffer[64];
-    std::snprintf(buffer, sizeof(buffer), m_format.empty() ? "%.3f" : m_format.c_str(), static_cast<double>(current));
+    auto format = "%.3f";
+
+    if(!m_format.empty()) {
+        format = m_format.c_str();
+    }
+
+    std::snprintf(buffer, sizeof(buffer), format, static_cast<double>(current));
 
     if(layout_slider(this->imgui_id(), buffer, fraction, 0.0f)) {
         m_value.set_value(std::clamp(m_min + fraction * (m_max - m_min), m_min, m_max));
@@ -159,10 +181,20 @@ void gui::Slider<unsigned>::layout_control(void)
     auto current = m_value.value();
 
     auto range = static_cast<std::uint32_t>(m_max) - static_cast<std::uint32_t>(m_min);
-    auto fraction = (0U == range) ? 0.0f : static_cast<float>(current - m_min) / static_cast<float>(range);
+    auto fraction = 0.0f;
+
+    if(range) {
+        fraction = static_cast<float>(current - m_min) / static_cast<float>(range);
+    }
 
     char buffer[64];
-    std::snprintf(buffer, sizeof(buffer), m_format.empty() ? "%u" : m_format.c_str(), current);
+    auto format = "%u";
+
+    if(!m_format.empty()) {
+        format = m_format.c_str();
+    }
+
+    std::snprintf(buffer, sizeof(buffer), format, current);
 
     if(layout_slider(this->imgui_id(), buffer, fraction, static_cast<float>(range))) {
         auto next = static_cast<std::uint32_t>(m_min) + static_cast<std::uint32_t>(std::lround(fraction * static_cast<float>(range)));

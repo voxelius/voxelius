@@ -100,10 +100,9 @@ static std::shared_ptr<RegionEntry> get_region(const World* world, const RegionP
 
     std::unique_lock lock(s_cache_mutex);
 
-    // Another thread may have opened the region while this one waited for
-    // the exclusive lock. Opening the same file twice would give both
-    // instances their own stream and free-range bookkeeping, and their
-    // writes would corrupt each other.
+    // Another thread may have opened the region while this one waited for the
+    // exclusive lock. Opening the same file twice would give both instances their
+    // own stream and free-range bookkeeping, and their writes would corrupt each other.
     if(auto it = s_cache.find(key); it != s_cache.cend()) {
         it->second->last_used.store(std::chrono::steady_clock::now(), std::memory_order_relaxed);
         return it->second;
@@ -202,6 +201,12 @@ static void on_chunk_light(const ChunkLightUpdateEvent& event)
     }
 }
 
+static bool read_region_slot(RegionEntry& entry, std::size_t slot, ReadBuffer& buffer)
+{
+    std::scoped_lock io_lock(entry.io_mutex);
+    return entry.region_file.read_slot(slot, buffer);
+}
+
 RegionEntry::RegionEntry(std::filesystem::path path) : region_file(std::move(path))
 {
     // empty
@@ -215,12 +220,6 @@ LoadTask::LoadTask(std::shared_ptr<World> world, ChunkPos pos) : m_world(std::mo
 LoadTask::~LoadTask(void)
 {
     s_pending[m_world.get()].erase(m_pos);
-}
-
-static bool read_region_slot(RegionEntry& entry, std::size_t slot, ReadBuffer& buffer)
-{
-    std::scoped_lock io_lock(entry.io_mutex);
-    return entry.region_file.read_slot(slot, buffer);
 }
 
 void LoadTask::process(void)
@@ -281,9 +280,14 @@ void SaveTask::finalize(void)
 
 void chunk_loader::init(void)
 {
-    globals::dispatcher.sink<ChunkUpdateEvent>().connect<&on_chunk_update>();
-    globals::dispatcher.sink<BlockUpdateEvent>().connect<&on_block_update>();
-    globals::dispatcher.sink<ChunkLightUpdateEvent>().connect<&on_chunk_light>();
+    auto chunk_update_sink = globals::dispatcher.sink<ChunkUpdateEvent>();
+    chunk_update_sink.connect<&on_chunk_update>();
+
+    auto block_update_sink = globals::dispatcher.sink<BlockUpdateEvent>();
+    block_update_sink.connect<&on_block_update>();
+
+    auto chunk_light_sink = globals::dispatcher.sink<ChunkLightUpdateEvent>();
+    chunk_light_sink.connect<&on_chunk_light>();
 }
 
 void chunk_loader::shutdown(void)

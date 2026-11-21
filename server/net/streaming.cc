@@ -34,8 +34,13 @@ static bool box_is_same(const ChunkAlignedBox& a, const ChunkAlignedBox& b)
 
 static ChunkAlignedBox intersect_boxes(const ChunkAlignedBox& a, const ChunkAlignedBox& b)
 {
-    auto min = a.min().cwiseMax(b.min());
-    auto max = a.max().cwiseMin(b.max());
+    auto a_min = a.min();
+    auto b_min = b.min();
+    auto min = a_min.cwiseMax(b_min);
+
+    auto a_max = a.max();
+    auto b_max = b.max();
+    auto max = a_max.cwiseMin(b_max);
     return ChunkAlignedBox(min, max);
 }
 
@@ -47,7 +52,9 @@ static void rebuild(Session& session, const ChunkPos& player)
 
     auto view = session.stream_view_box;
 
-    for(auto it = session.stream_sent_chunks.begin(); it != session.stream_sent_chunks.end();) {
+    auto it = session.stream_sent_chunks.begin();
+
+    while(it != session.stream_sent_chunks.end()) {
         if(view.contains(*it)) {
             it = std::next(it);
         }
@@ -103,8 +110,10 @@ static void on_chunk_sent(const ChunkSentEvent& event)
 
 void streaming::init(void)
 {
-    globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
-    globals::dispatcher.sink<ChunkSentEvent>().connect<&on_chunk_sent>();
+    auto chunk_remove_sink = globals::dispatcher.sink<ChunkRemoveEvent>();
+    chunk_remove_sink.connect<&on_chunk_remove>();
+    auto chunk_sent_sink = globals::dispatcher.sink<ChunkSentEvent>();
+    chunk_sent_sink.connect<&on_chunk_sent>();
 }
 
 void streaming::shutdown(void)
@@ -163,7 +172,7 @@ void streaming::subscribe(Session& session, const packet::World_Request& packet)
     }
 
     const auto& transform = registry.get<Transform>(session.player);
-    const auto& player = transform.chunk;
+    auto& player = transform.chunk;
 
     auto allowed_view = utils::view_box(player, static_cast<ChunkPos::value_type>(interest::view_distance.value()));
     auto view = intersect_boxes(packet.view, allowed_view);

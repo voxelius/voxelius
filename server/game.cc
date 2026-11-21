@@ -39,9 +39,11 @@ static cvar::status cmd_stop(const cvar::Context&, std::span<const std::string_v
 static bool parse_entity(std::string_view text, entt::entity& entity)
 {
     std::uint32_t value = 0;
-    auto result = std::from_chars(text.data(), text.data() + text.size(), value);
+    auto first = text.data();
+    auto last = first + text.size();
+    auto result = std::from_chars(first, last, value);
 
-    if(result.ec != std::errc() || result.ptr != text.data() + text.size()) {
+    if(result.ec != std::errc() || result.ptr != last) {
         return false;
     }
 
@@ -55,9 +57,11 @@ static bool parse_position(std::span<const std::string_view> args, BlockPos& pos
 
     for(std::size_t i = 0; i < 3; ++i) {
         auto text = args[2 + i];
-        auto result = std::from_chars(text.data(), text.data() + text.size(), values[i]);
+        auto first = text.data();
+        auto last = first + text.size();
+        auto result = std::from_chars(first, last, values[i]);
 
-        if(result.ec != std::errc() || result.ptr != text.data() + text.size()) {
+        if(result.ec != std::errc() || result.ptr != last) {
             return false;
         }
     }
@@ -106,14 +110,20 @@ static cvar::status cmd_tpe(const cvar::Context& ctx, std::span<const std::strin
     if(ctx.client_id) {
         auto session = sessions::find(*ctx.client_id);
 
-        if(session && session->world && session->world->registry().valid(entity)) {
-            source = std::static_pointer_cast<ServerWorld>(session->world);
+        if(session && session->world) {
+            auto& registry = session->world->registry();
+
+            if(registry.valid(entity)) {
+                source = std::static_pointer_cast<ServerWorld>(session->world);
+            }
         }
     }
 
     if(source == nullptr) {
         for(const auto& candidate : universe::worlds()) {
-            if(candidate->registry().valid(entity)) {
+            auto& registry = candidate->registry();
+
+            if(registry.valid(entity)) {
                 source = candidate;
                 break;
             }
@@ -126,7 +136,8 @@ static cvar::status cmd_tpe(const cvar::Context& ctx, std::span<const std::strin
     }
 
     auto& registry = source->registry();
-    auto destination = world->definition().spawn;
+    auto& definition = world->definition();
+    auto destination = definition.spawn;
 
     if(auto transform = registry.try_get<Transform>(entity)) {
         destination = utils::to_block(transform->chunk, transform->local.cast<LocalPos::value_type>());
@@ -137,7 +148,8 @@ static cvar::status cmd_tpe(const cvar::Context& ctx, std::span<const std::strin
     }
 
     if(registry.all_of<SessionRef>(entity)) {
-        auto session = registry.get<SessionRef>(entity).ptr;
+        auto& ref = registry.get<SessionRef>(entity);
+        auto session = ref.ptr;
 
         if(!sessions::transfer(session, world, position)) {
             msg::log_error("tpe: failed to transfer the session into {}", args[1]);
@@ -162,7 +174,9 @@ static cvar::status cmd_tpe(const cvar::Context& ctx, std::span<const std::strin
     if(target_registry.all_of<Transform>(result)) {
         target_registry.patch<Transform>(result, [&](Transform& transform) {
             transform.chunk = utils::to_chunk(destination);
-            transform.local = utils::to_local(destination).cast<float>();
+
+            auto local = utils::to_local(destination);
+            transform.local = local.cast<float>();
         });
     }
 
@@ -197,7 +211,7 @@ void server_game::init_late(void)
 
     utils::spawn(registry, Identifier::from_string("builtin:test_entity"));
 
-    // Mods and the universe seed are both ready by this point.
+    // Mods and the universe seed are both ready by this point
     weather_sim::init();
 }
 

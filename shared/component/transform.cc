@@ -29,7 +29,7 @@ constexpr inline static bool update_component(unsigned dim, Transform& component
 }
 
 template<>
-std::any Component<Transform>::prepare(lua_State* L, int config_idx)
+std::any Component<Transform>::prepare(lua_State*, int)
 {
     return std::monostate {};
 }
@@ -37,11 +37,12 @@ std::any Component<Transform>::prepare(lua_State* L, int config_idx)
 template<>
 void Component<Transform>::connect(entt::registry& registry)
 {
-    registry.on_update<Transform>().connect<&component_map::on_update<Transform>>();
+    auto on_update = registry.on_update<Transform>();
+    on_update.connect<&component_map::on_update<Transform>>();
 }
 
 template<>
-void Component<Transform>::attach(entt::registry& registry, entt::entity entity, const std::any& config)
+void Component<Transform>::attach(entt::registry& registry, entt::entity entity, const std::any&)
 {
     Transform transform {};
     transform.chunk = ChunkPos::Zero();
@@ -69,10 +70,16 @@ bool Component<Transform>::patch(entt::registry& registry, entt::entity entity, 
         return false;
     }
 
+    auto bpos_value = bpos.value();
+    auto bpos_block = bpos_value.cast<BlockPos::value_type>();
+    auto bpos_chunk = utils::to_chunk(bpos_block);
+    auto bpos_local = utils::to_local(bpos_block);
+    auto angs_value = angs.value();
+
     registry.patch<Transform>(entity, [&](Transform& transform) {
-        transform.chunk = utils::to_chunk(bpos.value().cast<BlockPos::value_type>());
-        transform.local = utils::to_local(bpos.value().cast<BlockPos::value_type>()).cast<float>();
-        transform.angles = angs.value().cast<float>();
+        transform.chunk = bpos_chunk;
+        transform.local = bpos_local.cast<float>();
+        transform.angles = angs_value.cast<float>();
     });
 
     return true;
@@ -91,7 +98,8 @@ template<>
 void Component<Transform>::decode_net(entt::registry& registry, entt::entity entity, ReadBuffer& buffer)
 {
     registry.patch<Transform>(entity, [&](Transform& transform) {
-        transform.chunk = buffer.read_vector<std::int64_t, 3>().cast<ChunkPos::value_type>();
+        auto chunk_value = buffer.read_vector<std::int64_t, 3>();
+        transform.chunk = chunk_value.cast<ChunkPos::value_type>();
         transform.local = buffer.read_vector<float, 3>();
         transform.angles = buffer.read_vector<float, 3>();
     });

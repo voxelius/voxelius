@@ -7,7 +7,7 @@
 
 #include "client/constant.hh"
 #include "client/globals.hh"
-#include "client/res/texture2D.hh"
+#include "client/res/texture_2d.hh"
 #include "client/style.hh"
 
 constexpr static float NOISE_SIZE = 16.0f;
@@ -35,7 +35,11 @@ void gui::detail::stone_shutdown(void)
 
 void gui::detail::draw_stone_face(ImDrawList* draw_list, ImVec2 item_min, ImVec2 item_max, const ImVec4& base)
 {
-    auto top = ImVec4(std::min(1.0f, 1.12f * base.x), std::min(1.0f, 1.12f * base.y), std::min(1.0f, 1.12f * base.z), 1.0f);
+    auto red = std::min(1.0f, 1.12f * base.x);
+    auto green = std::min(1.0f, 1.12f * base.y);
+    auto blue = std::min(1.0f, 1.12f * base.z);
+
+    auto top = ImVec4(red, green, blue, 1.0f);
     auto bottom = ImVec4(0.86f * base.x, 0.86f * base.y, 0.86f * base.z, 1.0f);
 
     auto& palette = style::palette();
@@ -47,9 +51,11 @@ void gui::detail::draw_stone_face(ImDrawList* draw_list, ImVec2 item_min, ImVec2
     auto inner_min = ImVec2(item_min.x + bevel, item_min.y + bevel);
     auto inner_max = ImVec2(item_max.x - bevel, item_max.y - bevel);
 
+    auto top_color = ImGui::GetColorU32(top);
+    auto bottom_color = ImGui::GetColorU32(bottom);
+
     draw_list->AddRectFilled(item_min, item_max, ImGui::GetColorU32(palette.border));
-    draw_list->AddRectFilledMultiColor(inner_min, inner_max, ImGui::GetColorU32(top), ImGui::GetColorU32(top), ImGui::GetColorU32(bottom),
-        ImGui::GetColorU32(bottom));
+    draw_list->AddRectFilledMultiColor(inner_min, inner_max, top_color, top_color, bottom_color, bottom_color);
 
     // The grain is the stone block texture. ImGui's backend binds its own
     // samplers with CLAMP_TO_EDGE, so uv beyond 1 would smear the last row

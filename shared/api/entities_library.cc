@@ -25,7 +25,8 @@ static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
     }
 
     for(unsigned n = 1; n < 10000; ++n) {
-        auto candidate = Identifier::from_parts(id.name_space(), std::format("{}~{}", id.value(), n));
+        auto suffix = std::format("{}~{}", id.value(), n);
+        auto candidate = Identifier::from_parts(id.name_space(), suffix);
 
         if(is_free(candidate)) {
             msg::log_warning("entities.add: {} is already registered, using {} instead", id.full_string(), candidate.full_string());
@@ -37,7 +38,7 @@ static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
     return id;
 }
 
-static bool parse_component(lua_State* L, int config_idx, ModContext* ctx, ClassDefinition_Entry& entry)
+static bool parse_component(lua_State* L, int, ModContext*, ClassDefinition_Entry& entry)
 {
     auto component_name = utils::require_string(L, -2);
 
@@ -53,7 +54,7 @@ static bool parse_component(lua_State* L, int config_idx, ModContext* ctx, Class
         return false;
     }
 
-    lua_pushvalue(L, -1); // duplicate the config table; luaL_ref pops its argument
+    lua_pushvalue(L, -1); // Keep the config table: luaL_ref pops its argument
 
     auto config_ref = luaL_ref(L, LUA_REGISTRYINDEX);
     lua_rawgeti(L, LUA_REGISTRYINDEX, config_ref);
@@ -271,7 +272,7 @@ static int api_patch(lua_State* L)
 
     if(!success) {
         lua_pushboolean(L, false);
-        lua_insert(L, -2); // false before the error message already on the stack
+        lua_insert(L, -2); // False before the error message already on the stack
         return 2;
     }
 
@@ -305,7 +306,7 @@ void api::open_entities_library(std::shared_ptr<lua_State>& lua, ModContext* ctx
 
     auto L = lua.get();
 
-    lua_newtable(L); // entities
+    lua_newtable(L); // Entities
 
     lua_pushinteger(L, CLASS_ID_NULL);
     lua_setfield(L, -2, "NULL_CLASS");

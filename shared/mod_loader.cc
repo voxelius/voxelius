@@ -137,7 +137,8 @@ static std::vector<ModInfo> resolve_load_order(std::vector<ModInfo> mods)
         std::sort(ready.begin(), ready.end());
 
         for(const auto& name : ready) {
-            result.push_back(std::move(*map.at(name)));
+            auto info = map.at(name);
+            result.push_back(std::move(*info));
             resolved.insert(name);
             remaining.erase(name);
         }

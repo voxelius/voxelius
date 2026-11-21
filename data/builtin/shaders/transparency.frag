@@ -42,7 +42,8 @@ float hash12(vec2 p)
 // after both are back to a distance along the view axis
 float view_distance(float depth, vec2 range)
 {
-    // A cleared depth attachment holds nothing, and that has to sort behind every layer rather than at the far plane
+    // A cleared depth attachment holds nothing, and that
+    // has to sort behind every layer rather than at the far plane
     if(depth >= 1.0) {
         return 1.0e6;
     }
@@ -55,7 +56,8 @@ float view_distance(float depth, vec2 range)
 
 void main(void)
 {
-    // Distances along the view axis, not raw depth values: the cloud layer has its own near and far planes
+    // Distances along the view axis, not raw depth
+    // values: the cloud layer has its own near and far planes
     vec4 colors[MAX_LAYERS];
     float depths[MAX_LAYERS];
 
@@ -81,7 +83,8 @@ void main(void)
         count += 1;
     }
 
-    // The deck is just another layer here, so water in front of it hides it just as the ground does
+    // The deck is just another layer here, so water
+    // in front of it hides it just as the ground does
     vec4 clouds = texture(u_CloudColor, vs_TexCoord);
 
     if(clouds.a > 0.0) {

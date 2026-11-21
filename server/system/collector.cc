@@ -73,7 +73,13 @@ static void process_entity(entt::registry& registry, entt::entity entity, DirtyM
     }
 
     if(packet.components.size()) {
-        auto except = registry.all_of<SessionRef>(entity) ? registry.get<SessionRef>(entity).ptr->peer : nullptr;
+        ENetPeer* except = nullptr;
+
+        if(registry.all_of<SessionRef>(entity)) {
+            auto& session_ref = registry.get<SessionRef>(entity);
+
+            except = session_ref.ptr->peer;
+        }
 
         if(auto transform = registry.try_get<Transform>(entity)) {
             interest::broadcast(world, packet, transform->chunk, except);
@@ -93,8 +99,11 @@ void collector::init(void)
 {
     for(const auto& world : universe::worlds()) {
         auto& registry = world->registry();
-        registry.on_construct<EntityClass>().connect<&on_create_entity>();
-        registry.on_destroy<EntityClass>().connect<&on_destroy_entity>();
+        auto create_sink = registry.on_construct<EntityClass>();
+        create_sink.connect<&on_create_entity>();
+
+        auto destroy_sink = registry.on_destroy<EntityClass>();
+        destroy_sink.connect<&on_destroy_entity>();
     }
 }
 

@@ -12,7 +12,7 @@
 #include "client/globals.hh"
 #include "client/gui/stone.hh"
 #include "client/input/buttons.hh"
-#include "client/res/texture2D.hh"
+#include "client/res/texture_2d.hh"
 
 gui::ButtonBind* gui::ButtonBind::current = nullptr;
 
@@ -61,9 +61,13 @@ void gui::ButtonBind::init(void)
     s_icon_gbutton = load_icon("bind_gbutton.png");
     s_icon_missing = load_icon("bind_missing.png");
 
-    globals::dispatcher.sink<SDL_KeyboardEvent>().connect<&gui::ButtonBind::on_keyboard_event>();
-    globals::dispatcher.sink<SDL_MouseButtonEvent>().connect<&gui::ButtonBind::on_mouse_button_event>();
-    globals::dispatcher.sink<SDL_MouseWheelEvent>().connect<&gui::ButtonBind::on_mouse_wheel_event>();
+    auto keyboard_sink = globals::dispatcher.sink<SDL_KeyboardEvent>();
+    auto mouse_button_sink = globals::dispatcher.sink<SDL_MouseButtonEvent>();
+    auto mouse_wheel_sink = globals::dispatcher.sink<SDL_MouseWheelEvent>();
+
+    keyboard_sink.connect<&gui::ButtonBind::on_keyboard_event>();
+    mouse_button_sink.connect<&gui::ButtonBind::on_mouse_button_event>();
+    mouse_wheel_sink.connect<&gui::ButtonBind::on_mouse_wheel_event>();
 }
 
 void gui::ButtonBind::shutdown(void)
@@ -128,9 +132,12 @@ void gui::ButtonBind::capture(std::optional<ButtonSource> source)
 void gui::ButtonBind::layout_control(void)
 {
     auto label = m_bound_label.c_str();
-    auto device = bound_button().transform([](const auto& source) {
-        return source.device();
-    });
+    auto source = bound_button();
+    std::optional<input_device> device = std::nullopt;
+
+    if(source.has_value()) {
+        device = source.value().device();
+    }
 
     if(current == this) {
         label = m_capture_label.c_str();

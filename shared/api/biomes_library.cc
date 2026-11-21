@@ -19,7 +19,8 @@ static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
     }
 
     for(unsigned n = 1; n < 10000; ++n) {
-        auto candidate = Identifier::from_parts(id.name_space(), std::format("{}~{}", id.value(), n));
+        auto suffix = std::format("{}~{}", id.value(), n);
+        auto candidate = Identifier::from_parts(id.name_space(), suffix);
 
         if(is_free(candidate)) {
             msg::log_warning("biomes.add: {} is already registered, using {} instead", id.full_string(), candidate.full_string());
@@ -125,7 +126,8 @@ static bool parse_palette_entry(lua_State* L, int entry_idx, BiomePaletteEntry& 
     }
 
     if(!lua_istable(L, -1)) {
-        lua_pushfstring(L, "expected a table, got %s", lua_typename(L, lua_type(L, -1)));
+        auto type_name = lua_typename(L, lua_type(L, -1));
+        lua_pushfstring(L, "expected a table, got %s", type_name);
         return false;
     }
 
@@ -171,7 +173,9 @@ static bool parse_palette(lua_State* L, int palette_idx, BiomeDefinition& def, M
         lua_getfield(L, palette_idx, field_name);
 
         if(!lua_isnil(L, -1)) {
-            if(!parse_palette_entry(L, lua_gettop(L), field_ptr[0], ctx)) {
+            auto entry_idx = lua_gettop(L);
+
+            if(!parse_palette_entry(L, entry_idx, field_ptr[0], ctx)) {
                 return false;
             }
         }
@@ -209,11 +213,14 @@ static bool parse_definition(lua_State* L, int def_idx, BiomeDefinition& def, Mo
 
     if(!lua_isnil(L, -1)) {
         if(!lua_istable(L, -1)) {
-            lua_pushfstring(L, "expected a table, got %s", lua_typename(L, lua_type(L, -1)));
+            auto type_name = lua_typename(L, lua_type(L, -1));
+            lua_pushfstring(L, "expected a table, got %s", type_name);
             return false;
         }
 
-        if(!parse_palette(L, lua_gettop(L), def, ctx)) {
+        auto palette_idx = lua_gettop(L);
+
+        if(!parse_palette(L, palette_idx, def, ctx)) {
             return false;
         }
     }
@@ -226,7 +233,8 @@ static bool parse_definition(lua_State* L, int def_idx, BiomeDefinition& def, Mo
 
     if(!lua_isnil(L, -1)) {
         if(!lua_istable(L, -1)) {
-            lua_pushfstring(L, "expected a table, got %s", lua_typename(L, lua_type(L, -1)));
+            auto type_name = lua_typename(L, lua_type(L, -1));
+            lua_pushfstring(L, "expected a table, got %s", type_name);
             return false;
         }
 
@@ -238,7 +246,8 @@ static bool parse_definition(lua_State* L, int def_idx, BiomeDefinition& def, Mo
             auto entry_idx = lua_gettop(L);
 
             if(!lua_istable(L, entry_idx)) {
-                lua_pushfstring(L, "expected a table, got %s", lua_typename(L, lua_type(L, entry_idx)));
+                auto type_name = lua_typename(L, lua_type(L, entry_idx));
+                lua_pushfstring(L, "expected a table, got %s", type_name);
                 return false;
             }
 
@@ -260,7 +269,8 @@ static bool parse_definition(lua_State* L, int def_idx, BiomeDefinition& def, Mo
 
     if(!lua_isnil(L, -1)) {
         if(!lua_istable(L, -1)) {
-            lua_pushfstring(L, "expected a table, got %s", lua_typename(L, lua_type(L, -1)));
+            auto type_name = lua_typename(L, lua_type(L, -1));
+            lua_pushfstring(L, "expected a table, got %s", type_name);
             return false;
         }
 
@@ -282,7 +292,9 @@ static bool parse_definition(lua_State* L, int def_idx, BiomeDefinition& def, Mo
             }
 
             auto key_id = Identifier::from_string(key_str.value(), ctx->name_space());
-            auto color = value_vec->cast<float>().cwiseMin(1.0f).cwiseMax(0.0f);
+            Eigen::Vector3f color = value_vec->cast<float>();
+            color = color.cwiseMin(1.0f);
+            color = color.cwiseMax(0.0f);
 
             def.tint_map.insert_or_assign(std::move(key_id), std::move(color));
 
@@ -344,7 +356,7 @@ void api::open_biomes_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     auto L = lua.get();
 
-    lua_newtable(L); // biomes
+    lua_newtable(L); // Biomes
 
     lua_pushinteger(L, BIOME_ID_NULL);
     lua_setfield(L, -2, "NULL_BIOME");

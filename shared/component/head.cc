@@ -16,13 +16,15 @@ std::any Component<Head>::prepare(lua_State* L, int config_idx)
         return std::any {};
     }
 
-    return Eigen::Vector3f(offset.value().cast<float>());
+    auto offset_value = offset.value();
+    return Eigen::Vector3f(offset_value.cast<float>());
 }
 
 template<>
 void Component<Head>::connect(entt::registry& registry)
 {
-    registry.on_update<Head>().connect<&component_map::on_update<Head>>();
+    auto on_update = registry.on_update<Head>();
+    on_update.connect<&component_map::on_update<Head>>();
 }
 
 template<>
@@ -48,7 +50,8 @@ bool Component<Head>::patch(entt::registry& registry, entt::entity entity, lua_S
     }
 
     registry.patch<Head>(entity, [&](Head& head) {
-        head.angles = angles.value().cast<float>();
+        auto angles_value = angles.value();
+        head.angles = angles_value.cast<float>();
     });
 
     return true;

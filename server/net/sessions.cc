@@ -45,6 +45,8 @@ static vx::hash_map<std::uint64_t, Session*> s_identity_map;
 
 cvar::Boolean sessions::strict_version { false };
 
+std::uint16_t sessions::num_players = 0;
+
 static std::mt19937_64 s_randomizer;
 static cvar::String s_spawn_world { "" };
 
@@ -102,8 +104,6 @@ static void send_world_state(Session& session)
     timings.day = world_clock::day(globals::daylight_tick, server_vars::day_length_ticks());
     protocol::send(timings, session.peer);
 }
-
-std::uint16_t sessions::num_players = 0;
 
 static bool is_outdated_client(std::uint32_t major, std::uint32_t minor, std::uint32_t patch)
 {
@@ -163,7 +163,7 @@ static void on_auth_request(const packet::Auth_Request& packet)
 
     auto access = operators::contains(packet.pkey) ? session_access::OPERATOR : session_access::PLAYER;
 
-    // An operator is trusted by definition and does not need a second line in the whitelist.
+    // An operator is trusted by definition and does not need a second line in the whitelist
     auto client_whitelisted = !whitelist::enabled.value() || whitelist::contains(packet.pkey) || access == session_access::OPERATOR;
 
     if(!client_whitelisted && packet.invite_code) {
@@ -268,12 +268,12 @@ static void on_auth_response(const packet::Auth_Response& packet)
 
     replication::synchronize(session);
 
-    // The world shape, the seed and the weather seeds do not change, so they
-    // travel once. The one-shot state packets then fix the client's time,
-    // drift and cloud deck before the first periodic update
+    // The world shape, the seed and the weather seeds do not change, so they travel once.
+    // The one-shot state packets then fix the client's time, drift and cloud deck before the first periodic update
     send_world_state(*session);
 
-    auto bpos = session->world->definition().spawn;
+    auto& definition = session->world->definition();
+    auto bpos = definition.spawn;
     auto player = utils::spawn_player(registry, bpos);
     session->player = player;
 
@@ -351,7 +351,7 @@ static Session* find_target(std::string_view name)
     return sessions::find(name);
 }
 
-static cvar::status cmd_who(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_who(const cvar::Context&, std::span<const std::string_view>)
 {
     for(auto& session : sessions::all()) {
         if(session.state == session_state::UNCONNECTED) {
@@ -367,7 +367,7 @@ static cvar::status cmd_who(const cvar::Context& ctx, std::span<const std::strin
     return cvar::status::OK;
 }
 
-static cvar::status cmd_op(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_op(const cvar::Context&, std::span<const std::string_view> args)
 {
     if(args.empty()) {
         msg::log_warning("usage: op <public key>");
@@ -391,7 +391,7 @@ static cvar::status cmd_op(const cvar::Context& ctx, std::span<const std::string
     return cvar::status::OK;
 }
 
-static cvar::status cmd_deop(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_deop(const cvar::Context&, std::span<const std::string_view> args)
 {
     if(args.empty()) {
         msg::log_warning("usage: deop <public key>");
@@ -431,7 +431,7 @@ static cvar::status cmd_kick(const cvar::Context& ctx, std::span<const std::stri
         return cvar::status::ARGUMENT;
     }
 
-    // The caller's own log reply would be sent to a session that no longer has a peer.
+    // The caller's own log reply would be sent to a session that no longer has a peer
     if(ctx.client_id.has_value() && target->client_id == ctx.client_id.value()) {
         msg::log_warning("{}: you cannot kick yourself", target->username);
 
@@ -451,11 +451,6 @@ static cvar::status cmd_kick(const cvar::Context& ctx, std::span<const std::stri
     return cvar::status::OK;
 }
 
-std::span<Session> sessions::all(void)
-{
-    return s_sessions;
-}
-
 void sessions::set_access(Session* session, session_access access)
 {
     if(session->access == access) {
@@ -464,7 +459,7 @@ void sessions::set_access(Session* session, session_access access)
 
     session->access = access;
 
-    // The command list a client knows about depends on its access level.
+    // The command list a client knows about depends on its access level
     if(session->state == session_state::CONNECTED) {
         replication::synchronize(session);
     }
@@ -484,6 +479,11 @@ void sessions::refresh_access(const ed25519::pkey_type& pkey, session_access acc
             set_access(&session, access);
         }
     }
+}
+
+std::span<Session> sessions::all(void)
+{
+    return s_sessions;
 }
 
 void sessions::init(void)
@@ -519,9 +519,12 @@ void sessions::init(void)
     std::random_device noise;
     s_randomizer.seed(noise());
 
-    globals::dispatcher.sink<packet::Auth_Request>().connect<&on_auth_request>();
-    globals::dispatcher.sink<packet::Auth_Response>().connect<&on_auth_response>();
-    globals::dispatcher.sink<packet::Session_Disconnect>().connect<&on_disconnect>();
+    auto auth_request_sink = globals::dispatcher.sink<packet::Auth_Request>();
+    auth_request_sink.connect<&on_auth_request>();
+    auto auth_response_sink = globals::dispatcher.sink<packet::Auth_Response>();
+    auth_response_sink.connect<&on_auth_response>();
+    auto session_disconnect_sink = globals::dispatcher.sink<packet::Session_Disconnect>();
+    session_disconnect_sink.connect<&on_disconnect>();
 }
 
 void sessions::init_late(void)
@@ -577,7 +580,7 @@ Session* sessions::create(ENetPeer* peer, std::string_view username)
             session.peer = peer;
             session.known_entities.clear();
             session.cvar_ratelimit_tick = globals::current_tick;
-            session.cvar_ratelimit_tokens = 1.0f; // allow one command right after connecting
+            session.cvar_ratelimit_tokens = 1.0f; // Allow one command right after connecting
 
             s_username_map.insert_or_assign(session.username, &session);
             s_identity_map.insert_or_assign(session.identity, &session);
@@ -714,7 +717,8 @@ bool sessions::transfer(Session* session, const std::shared_ptr<ServerWorld>& wo
 
         registry.patch<Transform>(session->player, [&](Transform& transform) {
             transform.chunk = utils::to_chunk(position.value());
-            transform.local = utils::to_local(position.value()).cast<float>();
+            auto local = utils::to_local(position.value());
+            transform.local = local.cast<float>();
         });
 
         return true;
@@ -732,7 +736,8 @@ bool sessions::transfer(Session* session, const std::shared_ptr<ServerWorld>& wo
         return false;
     }
 
-    auto destination = world->definition().spawn;
+    auto& definition = world->definition();
+    auto destination = definition.spawn;
 
     if(auto transform = old_registry.try_get<Transform>(old_entity)) {
         destination = utils::to_block(transform->chunk, transform->local.cast<LocalPos::value_type>());
@@ -742,9 +747,8 @@ bool sessions::transfer(Session* session, const std::shared_ptr<ServerWorld>& wo
         destination = position.value();
     }
 
-    // Switch the session before the transfer: the spawn must reach the target
-    // world's sessions, and the old entity's remove must not reach this one.
-    // A remove for the player under its old ID makes the client disconnect.
+    // Switch the session before the transfer: the spawn must reach the target world's sessions,
+    // and the old entity's remove must not reach this one. A remove for the player under its old ID makes the client disconnect
     auto previous_view_box = session->view_box;
     auto previous_known = std::move(session->known_entities);
 
@@ -776,7 +780,8 @@ bool sessions::transfer(Session* session, const std::shared_ptr<ServerWorld>& wo
     if(registry.all_of<Transform>(entity)) {
         registry.patch<Transform>(entity, [&](Transform& transform) {
             transform.chunk = utils::to_chunk(destination);
-            transform.local = utils::to_local(destination).cast<float>();
+            auto local = utils::to_local(destination);
+            transform.local = local.cast<float>();
         });
     }
 

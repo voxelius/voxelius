@@ -12,7 +12,7 @@
 #include "shared/utils/lua.hh"
 
 template<>
-std::any Component<Velocity>::prepare(lua_State* L, int config_idx)
+std::any Component<Velocity>::prepare(lua_State*, int)
 {
     return std::monostate {};
 }
@@ -20,11 +20,12 @@ std::any Component<Velocity>::prepare(lua_State* L, int config_idx)
 template<>
 void Component<Velocity>::connect(entt::registry& registry)
 {
-    registry.on_update<Velocity>().connect<&component_map::on_update<Velocity>>();
+    auto on_update = registry.on_update<Velocity>();
+    on_update.connect<&component_map::on_update<Velocity>>();
 }
 
 template<>
-void Component<Velocity>::attach(entt::registry& registry, entt::entity entity, const std::any& config)
+void Component<Velocity>::attach(entt::registry& registry, entt::entity entity, const std::any&)
 {
     Velocity velocity {};
     velocity.value = Eigen::Vector3f::Zero();
@@ -42,8 +43,10 @@ bool Component<Velocity>::patch(entt::registry& registry, entt::entity entity, l
         return false;
     }
 
+    auto value_vec = value.value();
+
     registry.patch<Velocity>(entity, [&](Velocity& velocity) {
-        velocity.value = value.value().cast<float>();
+        velocity.value = value_vec.cast<float>();
     });
 
     return true;

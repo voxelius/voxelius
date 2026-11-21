@@ -23,7 +23,7 @@ constexpr static std::size_t MAX_CAPTURE = 32;
 static cvar::Number<std::uint16_t> s_cmd_burst { 8, 1, 64 };
 static cvar::Number<std::uint16_t> s_cmd_rate { 4, 1, 64 };
 
-static cvar::status cmd_dbg_echo(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_dbg_echo(const cvar::Context&, std::span<const std::string_view> args)
 {
     msg::log_info("{}", utils::join(args, " "));
 
@@ -96,7 +96,8 @@ void replication::init(void)
     dbg_echo_binding.set_flags(FCVAR_RECALL | FCVAR_ADMIN | FCVAR_HIDDEN);
     dbg_echo_binding.connect<&cmd_dbg_echo>();
 
-    globals::dispatcher.sink<packet::Cvar_Command>().connect<&on_cvar_command>();
+    auto cvar_command_sink = globals::dispatcher.sink<packet::Cvar_Command>();
+    cvar_command_sink.connect<&on_cvar_command>();
 }
 
 void replication::init_late(void)

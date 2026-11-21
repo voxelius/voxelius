@@ -33,6 +33,29 @@ constexpr static float BUILD_COOLDOWN_SECONDS = 0.2f; // A build closer than thi
 constexpr static float CLOUD_NEAR_PLANE = 1.0f;
 constexpr static float CLOUD_DEPTH_MARGIN = 1024.0f;
 
+// A deck is anchored to the field drift at the time it was built, so a
+// rebuild resamples only the cells that slid in at the window's edge
+struct CloudDrift final {
+    Eigen::Vector2f anchor { Eigen::Vector2f::Zero() };
+    Eigen::Vector2f offset { Eigen::Vector2f::Zero() };
+    bool anchored { false };
+};
+
+// One build on the pool: the snapshot arrives by value, the geometry comes back through the task
+class CloudTask final : public Task {
+public:
+    CloudTask(CloudInput input, const std::vector<CloudGroup>& groups, CloudMesh&& scratch, std::uint64_t generation);
+    virtual ~CloudTask(void) override = default;
+    virtual void process(void) override;
+    virtual void finalize(void) override;
+
+private:
+    CloudInput m_input;
+    std::vector<CloudGroup> m_groups;
+    std::uint64_t m_generation;
+    CloudMesh m_mesh;
+};
+
 static cvar::Boolean s_clouds { true };
 static gui::CheckBox s_clouds_gui;
 
@@ -54,14 +77,6 @@ static std::size_t su_DepthBias;
 static GLuint s_vao[2];
 static GLuint s_vbo[2];
 static GLuint s_ibo[2];
-
-// A deck is anchored to the field drift at the time it was built, so a
-// rebuild resamples only the cells that slid in at the window's edge
-struct CloudDrift final {
-    Eigen::Vector2f anchor { Eigen::Vector2f::Zero() };
-    Eigen::Vector2f offset { Eigen::Vector2f::Zero() };
-    bool anchored { false };
-};
 
 static CloudMesh s_meshes[2];
 static std::size_t s_front;
@@ -189,21 +204,6 @@ static Eigen::Matrix4f cloud_view_projection(void)
 
     return projection * camera::instance.view();
 }
-
-// One build on the pool: the snapshot arrives by value, the geometry comes back through the task
-class CloudTask final : public Task {
-public:
-    CloudTask(CloudInput input, const std::vector<CloudGroup>& groups, CloudMesh&& scratch, std::uint64_t generation);
-    virtual ~CloudTask(void) override = default;
-    virtual void process(void) override;
-    virtual void finalize(void) override;
-
-private:
-    CloudInput m_input;
-    std::vector<CloudGroup> m_groups;
-    std::uint64_t m_generation;
-    CloudMesh m_mesh;
-};
 
 CloudTask::CloudTask(CloudInput input, const std::vector<CloudGroup>& groups, CloudMesh&& scratch, std::uint64_t generation)
     : m_input(std::move(input)), m_groups(groups), m_generation(generation), m_mesh(std::move(scratch))
@@ -348,20 +348,6 @@ void cloud_renderer::shutdown(void)
     s_program.destroy();
 }
 
-void cloud_renderer::reset(void)
-{
-    s_drift = CloudDrift {};
-    s_last_build_offset = Eigen::Vector2f::Zero();
-    s_generation += 1;
-    s_building = false;
-    s_front = 0;
-
-    s_meshes[0] = CloudMesh {};
-    s_meshes[1] = CloudMesh {};
-
-    upload_mesh(s_meshes[s_front], s_front);
-}
-
 void cloud_renderer::render(void)
 {
     ZoneScoped;
@@ -445,4 +431,18 @@ void cloud_renderer::render(void)
 
     globals::num_draw_calls += mesh.batches.size();
     globals::num_draw_vertices += mesh.vertices.size();
+}
+
+void cloud_renderer::reset(void)
+{
+    s_drift = CloudDrift {};
+    s_last_build_offset = Eigen::Vector2f::Zero();
+    s_generation += 1;
+    s_building = false;
+    s_front = 0;
+
+    s_meshes[0] = CloudMesh {};
+    s_meshes[1] = CloudMesh {};
+
+    upload_mesh(s_meshes[s_front], s_front);
 }

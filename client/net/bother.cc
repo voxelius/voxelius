@@ -38,23 +38,6 @@ static std::vector<BotherResponseEvent> s_outgoing;
 static std::deque<Job_Ping> s_pending;
 static std::uint32_t s_active_peers;
 
-BotherResponseEvent::BotherResponseEvent(unsigned request_id) : m_request_id(request_id), m_unreachable(true)
-{
-    // empty
-}
-
-BotherResponseEvent::BotherResponseEvent(unsigned request_id, std::uint16_t num_players, std::uint16_t max_players,
-    std::uint32_t version_major, std::uint32_t version_minor, std::uint32_t version_patch, const std::string& motd)
-    : m_request_id(request_id), m_unreachable(false)
-{
-    m_num_players = num_players;
-    m_max_players = max_players;
-    m_version_major = version_major;
-    m_version_minor = version_minor;
-    m_version_patch = version_patch;
-    m_motd = std::string(motd);
-}
-
 static void push_outgoing(BotherResponseEvent event)
 {
     std::scoped_lock lock(s_outgoing_mutex);
@@ -143,7 +126,8 @@ static void thread_main(std::stop_token stop_token)
     }
 
     entt::dispatcher dispatcher;
-    dispatcher.sink<packet::Status_Response>().connect<&on_status_response>();
+    auto status_response_sink = dispatcher.sink<packet::Status_Response>();
+    status_response_sink.connect<&on_status_response>();
 
     while(!stop_token.stop_requested()) {
         auto jobs = take_incoming();
@@ -236,6 +220,23 @@ static void thread_main(std::stop_token stop_token)
     s_active_peers = 0;
 
     enet_host_destroy(host);
+}
+
+BotherResponseEvent::BotherResponseEvent(unsigned request_id) : m_request_id(request_id), m_unreachable(true)
+{
+    // empty
+}
+
+BotherResponseEvent::BotherResponseEvent(unsigned request_id, std::uint16_t num_players, std::uint16_t max_players,
+    std::uint32_t version_major, std::uint32_t version_minor, std::uint32_t version_patch, const std::string& motd)
+    : m_request_id(request_id), m_unreachable(false)
+{
+    m_num_players = num_players;
+    m_max_players = max_players;
+    m_version_major = version_major;
+    m_version_minor = version_minor;
+    m_version_patch = version_patch;
+    m_motd = std::string(motd);
 }
 
 void bother::init(void)

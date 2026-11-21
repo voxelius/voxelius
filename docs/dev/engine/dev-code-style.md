@@ -164,7 +164,7 @@ Example:
 #include "shared/world.hh"
 
 #include "client/globals.hh"
-#include "client/res/texture2D.hh"
+#include "client/res/texture_2d.hh"
 ```
 
 ## Order in a file

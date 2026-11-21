@@ -7,6 +7,9 @@
 
 #include "shared/world/world_definition.hh"
 
+constexpr static std::size_t ENTRY_HEADER_SIZE = 3 * sizeof(std::int32_t) + sizeof(std::uint8_t);
+constexpr static std::size_t CELL_SIZE = sizeof(std::uint16_t) + sizeof(std::uint8_t);
+
 void packet::World_Request::encode(const World_Request& packet, WriteBuffer& buffer)
 {
     buffer.write_vector<std::int32_t, 3>(packet.view.min());
@@ -33,7 +36,8 @@ void packet::World_Blocks::encode(const World_Blocks& packet, WriteBuffer& buffe
 
 void packet::World_Blocks::decode(World_Blocks& packet, ReadBuffer& buffer)
 {
-    packet.cpos = buffer.read_vector<std::int32_t, 3>().cast<ChunkPos::value_type>();
+    auto cpos = buffer.read_vector<std::int32_t, 3>();
+    packet.cpos = cpos.cast<ChunkPos::value_type>();
     BlockStorage::decode_net(packet.blocks, buffer);
     LightStorage::decode_net(packet.light, buffer);
     packet.light_valid = buffer.read<std::uint8_t>();
@@ -47,7 +51,8 @@ void packet::World_Biomes::encode(const World_Biomes& packet, WriteBuffer& buffe
 
 void packet::World_Biomes::decode(World_Biomes& packet, ReadBuffer& buffer)
 {
-    packet.cpos = buffer.read_vector<std::int32_t, 2>().cast<ChunkPosXZ::value_type>();
+    auto cpos = buffer.read_vector<std::int32_t, 2>();
+    packet.cpos = cpos.cast<ChunkPosXZ::value_type>();
     BiomeSlice::decode(packet.biomes, buffer);
 }
 
@@ -84,14 +89,15 @@ void packet::World_Light::decode(World_Light& packet, ReadBuffer& buffer)
     auto count = buffer.read<std::uint16_t>();
 
     for(std::uint16_t i = 0; i < count; ++i) {
-        // Chunk position plus the full flag.
-        if(!buffer.has_records(1, 3 * sizeof(std::int32_t) + sizeof(std::uint8_t))) {
+        // Chunk position plus the full flag
+        if(!buffer.has_records(1, ENTRY_HEADER_SIZE)) {
             return;
         }
 
         Entry entry;
 
-        entry.cpos = buffer.read_vector<std::int32_t, 3>().cast<ChunkPos::value_type>();
+        auto cpos = buffer.read_vector<std::int32_t, 3>();
+        entry.cpos = cpos.cast<ChunkPos::value_type>();
         entry.full = buffer.read<std::uint8_t>();
 
         if(entry.full) {
@@ -106,7 +112,7 @@ void packet::World_Light::decode(World_Light& packet, ReadBuffer& buffer)
 
         auto cells = buffer.read<std::uint16_t>();
 
-        if(!buffer.has_records(cells, sizeof(std::uint16_t) + sizeof(std::uint8_t))) {
+        if(!buffer.has_records(cells, CELL_SIZE)) {
             return;
         }
 
@@ -130,7 +136,8 @@ void packet::World_SetBlock::encode(const World_SetBlock& packet, WriteBuffer& b
 
 void packet::World_SetBlock::decode(World_SetBlock& packet, ReadBuffer& buffer)
 {
-    packet.bpos = buffer.read_vector<std::int64_t, 3>().cast<BlockPos::value_type>();
+    auto bpos = buffer.read_vector<std::int64_t, 3>();
+    packet.bpos = bpos.cast<BlockPos::value_type>();
     packet.block = buffer.read<std::uint32_t>();
 }
 
@@ -146,26 +153,6 @@ void packet::World_Timings::decode(World_Timings& packet, ReadBuffer& buffer)
     packet.current_tick = buffer.read<std::uint64_t>();
     packet.daylight_tick = buffer.read<std::uint64_t>();
     packet.day = buffer.read<std::uint64_t>();
-}
-
-void packet::World_Info::fill(const WorldDefinition& definition)
-{
-    id = std::string(definition.id.full_string());
-    min_y = definition.min_y;
-    max_y = definition.max_y;
-    spawn = definition.spawn;
-    weather = definition.weather;
-    visuals = definition.visuals;
-}
-
-void packet::World_Info::to_definition(WorldDefinition& definition) const
-{
-    definition.id = Identifier::from_string(id);
-    definition.min_y = min_y;
-    definition.max_y = max_y;
-    definition.spawn = spawn;
-    definition.weather = weather;
-    definition.visuals = visuals;
 }
 
 void packet::World_Info::encode(const World_Info& packet, WriteBuffer& buffer)
@@ -222,6 +209,26 @@ void packet::World_Info::decode(World_Info& packet, ReadBuffer& buffer)
     }
 
     WorldVisuals::decode(packet.visuals, buffer);
+}
+
+void packet::World_Info::fill(const WorldDefinition& definition)
+{
+    id = std::string(definition.id.full_string());
+    min_y = definition.min_y;
+    max_y = definition.max_y;
+    spawn = definition.spawn;
+    weather = definition.weather;
+    visuals = definition.visuals;
+}
+
+void packet::World_Info::to_definition(WorldDefinition& definition) const
+{
+    definition.id = Identifier::from_string(id);
+    definition.min_y = min_y;
+    definition.max_y = max_y;
+    definition.spawn = spawn;
+    definition.weather = weather;
+    definition.visuals = visuals;
 }
 
 void packet::World_Weather::encode(const World_Weather& packet, WriteBuffer& buffer)

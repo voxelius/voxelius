@@ -16,13 +16,6 @@ static vx::hash_set<std::string> s_dirty_set {};
 static std::vector<std::string> s_dirty_list {};
 static cvar::remote_exec_type s_remote_exec {};
 
-void cvar::detail::add_write_hook(write_hook_type hook)
-{
-    assert(static_cast<bool>(hook));
-
-    s_write_hooks.emplace_back(std::move(hook));
-}
-
 static std::string rebuild_line(std::string_view name, std::span<const std::string_view> args)
 {
     std::string line(name);
@@ -46,6 +39,13 @@ static std::string rebuild_line(std::string_view name, std::span<const std::stri
 static bool is_trusted(const cvar::Context& ctx)
 {
     return !ctx.client_id.has_value() || ctx.is_operator;
+}
+
+void cvar::detail::add_write_hook(write_hook_type hook)
+{
+    assert(static_cast<bool>(hook));
+
+    s_write_hooks.emplace_back(std::move(hook));
 }
 
 void cvar::detail::mark_dirty(std::string_view name)
@@ -202,7 +202,8 @@ cvar::status cvar::exec(std::string_view line, const Context& ctx)
     }
 
     auto name = views.front();
-    auto args = std::span(views).subspan(1);
+    auto views_span = std::span(views);
+    auto args = views_span.subspan(1);
     return exec(name, args, ctx);
 }
 
@@ -211,7 +212,8 @@ cvar::status cvar::exec(std::string_view name, std::span<const std::string_view>
     auto is_remote = static_cast<bool>(ctx.client_id);
 
     if(auto command = find_cmd(name)) {
-        auto flags = command->flags().value_or(FCVAR_NONE);
+        auto& command_flags = command->flags();
+        auto flags = command_flags.value_or(FCVAR_NONE);
         auto is_admin = static_cast<bool>(flags & FCVAR_ADMIN);
         auto is_recall = static_cast<bool>(flags & FCVAR_RECALL);
 
@@ -235,7 +237,8 @@ cvar::status cvar::exec(std::string_view name, std::span<const std::string_view>
     }
 
     if(auto variable = find_var(name)) {
-        auto flags = variable->flags().value_or(FCVAR_NONE);
+        auto& variable_flags = variable->flags();
+        auto flags = variable_flags.value_or(FCVAR_NONE);
         auto is_admin = static_cast<bool>(flags & FCVAR_ADMIN);
         auto is_readonly = static_cast<bool>(flags & FCVAR_READONLY);
 
@@ -322,7 +325,8 @@ void cvar::save_values(std::string_view path, flag_bits ignore_flags)
     std::ostringstream stream;
 
     for(auto& [name, binding] : s_variables) {
-        auto flags = binding->flags().value_or(FCVAR_NONE);
+        auto& binding_flags = binding->flags();
+        auto flags = binding_flags.value_or(FCVAR_NONE);
 
         if(binding->is_remote()) {
             continue;
@@ -360,7 +364,8 @@ void cvar::for_each_var(flag_bits mask, std::function<void(const detail::Variabl
     assert(callback);
 
     for(auto& [name, binding] : s_variables) {
-        auto flags = binding->flags().value_or(FCVAR_NONE);
+        auto& binding_flags = binding->flags();
+        auto flags = binding_flags.value_or(FCVAR_NONE);
 
         if(mask == FCVAR_NONE || (flags & mask)) {
             callback(*binding);
@@ -373,7 +378,8 @@ void cvar::for_each_cmd(flag_bits mask, std::function<void(const detail::Command
     assert(callback);
 
     for(auto& [name, binding] : s_commands) {
-        auto flags = binding->flags().value_or(FCVAR_NONE);
+        auto& binding_flags = binding->flags();
+        auto flags = binding_flags.value_or(FCVAR_NONE);
 
         if(mask == FCVAR_NONE || (flags & mask)) {
             callback(*binding);

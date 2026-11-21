@@ -23,7 +23,8 @@ static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
     }
 
     for(unsigned n = 1; n < 10000; ++n) {
-        auto candidate = Identifier::from_parts(id.name_space(), std::format("{}~{}", id.value(), n));
+        auto suffix = std::format("{}~{}", id.value(), n);
+        auto candidate = Identifier::from_parts(id.name_space(), suffix);
 
         if(is_free(candidate)) {
             msg::log_warning("weather.add: {} is already registered, using {} instead", id.full_string(), candidate.full_string());
@@ -42,7 +43,7 @@ static WeatherCallback parse_callback(lua_State* L, int table_idx, const char* k
     if(lua_isfunction(L, -1)) {
         WeatherCallback callback {};
         callback.state = ctx->lua_state();
-        callback.callback_ref = luaL_ref(L, LUA_REGISTRYINDEX); // pops the function
+        callback.callback_ref = luaL_ref(L, LUA_REGISTRYINDEX); // Pops the function
         return callback;
     }
 
@@ -159,7 +160,9 @@ static bool parse_cloud(lua_State* L, int def_idx, WeatherTypeDefinition& def)
 
     CloudBody cloud {};
 
-    if(!parse_cloud_body(L, lua_gettop(L), cloud)) {
+    auto cloud_idx = lua_gettop(L);
+
+    if(!parse_cloud_body(L, cloud_idx, cloud)) {
         return fail(L, base);
     }
 
@@ -402,7 +405,7 @@ void api::open_weather_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     auto L = lua.get();
 
-    lua_newtable(L); // weather
+    lua_newtable(L); // Weather
 
     lua_pushinteger(L, static_cast<lua_Integer>(precipitation_kind::NONE));
     lua_setfield(L, -2, "PRECIP_NONE");

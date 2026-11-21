@@ -19,7 +19,8 @@ static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
     }
 
     for(unsigned n = 1; n < 10000; ++n) {
-        auto candidate = Identifier::from_parts(id.name_space(), std::format("{}~{}", id.value(), n));
+        auto suffix = std::format("{}~{}", id.value(), n);
+        auto candidate = Identifier::from_parts(id.name_space(), suffix);
 
         if(is_free(candidate)) {
             msg::log_warning("tints.add: {} is already registered, using {} instead", id.full_string(), candidate.full_string());
@@ -40,7 +41,8 @@ static bool parse_definition(lua_State* L, int def_idx, TintDefinition& def, Mod
     }
 
     def.default_color = default_color->cast<float>();
-    def.default_color = def.default_color.cwiseMin(1.0f).cwiseMax(0.0f);
+    Eigen::Vector3f color = def.default_color.cwiseMin(1.0f);
+    def.default_color = color.cwiseMax(0.0f);
 
     return true;
 }
@@ -94,7 +96,7 @@ void api::open_tints_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     auto L = lua.get();
 
-    lua_newtable(L); // tints
+    lua_newtable(L); // Tints
 
     lua_pushinteger(L, TINT_ID_NULL);
     lua_setfield(L, -2, "NULL_TINT");

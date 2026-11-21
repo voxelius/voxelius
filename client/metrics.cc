@@ -83,7 +83,8 @@ static float text_width(std::string_view text)
     auto font = fonts::unscii16;
     auto size = text_font_size();
 
-    return font->CalcTextSizeA(size, FLT_MAX, 0.0f, text.data(), text.data() + text.size()).x;
+    auto text_size = font->CalcTextSizeA(size, FLT_MAX, 0.0f, text.data(), text.data() + text.size());
+    return text_size.x;
 }
 
 static void draw_text(ImDrawList* draw_list, std::string_view text, const ImVec2& pos, ImU32 color, ImU32 shadow)
@@ -355,9 +356,9 @@ static ImVec2 layout_head(ImDrawList* draw_list, ImVec2 position, ImU32 text, Im
     draw_text(draw_list, draw_line, position, text, shadow);
     position.y += ystep;
 
-    // Loaded chunks against meshed ones against what still waits for a mesh:
-    // a hole in the world is either a chunk nobody asked for or a mesh that
-    // never got built, and the three numbers tell them apart.
+    // Loaded chunks against meshed ones against what still waits for a
+    // mesh: a hole in the world is either a chunk nobody asked for
+    // or a mesh that never got built, and the three numbers tell them apart
     auto& chunks = globals::world->chunks();
     auto& chunk_registry = globals::world->chunk_registry();
     auto meshed = chunk_registry.view<ChunkMesh>();
@@ -391,7 +392,8 @@ static ImVec2 layout_network(ImDrawList* draw_list, ImVec2 position, ImU32 text,
     auto alert_color = IM_COL32(0xFF, 0x40, 0x40, 0xFF);
 
     auto ping_line = std::format("ping: {:.0f}~{:.0f} ms / min {:.0f}", ping_ms, jitter_ms, lowest_ms);
-    draw_text(draw_list, ping_line, position, ping_color(ping_ms), shadow);
+    auto ping_shade = ping_color(ping_ms);
+    draw_text(draw_list, ping_line, position, ping_shade, shadow);
     position.y += ystep;
 
     auto loss_color = loss >= LOSS_ALERT_PERCENT ? alert_color : text;

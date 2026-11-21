@@ -20,9 +20,8 @@ static enet_uint32 channel_of(packet::packet_type type)
         case packet::WORLD_CHUNK_BLOCKS:
         case packet::WORLD_CHUNK_BIOMES:
         case packet::WORLD_CHUNK_LIGHT:
-            // Blocks, biomes and light share a channel on purpose: a light
-            // packet is only meaningful after the chunk it belongs to, and
-            // only one sequence guarantees that order.
+            // Blocks, biomes and light share a channel on purpose: a light packet is only
+            // meaningful after the chunk it belongs to, and only one sequence guarantees that order
             return protocol::CHANNEL_WORLD;
 
         default:

@@ -170,8 +170,9 @@ entt::entity utils::spawn_player(entt::registry& registry, const BlockPos& pos, 
 
     if(registry.all_of<Transform>(entity)) {
         registry.patch<Transform>(entity, [&](Transform& transform) {
+            auto local_pos = utils::to_local(pos);
             transform.chunk = utils::to_chunk(pos);
-            transform.local = utils::to_local(pos).cast<float>();
+            transform.local = local_pos.cast<float>();
         });
     }
 

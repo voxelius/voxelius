@@ -2,11 +2,12 @@
 
 #include "client/gui/stepper.hh"
 
+#include "core/cvar/host.hh"
+
 #include "client/globals.hh"
 #include "client/gui/stone.hh"
 #include "client/language.hh"
 #include "client/style.hh"
-#include "core/cvar/host.hh"
 
 template<typename T>
 gui::Stepper<T>& gui::Stepper<T>::bind(std::string_view name)

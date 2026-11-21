@@ -162,7 +162,11 @@ static void on_world_set_block(const packet::World_SetBlock& packet)
 static void on_world_timings(const packet::World_Timings& packet)
 {
     auto previous_tick = globals::daylight_tick;
-    auto jump = packet.daylight_tick > previous_tick ? packet.daylight_tick - previous_tick : previous_tick - packet.daylight_tick;
+    auto jump = packet.daylight_tick - previous_tick;
+
+    if(previous_tick > packet.daylight_tick) {
+        jump = previous_tick - packet.daylight_tick;
+    }
 
     globals::current_tick = packet.current_tick;
     globals::daylight_tick = packet.daylight_tick;
@@ -204,7 +208,7 @@ static void on_world_weather(const packet::World_Weather& packet)
     }
 }
 
-static cvar::status cmd_time_query(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_time_query(const cvar::Context&, std::span<const std::string_view>)
 {
     auto phase = world_clock::phase(globals::daylight_tick, server_vars::day_length_ticks());
     auto daylight = world_clock::daylight(phase);
@@ -215,7 +219,7 @@ static cvar::status cmd_time_query(const cvar::Context& ctx, std::span<const std
     return cvar::status::OK;
 }
 
-static cvar::status cmd_weather_status(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_weather_status(const cvar::Context&, std::span<const std::string_view>)
 {
     auto world = utils::to_fvec(camera::chunk) + camera::local;
 
@@ -229,8 +233,8 @@ static cvar::status cmd_weather_status(const cvar::Context& ctx, std::span<const
     std::string description = "none";
 
     if(auto name = weather_registry::name_of(type)) {
-        // The identifier is a temporary, so its view must be copied
-        // before the optional goes out of scope
+        // The identifier is a temporary, so its view must
+        // be copied before the optional goes out of scope
         description = name->full_string();
     }
 
@@ -256,20 +260,32 @@ static void on_session_state(const SessionStateEvent& event)
 
 void receive::init(void)
 {
-    globals::dispatcher.sink<packet::Entity_Spawn>().connect<&on_entity_spawn>();
-    globals::dispatcher.sink<packet::Entity_Patch>().connect<&on_entity_patch>();
-    globals::dispatcher.sink<packet::Entity_Remove>().connect<&on_entity_remove>();
-    globals::dispatcher.sink<packet::Entity_Client>().connect<&on_entity_client>();
+    auto entity_spawn_sink = globals::dispatcher.sink<packet::Entity_Spawn>();
+    entity_spawn_sink.connect<&on_entity_spawn>();
+    auto entity_patch_sink = globals::dispatcher.sink<packet::Entity_Patch>();
+    entity_patch_sink.connect<&on_entity_patch>();
+    auto entity_remove_sink = globals::dispatcher.sink<packet::Entity_Remove>();
+    entity_remove_sink.connect<&on_entity_remove>();
+    auto entity_client_sink = globals::dispatcher.sink<packet::Entity_Client>();
+    entity_client_sink.connect<&on_entity_client>();
 
-    globals::dispatcher.sink<packet::World_Blocks>().connect<&on_world_blocks>();
-    globals::dispatcher.sink<packet::World_Biomes>().connect<&on_world_biomes>();
-    globals::dispatcher.sink<packet::World_Light>().connect<&on_world_light>();
-    globals::dispatcher.sink<packet::World_SetBlock>().connect<&on_world_set_block>();
-    globals::dispatcher.sink<packet::World_Timings>().connect<&on_world_timings>();
-    globals::dispatcher.sink<packet::World_Info>().connect<&on_world_info>();
-    globals::dispatcher.sink<packet::World_Weather>().connect<&on_world_weather>();
+    auto world_blocks_sink = globals::dispatcher.sink<packet::World_Blocks>();
+    world_blocks_sink.connect<&on_world_blocks>();
+    auto world_biomes_sink = globals::dispatcher.sink<packet::World_Biomes>();
+    world_biomes_sink.connect<&on_world_biomes>();
+    auto world_light_sink = globals::dispatcher.sink<packet::World_Light>();
+    world_light_sink.connect<&on_world_light>();
+    auto world_set_block_sink = globals::dispatcher.sink<packet::World_SetBlock>();
+    world_set_block_sink.connect<&on_world_set_block>();
+    auto world_timings_sink = globals::dispatcher.sink<packet::World_Timings>();
+    world_timings_sink.connect<&on_world_timings>();
+    auto world_info_sink = globals::dispatcher.sink<packet::World_Info>();
+    world_info_sink.connect<&on_world_info>();
+    auto world_weather_sink = globals::dispatcher.sink<packet::World_Weather>();
+    world_weather_sink.connect<&on_world_weather>();
 
-    globals::dispatcher.sink<SessionStateEvent>().connect<&on_session_state>();
+    auto session_state_sink = globals::dispatcher.sink<SessionStateEvent>();
+    session_state_sink.connect<&on_session_state>();
 
     auto& status_binding = cvar::bind_cmd("weather_status");
     status_binding.set_help("Print the weather state the client currently has");

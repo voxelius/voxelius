@@ -23,5 +23,10 @@ void gui::Separator::layout(void)
 
 void gui::Separator::translate(void)
 {
-    m_text = m_key.empty() ? std::string() : std::string(language::resolve(m_key));
+    if(m_key.empty()) {
+        m_text.clear();
+    }
+    else {
+        m_text = language::resolve(m_key);
+    }
 }

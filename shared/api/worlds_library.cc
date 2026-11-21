@@ -161,7 +161,9 @@ static bool parse_visuals(lua_State* L, int base, int table_idx, WorldVisuals& o
 
         WorldVisuals::Sky sky;
 
-        if(!parse_sky(L, base, lua_gettop(L), sky)) {
+        auto sky_idx = lua_gettop(L);
+
+        if(!parse_sky(L, base, sky_idx, sky)) {
             return false;
         }
 
@@ -183,7 +185,9 @@ static bool parse_visuals(lua_State* L, int base, int table_idx, WorldVisuals& o
 
         WorldVisuals::Sun sun;
 
-        if(!parse_sun(L, base, lua_gettop(L), sun)) {
+        auto sun_idx = lua_gettop(L);
+
+        if(!parse_sun(L, base, sun_idx, sun)) {
             return false;
         }
 
@@ -205,7 +209,9 @@ static bool parse_visuals(lua_State* L, int base, int table_idx, WorldVisuals& o
 
         WorldVisuals::Moon moon;
 
-        if(!parse_moon(L, base, lua_gettop(L), moon)) {
+        auto moon_idx = lua_gettop(L);
+
+        if(!parse_moon(L, base, moon_idx, moon)) {
             return false;
         }
 
@@ -227,7 +233,9 @@ static bool parse_visuals(lua_State* L, int base, int table_idx, WorldVisuals& o
 
         WorldVisuals::Stars stars;
 
-        if(!parse_stars(L, base, lua_gettop(L), stars)) {
+        auto stars_idx = lua_gettop(L);
+
+        if(!parse_stars(L, base, stars_idx, stars)) {
             return false;
         }
 
@@ -583,7 +591,7 @@ void api::open_worlds_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     auto L = lua.get();
 
-    lua_newtable(L); // worlds
+    lua_newtable(L); // Worlds
 
     lua_pushinteger(L, BIOME_SELECTION_NEAREST);
     lua_setfield(L, -2, "SELECTION_NEAREST");

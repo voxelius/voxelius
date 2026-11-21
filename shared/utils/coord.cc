@@ -35,9 +35,10 @@ LocalPos utils::to_local(const BlockPos& bpos)
 LocalPos utils::to_local(std::size_t index)
 {
     LocalPos lpos;
+    auto plane = index / constant::CHUNK_SIZE;
     lpos.x() = static_cast<LocalPos::value_type>(index % constant::CHUNK_SIZE);
-    lpos.y() = static_cast<LocalPos::value_type>((index / constant::CHUNK_SIZE) / constant::CHUNK_SIZE);
-    lpos.z() = static_cast<LocalPos::value_type>((index / constant::CHUNK_SIZE) % constant::CHUNK_SIZE);
+    lpos.y() = static_cast<LocalPos::value_type>(plane / constant::CHUNK_SIZE);
+    lpos.z() = static_cast<LocalPos::value_type>(plane % constant::CHUNK_SIZE);
     return lpos;
 }
 

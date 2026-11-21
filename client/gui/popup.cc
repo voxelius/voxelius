@@ -71,8 +71,12 @@ void gui::ChoicePopup::layout(void)
     else {
         auto min_width = MIN_POPUP_WIDTH * static_cast<float>(globals::gui_scale);
 
-        ImGui::SetNextWindowSizeConstraints(ImVec2(min_width, 0.0f),
-            ImVec2(std::numeric_limits<float>::max(), std::numeric_limits<float>::max()));
+        auto max_value = std::numeric_limits<float>::max();
+
+        auto min_size = ImVec2(min_width, 0.0f);
+        auto max_size = ImVec2(max_value, max_value);
+
+        ImGui::SetNextWindowSizeConstraints(min_size, max_size);
     }
 
     auto flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize;
@@ -142,9 +146,11 @@ void gui::ChoicePopup::translate(void)
 
     m_message = language::resolve(m_message_key);
 
+    auto id = imgui_id();
+
     for(std::size_t i = 0; i < m_choices.size(); ++i) {
         m_choices[i].label = language::resolve(m_choices[i].label_key);
-        m_choices[i].label += std::format("{}[{}]", imgui_id(), i);
+        m_choices[i].label += std::format("{}[{}]", id, i);
     }
 }
 
@@ -223,8 +229,12 @@ void gui::InputPopup::layout(void)
     else {
         auto min_width = MIN_POPUP_WIDTH * static_cast<float>(globals::gui_scale);
 
-        ImGui::SetNextWindowSizeConstraints(ImVec2(min_width, 0.0f),
-            ImVec2(std::numeric_limits<float>::max(), std::numeric_limits<float>::max()));
+        auto max_value = std::numeric_limits<float>::max();
+
+        auto min_size = ImVec2(min_width, 0.0f);
+        auto max_size = ImVec2(max_value, max_value);
+
+        ImGui::SetNextWindowSizeConstraints(min_size, max_size);
     }
 
     auto flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize;
@@ -412,8 +422,12 @@ void gui::ProgressPopup::layout(void)
     else {
         auto min_width = MIN_POPUP_WIDTH * static_cast<float>(globals::gui_scale);
 
-        ImGui::SetNextWindowSizeConstraints(ImVec2(min_width, 0.0f),
-            ImVec2(std::numeric_limits<float>::max(), std::numeric_limits<float>::max()));
+        auto max_value = std::numeric_limits<float>::max();
+
+        auto min_size = ImVec2(min_width, 0.0f);
+        auto max_size = ImVec2(max_value, max_value);
+
+        ImGui::SetNextWindowSizeConstraints(min_size, max_size);
     }
 
     auto flags = ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize;

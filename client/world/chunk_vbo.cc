@@ -24,12 +24,15 @@ static void grow(std::size_t required)
         new_capacity <<= 1;
     }
 
-    scratch.resize(new_capacity * sizeof(ChunkMesh_Vertex));
+    auto old_bytes = chunk_vbo::capacity * sizeof(ChunkMesh_Vertex);
+    auto new_bytes = new_capacity * sizeof(ChunkMesh_Vertex);
+
+    scratch.resize(new_bytes);
 
     glBindBuffer(GL_ARRAY_BUFFER, chunk_vbo::handle);
-    glGetBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLsizeiptr>(chunk_vbo::capacity * sizeof(ChunkMesh_Vertex)), scratch.data());
-    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(new_capacity * sizeof(ChunkMesh_Vertex)), nullptr, GL_DYNAMIC_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLsizeiptr>(chunk_vbo::capacity * sizeof(ChunkMesh_Vertex)), scratch.data());
+    glGetBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLsizeiptr>(old_bytes), scratch.data());
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(new_bytes), nullptr, GL_DYNAMIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLsizeiptr>(old_bytes), scratch.data());
 
     chunk_vbo::capacity = new_capacity;
 }

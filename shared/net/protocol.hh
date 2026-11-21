@@ -7,10 +7,9 @@ namespace protocol
 {
 constexpr static enet_uint16 PORT = 43103;
 
-// ENet keeps one sequence per channel, so channels are how unrelated traffic
-// stops waiting for each other. The world stream lives on its own channel: a
-// burst of chunk packets no longer holds back auth, entity or timing packets,
-// and the reverse holds too.
+// ENet keeps one sequence per channel, so unrelated traffic does not wait
+// for the world stream, which has its own channel: a burst of chunk packets
+// no longer holds back auth, entity or timing packets, and the reverse holds too
 constexpr static enet_uint32 CHANNEL_DEFAULT = 0;
 constexpr static enet_uint32 CHANNEL_WORLD = 1;
 constexpr static enet_uint32 CHANNEL_COUNT = 2;

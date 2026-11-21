@@ -10,7 +10,10 @@ void gui::LanguageSelector::layout_control(void)
     auto current = language::current();
     std::string current_label(current->endonym());
 
-    auto size = ImVec2(ImGui::CalcItemWidth(), ImGui::GetFrameHeight());
+    auto width = ImGui::CalcItemWidth();
+    auto height = ImGui::GetFrameHeight();
+
+    auto size = ImVec2(width, height);
     auto& control_id = imgui_id();
 
     if(gui::detail::stone_combo(control_id.c_str(), current_label, size)) {

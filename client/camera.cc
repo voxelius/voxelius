@@ -97,7 +97,9 @@ void camera::init(void)
     vertical_fov_binding.set_help("Vertical field of view");
     vertical_fov_binding.set_flags(FCVAR_ARCHIVE);
 
-    s_vertical_fov_gui.set_range(45.0f, 110.0f).set_format("%.0f").enable_tooltip();
+    s_vertical_fov_gui.set_range(45.0f, 110.0f);
+    s_vertical_fov_gui.set_format("%.0f");
+    s_vertical_fov_gui.enable_tooltip();
     s_vertical_fov_gui.bind("r_fov");
     settings::general.add_child(s_vertical_fov_gui, 1);
 
@@ -142,7 +144,8 @@ void camera::update(void)
     camera::z_near = 0.01f;
     camera::z_far = 1.25f * static_cast<float>(constant::CHUNK_SIZE * view_distance.value());
 
-    instance.set_perspective(utils::radians(vertical_fov.value()), globals::aspect, camera::z_near, camera::z_far);
+    auto fov_radians = utils::radians(vertical_fov.value());
+    instance.set_perspective(fov_radians, globals::aspect, camera::z_near, camera::z_far);
     instance.set_view(camera::local, camera::angles);
     instance.update();
 
@@ -150,7 +153,9 @@ void camera::update(void)
     right = instance.right_vector();
     up = instance.up_vector();
 
-    s_eye_lpos = camera::local.array().floor().cast<LocalPos::value_type>();
+    auto local_array = camera::local.array();
+    auto floored = local_array.floor();
+    s_eye_lpos = floored.cast<LocalPos::value_type>();
     s_eye_bpos = utils::to_block(camera::chunk, s_eye_lpos);
 
     inside_block = globals::world->get_block(s_eye_bpos);

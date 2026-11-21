@@ -1,11 +1,11 @@
 #include "client/pch.hh"
 
-#include "client/res/texture2D.hh"
+#include "client/res/texture_2d.hh"
 
 #include "core/res/image.hh"
 #include "core/res/resource.hh"
 
-static const void* texture2D_load_fn(const char* path, std::uint32_t flags)
+static const void* texture_2d_load_fn(const char* path, std::uint32_t flags)
 {
     assert(path);
 
@@ -60,7 +60,7 @@ static const void* texture2D_load_fn(const char* path, std::uint32_t flags)
     return texture;
 }
 
-static void texture2D_free_fn(const void* resource)
+static void texture_2d_free_fn(const void* resource)
 {
     auto texture = reinterpret_cast<const Texture2D*>(resource);
     glDeleteTextures(1, &texture->handle);
@@ -69,5 +69,5 @@ static void texture2D_free_fn(const void* resource)
 
 void Texture2D::register_resource(void)
 {
-    res::register_loader<Texture2D>(&texture2D_load_fn, &texture2D_free_fn);
+    res::register_loader<Texture2D>(&texture_2d_load_fn, &texture_2d_free_fn);
 }

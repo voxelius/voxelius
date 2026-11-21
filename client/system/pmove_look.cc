@@ -36,9 +36,7 @@ static void add_angles(float pitch, float yaw)
         head.angles[0] = std::clamp(head.angles[0], PITCH_MIN, PITCH_MAX);
         head.angles = utils::wrap_angle_180(head.angles);
 
-        // Client-side head angles are not interpolated; re-assigning
-        // the previous state after updating the current one is something
-        // of a way to force the interpolation to behave like we need it to
+        // Client-side head angles are not interpolated; re-assigning the previous state forces it
         registry.emplace_or_replace<Head_Prev>(globals::player, head);
     }
 }
@@ -49,7 +47,8 @@ void player_look::init(void)
     sensitivity_binding.set_help("Mouse sensitivity");
     sensitivity_binding.set_flags(FCVAR_ARCHIVE);
 
-    s_sensitivity_gui.set_range(25, 100).enable_tooltip();
+    auto& sensitivity_range = s_sensitivity_gui.set_range(25, 100);
+    sensitivity_range.enable_tooltip();
     s_sensitivity_gui.bind("in_sensitivity");
     settings::mouse.add_child(s_sensitivity_gui, 0);
 

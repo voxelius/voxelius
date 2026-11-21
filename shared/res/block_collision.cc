@@ -26,7 +26,7 @@ static std::optional<Eigen::AlignedBox3f> parse_aabb(const JSON_Object* object)
     return std::nullopt;
 }
 
-static const void* block_collision_load_fn(const char* path, std::uint32_t flags)
+static const void* block_collision_load_fn(const char* path, std::uint32_t)
 {
     std::string source;
 

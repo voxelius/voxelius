@@ -25,6 +25,11 @@
 #include "server/system/pmove_validator.hh"
 #include "server/world/chunk_loader.hh"
 
+constexpr static std::size_t CHUNK_SEND_BUDGET = 256;
+
+// A batch is capped so a tick that relights half the view distance does not turn into one giant datagram
+constexpr static std::size_t LIGHT_BATCH_BYTES = 32768;
+
 struct PendingChunkSend final {
     ENetPeer* peer;
     ChunkPos cpos;
@@ -62,12 +67,6 @@ struct std::hash<ChunkWaitKey> final {
 static vx::hash_map<ChunkWaitKey, std::vector<ChunkRequest>> s_waiting_peers;
 static vx::hash_map<const World*, vx::hash_set<ChunkPos>> s_sent_chunks;
 static std::vector<PendingLight> s_pending_light;
-
-constexpr static std::size_t CHUNK_SEND_BUDGET = 256;
-
-// A batch is capped so a tick that relights half the view distance does not
-// turn into one giant datagram.
-constexpr static std::size_t LIGHT_BATCH_BYTES = 32768;
 
 static std::deque<PendingChunkSend> s_send_queue;
 static vx::hash_map<ENetPeer*, vx::hash_set<ChunkPos>> s_send_queued;
@@ -119,8 +118,7 @@ static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos)
     auto chunk = world->find_chunk(cpos);
 
     if(chunk == nullptr) {
-        // The chunk was unloaded between queueing and sending. Ask for it
-        // again instead of dropping the peer's request on the floor.
+        // The chunk was unloaded between queueing and sending; ask for it again instead of dropping the request
         enqueue_peer(world.get(), cpos, peer);
         chunk_loader::request(world, cpos);
         return;
@@ -160,7 +158,7 @@ static void send_waiting(World* world, const ChunkPos& cpos)
     auto chunk = world->find_chunk(cpos);
 
     if(chunk == nullptr) {
-        // Still loading/generating; retry on the next sweep.
+        // Still loading or generating; retry on the next sweep
         return;
     }
 
@@ -189,16 +187,14 @@ static void on_chunk_ready(const ChunkReadyEvent& event)
 
 static void on_chunk_light(const ChunkLightUpdateEvent& event)
 {
-    // Drain the change set even when nothing is sent: a stale entry must not
-    // carry over into the next tick.
+    // Drain the change set even when nothing is sent: a stale entry must not carry over into the next tick
     auto world = event.world();
     auto change = lighting::take_change(world, event.pos());
 
     auto& sent = s_sent_chunks[world];
 
     if(0 == sent.count(event.pos())) {
-        // No client knows this chunk yet; it will be sent with fresh
-        // light in World_Blocks.
+        // No client knows this chunk yet; it will be sent with fresh light in World_Blocks
         return;
     }
 
@@ -247,7 +243,7 @@ static void on_chunk_remove(const ChunkRemoveEvent& event)
     }
 }
 
-static void on_player_attack_e(const packet::Player_AttackE& packet)
+static void on_player_attack_e(const packet::Player_AttackE&)
 {
     // empty
 }
@@ -256,13 +252,13 @@ static bool in_reach(entt::registry& registry, entt::entity player, const BlockP
 {
     auto& transform = registry.get<Transform>(player);
     auto player_bpos = utils::to_block(transform.chunk, transform.local.cast<LocalPos::value_type>());
-    auto distance = (bpos - player_bpos).cast<float>().norm();
+    auto delta = (bpos - player_bpos).cast<float>();
+    auto distance = delta.norm();
     return distance <= gamerules::reach_distance.value();
 }
 
-// The client predicts block changes locally. A rejected action must send
-// the server state back for every position it could have touched, or the
-// prediction stays in the client world until it is rebuilt from scratch.
+// The client predicts block changes locally. A rejected action must send the server state back for
+// every position it could have touched, or the prediction stays in the client world until it is rebuilt from scratch
 static void send_correction(ENetPeer* peer, const BlockPos& bpos)
 {
     auto session = sessions::find(peer);
@@ -277,8 +273,7 @@ static void send_correction(ENetPeer* peer, const BlockPos& bpos)
     auto chunk = world->find_chunk(cpos);
 
     if(chunk == nullptr) {
-        // The client kept a chunk the server no longer has. Resending the
-        // whole chunk rolls back every prediction made against it.
+        // The client kept a chunk the server no longer has; resending the whole chunk rolls back every prediction made against it
         enqueue_peer(world.get(), cpos, peer);
         chunk_loader::request(world, cpos);
         return;
@@ -339,7 +334,7 @@ static void on_player_attack_b(const packet::Player_AttackB& packet)
     utils::block_break(hit, session->player);
 }
 
-static void on_player_interact_e(const packet::Player_InteractE& packet)
+static void on_player_interact_e(const packet::Player_InteractE&)
 {
     // empty
 }
@@ -377,10 +372,16 @@ static void on_player_interact_b(const packet::Player_InteractB& packet)
     hit.normal = packet.normal;
     hit.point = packet.point;
 
-    // TODO: hardcoded placed block until an inventory/hotbar system exists.
-    // Keep it in sync with client/system/player_target.cc.
+    // TODO: hardcoded placed block until an inventory/hotbar system exists; keep it in sync with client/system/player_target.cc
     auto family = block_registry::find_family(Identifier::from_string("builtin:emitter"));
-    auto block = family ? family->default_variant : block_registry::find(Identifier::from_string("builtin:emitter"));
+    block_id_type block;
+
+    if(family) {
+        block = family->default_variant;
+    }
+    else {
+        block = block_registry::find(Identifier::from_string("builtin:emitter"));
+    }
 
     utils::block_place(hit, session->player, block);
 }
@@ -405,11 +406,9 @@ static void on_player_move_data(const packet::Player_MoveData& packet)
     registry.emplace_or_replace<SimulatedMoveData>(session->player, std::move(sim_data));
 }
 
-// ENet transmits a reliable packet only while its window has room, and that
-// window shrinks when the round trip grows. Handing it more than the window
-// holds does not send faster: it builds a queue, the queue delay inflates the
-// round trip, the throttle drops, the window shrinks further and throughput
-// collapses. So a chunk waits here until the window can take it.
+// ENet transmits a reliable packet only while its window has room, and that window shrinks when the round trip grows.
+// Handing it more than the window holds does not send faster: it builds a queue, the queue delay inflates the round trip,
+// the throttle drops, the window shrinks further and throughput collapses. So a chunk waits here until the window can take it
 static bool peer_window_full(const ENetPeer* peer)
 {
     auto window = (peer->packetThrottle * peer->windowSize) / ENET_PEER_PACKET_THROTTLE_SCALE;
@@ -435,8 +434,7 @@ static void process_send_queue(void)
         }
 
         if(peer_window_full(request.peer)) {
-            // Keep it for the next tick without blocking the peers that can
-            // still take data.
+            // Keep it for the next tick without blocking the peers that can still take data
             deferred.push_back(std::move(request));
             continue;
         }
@@ -474,8 +472,7 @@ static std::size_t light_entry_size(const packet::World_Light::Entry& entry)
 }
 
 // One packet per peer per tick instead of one per changed chunk. The fill can
-// touch dozens of chunks in a tick, and each of those used to be its own small
-// datagram.
+// touch dozens of chunks in a tick, and each of those used to be its own small datagram
 static void flush_light_updates(void)
 {
     if(s_pending_light.empty()) {
@@ -521,6 +518,30 @@ static void flush_light_updates(void)
     s_pending_light.clear();
 }
 
+void receive::init(void)
+{
+    auto world_request_sink = globals::dispatcher.sink<packet::World_Request>();
+    world_request_sink.connect<&on_world_request>();
+
+    auto player_attack_e_sink = globals::dispatcher.sink<packet::Player_AttackE>();
+    player_attack_e_sink.connect<&on_player_attack_e>();
+    auto player_attack_b_sink = globals::dispatcher.sink<packet::Player_AttackB>();
+    player_attack_b_sink.connect<&on_player_attack_b>();
+    auto player_interact_e_sink = globals::dispatcher.sink<packet::Player_InteractE>();
+    player_interact_e_sink.connect<&on_player_interact_e>();
+    auto player_interact_b_sink = globals::dispatcher.sink<packet::Player_InteractB>();
+    player_interact_b_sink.connect<&on_player_interact_b>();
+    auto player_move_data_sink = globals::dispatcher.sink<packet::Player_MoveData>();
+    player_move_data_sink.connect<&on_player_move_data>();
+
+    auto chunk_ready_sink = globals::dispatcher.sink<ChunkReadyEvent>();
+    chunk_ready_sink.connect<&on_chunk_ready>();
+    auto chunk_light_update_sink = globals::dispatcher.sink<ChunkLightUpdateEvent>();
+    chunk_light_update_sink.connect<&on_chunk_light>();
+    auto chunk_remove_sink = globals::dispatcher.sink<ChunkRemoveEvent>();
+    chunk_remove_sink.connect<&on_chunk_remove>();
+}
+
 void receive::fixed_update_late(void)
 {
     ZoneScoped;
@@ -538,8 +559,7 @@ void receive::fixed_update_late(void)
         }
     }
 
-    // Light goes out before the budgeted chunk batch, so it is not stuck
-    // behind the world load.
+    // Light goes out before the budgeted chunk batch, so it is not stuck behind the world load
     flush_light_updates();
     process_send_queue();
 }
@@ -588,21 +608,6 @@ void receive::enqueue_chunk(ENetPeer* peer, const ChunkPos& cpos)
 
     enqueue_peer(world.get(), cpos, peer);
     chunk_loader::request(world, cpos);
-}
-
-void receive::init(void)
-{
-    globals::dispatcher.sink<packet::World_Request>().connect<&on_world_request>();
-
-    globals::dispatcher.sink<packet::Player_AttackE>().connect<&on_player_attack_e>();
-    globals::dispatcher.sink<packet::Player_AttackB>().connect<&on_player_attack_b>();
-    globals::dispatcher.sink<packet::Player_InteractE>().connect<&on_player_interact_e>();
-    globals::dispatcher.sink<packet::Player_InteractB>().connect<&on_player_interact_b>();
-    globals::dispatcher.sink<packet::Player_MoveData>().connect<&on_player_move_data>();
-
-    globals::dispatcher.sink<ChunkReadyEvent>().connect<&on_chunk_ready>();
-    globals::dispatcher.sink<ChunkLightUpdateEvent>().connect<&on_chunk_light>();
-    globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
 }
 
 ChunkSentEvent::ChunkSentEvent(ENetPeer* peer, const ChunkPos& pos) : m_peer(peer), m_pos(pos)

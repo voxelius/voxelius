@@ -29,6 +29,18 @@ CommandBinding& make_remote_cmd(std::string_view name);
 
 namespace cvar
 {
+void set_remote_exec(remote_exec_type hook);
+} // namespace cvar
+
+namespace cvar
+{
+std::span<const std::string> take_dirty(void);
+void clear_dirty(void);
+void clear_remote(void);
+} // namespace cvar
+
+namespace cvar
+{
 detail::VariableBinding& bind_var(Variable& variable, std::string_view name);
 detail::CommandBinding& bind_cmd(std::string_view name);
 } // namespace cvar
@@ -58,18 +70,6 @@ namespace cvar
 {
 template<auto Candidate>
 void add_write_hook(void);
-} // namespace cvar
-
-namespace cvar
-{
-void set_remote_exec(remote_exec_type hook);
-} // namespace cvar
-
-namespace cvar
-{
-std::span<const std::string> take_dirty(void);
-void clear_dirty(void);
-void clear_remote(void);
 } // namespace cvar
 
 namespace cvar

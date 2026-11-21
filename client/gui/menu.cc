@@ -2,8 +2,9 @@
 
 #include "client/gui/menu.hh"
 
-#include "client/globals.hh"
 #include "shared/world/world.hh"
+
+#include "client/globals.hh"
 
 constexpr static unsigned CONDITION_ANY = 0xFFFF;
 constexpr static unsigned CONDITION_INGAME = 0x0001;

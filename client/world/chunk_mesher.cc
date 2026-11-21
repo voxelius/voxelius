@@ -44,6 +44,56 @@ constexpr static std::array ALL_FACES = {
     BLOCK_FACE_BOTTOM,
 };
 
+class MeshingTask final : public Task {
+public:
+    explicit MeshingTask(entt::entity entity, const ChunkPos& cpos);
+    virtual ~MeshingTask(void) override = default;
+    virtual void process(void) override;
+    virtual void finalize(void) override;
+
+private:
+    std::uint32_t calculate_ao(const LocalPos& lpos, block_face face, const Eigen::Vector3f& vertex) const;
+    block_light_type sample_light(const LocalPos& lpos, block_face face, const Eigen::Vector3f& vertex, light_channel channel) const;
+
+    bool is_culled_block(const LocalPos& lpos, block_face face, block_render self_render) const;
+    bool is_culled_fluid(const LocalPos& lpos, block_face face, fluid_id_type fluid_id, bool face_flush) const;
+    bool is_occluder(const LocalPos& lpos, block_face exposed_face) const;
+
+    void emit_block_quads(std::vector<ChunkMesh_Vertex>& out, std::span<const CachedBlockModel_Quad> quads, const LocalPos& lpos,
+        std::uint64_t entropy, std::optional<block_face> face) const;
+    void emit_fluid_face(std::vector<ChunkMesh_Vertex>& out, const LocalPos& lpos, const std::array<Eigen::Vector3f, 4>& positions,
+        block_face face, const AtlasStrip* strip, tint_id_type tint, std::uint32_t mask_frame,
+        std::optional<std::array<Eigen::Vector2f, 4>> uvs_override = std::nullopt) const;
+
+    Eigen::Vector3f resolve_tint(const LocalPos& lpos, tint_id_type tint) const;
+
+    void mesh_fluid(const LocalPos& lpos, const BlockDefinition& def);
+    void mesh_block(const LocalPos& lpos, block_id_type id);
+
+    void reset_tint_cache(void);
+
+    BlockCache m_cache;
+    BiomeCache m_biomes;
+
+    mutable std::array<std::pair<tint_id_type, Eigen::Vector3f>, 8> m_tint_cache;
+    mutable std::size_t m_tint_cache_size { 0 };
+
+    std::vector<ChunkMesh_Vertex> m_opaque;
+    std::vector<ChunkMesh_Vertex> m_alpha;
+    std::vector<ChunkMesh_Vertex> m_fluid;
+    entt::entity m_entity;
+    ChunkPos m_cpos;
+};
+
+struct CornerSamples final {
+    LocalPos side1;
+    LocalPos side2;
+    LocalPos corner;
+};
+
+static vx::hash_set<ChunkPos> s_pending;
+static std::size_t s_backlog;
+
 constexpr static block_face opposite_face(block_face face)
 {
     switch(face) {
@@ -100,56 +150,6 @@ static float mesh_queue_distance_sq(const ChunkPos& cpos, const Eigen::Vector3f&
     Eigen::Vector3f delta = position - camera::local - focus;
     return delta.squaredNorm();
 }
-
-static vx::hash_set<ChunkPos> s_pending;
-static std::size_t s_backlog;
-
-class MeshingTask final : public Task {
-public:
-    explicit MeshingTask(entt::entity entity, const ChunkPos& cpos);
-    virtual ~MeshingTask(void) override = default;
-    virtual void process(void) override;
-    virtual void finalize(void) override;
-
-private:
-    std::uint32_t calculate_ao(const LocalPos& lpos, block_face face, const Eigen::Vector3f& vertex) const;
-    block_light_type sample_light(const LocalPos& lpos, block_face face, const Eigen::Vector3f& vertex, light_channel channel) const;
-
-    bool is_culled_block(const LocalPos& lpos, block_face face, block_render self_render) const;
-    bool is_culled_fluid(const LocalPos& lpos, block_face face, fluid_id_type fluid_id, bool face_flush) const;
-    bool is_occluder(const LocalPos& lpos, block_face exposed_face) const;
-
-    void emit_block_quads(std::vector<ChunkMesh_Vertex>& out, std::span<const CachedBlockModel_Quad> quads, const LocalPos& lpos,
-        std::uint64_t entropy, std::optional<block_face> face) const;
-    void emit_fluid_face(std::vector<ChunkMesh_Vertex>& out, const LocalPos& lpos, const std::array<Eigen::Vector3f, 4>& positions,
-        block_face face, const AtlasStrip* strip, tint_id_type tint, std::uint32_t mask_frame,
-        std::optional<std::array<Eigen::Vector2f, 4>> uvs_override = std::nullopt) const;
-
-    Eigen::Vector3f resolve_tint(const LocalPos& lpos, tint_id_type tint) const;
-
-    void mesh_fluid(const LocalPos& lpos, const BlockDefinition& def);
-    void mesh_block(const LocalPos& lpos, block_id_type id);
-
-    void reset_tint_cache(void);
-
-    BlockCache m_cache;
-    BiomeCache m_biomes;
-
-    mutable std::array<std::pair<tint_id_type, Eigen::Vector3f>, 8> m_tint_cache;
-    mutable std::size_t m_tint_cache_size { 0 };
-
-    std::vector<ChunkMesh_Vertex> m_opaque;
-    std::vector<ChunkMesh_Vertex> m_alpha;
-    std::vector<ChunkMesh_Vertex> m_fluid;
-    entt::entity m_entity;
-    ChunkPos m_cpos;
-};
-
-struct CornerSamples final {
-    LocalPos side1;
-    LocalPos side2;
-    LocalPos corner;
-};
 
 static float shade_factor(const Eigen::Vector3f& normal)
 {
@@ -637,8 +637,8 @@ static float fluid_corner_height(const BlockCache& cache, const LocalPos& lpos, 
     auto weight_sum = 0.0f;
     auto full_height = 0.0625f * static_cast<float>(full_level);
 
-    for(int dx = sx - 1; dx <= sx; ++dx) {
-        for(int dz = sz - 1; dz <= sz; ++dz) {
+    for(int dx = sx - 1; dx <= sx; dx += 1) {
+        for(int dz = sz - 1; dz <= sz; dz += 1) {
             auto height = fluid_cell_height(cache, lpos + LocalPos(dx, 0, dz), fluid_id, gravity, full_level);
 
             if(!height.has_value()) {
@@ -1154,9 +1154,9 @@ static bool touches_neighbor_chunk(const LocalPos& lpos, ChunkPos::value_type dx
 
 static void mark_neighbors_dirty(const ChunkPos& cpos)
 {
-    for(ChunkPos::value_type dz = -1; dz <= 1; ++dz) {
-        for(ChunkPos::value_type dy = -1; dy <= 1; ++dy) {
-            for(ChunkPos::value_type dx = -1; dx <= 1; ++dx) {
+    for(ChunkPos::value_type dz = -1; dz <= 1; dz += 1) {
+        for(ChunkPos::value_type dy = -1; dy <= 1; dy += 1) {
+            for(ChunkPos::value_type dx = -1; dx <= 1; dx += 1) {
                 if(dx == 0 && dy == 0 && dz == 0) {
                     continue;
                 }
@@ -1169,9 +1169,9 @@ static void mark_neighbors_dirty(const ChunkPos& cpos)
 
 static void mark_border_neighbors_dirty(const ChunkPos& cpos, const LocalPos& lpos)
 {
-    for(ChunkPos::value_type dz = -1; dz <= 1; ++dz) {
-        for(ChunkPos::value_type dy = -1; dy <= 1; ++dy) {
-            for(ChunkPos::value_type dx = -1; dx <= 1; ++dx) {
+    for(ChunkPos::value_type dz = -1; dz <= 1; dz += 1) {
+        for(ChunkPos::value_type dy = -1; dy <= 1; dy += 1) {
+            for(ChunkPos::value_type dx = -1; dx <= 1; dx += 1) {
                 if(dx == 0 && dy == 0 && dz == 0) {
                     continue;
                 }
@@ -1228,23 +1228,23 @@ static void on_chunk_light(const ChunkLightUpdateEvent& event)
     mark_neighbors_dirty(event.pos());
 }
 
+void chunk_mesher::init(void)
+{
+    auto chunk_create_sink = globals::dispatcher.sink<ChunkCreateEvent>();
+    chunk_create_sink.connect<&on_chunk_create>();
+    auto chunk_update_sink = globals::dispatcher.sink<ChunkUpdateEvent>();
+    chunk_update_sink.connect<&on_chunk_update>();
+    auto chunk_remove_sink = globals::dispatcher.sink<ChunkRemoveEvent>();
+    chunk_remove_sink.connect<&on_chunk_remove>();
+    auto block_update_sink = globals::dispatcher.sink<BlockUpdateEvent>();
+    block_update_sink.connect<&on_block_update>();
+    auto chunk_light_update_sink = globals::dispatcher.sink<ChunkLightUpdateEvent>();
+    chunk_light_update_sink.connect<&on_chunk_light>();
+}
+
 void chunk_mesher::reset(void)
 {
     s_pending.clear();
-}
-
-void chunk_mesher::init(void)
-{
-    globals::dispatcher.sink<ChunkCreateEvent>().connect<&on_chunk_create>();
-    globals::dispatcher.sink<ChunkUpdateEvent>().connect<&on_chunk_update>();
-    globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
-    globals::dispatcher.sink<BlockUpdateEvent>().connect<&on_block_update>();
-    globals::dispatcher.sink<ChunkLightUpdateEvent>().connect<&on_chunk_light>();
-}
-
-std::size_t chunk_mesher::backlog(void)
-{
-    return s_backlog;
 }
 
 void chunk_mesher::update(void)
@@ -1284,4 +1284,9 @@ void chunk_mesher::update(void)
         chunk_registry.remove<ChunkMesh_DirtyMarker>(entity);
         threading::submit<MeshingTask>(entity, position);
     }
+}
+
+std::size_t chunk_mesher::backlog(void)
+{
+    return s_backlog;
 }

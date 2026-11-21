@@ -13,7 +13,7 @@
 
 #include "client/camera.hh"
 #include "client/globals.hh"
-#include "client/res/texture2D.hh"
+#include "client/res/texture_2d.hh"
 #include "client/shader_program.hh"
 #include "client/utils/world.hh"
 #include "client/world/skybox.hh"
@@ -158,7 +158,12 @@ static void build_stars(void)
         auto size = STAR_MIN_SIZE + (STAR_MAX_SIZE - STAR_MIN_SIZE) * next_float(random);
         auto brightness = STAR_MIN_BRIGHTNESS + (STAR_MAX_BRIGHTNESS - STAR_MIN_BRIGHTNESS) * next_float(random);
 
-        auto helper = std::abs(direction.y()) < 0.99f ? Eigen::Vector3f::UnitY() : Eigen::Vector3f::UnitX();
+        Eigen::Vector3f helper = Eigen::Vector3f::UnitX();
+
+        if(std::abs(direction.y()) < 0.99f) {
+            helper = Eigen::Vector3f::UnitY();
+        }
+
         auto tangent = direction.cross(helper).normalized();
         auto bitangent = direction.cross(tangent);
 
@@ -346,7 +351,10 @@ void sky_renderer::render(void)
 
     // The camera has no valid matrices until a player exists; the
     // flat clear colour is the right sky for the menu that follows
-    if(camera::instance.view().hasNaN() || camera::instance.projection().hasNaN()) {
+    auto view = camera::instance.view();
+    auto projection = camera::instance.projection();
+
+    if(view.hasNaN() || projection.hasNaN()) {
         return;
     }
 

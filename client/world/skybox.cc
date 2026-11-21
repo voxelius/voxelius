@@ -198,7 +198,11 @@ void skybox::update(void)
     auto moon_factor = visuals.moon ? 1.0f : 0.0f;
     auto star_factor = visuals.stars ? 1.0f : 0.0f;
     auto sun_tilt_offset = visuals.sun ? visuals.sun->tilt : 0.0f;
-    auto moon_color = visuals.moon ? visuals.moon->color : Eigen::Vector3f::Zero();
+    Eigen::Vector3f moon_color = Eigen::Vector3f::Zero();
+
+    if(visuals.moon) {
+        moon_color = visuals.moon->color;
+    }
 
     auto height = std::sin(s_phase * std::numbers::pi_v<float> * 2.0f);
     auto light = world_clock::daylight(s_phase);

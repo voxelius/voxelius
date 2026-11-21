@@ -17,8 +17,8 @@ struct VariantUniform final {
 class ShaderProgram final {
 public:
     bool setup(const Identifier& id);
-    void destroy(void);
     bool update(void);
+    void destroy(void);
 
     std::size_t add_uniform(std::string name);
     void set_variant_vert(unsigned variant, unsigned value);

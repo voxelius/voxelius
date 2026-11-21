@@ -41,8 +41,8 @@ struct packet::World_Light final : public packet::Base<packet::WORLD_CHUNK_LIGHT
     struct Entry final {
         ChunkPos cpos;
 
-        // A delta only names the cells that changed; a full entry carries the
-        // whole array, which is what a chunk nobody has seen yet needs.
+        // A delta names only the changed cells. A full entry
+        // carries the whole array, which a chunk nobody has seen yet needs
         std::vector<std::uint16_t> indices;
         std::vector<std::uint8_t> values;
         LightStorage light;
@@ -52,9 +52,8 @@ struct packet::World_Light final : public packet::Base<packet::WORLD_CHUNK_LIGHT
     static void encode(const World_Light& packet, WriteBuffer& buffer);
     static void decode(World_Light& packet, ReadBuffer& buffer);
 
-    // One packet carries every chunk whose light changed in a tick. Sending a
-    // packet per chunk cost a thousand small packets a second while the world
-    // was streaming in.
+    // One packet carries every chunk whose light changed in a tick. A packet
+    // per chunk cost a thousand small packets a second while the world was streaming in
     std::vector<Entry> entries;
 };
 

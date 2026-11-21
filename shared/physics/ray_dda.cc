@@ -20,9 +20,28 @@ void Ray_DDA::reset(const ChunkPos& start_chunk, const Eigen::Vector3f& start_po
     m_start_pos = start_pos;
     m_direction = direction.normalized();
 
-    m_delta_distance.x() = m_direction.x() ? std::abs(1.0f / m_direction.x()) : std::numeric_limits<float>::max();
-    m_delta_distance.y() = m_direction.y() ? std::abs(1.0f / m_direction.y()) : std::numeric_limits<float>::max();
-    m_delta_distance.z() = m_direction.z() ? std::abs(1.0f / m_direction.z()) : std::numeric_limits<float>::max();
+    auto far_distance = std::numeric_limits<float>::max();
+
+    if(m_direction.x()) {
+        m_delta_distance.x() = std::abs(1.0f / m_direction.x());
+    }
+    else {
+        m_delta_distance.x() = far_distance;
+    }
+
+    if(m_direction.y()) {
+        m_delta_distance.y() = std::abs(1.0f / m_direction.y());
+    }
+    else {
+        m_delta_distance.y() = far_distance;
+    }
+
+    if(m_direction.z()) {
+        m_delta_distance.z() = std::abs(1.0f / m_direction.z());
+    }
+    else {
+        m_delta_distance.z() = far_distance;
+    }
 
     m_distance = 0.0f;
     m_position = utils::to_block(m_start_chunk, start_pos.cast<LocalPos::value_type>());

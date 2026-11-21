@@ -42,14 +42,6 @@ void cvar::Boolean::set_value(bool new_value)
     }
 }
 
-void cvar::Boolean::sync_value(void) const
-{
-    if(m_binding && m_generation < m_binding->generation()) {
-        m_value = string_to_bool(m_binding->value());
-        m_generation = m_binding->generation();
-    }
-}
-
 std::string_view cvar::Boolean::bool_to_string(bool value)
 {
     if(value) {
@@ -75,4 +67,12 @@ bool cvar::Boolean::string_to_bool(std::string_view value)
     is_false = is_false || 0 == value.compare("0");
 
     return is_true && !is_false;
+}
+
+void cvar::Boolean::sync_value(void) const
+{
+    if(m_binding && m_generation < m_binding->generation()) {
+        m_value = string_to_bool(m_binding->value());
+        m_generation = m_binding->generation();
+    }
 }

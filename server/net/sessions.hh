@@ -10,11 +10,6 @@
 class World;
 class ServerWorld;
 
-namespace sessions
-{
-extern cvar::Boolean strict_version;
-} // namespace sessions
-
 enum class session_state : std::uint8_t {
     UNCONNECTED,
     CHALLENGE,
@@ -61,6 +56,11 @@ struct Session final {
 struct SessionRef final {
     Session* ptr;
 };
+
+namespace sessions
+{
+extern cvar::Boolean strict_version;
+} // namespace sessions
 
 namespace sessions
 {

@@ -2,9 +2,10 @@
 
 #include "client/gui/title.hh"
 
+#include "shared/world/world.hh"
+
 #include "client/fonts.hh"
 #include "client/globals.hh"
-#include "shared/world/world.hh"
 
 constexpr static float SPLASH_GAP = 4.0f;
 constexpr static float VERSION_PAD = 4.0f;

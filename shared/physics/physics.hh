@@ -4,6 +4,8 @@
 #include "shared/coord.hh"
 #include "shared/world/block.hh"
 
+class World;
+
 namespace physics
 {
 enum block_filter {
@@ -17,8 +19,6 @@ enum entity_filter {
     ENTITY_FILTER_ALL,      ///< Raycast will hit all entities
 };
 } // namespace physics
-
-class World;
 
 namespace physics
 {

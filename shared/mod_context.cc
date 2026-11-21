@@ -21,6 +21,20 @@
 #include "shared/api/worlds_library.hh"
 #include "shared/constant.hh"
 
+static std::pair<std::string, ModVersion> parse_mod_entry(std::string_view entry)
+{
+    auto separator = entry.find('@');
+
+    if(separator == std::string_view::npos) {
+        return std::make_pair(std::string(entry), ModVersion {});
+    }
+
+    auto name = std::string(entry.substr(0, separator));
+    auto version = ModVersion::parse(entry.substr(separator + 1));
+
+    return std::make_pair(std::move(name), std::move(version));
+}
+
 ModVersion ModVersion::parse(std::string_view string)
 {
     ModVersion version {};
@@ -37,20 +51,6 @@ ModVersion ModVersion::parse(std::string_view string)
 std::string ModVersion::to_string(const ModVersion& version)
 {
     return std::format("{}.{}.{}", version.major, version.minor, version.patch);
-}
-
-static std::pair<std::string, ModVersion> parse_mod_entry(std::string_view entry)
-{
-    auto separator = entry.find('@');
-
-    if(separator == std::string_view::npos) {
-        return std::make_pair(std::string(entry), ModVersion {});
-    }
-
-    auto name = std::string(entry.substr(0, separator));
-    auto version = ModVersion::parse(entry.substr(separator + 1));
-
-    return std::make_pair(std::move(name), std::move(version));
 }
 
 bool ModInfo::parse(const config::Map& map, ModInfo& modinfo)
@@ -78,37 +78,51 @@ bool ModInfo::parse(const config::Map& map, ModInfo& modinfo)
         modinfo.version = builtin_version;
     }
     else {
-        modinfo.version = ModVersion::parse(map.value<std::string>("version").value_or(std::string {}));
+        auto version_value = map.value<std::string>("version");
+        modinfo.version = ModVersion::parse(version_value.value_or(std::string {}));
 
         // Any non-builtin mod implicitly hard-depends on builtin of the current runtime version
         modinfo.hard_depends.emplace_back(constant::BUILTIN_NAME_SPACE, builtin_version);
     }
 
-    auto hard_depends = map.value<std::string>("hard_depends").value_or(std::string {});
+    auto hard_depends_value = map.value<std::string>("hard_depends");
+    auto hard_depends = hard_depends_value.value_or(std::string {});
 
     for(auto token : utils::tokenize(hard_depends)) {
         modinfo.hard_depends.emplace_back(parse_mod_entry(token));
     }
 
-    auto soft_depends = map.value<std::string>("soft_depends").value_or(std::string {});
+    auto soft_depends_value = map.value<std::string>("soft_depends");
+    auto soft_depends = soft_depends_value.value_or(std::string {});
 
     for(auto token : utils::tokenize(soft_depends)) {
         modinfo.soft_depends.emplace_back(parse_mod_entry(token));
     }
 
-    auto conflicts = map.value<std::string>("conflicts").value_or(std::string {});
+    auto conflicts_value = map.value<std::string>("conflicts");
+    auto conflicts = conflicts_value.value_or(std::string {});
 
     for(auto token : utils::tokenize(conflicts)) {
         modinfo.conflicts.emplace_back(parse_mod_entry(token));
     }
 
-    modinfo.meta_author = map.value<std::string>("meta_author").value_or(std::string {});
-    modinfo.meta_homepage = map.value<std::string>("meta_homepage").value_or(std::string {});
-    modinfo.meta_tracker = map.value<std::string>("meta_tracker").value_or(std::string {});
-    modinfo.meta_license = map.value<std::string>("meta_license").value_or(std::string("ARR")); // Assume all-rights-reserved
+    auto meta_author_value = map.value<std::string>("meta_author");
+    modinfo.meta_author = meta_author_value.value_or(std::string {});
 
-    modinfo.display_name = map.value<std::string>("display_name").value_or(modinfo.name);
-    modinfo.display_desc = map.value<std::string>("display_desc").value_or(std::string {});
+    auto meta_homepage_value = map.value<std::string>("meta_homepage");
+    modinfo.meta_homepage = meta_homepage_value.value_or(std::string {});
+
+    auto meta_tracker_value = map.value<std::string>("meta_tracker");
+    modinfo.meta_tracker = meta_tracker_value.value_or(std::string {});
+
+    auto meta_license_value = map.value<std::string>("meta_license");
+    modinfo.meta_license = meta_license_value.value_or(std::string("ARR")); // Assume all-rights-reserved
+
+    auto display_name_value = map.value<std::string>("display_name");
+    modinfo.display_name = display_name_value.value_or(modinfo.name);
+
+    auto display_desc_value = map.value<std::string>("display_desc");
+    modinfo.display_desc = display_desc_value.value_or(std::string {});
 
     return true;
 }
@@ -308,39 +322,6 @@ vx::hash_map<Identifier, fluid_id_type> ModContext::take_fluid_names(void)
     return std::move(m_fluid_names);
 }
 
-tint_id_type ModContext::find_tint(const Identifier& name) const
-{
-    auto it = m_tint_names.find(name);
-
-    if(it == m_tint_names.cend())
-        return TINT_ID_NULL;
-    return it->second;
-}
-
-tint_id_type ModContext::register_tint(const Identifier& name, TintDefinition def)
-{
-    if(m_tints.empty()) {
-        m_tints.emplace_back();
-    }
-
-    auto id = static_cast<tint_id_type>(m_tints.size());
-
-    m_tints.push_back(std::move(def));
-    m_tint_names.try_emplace(name, id);
-
-    return id;
-}
-
-std::vector<TintDefinition> ModContext::take_tints(void)
-{
-    return std::move(m_tints);
-}
-
-vx::hash_map<Identifier, tint_id_type> ModContext::take_tint_names(void)
-{
-    return std::move(m_tint_names);
-}
-
 weather_type_id ModContext::find_weather(const Identifier& name) const
 {
     auto it = m_weather_names.find(name);
@@ -374,6 +355,39 @@ std::vector<WeatherTypeDefinition> ModContext::take_weathers(void)
 vx::hash_map<Identifier, weather_type_id> ModContext::take_weather_names(void)
 {
     return std::move(m_weather_names);
+}
+
+tint_id_type ModContext::find_tint(const Identifier& name) const
+{
+    auto it = m_tint_names.find(name);
+
+    if(it == m_tint_names.cend())
+        return TINT_ID_NULL;
+    return it->second;
+}
+
+tint_id_type ModContext::register_tint(const Identifier& name, TintDefinition def)
+{
+    if(m_tints.empty()) {
+        m_tints.emplace_back();
+    }
+
+    auto id = static_cast<tint_id_type>(m_tints.size());
+
+    m_tints.push_back(std::move(def));
+    m_tint_names.try_emplace(name, id);
+
+    return id;
+}
+
+std::vector<TintDefinition> ModContext::take_tints(void)
+{
+    return std::move(m_tints);
+}
+
+vx::hash_map<Identifier, tint_id_type> ModContext::take_tint_names(void)
+{
+    return std::move(m_tint_names);
 }
 
 class_id_type ModContext::find_class(const Identifier& name) const

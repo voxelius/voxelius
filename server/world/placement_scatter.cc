@@ -157,7 +157,7 @@ static bool check_footprint(ServerWorld* world, BlockPos::value_type bx, BlockPo
 }
 
 static bool would_place_uncached(BlockPos::value_type bx, BlockPos::value_type bz, const PlacementContext& context,
-    const BiomeDefinition& biome, const BiomeScatterEntry& entry, std::size_t entry_index, ScatterScanCache& cache)
+    const BiomeDefinition& biome, const BiomeScatterEntry& entry, std::size_t entry_index, ScatterScanCache&)
 {
     if(entry.cached == nullptr) {
         return false;
@@ -217,7 +217,11 @@ static BlockPos::value_type scatter_extent(const Feature& feature)
     const auto& bounds = feature.bounds;
     const auto min_xz = Eigen::Vector2i(bounds.min().x(), bounds.min().z());
     const auto max_xz = Eigen::Vector2i(bounds.max().x(), bounds.max().z());
-    return static_cast<BlockPos::value_type>(std::max(min_xz.cwiseAbs().maxCoeff(), max_xz.cwiseAbs().maxCoeff()));
+
+    auto min_abs = min_xz.cwiseAbs();
+    auto max_abs = max_xz.cwiseAbs();
+
+    return static_cast<BlockPos::value_type>(std::max(min_abs.maxCoeff(), max_abs.maxCoeff()));
 }
 
 static bool bounds_too_close(const BlockAlignedBox& a, const BlockAlignedBox& b, unsigned padding)
@@ -337,7 +341,10 @@ static bool resolve_padding_tie(BlockPos::value_type bx, BlockPos::value_type bz
                 return true;
             }
 
-            if(neighbour_priority == current_priority && (ox < bx || (ox == bx && oz < bz))) {
+            auto same_priority = neighbour_priority == current_priority;
+            auto earlier_column = ox < bx || (ox == bx && oz < bz);
+
+            if(same_priority && earlier_column) {
                 return true;
             }
         }

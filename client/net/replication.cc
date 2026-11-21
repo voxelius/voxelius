@@ -20,7 +20,8 @@ static std::uint32_t s_next_request_id = 1;
 static bool accept_shadow(const packet::Cvar_ServerVars::Variable& variable)
 {
     if(auto binding = cvar::find_var(variable.name)) {
-        auto flags = binding->flags().value_or(FCVAR_NONE);
+        auto& flags_opt = binding->flags();
+        auto flags = flags_opt.value_or(FCVAR_NONE);
 
         if(!binding->is_remote() && 0 == (flags & FCVAR_REPLICATED)) {
             msg::log_warning("replication: server wants to set {} which is not replicated here, ignoring it", variable.name);
@@ -105,7 +106,8 @@ static void on_cvar_server_cmds(const packet::Cvar_ServerCmds& packet)
         auto binding = cvar::find_cmd(command.name);
 
         if(binding) {
-            auto flags = binding->flags().value_or(FCVAR_NONE);
+            auto& flags_opt = binding->flags();
+            auto flags = flags_opt.value_or(FCVAR_NONE);
 
             if(0 == (flags & FCVAR_RECALL)) {
                 msg::log_warning("{}: server tried to set non-recallable command", command.name);
@@ -137,9 +139,12 @@ static void on_msg_log(const packet::Msg_Log& packet)
 
 void replication::init(void)
 {
-    globals::dispatcher.sink<packet::Cvar_ServerVars>().connect<&on_cvar_server_vars>();
-    globals::dispatcher.sink<packet::Cvar_ServerCmds>().connect<&on_cvar_server_cmds>();
-    globals::dispatcher.sink<packet::Msg_Log>().connect<&on_msg_log>();
+    auto cvar_server_vars_sink = globals::dispatcher.sink<packet::Cvar_ServerVars>();
+    cvar_server_vars_sink.connect<&on_cvar_server_vars>();
+    auto cvar_server_cmds_sink = globals::dispatcher.sink<packet::Cvar_ServerCmds>();
+    cvar_server_cmds_sink.connect<&on_cvar_server_cmds>();
+    auto msg_log_sink = globals::dispatcher.sink<packet::Msg_Log>();
+    msg_log_sink.connect<&on_msg_log>();
 }
 
 void replication::clear(void)

@@ -23,44 +23,6 @@ constexpr static CloudRing CLOUD_RINGS[] = {
 
 constexpr static float CLOUD_FINE_CELL_BLOCKS = CLOUD_RINGS[0].cell;
 
-std::span<const CloudRing> cloud_field::rings(void)
-{
-    return CLOUD_RINGS;
-}
-
-float cloud_field::max_radius_blocks(void)
-{
-    return CLOUD_MAX_RADIUS_BLOCKS;
-}
-
-float cloud_field::fine_cell_blocks(void)
-{
-    return CLOUD_FINE_CELL_BLOCKS;
-}
-
-CloudDeck cloud_field::make_deck(const CloudInput& input, const CloudGroup& group, const CloudRing& ring)
-{
-    CloudDeck deck {};
-    deck.type = group.type;
-    deck.body = group.body;
-    deck.cell = ring.cell;
-    deck.height = ring.height;
-
-    deck.state = &input.state;
-    deck.allowed = input.allowed;
-    deck.anchor = input.anchor;
-    deck.center = input.center - Eigen::Vector3f(input.offset.x(), 0.0f, input.offset.y());
-
-    deck.scale = std::max(group.body.scale, 8.0f);
-    deck.max_levels = std::clamp(static_cast<int>(group.body.thickness / deck.height), 1, CLOUD_COLUMN_MAX_VOXELS);
-    deck.opacity = std::clamp(group.body.opacity, 0.05f, 1.0f);
-    deck.shadow = group.body.shadow_color;
-    deck.lit = group.body.lit_color;
-    deck.side = (deck.shadow + deck.lit) * 0.5f;
-
-    return deck;
-}
-
 // A coarse cell stands for the whole patch the finer ring resolves: averaging
 // its corners keeps the two rings on the same structure, where a point sample
 // would give the coarse ring a pattern the fine one never draws.
@@ -125,6 +87,58 @@ static float shell_noise(float x, float y, float z, std::uint32_t seed)
     auto bottom = c * (1.0f - fx) + d * fx;
 
     return top * (1.0f - fz) + bottom * fz;
+}
+
+static void add_group(weather_type_id type, const CloudBody& body, float camera_y, std::vector<CloudGroup>& out)
+{
+    if(body.coverage <= 0.02f) {
+        return;
+    }
+
+    CloudGroup group {};
+    group.type = type;
+    group.body = body;
+    group.distance = std::abs(body.height - camera_y);
+
+    out.push_back(group);
+}
+
+std::span<const CloudRing> cloud_field::rings(void)
+{
+    return CLOUD_RINGS;
+}
+
+float cloud_field::max_radius_blocks(void)
+{
+    return CLOUD_MAX_RADIUS_BLOCKS;
+}
+
+float cloud_field::fine_cell_blocks(void)
+{
+    return CLOUD_FINE_CELL_BLOCKS;
+}
+
+CloudDeck cloud_field::make_deck(const CloudInput& input, const CloudGroup& group, const CloudRing& ring)
+{
+    CloudDeck deck {};
+    deck.type = group.type;
+    deck.body = group.body;
+    deck.cell = ring.cell;
+    deck.height = ring.height;
+
+    deck.state = &input.state;
+    deck.allowed = input.allowed;
+    deck.anchor = input.anchor;
+    deck.center = input.center - Eigen::Vector3f(input.offset.x(), 0.0f, input.offset.y());
+
+    deck.scale = std::max(group.body.scale, 8.0f);
+    deck.max_levels = std::clamp(static_cast<int>(group.body.thickness / deck.height), 1, CLOUD_COLUMN_MAX_VOXELS);
+    deck.opacity = std::clamp(group.body.opacity, 0.05f, 1.0f);
+    deck.shadow = group.body.shadow_color;
+    deck.lit = group.body.lit_color;
+    deck.side = (deck.shadow + deck.lit) * 0.5f;
+
+    return deck;
 }
 
 CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_x, std::int32_t cell_z)
@@ -194,20 +208,6 @@ CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_
     column.shade = shade;
 
     return column;
-}
-
-static void add_group(weather_type_id type, const CloudBody& body, float camera_y, std::vector<CloudGroup>& out)
-{
-    if(body.coverage <= 0.02f) {
-        return;
-    }
-
-    CloudGroup group {};
-    group.type = type;
-    group.body = body;
-    group.distance = std::abs(body.height - camera_y);
-
-    out.push_back(group);
 }
 
 void cloud_field::collect_groups(float camera_y, std::vector<CloudGroup>& out)

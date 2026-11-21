@@ -11,16 +11,16 @@
 
 #include "client/globals.hh"
 
-static std::size_t cache_index(std::size_t x, std::size_t y, std::size_t z, std::size_t size)
-{
-    return x + y * size + z * size * size;
-}
-
 constexpr static std::int32_t CHUNK_TOP_LOCAL_Y = static_cast<std::int32_t>(constant::CHUNK_SIZE) - 1;
 
 // The engine has no sea level yet. It only affects the guess for chunks
 // whose top layer lies below it, so one number in one place is enough.
 constexpr static std::int32_t ESTIMATED_SEA_LEVEL = 0;
+
+static std::size_t cache_index(std::size_t x, std::size_t y, std::size_t z, std::size_t size)
+{
+    return x + y * size + z * size * size;
+}
 
 void BlockCache::init(const ChunkPos& cpos)
 {
@@ -124,7 +124,12 @@ void BlockCache::init(const ChunkPos& cpos)
                     auto depth = static_cast<unsigned>(ESTIMATED_SEA_LEVEL - 1 - top_y);
                     auto consumed = depth * opacity;
 
-                    level = (consumed >= BLOCK_LIGHT_MAX) ? BLOCK_LIGHT_MIN : static_cast<block_light_type>(BLOCK_LIGHT_MAX - consumed);
+                    if(consumed >= BLOCK_LIGHT_MAX) {
+                        level = BLOCK_LIGHT_MIN;
+                    }
+                    else {
+                        level = static_cast<block_light_type>(BLOCK_LIGHT_MAX - consumed);
+                    }
                 }
 
                 auto above = BLOCK_ID_NULL;

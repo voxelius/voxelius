@@ -6,7 +6,7 @@ local ORIENTATIONS <const> = { "top", "bottom", "double" }
 local EMPTY <const> = "none"
 
 -- A bottom slab fills the lower half of its cell, so the cell boundary above it
--- is open; a top slab is the other way around. Both expose their side faces.
+-- is open; a top slab is the other way around. Both expose their side faces
 local FLUID_SIDES <const> = (1 << blocks.FACE_NORTH) | (1 << blocks.FACE_SOUTH) | (1 << blocks.FACE_EAST) | (1 << blocks.FACE_WEST)
 local FLUID_BOTTOM <const> = FLUID_SIDES | (1 << blocks.FACE_TOP)
 local FLUID_TOP <const> = FLUID_SIDES | (1 << blocks.FACE_BOTTOM)
@@ -42,13 +42,13 @@ local function orientation_overrides(orientation, health, drop_name)
 end
 
 -- A filled cell holds a water source, never a flowing block, so a slab placed
--- into flowing water stays dry and the flow simply ends there.
+-- into flowing water stays dry and the flow simply ends there
 local function holds_source(bx, by, bz)
   if world.get_fluid(bx, by, bz) == 0 then
     return false
   end
 
-  -- A filled cell has no level state and always holds a full source.
+  -- A filled cell has no level state and always holds a full source
   if not world.get_state(bx, by, bz, "level") then
     return true
   end
@@ -181,7 +181,7 @@ function slabdef.add_block(identifier, prototype, options)
       for _, name in ipairs(fillable) do
         local overrides = orientation_overrides(orientation, health, drop_name)
 
-        -- A double slab is a full cube and never holds a fluid.
+        -- A double slab is a full cube and never holds a fluid
         if orientation ~= "double" then
           overrides.fluid_name = name
         end
@@ -209,7 +209,7 @@ function slabdef.add_block(identifier, prototype, options)
 
   if fillable and #fillable > 0 then
     -- A filled slab keeps a source that still flows out of its open faces, so
-    -- it ticks like a waterlogged block does in vanilla.
+    -- it ticks like a waterlogged block does in vanilla
     def.on_tick = options.on_tick or flowdef.tick
     def.on_break = options.on_break or slabdef.on_break()
   end

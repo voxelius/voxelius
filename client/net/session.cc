@@ -129,7 +129,7 @@ static void on_host_connect(const HostConnectEvent& event)
     protocol::send(request, enet_event.peer);
 }
 
-static void on_host_disconnect(const HostDisconnectEvent& event)
+static void on_host_disconnect(const HostDisconnectEvent&)
 {
     if(session::state) {
         globals::dispatcher.trigger(SessionErrorEvent(packet::Session_Disconnect::UNSPECIFIED));
@@ -145,9 +145,13 @@ static void on_auth_challenge(const packet::Auth_Challenge& packet)
     auto timestamp_str = std::to_string(timestamp_min);
 
     std::vector<std::byte> nonce;
-    nonce.resize(packet.nonce.size() + timestamp_str.size());
-    std::memcpy(nonce.data(), packet.nonce.data(), packet.nonce.size());
-    std::memcpy(nonce.data() + packet.nonce.size(), timestamp_str.data(), timestamp_str.size());
+
+    auto challenge_size = packet.nonce.size();
+    auto nonce_size = challenge_size + timestamp_str.size();
+
+    nonce.resize(nonce_size);
+    std::memcpy(nonce.data(), packet.nonce.data(), challenge_size);
+    std::memcpy(nonce.data() + challenge_size, timestamp_str.data(), timestamp_str.size());
 
     packet::Auth_Response response {};
     response.signature = ed25519::sign(s_auth_pair, nonce);
@@ -170,7 +174,7 @@ static void on_session_disconnect(const packet::Session_Disconnect& packet)
     handle_disconnect(packet.reason);
 }
 
-static cvar::status cmd_whoami(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_whoami(const cvar::Context&, std::span<const std::string_view>)
 {
     msg::log_info("public key: {}", ed25519::export_pkey(s_auth_pair.first));
     msg::log_info("identity: {}", utils::crc64(s_auth_pair.first));
@@ -235,11 +239,16 @@ void session::init(void)
         }
     }
 
-    globals::dispatcher.sink<HostConnectEvent>().connect<&on_host_connect>();
-    globals::dispatcher.sink<HostDisconnectEvent>().connect<&on_host_disconnect>();
-    globals::dispatcher.sink<packet::Auth_Challenge>().connect<&on_auth_challenge>();
-    globals::dispatcher.sink<packet::Auth_Admission>().connect<&on_auth_admission>();
-    globals::dispatcher.sink<packet::Session_Disconnect>().connect<&on_session_disconnect>();
+    auto host_connect_sink = globals::dispatcher.sink<HostConnectEvent>();
+    host_connect_sink.connect<&on_host_connect>();
+    auto host_disconnect_sink = globals::dispatcher.sink<HostDisconnectEvent>();
+    host_disconnect_sink.connect<&on_host_disconnect>();
+    auto auth_challenge_sink = globals::dispatcher.sink<packet::Auth_Challenge>();
+    auth_challenge_sink.connect<&on_auth_challenge>();
+    auto auth_admission_sink = globals::dispatcher.sink<packet::Auth_Admission>();
+    auth_admission_sink.connect<&on_auth_admission>();
+    auto session_disconnect_sink = globals::dispatcher.sink<packet::Session_Disconnect>();
+    session_disconnect_sink.connect<&on_session_disconnect>();
 }
 
 void session::shutdown(void)

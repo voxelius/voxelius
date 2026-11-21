@@ -97,8 +97,6 @@ bool ShaderProgram::setup(const Identifier& id)
 bool ShaderProgram::update(void)
 {
     if(!needs_update) {
-        // The program is already up to
-        // date with the internal state
         return true;
     }
 

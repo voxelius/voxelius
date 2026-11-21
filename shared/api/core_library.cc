@@ -13,7 +13,7 @@ void api::open_core_library(std::shared_ptr<lua_State>& lua, const ModContext* c
 
     auto L = lua.get();
 
-    lua_newtable(L); // core
+    lua_newtable(L); // Core
 
     lua_pushinteger(L, version::major);
     lua_setfield(L, -2, "VERSION_MAJOR");

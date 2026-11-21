@@ -35,7 +35,7 @@ static gui::ButtonBind s_jump_bind;
 static gui::ButtonBind s_sneak_bind;
 
 template<std::uint32_t Bit>
-static cvar::status cmd_press(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_press(const cvar::Context&, std::span<const std::string_view>)
 {
     s_input_held |= Bit;
 
@@ -43,7 +43,7 @@ static cvar::status cmd_press(const cvar::Context& ctx, std::span<const std::str
 }
 
 template<std::uint32_t Bit>
-static cvar::status cmd_release(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_release(const cvar::Context&, std::span<const std::string_view>)
 {
     s_input_held &= ~Bit;
 
@@ -65,18 +65,30 @@ static void on_window_event(const SDL_WindowEvent& event)
 
 void player_move::init(void)
 {
-    cvar::bind_cmd("+forward").connect<&cmd_press<IN_FORWARD>>();
-    cvar::bind_cmd("-forward").connect<&cmd_release<IN_FORWARD>>();
-    cvar::bind_cmd("+back").connect<&cmd_press<IN_BACK>>();
-    cvar::bind_cmd("-back").connect<&cmd_release<IN_BACK>>();
-    cvar::bind_cmd("+moveleft").connect<&cmd_press<IN_LEFT>>();
-    cvar::bind_cmd("-moveleft").connect<&cmd_release<IN_LEFT>>();
-    cvar::bind_cmd("+moveright").connect<&cmd_press<IN_RIGHT>>();
-    cvar::bind_cmd("-moveright").connect<&cmd_release<IN_RIGHT>>();
-    cvar::bind_cmd("+jump").connect<&cmd_press<IN_JUMP>>();
-    cvar::bind_cmd("-jump").connect<&cmd_release<IN_JUMP>>();
-    cvar::bind_cmd("+sneak").connect<&cmd_press<IN_SNEAK>>();
-    cvar::bind_cmd("-sneak").connect<&cmd_release<IN_SNEAK>>();
+    auto& forward_press = cvar::bind_cmd("+forward");
+    forward_press.connect<&cmd_press<IN_FORWARD>>();
+    auto& forward_release = cvar::bind_cmd("-forward");
+    forward_release.connect<&cmd_release<IN_FORWARD>>();
+    auto& back_press = cvar::bind_cmd("+back");
+    back_press.connect<&cmd_press<IN_BACK>>();
+    auto& back_release = cvar::bind_cmd("-back");
+    back_release.connect<&cmd_release<IN_BACK>>();
+    auto& left_press = cvar::bind_cmd("+moveleft");
+    left_press.connect<&cmd_press<IN_LEFT>>();
+    auto& left_release = cvar::bind_cmd("-moveleft");
+    left_release.connect<&cmd_release<IN_LEFT>>();
+    auto& right_press = cvar::bind_cmd("+moveright");
+    right_press.connect<&cmd_press<IN_RIGHT>>();
+    auto& right_release = cvar::bind_cmd("-moveright");
+    right_release.connect<&cmd_release<IN_RIGHT>>();
+    auto& jump_press = cvar::bind_cmd("+jump");
+    jump_press.connect<&cmd_press<IN_JUMP>>();
+    auto& jump_release = cvar::bind_cmd("-jump");
+    jump_release.connect<&cmd_release<IN_JUMP>>();
+    auto& sneak_press = cvar::bind_cmd("+sneak");
+    sneak_press.connect<&cmd_press<IN_SNEAK>>();
+    auto& sneak_release = cvar::bind_cmd("-sneak");
+    sneak_release.connect<&cmd_release<IN_SNEAK>>();
 
     s_forward_bind.bind_action("forward");
     s_back_bind.bind_action("back");
@@ -105,7 +117,8 @@ void player_move::init(void)
     buttons::bind(ButtonSource(input_device::KEYBOARD, SDL_SCANCODE_LSHIFT, input_edge::DOWN), "+sneak");
     buttons::bind(ButtonSource(input_device::KEYBOARD, SDL_SCANCODE_LSHIFT, input_edge::UP), "-sneak");
 
-    globals::dispatcher.sink<SDL_WindowEvent>().connect<&on_window_event>();
+    auto sdl_window_sink = globals::dispatcher.sink<SDL_WindowEvent>();
+    sdl_window_sink.connect<&on_window_event>();
 }
 
 void player_move::fixed_update(void)
