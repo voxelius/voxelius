@@ -32,6 +32,8 @@ Notable settings:
 |Constants|`UPPER_SNAKE_CASE`|`BASE_WIDTH`|
 |Type aliases|Inherited|...|
 
+- Two names must differ by more than capitalization: `world_scope` and `WorldScope` read as the same name, so keep one of them.
+
 ## Brace newlines
 
 - Functions, methods, and namespaces put the opening brace on a new line.
@@ -70,9 +72,12 @@ void vx::teardown(void)
 
 - Mark classes and structures `final` unless they are meant as a base.
 - Functions and methods with zero arguments use C-style `void` inside the parentheses.
+- Do not silence an unused value with a `void` cast (`(void)x;`, `static_cast<void>(x);`). Leave an unused parameter unnamed in the
+  definition (`void f(int x, int)`).
 - Place `constexpr` function bodies in the header, just after the declarations.
 - Do not repeat a `const` the initializer already carries. When a function returns a const reference, `auto&` is enough and
   `const auto&` is noise.
+- Write `auto` even when the deduction yields a pointer (`auto world = WorldScope::active();`), not `auto*`.
 - C++ headers use `.hh`. C++ sources use `.cc`.
 - Profanity in source code is allowed. I own the code and can comment as I choose.
 - Use standard `assert` for debug-time checks. Use `vx::throw_if_xxxx` when the game should crash on failure.
@@ -84,8 +89,9 @@ void vx::teardown(void)
 - No standalone `++x` or `x--` statement: write `x += 1` or `x -= 1`. An iterator advances with `std::next(it)`.
 - A `for` header has all three parts or none. A loop that fills two of them is a `while` with the step at the end of its body.
 - A `switch` case does not open a scope; move a body that needs locals into a function.
-- Do not dereference a call result in place, put it in a named local first. Do not nest calls deeper than one level or put a call in the
-  middle of another call's arguments; a call as the only or the last argument is fine.
+- Do not chain on a call result in place (`registry().find(id)->name`, `world.definition().weather`); put it in a named local first. Do
+  not nest calls deeper than one level or put a call in the middle of another call's arguments; a call as the only or the last argument
+  is fine.
 - Keep a condition to three operands joined by `&&` or `||`, on one line. Name the parts in `bool` locals or split the test.
 - Do not initialize a structure with its fields on one line: designated fields one per line with a trailing comma, or `{}` and assign
   after. File-scope tables keep their initializers.
