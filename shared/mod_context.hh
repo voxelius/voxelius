@@ -13,6 +13,10 @@ namespace config
 class Map;
 } // namespace config
 
+class ModContext;
+
+using library_opener = entt::delegate<void(std::shared_ptr<lua_State>&, ModContext*)>;
+
 enum class mod_status {
     PENDING, ///< The mod is pending to be loaded
     LOADING, ///< The mod is currently being loaded
@@ -67,7 +71,7 @@ public:
 
     void set_status(mod_status status);
 
-    bool initialize(void);
+    bool initialize(std::span<const library_opener> libraries);
 
     // Non-owning: callers that need to keep a mod's Lua state alive
     // past ModContext's own lifetime (eg. BlockCallback) should copy this

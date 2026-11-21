@@ -181,10 +181,6 @@ public:
     const BiomeSlice& biomes(const ChunkPosXZ& pos) const;
     biome_id_type biome_slow(const BlockPos& pos) const;
 
-    void schedule(const ChunkPos& cpos, const LocalPos& lpos, std::uint64_t deadline, block_tick_source source);
-    void schedule(const BlockPos& pos, std::uint64_t deadline, block_tick_source source);
-
-    void fixed_update(void);
     void purge(void);
 
     std::uint64_t seed { 0 };

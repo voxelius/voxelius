@@ -162,4 +162,6 @@ local sample = weather.sample(x, z)
 
 `weather.sample` and `weather.force` take the block X and Z: the field is two-dimensional and does not depend on height.
 
+`weather.force` exists on the server only. The field is absent on the client.
+
 `weather.force("builtin:rain", x, z)` slides both grids so that the point gets the requested type and a strong detail value; on the server the `weather_force` command does the same around the players.

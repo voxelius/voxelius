@@ -39,6 +39,11 @@ public:
 
     void init_generation(std::shared_ptr<void> state);
 
+    void schedule(const ChunkPos& cpos, const LocalPos& lpos, std::uint64_t deadline, block_tick_source source);
+    void schedule(const BlockPos& pos, std::uint64_t deadline, block_tick_source source);
+
+    void fixed_update(void);
+
     // The random source of this world's weather, so one world's strikes do not depend on how many ticks another world has run
     std::mt19937_64 weather_random;
 

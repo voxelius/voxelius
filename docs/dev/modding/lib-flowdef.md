@@ -46,15 +46,15 @@ blocks.add("water", {
 })
 ```
 
-It looks up the fluid in the cell and runs that fluid's registered flow. Cells without a registered fluid are ignored. A neighbour change only reschedules the cell; a scripted or random tick runs the flow.
+It looks up the fluid in the cell and runs that fluid's registered flow. Cells without a registered fluid are ignored. A neighbour change only reschedules the cell; a scripted or random tick runs the flow. The engine never calls `on_tick` on the client.
 
 ### Function: `flowdef.schedule(fluid_id, bx, by, bz) -> boolean`
 
-Schedules the first tick of a cell that has just started holding a fluid, with the fluid's `delay`. Use it whenever a filled cell is created without a spread, eg when a bucket fills a block. Returns `false` when the fluid has no registered flow.
+Schedules the first tick of a cell that has just started holding a fluid, with the fluid's `delay`. Use it whenever a filled cell is created without a spread, eg when a bucket fills a block. Returns `false` when the fluid has no registered flow. On the client it returns `false` without scheduling, because `world.schedule` is a server-only API.
 
 ### Function: `flowdef.place_source(fluid_id, bx, by, bz) -> boolean`
 
-Places a source of the given fluid, eg when a filled block is broken. Returns `false` when the fluid has no registered flow.
+Places a source of the given fluid, eg when a filled block is broken. Returns `false` when the fluid has no registered flow. On the client it writes the block and state for prediction, but it does not schedule a tick.
 
 ### Function: `flowdef.states(config_src) -> table`
 

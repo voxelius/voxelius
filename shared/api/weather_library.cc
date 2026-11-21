@@ -312,46 +312,67 @@ static int api_add(lua_State* L)
     return 1;
 }
 
-static int api_state(lua_State* L)
+static bool state(lua_State* L)
 {
     auto world = WorldScope::active();
-    auto& state = world->weather();
+
+    if(world == nullptr) {
+        lua_pushliteral(L, "no active world");
+        return false;
+    }
+
+    auto& weather_state = world->weather();
 
     lua_newtable(L);
 
-    lua_pushnumber(L, static_cast<lua_Number>(state.types.scale));
+    lua_pushnumber(L, static_cast<lua_Number>(weather_state.types.scale));
     lua_setfield(L, -2, "types_scale");
 
-    lua_pushinteger(L, static_cast<lua_Integer>(state.types.seed));
+    lua_pushinteger(L, static_cast<lua_Integer>(weather_state.types.seed));
     lua_setfield(L, -2, "types_seed");
 
-    lua_pushnumber(L, static_cast<lua_Number>(state.detail.scale));
+    lua_pushnumber(L, static_cast<lua_Number>(weather_state.detail.scale));
     lua_setfield(L, -2, "detail_scale");
 
-    lua_pushinteger(L, static_cast<lua_Integer>(state.detail.seed));
+    lua_pushinteger(L, static_cast<lua_Integer>(weather_state.detail.seed));
     lua_setfield(L, -2, "detail_seed");
 
-    lua_pushnumber(L, static_cast<lua_Number>(state.wind.x()));
+    lua_pushnumber(L, static_cast<lua_Number>(weather_state.wind.x()));
     lua_setfield(L, -2, "wind_x");
 
-    lua_pushnumber(L, static_cast<lua_Number>(state.wind.y()));
+    lua_pushnumber(L, static_cast<lua_Number>(weather_state.wind.y()));
     lua_setfield(L, -2, "wind_z");
+
+    return true;
+}
+
+static int api_state(lua_State* L)
+{
+    if(!state(L)) {
+        return lua_error(L);
+    }
 
     return 1;
 }
 
-static int api_sample(lua_State* L)
+static bool sample(lua_State* L)
 {
     auto x = luaL_checknumber(L, 1);
     auto z = luaL_checknumber(L, 2);
 
     auto world = WorldScope::active();
+
+    if(world == nullptr) {
+        lua_pushliteral(L, "no active world");
+        return false;
+    }
+
     auto& definition = world->definition();
-    auto& state = world->weather();
+    auto& weather_state = world->weather();
     auto& allowed = definition.weather;
 
-    auto coverage = state.coverage(allowed, static_cast<float>(x), static_cast<float>(z));
-    auto type = state.type_at(allowed, static_cast<float>(x), static_cast<float>(z));
+    auto coverage = weather_state.coverage(allowed, static_cast<float>(x), static_cast<float>(z));
+    auto type = weather_state.type_at(allowed, static_cast<float>(x), static_cast<float>(z));
 
     lua_newtable(L);
 
@@ -372,33 +393,19 @@ static int api_sample(lua_State* L)
 
     lua_setfield(L, -2, "precipitation");
 
-    return 1;
+    return true;
 }
 
-static int api_force(lua_State* L)
+static int api_sample(lua_State* L)
 {
-    auto raw_name = luaL_checkstring(L, 1);
-    auto type = weather_registry::resolve(raw_name);
-
-    if(type == WEATHER_ID_NULL) {
-        lua_pushfstring(L, "unknown weather: %s", raw_name);
+    if(!sample(L)) {
         return lua_error(L);
     }
 
-    auto x = luaL_optnumber(L, 2, 0.0);
-    auto z = luaL_optnumber(L, 3, 0.0);
-
-    auto world = WorldScope::active();
-    auto& definition = world->definition();
-    auto& state = world->weather();
-
-    auto success = state.force_at(definition.weather, type, static_cast<float>(x), static_cast<float>(z));
-
-    lua_pushboolean(L, success);
     return 1;
 }
 
-void api::open_weather_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
+void api_shared::open_weather(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 {
     assert(lua);
     assert(ctx);
@@ -423,9 +430,6 @@ void api::open_weather_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     lua_pushcfunction(L, &api_sample);
     lua_setfield(L, -2, "sample");
-
-    lua_pushcfunction(L, &api_force);
-    lua_setfield(L, -2, "force");
 
     lua_setglobal(L, "weather");
 }

@@ -1,4 +1,8 @@
 add_executable(vclient
+    "${CMAKE_CURRENT_LIST_DIR}/api/core_library.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/api/core_library.hh"
+    "${CMAKE_CURRENT_LIST_DIR}/api/libraries.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/api/libraries.hh"
     "${CMAKE_CURRENT_LIST_DIR}/net/bother.cc"
     "${CMAKE_CURRENT_LIST_DIR}/net/bother.hh"
     "${CMAKE_CURRENT_LIST_DIR}/net/host.cc"

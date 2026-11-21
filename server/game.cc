@@ -25,6 +25,7 @@
 #include "server/net/sessions.hh"
 #include "server/system/pmove_validator.hh"
 #include "server/universe.hh"
+#include "server/world/block_ticks.hh"
 #include "server/world/time_sim.hh"
 #include "server/world/weather_sim.hh"
 #include "server/world/world.hh"
@@ -211,6 +212,8 @@ void server_game::init_late(void)
 
     utils::spawn(registry, Identifier::from_string("builtin:test_entity"));
 
+    block_ticks::init();
+
     // Mods and the universe seed are both ready by this point
     weather_sim::init();
 }
@@ -220,7 +223,7 @@ void server_game::shutdown(void)
     weather_sim::shutdown();
 }
 
-void server_game::fixed_update(World* world)
+void server_game::fixed_update(ServerWorld* world)
 {
     ZoneScoped;
 

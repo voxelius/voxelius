@@ -46,7 +46,7 @@ static int api_override_dofile(lua_State* L)
         return lua_error(L);
     }
 
-    auto stack_base = lua_gettop(L);
+    auto stack_base = lua_gettop(L) - 1; // The chunk itself sits on top
     auto pcall_status = lua_pcall(L, 0, LUA_MULTRET, 0);
 
     if(pcall_status != LUA_OK) {
@@ -167,7 +167,7 @@ static int api_override_print(lua_State* L)
     return 0;
 }
 
-void api::open_lua_libraries(std::shared_ptr<lua_State>& lua, const ModContext* ctx)
+void api_shared::open_lua_libraries(std::shared_ptr<lua_State>& lua, const ModContext* ctx)
 {
     assert(lua);
     assert(ctx);

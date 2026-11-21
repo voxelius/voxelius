@@ -5,11 +5,9 @@
 #include "shared/entity/component_map.hh"
 #include "shared/globals.hh"
 #include "shared/utils/coord.hh"
-#include "shared/utils/world.hh"
 #include "shared/world/biome_map.hh"
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
-#include "shared/world/world_scope.hh"
 
 ChunkCreateEvent::ChunkCreateEvent(World* world, const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk)
     : m_world(world), m_chunk(chunk), m_pos(pos)
@@ -265,30 +263,6 @@ bool World::set_block(const ChunkPos& cpos, const LocalPos& lpos, block_id_type 
 
         globals::dispatcher.trigger(BlockUpdateEvent(this, utils::to_block(cpos, lpos), id, chunk));
 
-        const std::array neighbours = {
-            BlockPos(+1, 0, 0),
-            BlockPos(-1, 0, 0),
-            BlockPos(0, +1, 0),
-            BlockPos(0, -1, 0),
-            BlockPos(0, 0, +1),
-            BlockPos(0, 0, -1),
-        };
-
-        auto bpos = utils::to_block(cpos, lpos);
-
-        // Schedule for the next tick so neighbour updates never fire mid-pass
-        // in an order that depends on chunk iteration order.
-        auto neighbour_deadline = globals::current_tick + 1;
-
-        for(const auto& npos : neighbours) {
-            auto nbpos = bpos + npos;
-            auto ncpos = utils::to_chunk(nbpos);
-
-            if(m_chunks.contains(ncpos)) {
-                schedule(nbpos, neighbour_deadline, BLOCK_TICK_NEIGHBOUR);
-            }
-        }
-
         return true;
     }
 
@@ -502,22 +476,6 @@ biome_id_type World::biome_slow(const BlockPos& pos) const
     return m_biomes.get_slow(pos);
 }
 
-void World::schedule(const ChunkPos& cpos, const LocalPos& lpos, std::uint64_t deadline, block_tick_source source)
-{
-    if(auto chunk = find_chunk(cpos)) {
-        auto index = utils::to_index(lpos);
-
-        chunk->schedule(index, deadline, source);
-    }
-}
-
-void World::schedule(const BlockPos& pos, std::uint64_t deadline, block_tick_source source)
-{
-    auto cpos = utils::to_chunk(pos);
-    auto lpos = utils::to_local(pos);
-    schedule(cpos, lpos, deadline, source);
-}
-
 void World::purge(void)
 {
     m_chunks.clear();
@@ -526,21 +484,4 @@ void World::purge(void)
     m_biomes.purge();
     m_heightmap.purge();
     m_weather = {};
-}
-
-void World::fixed_update(void)
-{
-    WorldScope scope(this);
-
-    std::vector<std::pair<std::size_t, block_tick_source>> due;
-
-    m_chunk_registry.view<Chunk_Component>().each([&](Chunk_Component& component) {
-        due.clear();
-
-        component.ptr->pop_due(globals::current_tick, due);
-
-        for(auto it : due) {
-            utils::block_sched_tick(component.position, component.ptr, it.first, it.second);
-        }
-    });
 }

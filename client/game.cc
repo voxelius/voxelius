@@ -110,8 +110,6 @@ void client_game::fixed_update(World* world)
 
         Transform::fixed_update(registry);
         Velocity::fixed_update(registry);
-
-        world->fixed_update();
     }
 }
 

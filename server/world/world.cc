@@ -3,11 +3,14 @@
 #include "server/world/world.hh"
 
 #include "shared/constant.hh"
+#include "shared/globals.hh"
 #include "shared/res/feature.hh"
 #include "shared/utils/coord.hh"
+#include "shared/utils/world.hh"
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/block_storage.hh"
+#include "shared/world/world_scope.hh"
 
 #include "server/utils/rotate.hh"
 #include "server/world/generator_map.hh"
@@ -310,4 +313,37 @@ const std::vector<FeatureInstance>& ServerWorld::collect_placements(const ChunkP
     });
 
     return entry->data;
+}
+
+void ServerWorld::schedule(const ChunkPos& cpos, const LocalPos& lpos, std::uint64_t deadline, block_tick_source source)
+{
+    if(auto chunk = find_chunk(cpos)) {
+        auto index = utils::to_index(lpos);
+
+        chunk->schedule(index, deadline, source);
+    }
+}
+
+void ServerWorld::schedule(const BlockPos& pos, std::uint64_t deadline, block_tick_source source)
+{
+    auto cpos = utils::to_chunk(pos);
+    auto lpos = utils::to_local(pos);
+    schedule(cpos, lpos, deadline, source);
+}
+
+void ServerWorld::fixed_update(void)
+{
+    WorldScope scope(this);
+
+    std::vector<std::pair<std::size_t, block_tick_source>> due;
+
+    chunk_registry().view<Chunk_Component>().each([&](Chunk_Component& component) {
+        due.clear();
+
+        component.ptr->pop_due(globals::current_tick, due);
+
+        for(auto it : due) {
+            utils::block_sched_tick(component.position, component.ptr, it.first, it.second);
+        }
+    });
 }

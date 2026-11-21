@@ -349,7 +349,7 @@ static int api_add(lua_State* L)
     return 1;
 }
 
-void api::open_biomes_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
+void api_shared::open_biomes(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 {
     assert(lua);
     assert(ctx);

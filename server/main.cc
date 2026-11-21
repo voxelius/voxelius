@@ -14,6 +14,7 @@
 #include "shared/game.hh"
 #include "shared/splash.hh"
 
+#include "server/api/libraries.hh"
 #include "server/constant.hh"
 #include "server/game.hh"
 #include "server/globals.hh"
@@ -100,6 +101,8 @@ static void wrapped_main(int argc, char** argv)
     std::signal(SIGTERM, &signal_handler);
 
     host::init();
+
+    api_server::register_libraries();
 
     shared_game::init();
     server_game::init();

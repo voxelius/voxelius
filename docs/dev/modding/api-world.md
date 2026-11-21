@@ -2,6 +2,8 @@
 
 Mods read and write world blocks through the `world` library.
 
+Every function needs an active world. Outside a callback or a server tick there is no active world, and the call raises a Lua error.
+
 ## Functions
 
 ### Function: `world.get_block(bx, by, bz) -> integer`
@@ -218,6 +220,8 @@ Retrieves the world seed.
 ### Function: `world.schedule(bx, by, bz, dt)`
 
 Schedules an `on_tick` call for a block in `dt` ticks. The tick source is `blocks.TICK_SCRIPTED`.
+
+This function exists on the server only. The `world.schedule` field is absent on the client.
 
 #### Arguments
 

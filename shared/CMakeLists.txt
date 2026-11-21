@@ -17,8 +17,6 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/api/weather_library.hh"
     "${CMAKE_CURRENT_LIST_DIR}/api/world_library.cc"
     "${CMAKE_CURRENT_LIST_DIR}/api/world_library.hh"
-    "${CMAKE_CURRENT_LIST_DIR}/api/worlds_library.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/api/worlds_library.hh"
     "${CMAKE_CURRENT_LIST_DIR}/component/head.cc"
     "${CMAKE_CURRENT_LIST_DIR}/component/head.hh"
     "${CMAKE_CURRENT_LIST_DIR}/component/move_mode.cc"

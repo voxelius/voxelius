@@ -1124,7 +1124,13 @@ static bool add_block(lua_State* L, ModContext* ctx, const char* raw_name, int d
     }
 
     if(!has_variants && def.render != BLOCK_RENDER_NONE && def.model_name.is_empty()) {
-        lua_pushfstring(L, "blocks.add: [%s]: model_name is required unless render is blocks.RENDER_NONE", id.full_string().data());
+        auto id_string = id.full_string();
+
+        lua_pushliteral(L, "blocks.add: [");
+        lua_pushlstring(L, id_string.data(), id_string.size());
+        lua_pushliteral(L, "]: model_name is required unless render is blocks.RENDER_NONE");
+        lua_concat(L, 3);
+
         return false;
     }
 
@@ -1216,7 +1222,7 @@ static int api_add(lua_State* L)
     return 1;
 }
 
-void api::open_blocks_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
+void api_shared::open_blocks(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 {
     assert(lua);
     assert(ctx);

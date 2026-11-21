@@ -291,7 +291,7 @@ static int api_add(lua_State* L)
     return 1;
 }
 
-void api::open_fluids_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
+void api_shared::open_fluids(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 {
     auto L = lua.get();
 

@@ -1,6 +1,6 @@
-#include "shared/pch.hh"
+#include "server/pch.hh"
 
-#include "shared/api/worlds_library.hh"
+#include "server/api/worlds_library.hh"
 
 #include "core/identifier.hh"
 
@@ -584,7 +584,7 @@ static int api_add(lua_State* L)
     return 0;
 }
 
-void api::open_worlds_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
+void api_server::open_worlds(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 {
     assert(lua);
     assert(ctx);

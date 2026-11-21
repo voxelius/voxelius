@@ -22,6 +22,6 @@ The Voxelius runtime exposes these common Lua APIs:
 
 |Global|Overridden behaviour|
 |----|----|
-|`dofile`|Treats the input path as a namespaced identifier. It implies the `scripts` subdirectory|
+|`dofile`|Treats the input path as a namespaced identifier. It implies the `scripts` subdirectory. Returns the results of the chunk|
 |`require`|Takes a namespaced ID. The namespace must be explicit. Files come from the `lib` directory|
 |`print`|Alias to `msg::log_info`|

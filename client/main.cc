@@ -15,6 +15,7 @@
 #include "shared/world/weather.hh"
 #include "shared/world/world.hh"
 
+#include "client/api/libraries.hh"
 #include "client/camera.hh"
 #include "client/console.hh"
 #include "client/constant.hh"
@@ -249,6 +250,8 @@ static void wrapped_main(int argc, char** argv)
     session::init();
     receive::init();
     replication::init();
+
+    api_client::register_libraries();
 
     shared_game::init();
     client_game::init_world();

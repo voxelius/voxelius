@@ -522,7 +522,10 @@ function flowdef.place_source(fluid_id, bx, by, bz)
   world.set_block(bx, by, bz, config.block_id)
   world.set_state(bx, by, bz, "level", tostring(config.max_level))
   world.set_state(bx, by, bz, "source", "true")
-  world.schedule(bx, by, bz, config.delay)
+
+  if core.IS_SERVER then
+    world.schedule(bx, by, bz, config.delay)
+  end
 
   return true
 end
@@ -530,6 +533,10 @@ end
 -- Schedules the first tick of a cell that has just started holding a fluid,
 -- like LiquidBlockContainer.placeLiquid does
 function flowdef.schedule(fluid_id, bx, by, bz)
+  if not core.IS_SERVER then
+    return false
+  end
+
   resolve_flows()
 
   local config = flows[fluid_id]

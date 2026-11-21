@@ -9,16 +9,7 @@
 #include "core/utils/string.hh"
 #include "core/version.hh"
 
-#include "shared/api/biomes_library.hh"
-#include "shared/api/blocks_library.hh"
-#include "shared/api/core_library.hh"
-#include "shared/api/entities_library.hh"
-#include "shared/api/fluids_library.hh"
 #include "shared/api/lua_libraries.hh"
-#include "shared/api/tints_library.hh"
-#include "shared/api/weather_library.hh"
-#include "shared/api/world_library.hh"
-#include "shared/api/worlds_library.hh"
 #include "shared/constant.hh"
 
 static std::pair<std::string, ModVersion> parse_mod_entry(std::string_view entry)
@@ -137,7 +128,7 @@ void ModContext::set_status(mod_status status)
     m_status = status;
 }
 
-bool ModContext::initialize(void)
+bool ModContext::initialize(std::span<const library_opener> libraries)
 {
     assert(m_status == mod_status::PENDING);
 
@@ -152,16 +143,11 @@ bool ModContext::initialize(void)
     }
 
     m_lua_state = std::shared_ptr<lua_State>(L, &lua_close);
-    api::open_lua_libraries(m_lua_state, this);
-    api::open_core_library(m_lua_state, this);
-    api::open_tints_library(m_lua_state, this);
-    api::open_fluids_library(m_lua_state, this);
-    api::open_blocks_library(m_lua_state, this);
-    api::open_biomes_library(m_lua_state, this);
-    api::open_weather_library(m_lua_state, this);
-    api::open_entities_library(m_lua_state, this);
-    api::open_world_library(m_lua_state, this);
-    api::open_worlds_library(m_lua_state, this);
+    api_shared::open_lua_libraries(m_lua_state, this);
+
+    for(const auto& opener : libraries) {
+        opener(m_lua_state, this);
+    }
 
     auto entry = Identifier::from_parts(name_space(), "init.lua");
     auto entry_path = entry.as_file_path("scripts", {});

@@ -14,6 +14,13 @@
 #include "shared/world/world.hh"
 #include "shared/world/world_scope.hh"
 
+enum patch_result {
+    PATCH_REJECT = 0,
+    PATCH_INVALID,
+    PATCH_FAILED,
+    PATCH_OK
+};
+
 static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
 {
     auto is_free = [&](const Identifier& candidate) {
@@ -172,36 +179,59 @@ static int api_add(lua_State* L)
     return 1;
 }
 
-static std::optional<entt::entity> spawn_entity(lua_State* L, ModContext* ctx, const char* raw_name, int kv_idx)
+static std::optional<entt::entity> spawn_entity(lua_State* L, ModContext* ctx, std::string_view raw_name, int kv_idx)
 {
     auto world = WorldScope::active();
+
+    if(world == nullptr) {
+        lua_pushliteral(L, "no active world");
+        return std::nullopt;
+    }
+
     auto& registry = world->registry();
 
     auto id = Identifier::from_string(raw_name, ctx->name_space());
 
     if(!id.is_valid()) {
-        lua_pushfstring(L, "entities.spawn: malformed name: %s", raw_name);
+        lua_pushliteral(L, "entities.spawn: malformed name: ");
+        lua_pushlstring(L, raw_name.data(), raw_name.size());
+        lua_concat(L, 2);
+
         return std::nullopt;
     }
 
     auto entity = utils::spawn(registry, id, L, kv_idx);
 
     if(!registry.valid(entity)) {
+        auto id_string = id.full_string();
+
+        lua_pushliteral(L, "entities.spawn: ");
+        lua_pushlstring(L, id_string.data(), id_string.size());
+        lua_pushliteral(L, ": unable to spawn");
+        lua_concat(L, 3);
+
         return std::nullopt;
     }
 
     return entity;
 }
 
-static int api_spawn(lua_State* L)
+static bool spawn(lua_State* L, ModContext* ctx)
 {
-    auto ctx = static_cast<ModContext*>(lua_touserdata(L, lua_upvalueindex(1)));
-    auto raw_name = luaL_checkstring(L, 1);
+    auto raw_name = utils::require_string(L, 1);
+
+    if(!raw_name.has_value()) {
+        return false;
+    }
 
     int kv_idx;
 
     if(lua_gettop(L) >= 2) {
-        luaL_checktype(L, 2, LUA_TTABLE);
+        if(!lua_istable(L, 2)) {
+            lua_pushliteral(L, "entities.spawn: config must be a table");
+            return false;
+        }
+
         kv_idx = 2;
     }
     else {
@@ -209,13 +239,24 @@ static int api_spawn(lua_State* L)
         kv_idx = lua_gettop(L);
     }
 
-    auto entity = spawn_entity(L, ctx, raw_name, kv_idx);
+    auto entity = spawn_entity(L, ctx, raw_name.value(), kv_idx);
 
     if(!entity.has_value()) {
-        return lua_error(L);
+        return false;
     }
 
     lua_pushinteger(L, static_cast<lua_Integer>(entity.value()));
+    return true;
+}
+
+static int api_spawn(lua_State* L)
+{
+    auto ctx = static_cast<ModContext*>(lua_touserdata(L, lua_upvalueindex(1)));
+
+    if(!spawn(L, ctx)) {
+        return lua_error(L);
+    }
+
     return 1;
 }
 
@@ -245,61 +286,108 @@ static int api_set_player(lua_State* L)
     return 0;
 }
 
-static int api_patch(lua_State* L)
+static patch_result patch(lua_State* L)
 {
     auto world = WorldScope::active();
+
+    if(world == nullptr) {
+        lua_pushliteral(L, "no active world");
+        return PATCH_REJECT;
+    }
+
     auto& registry = world->registry();
 
     auto raw_entity = luaL_checkinteger(L, 1);
     auto entity = static_cast<entt::entity>(raw_entity);
 
     if(!registry.valid(entity)) {
-        lua_pushboolean(L, false);
-        return 1;
+        return PATCH_INVALID;
     }
 
-    auto component_name = luaL_checkstring(L, 2);
-    auto id = component_map::from_name(component_name);
+    auto component_name = utils::require_string(L, 2);
+
+    if(!component_name.has_value()) {
+        return PATCH_REJECT;
+    }
+
+    auto id = component_map::from_name(component_name.value());
 
     if(id == COMPONENT_ID_NULL) {
-        lua_pushfstring(L, "entities.patch: %s: unknown component", component_name);
-        return lua_error(L);
+        lua_pushliteral(L, "entities.patch: ");
+        lua_pushlstring(L, component_name->data(), component_name->size());
+        lua_pushliteral(L, ": unknown component");
+        lua_concat(L, 3);
+
+        return PATCH_REJECT;
     }
 
-    luaL_checktype(L, 3, LUA_TTABLE);
-
-    auto success = component_map::patch(registry, id, entity, L, 3);
-
-    if(!success) {
-        lua_pushboolean(L, false);
-        lua_insert(L, -2); // False before the error message already on the stack
-        return 2;
+    if(!lua_istable(L, 3)) {
+        lua_pushliteral(L, "entities.patch: config must be a table");
+        return PATCH_REJECT;
     }
 
-    lua_pushboolean(L, true);
-    return 1;
+    if(!component_map::patch(registry, id, entity, L, 3)) {
+        return PATCH_FAILED;
+    }
+
+    return PATCH_OK;
+}
+
+static int api_patch(lua_State* L)
+{
+    switch(patch(L)) {
+        case PATCH_REJECT:
+            return lua_error(L);
+        case PATCH_INVALID:
+            lua_pushboolean(L, false);
+            return 1;
+        case PATCH_FAILED:
+            lua_pushboolean(L, false);
+            lua_insert(L, -2); // False before the error message already on the stack
+            return 2;
+        case PATCH_OK:
+            lua_pushboolean(L, true);
+            return 1;
+    }
+
+    return 0;
+}
+
+static std::optional<bool> despawn(lua_State* L)
+{
+    auto world = WorldScope::active();
+
+    if(world == nullptr) {
+        lua_pushliteral(L, "no active world");
+        return std::nullopt;
+    }
+
+    auto& registry = world->registry();
+
+    auto raw_entity = luaL_checkinteger(L, 1);
+    auto entity = static_cast<entt::entity>(raw_entity);
+
+    if(!registry.valid(entity)) {
+        return false;
+    }
+
+    registry.destroy(entity);
+    return true;
 }
 
 static int api_despawn(lua_State* L)
 {
-    auto world = WorldScope::active();
-    auto& registry = world->registry();
+    auto value = despawn(L);
 
-    auto raw_entity = luaL_checkinteger(L, 1);
-    auto entity = static_cast<entt::entity>(raw_entity);
-
-    if(!registry.valid(entity)) {
-        lua_pushboolean(L, false);
-        return 1;
+    if(!value.has_value()) {
+        return lua_error(L);
     }
 
-    registry.destroy(entity);
-
-    lua_pushboolean(L, true);
+    lua_pushboolean(L, value.value());
     return 1;
 }
 
-void api::open_entities_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
+void api_shared::open_entities(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 {
     assert(lua);
     assert(ctx);
