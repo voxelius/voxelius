@@ -108,7 +108,6 @@ public:
     void fill_packet(packet::World_Weather& packet) const;
     void apply_packet(const packet::World_Weather& packet, bool baseline);
 
-public:
     // One field picks the type, the other one drives how strong it
     // is right here. Both drift with the wind and are rebuilt from a
     // seed on both sides, so no per-cell data travels over the network

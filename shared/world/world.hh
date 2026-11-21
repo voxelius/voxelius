@@ -100,14 +100,14 @@ private:
 
 class World {
 public:
+    static World* of(entt::registry& registry);
+
     explicit World(std::shared_ptr<const WorldDefinition> definition);
     virtual ~World(void) = default;
 
     constexpr const WorldDefinition& definition(void) const;
     constexpr const WorldVisuals& visuals(void) const;
     constexpr const Identifier& id(void) const;
-
-    std::uint64_t seed { 0 };
 
     constexpr entt::registry& registry(void);
     constexpr entt::registry& chunk_registry(void);
@@ -129,17 +129,14 @@ public:
     constexpr WeatherState& weather(void);
     constexpr const WeatherState& weather(void) const;
 
-public:
     std::shared_ptr<Chunk> create_chunk(const ChunkPos& pos);
     std::shared_ptr<Chunk> find_chunk(const ChunkPos& pos) const;
     std::shared_ptr<Chunk> find_chunk(entt::entity entity) const;
 
-public:
     void remove_chunk(const std::shared_ptr<const Chunk>& chunk);
     void remove_chunk(const ChunkPos& pos);
     void remove_chunk(entt::entity entity);
 
-public:
     block_id_type get_block(const ChunkPos& cpos, const LocalPos& lpos) const;
     block_id_type get_block(const BlockPos& pos) const;
 
@@ -187,9 +184,10 @@ public:
     void schedule(const ChunkPos& cpos, const LocalPos& lpos, std::uint64_t deadline, block_tick_source source);
     void schedule(const BlockPos& pos, std::uint64_t deadline, block_tick_source source);
 
-public:
     void fixed_update(void);
     void purge(void);
+
+    std::uint64_t seed { 0 };
 
 private:
     std::shared_ptr<const WorldDefinition> m_definition;

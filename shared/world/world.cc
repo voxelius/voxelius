@@ -46,8 +46,16 @@ BlockUpdateEvent::BlockUpdateEvent(World* world, const BlockPos& pos, block_id_t
     assert(world);
 }
 
+World* World::of(entt::registry& registry)
+{
+    return registry.ctx().get<World*>();
+}
+
 World::World(std::shared_ptr<const WorldDefinition> definition) : m_definition(std::move(definition))
 {
+    m_registry.ctx().emplace<World*>(this);
+    m_chunk_registry.ctx().emplace<World*>(this);
+
     component_map::connect_all(m_registry);
 }
 

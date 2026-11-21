@@ -1,6 +1,8 @@
 #ifndef B7D9F1C3_3E5A_4B2D_9C6F_8A0E2C4D6F71
 #define B7D9F1C3_3E5A_4B2D_9C6F_8A0E2C4D6F71
 
+#include <random>
+
 #include "server/constant.hh"
 #include "server/world/placement_rule.hh"
 #include "shared/world/biome_slice.hh"
@@ -35,6 +37,10 @@ public:
     void commit_placements(BlockStorage& storage, const ChunkPos& cpos, std::span<const FeatureInstance> instances);
 
     void init_generation(std::shared_ptr<void> state);
+
+    // The random source of this world's weather, so one world's strikes do not
+    // depend on how many ticks another world has run
+    std::mt19937_64 weather_random;
 
 private:
     struct EntropyEntry final {
