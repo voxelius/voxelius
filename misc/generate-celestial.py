@@ -1,4 +1,7 @@
-"""Generate the temporary sun and moon sprites.
+"""
+This is vibecoded, here be dragons. 
+
+Generate the temporary sun and moon sprites.
 
 Both are square, like the ones the game is inspired by. The sun is one
 32x32 image: a bright square core inside an opaque black square, with a

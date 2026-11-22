@@ -29,7 +29,8 @@
 #include "client/settings.hh"
 
 gui::Screen main_menu::screen;
-gui::Background main_menu::background;
+
+static gui::Background s_background;
 
 static res::handle<Texture2D> s_title_texture;
 static gui::ChoicePopup s_popup_mods;
@@ -67,10 +68,9 @@ static void on_keyboard_event(const SDL_KeyboardEvent& event)
 
 void main_menu::init(void)
 {
-    background.set_left({ 0.000f, 0.000f, 0.000f, 0.550f });
-    background.set_right({ 0.000f, 0.000f, 0.000f, 0.150f });
-    background.enable_scene();
-    screen.add_child(background);
+    s_background.set_left({ 0.000f, 0.000f, 0.000f, 0.550f });
+    s_background.set_right({ 0.000f, 0.000f, 0.000f, 0.150f });
+    screen.add_child(s_background);
 
     auto title_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "menu_title.png");
     s_title_texture = res::load<Texture2D>(title_id, "textures/gui");

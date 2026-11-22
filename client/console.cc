@@ -31,6 +31,8 @@ constexpr static ImVec4 DIMMER_COLOR = ImVec4(0.000f, 0.000f, 0.000f, 0.750f);
 
 gui::Screen console::screen;
 
+static gui::Background s_background;
+
 static gui::Dimmer s_dimmer;
 static gui::Panel s_panel;
 static gui::VerticalStack s_stack;
@@ -195,7 +197,7 @@ void console::init(void)
 
     screen.set_start(0.0f, 0.0f);
     screen.set_size(1.0f, SCREEN_HEIGHT);
-    screen.add_child(main_menu::background, 0);
+    screen.add_child(s_background, 0);
     screen.add_child(s_dimmer, 1);
     screen.add_child(s_panel, 2);
 

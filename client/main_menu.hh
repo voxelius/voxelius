@@ -4,14 +4,12 @@
 namespace gui
 {
 class Screen;
-class Background;
 class Dimmer;
 } // namespace gui
 
 namespace main_menu
 {
 extern gui::Screen screen;
-extern gui::Background background;
 } // namespace main_menu
 
 namespace main_menu

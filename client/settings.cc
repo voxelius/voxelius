@@ -30,6 +30,8 @@ gui::Container settings::video_gui;
 gui::Container settings::sound;
 gui::Container settings::sound_levels;
 
+static gui::Background s_background;
+
 static gui::Scroller s_scroller_general;
 static gui::Scroller s_scroller_mouse;
 static gui::Scroller s_scroller_video;
@@ -86,7 +88,7 @@ std::optional<bool> settings::detail::video_mode_popup(const std::optional<SDL_D
 
 void settings::init(void)
 {
-    screen.add_child(main_menu::background);
+    screen.add_child(s_background);
     screen.add_child(s_body);
 
     s_body.set_margin(ImVec2(BODY_MARGIN, BODY_MARGIN));

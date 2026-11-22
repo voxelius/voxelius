@@ -21,6 +21,7 @@
 #include "client/fonts.hh"
 #include "client/game.hh"
 #include "client/globals.hh"
+#include "client/gui/background.hh"
 #include "client/gui/button_bind.hh"
 #include "client/gui/screen.hh"
 #include "client/gui/stone.hh"
@@ -291,6 +292,7 @@ static void wrapped_main(int argc, char** argv)
         axes::init();
         gui::ButtonBind::init();
         gui::detail::stone_init();
+        gui::Background::init();
 
         settings::init();
         main_menu::init();
@@ -464,6 +466,7 @@ static void wrapped_main(int argc, char** argv)
 
     gui::ButtonBind::shutdown();
     gui::detail::stone_shutdown();
+    gui::Background::shutdown();
     console::shutdown();
 
     // Workers keep thread-local scratch alive until the pool is destroyed;

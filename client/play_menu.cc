@@ -87,6 +87,7 @@ static gui::Button s_btn_remove;
 static gui::Button s_btn_refresh;
 static gui::HorizontalStack s_servers_action_row;
 
+static gui::Background s_background;
 static gui::Panel s_body;
 static gui::Rail s_rail;
 
@@ -696,7 +697,7 @@ void play_menu::init(void)
 {
     s_next_identity = 0;
 
-    screen.add_child(main_menu::background, 0);
+    screen.add_child(s_background, 0);
     screen.add_child(s_body, 2);
 
     s_body.set_margin(ImVec2(BODY_MARGIN, BODY_MARGIN));

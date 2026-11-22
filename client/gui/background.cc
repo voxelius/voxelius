@@ -2,138 +2,89 @@
 
 #include "client/gui/background.hh"
 
+#include "core/identifier.hh"
+#include "core/res/resource.hh"
+
+#include "imgui.h"
+#include "shared/constant.hh"
 #include "shared/world/world.hh"
 
-#include "client/constant.hh"
 #include "client/globals.hh"
+#include "client/res/texture_2d.hh"
 
-constexpr static float CELL_DIVISOR = 48.0f;
+constexpr static ImVec4 SKY_TOP = ImVec4(0.204f, 0.373f, 0.588f, 1.000f);
+constexpr static ImVec4 SKY_BOTTOM = ImVec4(0.749f, 0.867f, 0.925f, 1.000f);
+constexpr static float POINTER_SHIFT = 8.0f;
 
-// The scene is authored against a 4:3 window: its width is taken from the
-// height times this aspect, so a wider window shows more of the same sky
-// instead of stretching it
-constexpr static float REFERENCE_ASPECT = static_cast<float>(constant::BASE_WIDTH) / static_cast<float>(constant::BASE_HEIGHT);
-
-struct HillLayer final {
-    float base;
-    float amplitude;
-    float frequency;
+struct BackgroundLayerInfo final {
+    std::string_view file;
     float speed;
-    ImVec4 color;
-    bool cap;
+    float shift;
 };
 
-struct Cloud final {
-    float x;
-    float y;
-    float width;
-    float height;
-    float speed;
+constexpr static std::array LAYER_INFOS = {
+    BackgroundLayerInfo { "background_back.png", 2.5f, 0.22f },
+    BackgroundLayerInfo { "background_mid.png", 5.0f, 0.45f },
+    BackgroundLayerInfo { "background_near.png", 9.0f, 0.75f },
+    BackgroundLayerInfo { "background_front.png", 13.0f, 1.00f },
 };
 
-static const ImVec4 SKY_TOP = ImVec4(0.204f, 0.373f, 0.588f, 1.000f);
-static const ImVec4 SKY_BOTTOM = ImVec4(0.749f, 0.867f, 0.925f, 1.000f);
+static std::array<res::handle<Texture2D>, LAYER_INFOS.size()> s_textures = {};
 
-// Back to front. Base and amplitude are fractions of the window height,
-// frequency is in radians per cell and speed is in cells per second, so
-// the silhouette keeps its shape whatever the window size is
-static const HillLayer HILL_LAYERS[] = {
-    { 0.58f, 0.10f, 0.160f, 0.230f, ImVec4(0.588f, 0.690f, 0.745f, 1.0f), false },
-    { 0.66f, 0.11f, 0.230f, 0.380f, ImVec4(0.455f, 0.569f, 0.471f, 1.0f), true },
-    { 0.74f, 0.10f, 0.340f, 0.620f, ImVec4(0.298f, 0.424f, 0.322f, 1.0f), true },
-    { 0.82f, 0.08f, 0.440f, 0.920f, ImVec4(0.220f, 0.329f, 0.251f, 1.0f), true },
-};
+// A wall texture is one window tall, so the window picks a whole number of
+// pixels per texel instead of stretching the art; the speed of a wall is given
+// per second at that 1:1 scale. The height comes from the resource itself,
+// because the scale of the whole scene depends on it.
+static int s_tile_height = 0;
 
-// Widths are fractions of the height times REFERENCE_ASPECT, heights and
-// positions are fractions of the window so the clouds stay clouds
-static const Cloud CLOUDS[] = {
-    { 0.05f, 0.09f, 0.11f, 0.018f, 6.0f },
-    { 0.38f, 0.15f, 0.07f, 0.012f, 4.0f },
-    { 0.62f, 0.06f, 0.14f, 0.022f, 8.0f },
-    { 0.81f, 0.20f, 0.06f, 0.010f, 5.0f },
-    { 0.21f, 0.24f, 0.09f, 0.014f, 7.0f },
-};
-
-static ImVec4 lighten(const ImVec4& color, float factor)
+static void draw_wall(ImDrawList* draw_list, const ImVec2& window_pos, const ImVec2& window_end, ImTextureID texture, float tile_width,
+    float tile_height, double offset)
 {
-    auto red = std::min(1.0f, factor * color.x);
-    auto green = std::min(1.0f, factor * color.y);
-    auto blue = std::min(1.0f, factor * color.z);
+    // The offset runs on the clock, so it grows without a bound and stays a
+    // double; only the fraction of one tile is small enough for a float
+    auto shift = std::fmod(offset, static_cast<double>(tile_width));
 
-    return ImVec4(red, green, blue, color.w);
-}
-
-static void draw_sun(ImDrawList* draw_list, ImVec2 origin, ImVec2 size)
-{
-    auto center = ImVec2(origin.x + 0.78f * size.x, origin.y + 0.14f * size.y);
-    auto radius = std::max(4.0f, 0.020f * size.y);
-
-    for(int i = 3; i >= 1; --i) {
-        auto halo = radius * (1.0f + 0.5f * static_cast<float>(i));
-        draw_list->AddCircleFilled(center, halo, ImGui::GetColorU32(ImVec4(1.000f, 0.973f, 0.827f, 0.055f)));
+    if(shift < 0.0) {
+        shift += static_cast<double>(tile_width);
     }
 
-    draw_list->AddCircleFilled(center, radius, ImGui::GetColorU32(ImVec4(1.000f, 0.988f, 0.910f, 1.000f)));
-}
+    auto xpos_start = window_pos.x - static_cast<float>(shift);
+    auto bottom_ypos = std::min(window_end.y, window_pos.y + tile_height);
 
-static void draw_clouds(ImDrawList* draw_list, ImVec2 origin, ImVec2 size, float time)
-{
-    for(const auto& cloud : CLOUDS) {
-        auto width = std::max(2.0f, cloud.width * REFERENCE_ASPECT * size.y);
-        auto height = std::max(2.0f, cloud.height * size.y);
-
-        auto travel = size.x + width;
-        auto x = std::fmod(cloud.x * size.x + time * cloud.speed, travel) - width;
-        auto y = cloud.y * size.y;
-
-        auto body_min = ImVec2(origin.x + x, origin.y + y);
-        auto body_max = ImVec2(body_min.x + width, body_min.y + height);
-
-        draw_list->AddRectFilled(body_min, body_max, ImGui::GetColorU32(ImVec4(1.000f, 1.000f, 1.000f, 0.780f)));
-
-        auto top_min = ImVec2(body_min.x + 0.25f * width, body_min.y - 0.55f * height);
-        auto top_max = ImVec2(body_max.x - 0.25f * width, body_min.y + 0.10f * height);
-
-        draw_list->AddRectFilled(top_min, top_max, ImGui::GetColorU32(ImVec4(1.000f, 1.000f, 1.000f, 0.900f)));
+    for(auto xpos = xpos_start; xpos < window_end.x; xpos += tile_width) {
+        auto top_left = ImVec2(xpos, window_pos.y);
+        auto bottom_right = ImVec2(xpos + tile_width, bottom_ypos);
+        draw_list->AddImage(texture, top_left, bottom_right);
     }
 }
 
-static void draw_hills(ImDrawList* draw_list, ImVec2 origin, ImVec2 size, float time)
+void gui::Background::init(void)
 {
-    // The step size follows the window height so the hills stay blocky
-    // instead of turning into a hairline staircase on a big display
-    auto cell = std::max(2.0f, std::floor(size.y / CELL_DIVISOR));
-    auto cap_height = std::max(1.0f, std::floor(0.25f * cell));
+    for(std::size_t i = 0; i < s_textures.size(); ++i) {
+        auto id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, LAYER_INFOS[i].file);
 
-    for(const auto& layer : HILL_LAYERS) {
-        auto base = layer.base * size.y;
-        auto amplitude = layer.amplitude * size.y;
+        s_textures[i] = res::load<Texture2D>(id, "textures/gui");
 
-        // Sampling in cells ties the horizontal wavelength to the height,
-        // the same way the amplitude already is
-        auto offset = time * layer.speed;
+        if(s_textures[i] == nullptr) {
+            msg::log_warning("{}: texture load failed", id.full_string());
+            continue;
+        }
 
-        auto cap_color = ImGui::GetColorU32(lighten(layer.color, 1.18f));
-        auto body_color = ImGui::GetColorU32(layer.color);
+        auto height = s_textures[i]->height;
 
-        for(auto x = 0.0f; x < size.x; x += cell) {
-            auto sample = x / cell + offset;
-
-            auto y = base;
-            y += amplitude * std::sin(sample * layer.frequency);
-            y += 0.45f * amplitude * std::sin(sample * layer.frequency * 2.7f + 1.7f);
-            y = std::floor(y / cell) * cell;
-
-            auto block_min = ImVec2(origin.x + x, origin.y + y);
-            auto block_max = ImVec2(origin.x + std::min(x + cell, size.x), origin.y + size.y);
-
-            draw_list->AddRectFilled(block_min, block_max, body_color);
-
-            if(layer.cap) {
-                draw_list->AddRectFilled(block_min, ImVec2(block_max.x, block_min.y + cap_height), cap_color);
-            }
+        if(s_tile_height == 0) {
+            s_tile_height = height;
+        }
+        else if(height != s_tile_height) {
+            msg::log_warning("{}: wall height {} does not match {}", id.full_string(), height, s_tile_height);
         }
     }
+}
+
+void gui::Background::shutdown(void)
+{
+    s_textures.fill(nullptr);
+    s_tile_height = 0;
 }
 
 gui::Background& gui::Background::set_left(const ImVec4& color)
@@ -150,20 +101,6 @@ gui::Background& gui::Background::set_right(const ImVec4& color)
     return self();
 }
 
-gui::Background& gui::Background::set_texture(ImTextureID texture)
-{
-    m_texture = texture;
-
-    return self();
-}
-
-gui::Background& gui::Background::enable_scene(void)
-{
-    m_scene = true;
-
-    return self();
-}
-
 gui::Background& gui::Background::force_scene(bool force)
 {
     m_force_scene = force;
@@ -171,33 +108,13 @@ gui::Background& gui::Background::force_scene(bool force)
     return self();
 }
 
-void gui::Background::layout_scene(ImVec2 window_pos, ImVec2 window_size)
-{
-    auto draw_list = ImGui::GetWindowDrawList();
-    auto time = static_cast<float>(ImGui::GetTime());
-
-    auto window_end = ImVec2(window_pos.x + window_size.x, window_pos.y + window_size.y);
-
-    auto top_color = ImGui::GetColorU32(SKY_TOP);
-    auto bottom_color = ImGui::GetColorU32(SKY_BOTTOM);
-
-    draw_list->AddRectFilledMultiColor(window_pos, window_end, top_color, top_color, bottom_color, bottom_color);
-
-    draw_sun(draw_list, window_pos, window_size);
-    draw_clouds(draw_list, window_pos, window_size, time);
-    draw_hills(draw_list, window_pos, window_size, time);
-
-    layout_dim(window_pos, window_size);
-}
-
 void gui::Background::layout_dim(ImVec2 window_pos, ImVec2 window_size)
 {
     auto draw_list = ImGui::GetWindowDrawList();
+    auto window_end = ImVec2(window_pos.x + window_size.x, window_pos.y + window_size.y);
 
     auto left = ImGui::GetColorU32(m_left);
     auto right = ImGui::GetColorU32(m_right);
-
-    auto window_end = ImVec2(window_pos.x + window_size.x, window_pos.y + window_size.y);
 
     draw_list->AddRectFilledMultiColor(window_pos, window_end, left, right, right, left);
 }
@@ -208,13 +125,13 @@ void gui::Background::layout(void)
 
     auto window_pos = ImGui::GetWindowPos();
     auto window_size = ImGui::GetWindowSize();
+    auto window_end = ImVec2(window_pos.x + window_size.x, window_pos.y + window_size.y);
 
     if(registry.valid(globals::player) && !m_force_scene) {
         layout_dim(window_pos, window_size);
 
-        // The pause menu sits on top of the world itself, so it needs a
-        // darker scrim than the menu scene does
-        auto window_end = ImVec2(window_pos.x + window_size.x, window_pos.y + window_size.y);
+        // The pause menu sits on top of the world
+        // itself, so it needs a darker scrim than the menu does
         auto scrim_color = ImGui::GetColorU32(ImVec4(0.0f, 0.0f, 0.0f, 0.45f));
         auto draw_list = ImGui::GetWindowDrawList();
 
@@ -222,17 +139,40 @@ void gui::Background::layout(void)
         return;
     }
 
-    if(m_scene) {
-        layout_scene(window_pos, window_size);
-        return;
+    auto draw_list = ImGui::GetWindowDrawList();
+
+    auto sky_top = ImGui::GetColorU32(SKY_TOP);
+    auto sky_bottom = ImGui::GetColorU32(SKY_BOTTOM);
+
+    draw_list->AddRectFilledMultiColor(window_pos, window_end, sky_top, sky_top, sky_bottom, sky_bottom);
+
+    auto time = ImGui::GetTime();
+    auto pointer = 0.0f;
+    auto mouse_xpos = ImGui::GetIO().MousePos.x;
+
+    if(std::isfinite(mouse_xpos) && window_size.x > 0.0f) {
+        pointer = 2.0f * (mouse_xpos / window_size.x - 0.5f);
+        pointer = std::clamp(pointer, -1.0f, 1.0f);
     }
 
-    if(m_texture) {
-        auto window_end = ImVec2(window_pos.x + window_size.x, window_pos.y + window_size.y);
-        auto draw_list = ImGui::GetWindowDrawList();
+    // Without a loaded wall there is nothing to scroll; the sky and the dim
+    // still draw, so the menu stays readable
+    if(s_tile_height > 0) {
+        auto tile_reference = static_cast<float>(s_tile_height);
+        auto scale = std::max(1.0f, std::ceil(window_size.y / tile_reference));
+        auto ratio = window_size.y / tile_reference;
 
-        draw_list->AddImage(m_texture, window_pos, window_end);
-        return;
+        for(std::size_t i = 0; i < s_textures.size(); ++i) {
+            if(s_textures[i] == nullptr) {
+                continue;
+            }
+
+            auto tile_width = scale * static_cast<float>(s_textures[i]->width);
+            auto tile_height = scale * static_cast<float>(s_textures[i]->height);
+            auto offset = time * LAYER_INFOS[i].speed * ratio - pointer * POINTER_SHIFT * LAYER_INFOS[i].shift * ratio;
+
+            draw_wall(draw_list, window_pos, window_end, s_textures[i]->imgui, tile_width, tile_height, offset);
+        }
     }
 
     layout_dim(window_pos, window_size);

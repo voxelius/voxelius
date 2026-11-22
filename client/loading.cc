@@ -110,7 +110,6 @@ void loading::init(void)
 {
     s_background.set_left({ 0.000f, 0.000f, 0.000f, 0.620f });
     s_background.set_right({ 0.000f, 0.000f, 0.000f, 0.280f });
-    s_background.enable_scene();
     s_background.force_scene(true);
 
     s_screen.add_child(s_background);
