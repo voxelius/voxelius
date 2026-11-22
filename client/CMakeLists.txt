@@ -155,6 +155,8 @@ add_executable(vclient
     "${CMAKE_CURRENT_LIST_DIR}/pch.hh"
     "${CMAKE_CURRENT_LIST_DIR}/play_menu.cc"
     "${CMAKE_CURRENT_LIST_DIR}/play_menu.hh"
+    "${CMAKE_CURRENT_LIST_DIR}/screenshot.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/screenshot.hh"
     "${CMAKE_CURRENT_LIST_DIR}/settings.cc"
     "${CMAKE_CURRENT_LIST_DIR}/settings.hh"
     "${CMAKE_CURRENT_LIST_DIR}/shader_program.cc"

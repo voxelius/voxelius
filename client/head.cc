@@ -15,6 +15,7 @@
 #include "client/globals.hh"
 #include "client/gui/container.hh"
 #include "client/gui/slider.hh"
+#include "client/screenshot.hh"
 #include "client/settings.hh"
 #include "client/shader_program.hh"
 #include "client/world/chunk_renderer.hh"
@@ -414,6 +415,8 @@ void head::present(void)
     globals::num_draw_vertices += draw_data->TotalVtxCount;
 
     ImGui_ImplOpenGL3_RenderDrawData(draw_data);
+
+    screenshot::capture();
 
     SDL_GL_SwapWindow(globals::window);
 }

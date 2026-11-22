@@ -16,6 +16,7 @@ public:
     static ButtonBind* current;
 
     ButtonBind& bind_action(std::string_view action, unsigned slot = 0);
+    ButtonBind& bind_command(std::string_view command, input_edge edge = input_edge::DOWN);
 
 protected:
     virtual void layout_control(void) override;
@@ -33,6 +34,8 @@ private:
     std::string m_press {};
     std::string m_release {};
     unsigned m_slot {};
+    input_edge m_edge { input_edge::DOWN };
+    bool m_is_action { true };
     std::string m_capture_label {};
     std::string m_bound_label {};
 };

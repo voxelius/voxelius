@@ -17,6 +17,8 @@ The client reads input from SDL events. Every event goes through `globals::dispa
 
 The `buttons` subsystem ignores events while a settings control captures a key, while a GUI screen is open, or while ImGui wants the keyboard.
 
+The `screenshot` command is the one binding that does not follow this rule. The client checks the keyboard binds of that command before the rest of the input path, so the key still works while a screen is open and during the startup screen. A settings control that captures a key keeps priority. The [rendering](arch-render.md) page describes the capture itself.
+
 `client/input/axes` keeps a map from `AxisSource` to a named slot. Mouse motion adds its delta to the slot. Game code reads and removes the value with `axes::consume`. The commands `maxis`, `gaxis`, `list_axes` and `unbind_axes` manage the map.
 
 ## Defaults and persistence
@@ -35,4 +37,4 @@ The console adds a message sink to the `msg` logging layer. The sink copies reco
 
 ## Settings controls
 
-`gui::ButtonBind` captures a key, mouse button or wheel direction and writes a `+action`/`-action` pair into the binding map. The Controls tab uses one `ButtonBind` for each action. The movement actions are `forward`, `back`, `moveleft`, `moveright`, `jump` and `sneak`. The block actions are `break` and `place`.
+`gui::ButtonBind` captures a key, mouse button or wheel direction and writes a `+action`/`-action` pair into the binding map. The Controls tab uses one `ButtonBind` for each action. The movement actions are `forward`, `back`, `moveleft`, `moveright`, `jump` and `sneak`. The block actions are `break` and `place`. `bind_command` puts the control into a command mode instead: it binds one edge of the captured button to one command, so the screenshot row binds `screenshot` and nothing else.

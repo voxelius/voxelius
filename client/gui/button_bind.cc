@@ -87,6 +87,21 @@ gui::ButtonBind& gui::ButtonBind::bind_action(std::string_view action, unsigned 
     m_press = std::format("+{}", action);
     m_release = std::format("-{}", action);
     m_slot = slot;
+    m_edge = input_edge::DOWN;
+    m_is_action = true;
+
+    return self();
+}
+
+gui::ButtonBind& gui::ButtonBind::bind_command(std::string_view command, input_edge edge)
+{
+    set_key(std::format("command.{}", command));
+
+    m_press = std::string(command);
+    m_release.clear();
+    m_slot = 0;
+    m_edge = edge;
+    m_is_action = false;
 
     return self();
 }
@@ -95,8 +110,18 @@ std::optional<ButtonSource> gui::ButtonBind::bound_button(void) const
 {
     auto sources = buttons::find(m_press);
 
-    if(m_slot < sources.size()) {
-        return sources[m_slot];
+    if(m_is_action) {
+        if(m_slot < sources.size()) {
+            return sources[m_slot];
+        }
+
+        return std::nullopt;
+    }
+
+    for(const auto& source : sources) {
+        if(source.edge() == m_edge) {
+            return source;
+        }
     }
 
     return std::nullopt;
@@ -106,18 +131,32 @@ void gui::ButtonBind::capture(std::optional<ButtonSource> source)
 {
     if(source.has_value()) {
         auto pressed = source.value();
-        auto released = ButtonSource(pressed.device(), pressed.code(), input_edge::UP);
 
-        buttons::unbind(pressed);
-        buttons::unbind(released);
+        if(m_is_action) {
+            auto released = ButtonSource(pressed.device(), pressed.code(), input_edge::UP);
 
-        if(auto previous = bound_button()) {
-            buttons::unbind(previous.value());
-            buttons::unbind(ButtonSource(previous->device(), previous->code(), input_edge::UP));
+            buttons::unbind(pressed);
+            buttons::unbind(released);
+
+            if(auto previous = bound_button()) {
+                buttons::unbind(previous.value());
+                buttons::unbind(ButtonSource(previous->device(), previous->code(), input_edge::UP));
+            }
+
+            buttons::bind(pressed, m_press);
+            buttons::bind(released, m_release);
         }
+        else {
+            auto owned = ButtonSource(pressed.device(), pressed.code(), m_edge);
 
-        buttons::bind(pressed, m_press);
-        buttons::bind(released, m_release);
+            buttons::unbind(owned);
+
+            if(auto previous = bound_button()) {
+                buttons::unbind(previous.value());
+            }
+
+            buttons::bind(owned, m_press);
+        }
     }
 
     ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;

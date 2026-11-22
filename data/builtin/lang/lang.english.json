@@ -123,6 +123,7 @@
   "settings.value.action.sneak": "Sneak",
   "settings.value.action.break": "Break Block",
   "settings.value.action.place": "Place Block",
+  "settings.value.command.screenshot": "Screenshot",
   "settings.value.net_username": "Username",
   "settings.value.r_mode": "Video mode",
   "settings.value.r_vsync": "V-Sync",

@@ -39,6 +39,7 @@
 #include "client/net/session.hh"
 #include "client/play_menu.hh"
 #include "client/res/texture_2d.hh"
+#include "client/screenshot.hh"
 #include "client/settings.hh"
 #include "client/style.hh"
 #include "client/video.hh"
@@ -74,6 +75,10 @@ static void handle_events(void)
 
             s_is_running.store(false);
             return;
+        }
+
+        if(screenshot::handle_event(event)) {
+            continue;
         }
 
         if(boot::input(event)) {
@@ -244,6 +249,8 @@ static void wrapped_main(int argc, char** argv)
     video::init();
     head::init();
     camera::init();
+
+    screenshot::init();
 
     style::apply();
     fonts::load();

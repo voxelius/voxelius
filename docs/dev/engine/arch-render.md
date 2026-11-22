@@ -14,7 +14,7 @@ The client draws a boot screen from its first frame, while the rest of the start
 
 The screen is a black background, a centered texture with its alpha channel, the current stage text, a progress bar, and the last five `msg` records in the bottom left corner. A texture loads with nearest filtering and an integer scale, so its pixels stay sharp. The textures are a fixed table in the client code, with an optional month and day range per entry; `-bootsplash <name>` forces one entry and `-noboot` hides the screen. `-bootdelay <ms>` waits that long after each stage, and `-bootstep` waits for a key press instead. Use them to read the stage log. The video stage does not finish until SDL reports that the window mode change took effect, so the menu does not appear during the switch. It waits five seconds after the report to let the monitor resynchronize. A small spinner next to the bar shows that the loop is alive. A five second timeout covers a platform that reports nothing.
 
-When the last stage finishes, the screen stays for 1.2 seconds and then fades out. A key, a mouse button or the wheel skips this wait, and only then: the startup itself cannot be skipped. The main menu is built by the last stage, so it is ready when the screen goes away. Input does not reach the interface during the boot, except for the window events.
+When the last stage finishes, the screen stays for 1.2 seconds and then fades out. A key, a mouse button or the wheel skips this wait, and only then: the startup itself cannot be skipped. The main menu is built by the last stage, so it is ready when the screen goes away. Input does not reach the interface during the boot, except for the window events and the [screenshot](#screenshots) key.
 
 ## Shader programs and variants
 
@@ -38,6 +38,14 @@ The cloud, alpha and fluid layers each reuse the diffuse layer's depth buffer fo
 A composite shader then draws one full-screen triangle. It reads every layer's color texture, sorts the translucent and fluid layers that touched a pixel by depth and blends them from the farthest to the nearest, then lays the cloud layer over the result. The client blits that image onto the real window-sized backbuffer. It uses nearest-neighbor filtering to keep the pixelated look. The compose target is 8-bit, so the shader adds half a level of noise to its output: without it a slow fade, such as the cloud deck thinning into the fog, lands on the 255 available levels and breaks into bands, and because each channel rounds at its own step those bands pick up a green or magenta tint instead of reading as a brightness ramp.
 
 ImGui renders last, straight onto the default framebuffer, so its UI always draws on top of the game world. The client then presents the frame with a window buffer swap.
+
+## Screenshots
+
+The `screenshot` module saves the frame that the player sees, with the interface and the open menus included. The client reads the default framebuffer in `head::present`: after ImGui draws and before the buffer swap, so the image matches the window. The composite framebuffer stays bound for reading at that point, so the readback binds the default framebuffer first.
+
+A window readback starts at the bottom row, so the module turns on the stb vertical flip at startup. The encode runs on the task pool, and the file goes through the virtual filesystem into `screenshots` in the user directory. Only the readback itself runs on the main thread.
+
+The key comes from the bind map. The default is `F12`, bound to the `screenshot` command, and the Controls tab has a row for it, so the player can replace the key there, with `kbutton` or in `client.conf`. The client checks that keyboard bind before the rest of the input path, so the key works with a screen open and during the startup screen, where other input does not reach the interface. A settings control that waits for a key keeps priority: the module ignores a press while `buttons::is_capturing` is set.
 
 ## Sky, fog and the day cycle
 

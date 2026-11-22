@@ -123,6 +123,7 @@
   "settings.value.action.sneak": "Красться",
   "settings.value.action.break": "Сломать блок",
   "settings.value.action.place": "Поставить блок",
+  "settings.value.command.screenshot": "Скриншот",
   "settings.value.net_username": "Имя пользователя",
   "settings.value.r_mode": "Режим экрана",
   "settings.value.r_vsync": "Вертикальная синхронизация",
