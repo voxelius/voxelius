@@ -3,6 +3,7 @@
 #include "client/gui/setting.hh"
 
 #include "client/globals.hh"
+#include "client/gui/stone.hh"
 #include "client/language.hh"
 
 constexpr static float CONTROL_FRACTION = 0.5f;
@@ -52,7 +53,7 @@ void gui::detail::SettingWidget::layout(void)
 
     // ImGui text cannot carry a shadow, so it goes to the lower channel: the
     // merge draws it first and the label lands on top of it
-    auto shadow_offset = static_cast<float>(globals::gui_scale);
+    auto shadow_offset = text_shadow_offset();
     auto shadow_color = ImGui::GetColorU32(ImVec4(0.000f, 0.000f, 0.000f, 0.750f));
 
     draw_list->ChannelsSetCurrent(0);

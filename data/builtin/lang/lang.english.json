@@ -1,6 +1,4 @@
 {
-  "console.button.submit": "Submit",
-
   "gui.input_popup.submit": "OK",
   "gui.input_popup.cancel": "Cancel",
   "gui.progress_popup.cancel": "Cancel",

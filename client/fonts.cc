@@ -43,6 +43,9 @@ void fonts::load(void)
 
     s_font_config = {};
     s_font_config.FontDataOwnedByAtlas = false;
+    s_font_config.OversampleH = 1;
+    s_font_config.OversampleV = 1;
+    s_font_config.PixelSnapH = true;
 
     auto unscii16_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "unscii-16");
     auto unscii16_path = unscii16_id.as_file_path("fonts", ".ttf");

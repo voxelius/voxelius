@@ -3,6 +3,7 @@
 #include "client/gui/rail.hh"
 
 #include "client/globals.hh"
+#include "client/gui/stone.hh"
 #include "client/language.hh"
 #include "client/style.hh"
 
@@ -33,7 +34,7 @@ static void draw_item(ImDrawList* draw_list, ImVec2 item_min, ImVec2 item_max, s
     auto text_color = ImGui::GetColorU32(palette.text);
     auto shadow_color = ImGui::GetColorU32(palette.bevel_dark);
 
-    auto shadow_offset = static_cast<float>(globals::gui_scale);
+    auto shadow_offset = gui::detail::text_shadow_offset();
 
     draw_list->AddText(ImVec2(label_position.x + shadow_offset, label_position.y + shadow_offset), shadow_color, label.data(),
         label.data() + label.size());

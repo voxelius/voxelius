@@ -6,6 +6,7 @@
 
 #include "client/fonts.hh"
 #include "client/globals.hh"
+#include "client/gui/stone.hh"
 
 constexpr static float SPLASH_GAP = 4.0f;
 constexpr static float VERSION_PAD = 4.0f;
@@ -57,7 +58,7 @@ void gui::Title::layout(void)
 
     // The offset follows the UI scale: on a 2x display a single pixel is
     // thinner than one glyph pixel and the shadow reads as a soft edge
-    auto shadow_offset = std::max(1.0f, static_cast<float>(globals::gui_scale));
+    auto shadow_offset = detail::text_shadow_offset();
 
     // In game the menu is a pause screen, so the wordmark and the splash
     // would just cover the world; only the buttons and the version stay

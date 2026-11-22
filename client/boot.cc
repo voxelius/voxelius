@@ -26,7 +26,6 @@ constexpr static std::chrono::milliseconds MENU_FADE_DURATION { 300 };
 
 constexpr static std::size_t LOG_CAPACITY = 5;
 
-constexpr static float LOG_FONT_SCALE = 0.5f;
 constexpr static float LOG_COLUMN_GAP = 8.0f;
 constexpr static float PROGRESS_SMOOTHING = 12.0f;
 
@@ -386,15 +385,26 @@ static void draw_card(ImVec2 display, float alpha)
     auto scale = std::max(1.0f, std::min(width_scale, height_scale));
 
     auto size = ImVec2(texture_width * scale, texture_height * scale);
-    auto position = ImVec2(0.5f * (display.x - size.x), CARD_TOP_RATIO * display.y - 0.5f * size.y);
+    auto position = ImVec2(std::round(0.5f * (display.x - size.x)), std::round(CARD_TOP_RATIO * display.y - 0.5f * size.y));
 
     auto uv0 = ImVec2(0.0f, 0.0f);
     auto uv1 = ImVec2(1.0f, 1.0f);
     auto background = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);
     auto tint = ImVec4(1.0f, 1.0f, 1.0f, alpha);
 
+    auto& platform_io = ImGui::GetPlatformIO();
+    auto draw_list = ImGui::GetWindowDrawList();
+
+    if(platform_io.DrawCallback_SetSamplerNearest) {
+        draw_list->AddCallback(platform_io.DrawCallback_SetSamplerNearest, nullptr);
+    }
+
     ImGui::SetCursorScreenPos(position);
     ImGui::ImageWithBg(s_texture->imgui, size, uv0, uv1, background, tint);
+
+    if(platform_io.DrawCallback_SetSamplerLinear) {
+        draw_list->AddCallback(platform_io.DrawCallback_SetSamplerLinear, nullptr);
+    }
 }
 
 static void draw_status(ImVec2 display, float alpha)
@@ -443,8 +453,10 @@ static void draw_log(ImVec2 display, float alpha)
     }
 
     auto scale = static_cast<float>(globals::gui_scale);
+    auto font_scale = std::max(1.0f, ImGui::GetStyle().FontScaleMain);
+    auto font_steps = std::ceil(font_scale / 2.0f);
 
-    ImGui::PushFont(fonts::unscii8, fonts::unscii8->LegacySize * LOG_FONT_SCALE);
+    ImGui::PushFont(fonts::unscii8, fonts::unscii8->LegacySize * font_steps / font_scale);
 
     auto line_height = ImGui::GetTextLineHeight();
 
@@ -458,7 +470,7 @@ static void draw_log(ImVec2 display, float alpha)
         column = std::max(column, ImGui::CalcTextSize(label.c_str()).x);
     }
 
-    column += LOG_COLUMN_GAP * scale;
+    column += LOG_COLUMN_GAP * font_steps;
 
     auto right = display.x - EDGE_PADDING * scale;
     auto message_width = right - left - column;

@@ -3,19 +3,11 @@
 #include "client/gui/command_line.hh"
 
 #include "client/gui/stone.hh"
-#include "client/language.hh"
 
 gui::CommandLine& gui::CommandLine::set_font(ImFont* font, float size)
 {
     m_font = font;
     m_font_size = size;
-
-    return self();
-}
-
-gui::CommandLine& gui::CommandLine::set_button_text(std::string_view key)
-{
-    m_button_key = key;
 
     return self();
 }
@@ -124,19 +116,21 @@ void gui::CommandLine::layout(void)
         auto size = m_font->LegacySize;
 
         if(m_font_size > 0.0f) {
-            size = m_font_size;
+            auto font_scale = std::max(1.0f, ImGui::GetStyle().FontScaleMain);
+            auto font_steps = std::max(1.0f, std::floor(font_scale / 2.0f));
+            size = m_font_size * font_steps / font_scale;
         }
 
         ImGui::PushFont(m_font, size);
     }
 
     const auto& style = ImGui::GetStyle();
+    auto row_height = ImGui::GetContentRegionAvail().y;
+    auto input_pad_y = std::max(0.0f, 0.5f * (row_height - ImGui::GetFontSize()));
+    auto input_padding = ImVec2(style.FramePadding.x, input_pad_y);
 
-    auto button_width = 0.0f;
-
-    if(m_button_label.size()) {
-        button_width = ImGui::CalcTextSize(m_button_text.c_str()).x + 2.0f * style.FramePadding.x + style.ItemSpacing.x;
-    }
+    auto button_size = ImVec2(row_height, row_height);
+    auto button_width = button_size.x + style.ItemSpacing.x;
 
     if(m_focus) {
         ImGui::SetKeyboardFocusHere();
@@ -144,6 +138,7 @@ void gui::CommandLine::layout(void)
         m_focus = false;
     }
 
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, input_padding);
     ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - button_width);
 
     ImGuiInputTextFlags input_flags = 0;
@@ -154,18 +149,13 @@ void gui::CommandLine::layout(void)
     auto submitted = ImGui::InputText(imgui_id().c_str(), &m_buffer, input_flags, &CommandLine::on_callback, this);
     auto input_active = ImGui::IsItemActive();
 
-    if(m_button_label.size()) {
-        ImGui::SameLine();
+    ImGui::SameLine();
 
-        auto avail = ImGui::GetContentRegionAvail();
-        auto height = ImGui::GetFrameHeight();
-
-        auto button_size = ImVec2(avail.x, height);
-
-        if(gui::detail::stone_button(m_button_label.c_str(), m_button_label, button_size)) {
-            submitted = true;
-        }
+    if(detail::stone_arrow_button("###submit", button_size)) {
+        submitted = true;
     }
+
+    ImGui::PopStyleVar();
 
     if(submitted) {
         submit();
@@ -182,16 +172,4 @@ void gui::CommandLine::layout(void)
     if(m_font) {
         ImGui::PopFont();
     }
-}
-
-void gui::CommandLine::translate(void)
-{
-    if(m_button_key.empty()) {
-        m_button_text.clear();
-        m_button_label.clear();
-        return;
-    }
-
-    m_button_text = language::resolve(m_button_key);
-    m_button_label = std::format("{}{}[button]", m_button_text, imgui_id());
 }

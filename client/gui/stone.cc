@@ -88,6 +88,19 @@ void gui::detail::draw_stone_face(ImDrawList* draw_list, ImVec2 item_min, ImVec2
     draw_list->AddRectFilled(ImVec2(inner_max.x - bevel, inner_min.y), inner_max, ImGui::GetColorU32(palette.bevel_dark));
 }
 
+float gui::detail::text_shadow_offset(void)
+{
+    auto font = ImGui::GetFont();
+    auto design = 8.0f;
+
+    if(font) {
+        design = std::max(1.0f, font->LegacySize);
+    }
+
+    // One design pixel, so the shadow stays on the glyph grid
+    return std::max(1.0f, std::round(ImGui::GetFontSize() / design));
+}
+
 void gui::detail::draw_stone_label(ImDrawList* draw_list, ImVec2 item_min, ImVec2 item_max, std::string_view label, bool pressed,
     bool enabled)
 {
@@ -107,7 +120,7 @@ void gui::detail::draw_stone_label(ImDrawList* draw_list, ImVec2 item_min, ImVec
     auto text_color = ImGui::GetColorU32(enabled ? palette.text : palette.text_disabled);
 
     // The shadow follows the glyph size, otherwise it turns into a soft blur
-    auto shadow_offset = static_cast<float>(globals::gui_scale);
+    auto shadow_offset = text_shadow_offset();
 
     // A label that does not fit must not spill over the neighbouring widget
     draw_list->PushClipRect(item_min, item_max, true);
@@ -165,6 +178,41 @@ bool gui::detail::stone_button(const char* id, std::string_view label, ImVec2 si
     return clicked;
 }
 
+bool gui::detail::stone_arrow_button(const char* id, ImVec2 size)
+{
+    auto& palette = style::palette();
+
+    auto clicked = ImGui::InvisibleButton(id, size);
+    auto hovered = ImGui::IsItemHovered();
+    auto held = ImGui::IsItemActive();
+
+    auto base = palette.button;
+
+    if(held) {
+        base = palette.button_active;
+    }
+    else if(hovered) {
+        base = palette.button_hovered;
+    }
+
+    auto item_min = ImGui::GetItemRectMin();
+    auto item_max = ImGui::GetItemRectMax();
+
+    auto draw_list = ImGui::GetWindowDrawList();
+
+    draw_stone_face(draw_list, item_min, item_max, base);
+
+    auto center = ImVec2(0.5f * (item_min.x + item_max.x), 0.5f * (item_min.y + item_max.y));
+    auto side = std::min(item_max.x - item_min.x, item_max.y - item_min.y);
+    auto reach = 0.18f * side;
+    auto color = ImGui::GetColorU32(palette.text);
+
+    draw_list->AddTriangleFilled(ImVec2(center.x - reach, center.y - reach), ImVec2(center.x - reach, center.y + reach),
+        ImVec2(center.x + reach, center.y), color);
+
+    return clicked;
+}
+
 bool gui::detail::stone_combo(const char* id, std::string_view label, ImVec2 size)
 {
     auto& palette = style::palette();
@@ -204,7 +252,7 @@ bool gui::detail::stone_combo(const char* id, std::string_view label, ImVec2 siz
     auto text_color = ImGui::GetColorU32(palette.text);
 
     // The shadow follows the glyph size, otherwise it turns into a soft blur
-    auto shadow_offset = static_cast<float>(globals::gui_scale);
+    auto shadow_offset = text_shadow_offset();
 
     draw_list->AddText(ImVec2(text_position.x + shadow_offset, text_position.y + shadow_offset), shadow_color, label.data(),
         label.data() + label.size());

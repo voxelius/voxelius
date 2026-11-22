@@ -78,7 +78,10 @@ static bool layout_slider(const std::string& id, std::string_view text, float& f
     text_position.x = std::floor(item_min.x + 0.5f * (size.x - text_size.x));
     text_position.y = std::floor(item_min.y + 0.5f * (size.y - text_size.y));
 
-    draw_list->AddText(ImVec2(text_position.x + 1.0f, text_position.y + 1.0f), shadow_color, text.data(), text.data() + text.size());
+    auto shadow_offset = gui::detail::text_shadow_offset();
+    auto shadow_position = ImVec2(text_position.x + shadow_offset, text_position.y + shadow_offset);
+
+    draw_list->AddText(shadow_position, shadow_color, text.data(), text.data() + text.size());
     draw_list->AddText(text_position, text_color, text.data(), text.data() + text.size());
 
     return active;

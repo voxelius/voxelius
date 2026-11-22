@@ -24,8 +24,8 @@
 constexpr static SDL_Keycode CONSOLE_KEY = SDLK_GRAVE;
 
 constexpr static float SCREEN_HEIGHT = 1.0f;
-constexpr static float INPUT_HEIGHT = 14.0f;
-constexpr static float CONSOLE_FONT_SIZE = 8.0f;
+constexpr static float INPUT_HEIGHT = 10.0f;
+constexpr static float CONSOLE_FONT_SIZE = 16.0f;
 constexpr static ImVec2 PANEL_MARGIN = ImVec2(1.0f, 1.0f);
 constexpr static ImVec4 DIMMER_COLOR = ImVec4(0.000f, 0.000f, 0.000f, 0.750f);
 
@@ -180,7 +180,6 @@ void console::init(void)
     update_history_size();
     update_filters();
 
-    s_input.set_button_text("console.button.submit");
     s_input.on_submit([](std::string_view line) {
         s_log_view.push_echo(std::format("] {}", line));
         cvar::exec(line);

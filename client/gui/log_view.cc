@@ -164,7 +164,9 @@ void gui::LogView::layout(void)
             auto size = m_font->LegacySize;
 
             if(m_font_size > 0.0f) {
-                size = m_font_size;
+                auto font_scale = std::max(1.0f, ImGui::GetStyle().FontScaleMain);
+                auto font_steps = std::max(1.0f, std::floor(font_scale / 2.0f));
+                size = m_font_size * font_steps / font_scale;
             }
 
             ImGui::PushFont(m_font, size);

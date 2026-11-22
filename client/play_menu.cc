@@ -23,6 +23,7 @@
 #include "client/gui/rail.hh"
 #include "client/gui/screen.hh"
 #include "client/gui/stack.hh"
+#include "client/gui/stone.hh"
 #include "client/language.hh"
 #include "client/loading.hh"
 #include "client/main_menu.hh"
@@ -586,7 +587,7 @@ void ServerListItem::layout(void)
     name_pos.y = cursor_pos.y + padding.y;
 
     auto text_shadow_color = ImGui::GetColorU32(ImVec4(0.000f, 0.000f, 0.000f, 0.750f));
-    auto text_shadow_offset = static_cast<float>(globals::gui_scale);
+    auto text_shadow_offset = gui::detail::text_shadow_offset();
 
     auto name_shadow_pos = ImVec2(name_pos.x + text_shadow_offset, name_pos.y + text_shadow_offset);
     auto name_color = ImGui::GetColorU32(ImGuiCol_Text);
@@ -666,10 +667,10 @@ void ServerListItem::layout(void)
         ImGui::PopFont();
     }
 
-    // The MOTD sits behind the row highlight, so its shadow is as thick as
-    // one glyph pixel instead of the single pixel that stone labels use
+    // The MOTD sits behind the row highlight, so it keeps the same shadow
+    // offset as the labels instead of a thinner outline of its own
     auto motd_shadow_color = ImGui::GetColorU32(ImVec4(0.000f, 0.000f, 0.000f, 0.750f));
-    auto motd_shadow_offset = static_cast<float>(globals::gui_scale);
+    auto motd_shadow_offset = gui::detail::text_shadow_offset();
 
     for(std::size_t i = 0; i < motd_lines.size(); ++i) {
         auto& line = motd_lines[i];

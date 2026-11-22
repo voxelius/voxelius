@@ -92,6 +92,7 @@ void gui::LoadingPanel::layout(void)
 
     auto draw_list = ImGui::GetWindowDrawList();
     auto shadow_color = ImGui::GetColorU32(ImVec4(0.0f, 0.0f, 0.0f, 0.85f));
+    auto shadow_offset = detail::text_shadow_offset();
 
     draw_list->AddRectFilled(panel_min, panel_max, ImGui::GetColorU32(palette.popup));
     draw_list->AddRect(panel_min, panel_max, ImGui::GetColorU32(palette.border));
@@ -101,7 +102,7 @@ void gui::LoadingPanel::layout(void)
 
     auto title_position = ImVec2(panel_center_x - 0.5f * title_size.x, panel_min.y + padding);
 
-    draw_list->AddText(ImVec2(title_position.x + scale, title_position.y + scale), shadow_color, m_title.c_str());
+    draw_list->AddText(ImVec2(title_position.x + shadow_offset, title_position.y + shadow_offset), shadow_color, m_title.c_str());
     ImGui::SetCursorScreenPos(title_position);
     ImGui::TextUnformatted(m_title.c_str());
     ImGui::PopFont();
@@ -117,7 +118,7 @@ void gui::LoadingPanel::layout(void)
 
     auto status_position = ImVec2(panel_center_x - 0.5f * status_size.x, inset_min.y + inset_padding);
 
-    draw_list->AddText(ImVec2(status_position.x + scale, status_position.y + scale), shadow_color, m_status.c_str());
+    draw_list->AddText(ImVec2(status_position.x + shadow_offset, status_position.y + shadow_offset), shadow_color, m_status.c_str());
     ImGui::SetCursorScreenPos(status_position);
     ImGui::TextUnformatted(m_status.c_str());
     ImGui::PopFont();

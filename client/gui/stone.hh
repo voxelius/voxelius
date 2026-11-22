@@ -23,11 +23,13 @@ void stone_shutdown(void);
 namespace gui::detail
 {
 void draw_stone_face(ImDrawList* draw_list, ImVec2 item_min, ImVec2 item_max, const ImVec4& base);
+void draw_stone_label(ImDrawList* draw_list, ImVec2 item_min, ImVec2 item_max, std::string_view label, bool pressed, bool enabled);
 } // namespace gui::detail
 
 namespace gui::detail
 {
-void draw_stone_label(ImDrawList* draw_list, ImVec2 item_min, ImVec2 item_max, std::string_view label, bool pressed, bool enabled);
+// One design pixel of the pixel fonts, in screen pixels
+float text_shadow_offset(void);
 } // namespace gui::detail
 
 namespace gui::detail
@@ -35,6 +37,7 @@ namespace gui::detail
 // The label may carry an ImGui "###id" suffix; it is used for the item id
 // and cut off before drawing
 bool stone_button(const char* id, std::string_view label, ImVec2 size);
+bool stone_arrow_button(const char* id, ImVec2 size);
 } // namespace gui::detail
 
 namespace gui::detail
