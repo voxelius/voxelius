@@ -22,6 +22,7 @@
 #include "client/gui/screen.hh"
 #include "client/gui/title.hh"
 #include "client/language.hh"
+#include "client/loading.hh"
 #include "client/net/session.hh"
 #include "client/play_menu.hh"
 #include "client/res/texture_2d.hh"
@@ -45,6 +46,10 @@ static void on_language_update(const LanguageUpdateEvent&)
 static void on_keyboard_event(const SDL_KeyboardEvent& event)
 {
     auto& registry = globals::world->registry();
+
+    if(loading::stage) {
+        return;
+    }
 
     if(globals::gui_screen == &console::screen) {
         return;

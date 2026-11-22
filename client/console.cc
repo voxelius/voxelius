@@ -18,6 +18,7 @@
 #include "client/gui/screen.hh"
 #include "client/gui/stack.hh"
 #include "client/language.hh"
+#include "client/loading.hh"
 #include "client/main_menu.hh"
 
 constexpr static SDL_Keycode CONSOLE_KEY = SDLK_GRAVE;
@@ -111,6 +112,10 @@ static void on_language_update(const LanguageUpdateEvent&)
 
 static void on_keyboard_event(const SDL_KeyboardEvent& event)
 {
+    if(loading::stage) {
+        return;
+    }
+
     if(event.type == SDL_EVENT_KEY_DOWN && !event.repeat && gui::ButtonBind::current == nullptr) {
         auto is_open = globals::gui_screen == &console::screen;
 

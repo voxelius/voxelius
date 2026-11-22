@@ -43,9 +43,10 @@ void client_game::open_world(const packet::World_Info& packet)
     WorldDefinition definition {};
     packet.to_definition(definition);
 
-    // In-flight meshing and light
-    // tasks still hold the old world
-    threading::wait();
+    // Queued meshes are dropped and only the few running workers are joined:
+    // the old world cannot be freed under a task, and the new one must not wait
+    // for the whole queue
+    threading::cancel_all();
 
     chunk_mesher::reset();
 

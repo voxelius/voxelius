@@ -24,6 +24,7 @@
 #include "client/gui/screen.hh"
 #include "client/gui/stack.hh"
 #include "client/language.hh"
+#include "client/loading.hh"
 #include "client/main_menu.hh"
 #include "client/net/bother.hh"
 #include "client/net/session.hh"
@@ -93,7 +94,6 @@ static gui::Container s_worlds_tab;
 static gui::VerticalStack s_servers_tab;
 static gui::InputPopup s_server_popup;
 static gui::InputPopup s_direct_popup;
-static gui::ProgressPopup s_connect_popup;
 static gui::ChoicePopup s_error_popup;
 
 gui::Screen play_menu::screen;
@@ -395,26 +395,21 @@ static void on_session_state(const SessionStateEvent& event)
 {
     switch(event.state()) {
         case SESSION_CONNECTING:
-            play_menu::open_connect_popup("play_menu.connect.stage.connecting", [] {
-                session::disconnect(packet::Session_Disconnect::CLIENT_DISCONNECT);
-            });
+            loading::show_stage(LOADING_CONNECTING);
             break;
 
         case SESSION_AUTHENTICATING:
-            play_menu::set_connect_message("play_menu.connect.stage.authenticating");
+            loading::show_stage(LOADING_AUTHENTICATING);
             break;
 
         case SESSION_SPAWNING:
-            play_menu::set_connect_message("play_menu.connect.stage.spawning");
+            loading::show_stage(LOADING_SPAWNING);
             break;
 
         case SESSION_INGAME:
-            play_menu::close_connect_popup();
-            globals::gui_screen = nullptr;
-            break;
-
         case SESSION_DISCONNECTED:
-            play_menu::close_connect_popup();
+            // The loading screen switches itself on the player
+            // assignment and closes itself on a disconnect
             break;
     }
 }
@@ -789,9 +784,6 @@ void play_menu::init(void)
         session::connect(parts.first, parts.second, invite);
     });
 
-    s_connect_popup.set_title("play_menu.connect.title");
-    screen.add_child(s_connect_popup, 3);
-
     s_error_popup.set_title("play_menu.connect.error.title");
     s_error_popup.add_choice("play_menu.connect.error.ok");
     screen.add_child(s_error_popup, 3);
@@ -821,29 +813,6 @@ void play_menu::update_late(void)
             owned->invalidate();
         }
     }
-}
-
-void play_menu::open_connect_popup(std::string_view message, std::function<void(void)> on_cancel)
-{
-    s_connect_popup.set_message(message);
-    s_connect_popup.set_progress(std::nullopt);
-    s_connect_popup.on_cancel(std::move(on_cancel));
-    s_connect_popup.open();
-}
-
-void play_menu::set_connect_message(std::string_view message)
-{
-    s_connect_popup.set_message(message);
-}
-
-void play_menu::set_connect_progress(std::optional<float> progress)
-{
-    s_connect_popup.set_progress(progress);
-}
-
-void play_menu::close_connect_popup(void)
-{
-    s_connect_popup.close();
 }
 
 void play_menu::show_error(std::string_view message)

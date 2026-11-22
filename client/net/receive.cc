@@ -6,6 +6,7 @@
 #include "core/cvar/host.hh"
 #include "core/msg/log.hh"
 
+#include "shared/component/transform.hh"
 #include "shared/constant.hh"
 #include "shared/cvar/server.hh"
 #include "shared/entity/class_registry.hh"
@@ -25,6 +26,7 @@
 #include "client/camera.hh"
 #include "client/game.hh"
 #include "client/globals.hh"
+#include "client/loading.hh"
 #include "client/net/session.hh"
 #include "client/system/interpolation.hh"
 #include "client/world/cloud_renderer.hh"
@@ -60,17 +62,24 @@ static void on_entity_patch(const packet::Entity_Patch& packet)
     static ReadBuffer buffer;
 
     auto& registry = globals::world->registry();
+    auto has_transform = false;
 
     for(auto& it : packet.components) {
         buffer.reset(it.data);
 
         component_map::decode_net(registry, it.id, packet.entity, buffer);
+
+        has_transform = has_transform || it.id == component_map::from_type<Transform>();
     }
 
     // The server only patches the local player's components to correct them:
     // a rubberband or a fresh snapshot has to snap the camera, not drag it
     if(packet.entity == globals::player) {
         interpolation::snap(packet.entity);
+
+        if(has_transform) {
+            loading::on_local_patch();
+        }
     }
 
     msg::log_info("entity patch: id={} components={}", static_cast<std::uint64_t>(packet.entity), packet.components.size());
@@ -102,6 +111,8 @@ static void on_entity_client(const packet::Entity_Client& packet)
     interpolation::snap(packet.entity);
 
     session::notify_spawned();
+
+    loading::attach_player();
 }
 
 static void on_world_blocks(const packet::World_Blocks& packet)

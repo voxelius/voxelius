@@ -270,6 +270,12 @@ void session::connect(std::string_view host, std::uint16_t port, std::uint64_t i
 
 void session::disconnect(std::uint32_t reason)
 {
+    // A user-initiated disconnect returns to the menu without an error; every
+    // other reason is a failure the player has to see
+    if(reason != packet::Session_Disconnect::CLIENT_DISCONNECT && reason != packet::Session_Disconnect::CLIENT_SHUTDOWN) {
+        globals::dispatcher.trigger(SessionErrorEvent(reason));
+    }
+
     if(state && globals::peer) {
         packet::Session_Disconnect packet {};
         packet.reason = reason;

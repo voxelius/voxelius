@@ -5,6 +5,9 @@
   "gui.input_popup.cancel": "Отмена",
   "gui.progress_popup.cancel": "Отмена",
 
+  "gui.loading.title": "Загрузка уровня",
+  "gui.loading.status": "Строительство ландшафта",
+
   "protocol.disconnect.unspecified": "Соединение закрыто",
   "protocol.disconnect.client_disconnect": "Отключение клиента",
   "protocol.disconnect.client_shutdown": "Завершение работы клиента",
@@ -18,6 +21,7 @@
   "protocol.disconnect.server_shutdown": "Завершение работы сервера",
   "protocol.disconnect.cvar_rejected": "Серверная переменная отклонена",
   "protocol.disconnect.kicked": "Исключён с сервера",
+  "protocol.disconnect.world_unknown": "Неизвестный мир",
 
   "main_menu.button.play": "Играть",
   "main_menu.button.resume": "Продолжить",

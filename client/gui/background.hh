@@ -12,6 +12,7 @@ public:
     Background& set_texture(ImTextureID texture);
 
     Background& enable_scene(void);
+    Background& force_scene(bool force);
 
     virtual void layout(void) override;
 
@@ -23,6 +24,7 @@ private:
     ImVec4 m_right { 0.0f, 0.0f, 0.0f, 0.95f };
     ImTextureID m_texture { 0 };
     bool m_scene { false };
+    bool m_force_scene { false };
 };
 } // namespace gui
 

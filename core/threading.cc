@@ -165,3 +165,18 @@ void threading::wait(void)
         }
     }
 }
+
+void threading::cancel_all(void)
+{
+    if(s_threads == nullptr) {
+        return;
+    }
+
+    // The pool discards queued work, but the tasks it already picked up still
+    // read the old world; join those before the caller frees it
+    s_threads->purge();
+    threading::wait();
+
+    s_deque.clear();
+    s_finalize_queue.clear();
+}

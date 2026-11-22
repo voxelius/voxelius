@@ -1285,3 +1285,8 @@ std::size_t chunk_mesher::backlog(void)
 {
     return s_backlog;
 }
+
+bool chunk_mesher::is_pending(const ChunkPos& cpos)
+{
+    return s_pending.contains(cpos);
+}

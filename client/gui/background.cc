@@ -164,6 +164,13 @@ gui::Background& gui::Background::enable_scene(void)
     return self();
 }
 
+gui::Background& gui::Background::force_scene(bool force)
+{
+    m_force_scene = force;
+
+    return self();
+}
+
 void gui::Background::layout_scene(ImVec2 window_pos, ImVec2 window_size)
 {
     auto draw_list = ImGui::GetWindowDrawList();
@@ -202,7 +209,7 @@ void gui::Background::layout(void)
     auto window_pos = ImGui::GetWindowPos();
     auto window_size = ImGui::GetWindowSize();
 
-    if(registry.valid(globals::player)) {
+    if(registry.valid(globals::player) && !m_force_scene) {
         layout_dim(window_pos, window_size);
 
         // The pause menu sits on top of the world itself, so it needs a

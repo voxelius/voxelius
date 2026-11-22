@@ -30,6 +30,7 @@
 #include "client/input/axes.hh"
 #include "client/input/buttons.hh"
 #include "client/language.hh"
+#include "client/loading.hh"
 #include "client/main_menu.hh"
 #include "client/net/bother.hh"
 #include "client/net/host.hh"
@@ -146,6 +147,8 @@ static void zoned_update(void)
     chunk_mesher::update();
 
     camera::update();
+
+    loading::update();
 
     skybox::update();
     fog::update();
@@ -276,6 +279,8 @@ static void wrapped_main(int argc, char** argv)
 
     play_menu::init();
 
+    loading::init();
+
     client_game::init();
     skybox::init();
 
@@ -380,6 +385,7 @@ static void wrapped_main(int argc, char** argv)
     block_atlas::shutdown();
 
     settings::shutdown();
+    loading::shutdown();
     play_menu::shutdown();
     main_menu::shutdown();
 
