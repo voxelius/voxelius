@@ -272,7 +272,9 @@ void video::query_current_mode(int& width, int& height, bool& fullscreen)
 {
     width = globals::width;
     height = globals::height;
-    fullscreen = static_cast<bool>(SDL_GetWindowFullscreenMode(globals::window));
+
+    auto flags = SDL_GetWindowFlags(globals::window);
+    fullscreen = SDL_WINDOW_FULLSCREEN == (flags & SDL_WINDOW_FULLSCREEN);
 }
 
 void video::query_current_mode(int& width, int& height, int& rate, bool& fullscreen)
@@ -280,15 +282,18 @@ void video::query_current_mode(int& width, int& height, int& rate, bool& fullscr
     width = globals::width;
     height = globals::height;
 
-    auto mode = SDL_GetWindowFullscreenMode(globals::window);
+    auto flags = SDL_GetWindowFlags(globals::window);
+    fullscreen = SDL_WINDOW_FULLSCREEN == (flags & SDL_WINDOW_FULLSCREEN);
 
     rate = 0;
 
-    if(mode) {
-        rate = static_cast<int>(mode->refresh_rate);
-    }
+    if(fullscreen) {
+        auto mode = SDL_GetWindowFullscreenMode(globals::window);
 
-    fullscreen = static_cast<bool>(mode);
+        if(mode) {
+            rate = static_cast<int>(mode->refresh_rate);
+        }
+    }
 }
 
 const std::vector<SDL_DisplayMode>& video::query_fullscreen_modes(void)

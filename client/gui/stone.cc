@@ -254,9 +254,15 @@ bool gui::detail::stone_combo(const char* id, std::string_view label, ImVec2 siz
     // The shadow follows the glyph size, otherwise it turns into a soft blur
     auto shadow_offset = text_shadow_offset();
 
+    auto text_clip_max = ImVec2(item_max.x - pad - 2.0f * scale, item_max.y);
+
+    draw_list->PushClipRect(item_min, text_clip_max, true);
+
     draw_list->AddText(ImVec2(text_position.x + shadow_offset, text_position.y + shadow_offset), shadow_color, label.data(),
         label.data() + label.size());
     draw_list->AddText(text_position, text_color, label.data(), label.data() + label.size());
+
+    draw_list->PopClipRect();
 
     auto arrow_center = ImVec2(item_max.x - pad - 2.0f * scale, 0.5f * (item_min.y + item_max.y));
     auto arrow_size = 2.0f * scale;
