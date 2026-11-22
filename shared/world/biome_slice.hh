@@ -13,7 +13,22 @@ public:
     static void decode(BiomeSlice& slice, ReadBuffer& buffer);
 
     using std::array<biome_id_type, constant::CHUNK_AREA>::array;
+
+    // A slice nobody wrote to holds BIOME_ID_NULL everywhere, which is
+    // the same value a real column carries when no biome covers it
+    constexpr bool has_any(void) const;
 };
+
+constexpr bool BiomeSlice::has_any(void) const
+{
+    for(auto id : *this) {
+        if(id) {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 struct BiomeSlice_Component final {
     std::shared_ptr<BiomeSlice> ptr;

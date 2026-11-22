@@ -14,6 +14,8 @@ public:
     void insert(const ChunkPosXZ& pos, BiomeSlice biomes);
     void attach(entt::registry& registry, entt::entity entity, const ChunkPos& pos);
 
+    bool has(const ChunkPosXZ& pos) const;
+
     biome_id_type get_slow(const BlockPos& pos) const;
 
     const BiomeSlice& get(const ChunkPos& pos) const;

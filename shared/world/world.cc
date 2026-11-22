@@ -496,6 +496,11 @@ void World::insert_biomes(const ChunkPosXZ& pos, BiomeSlice biomes)
     m_biomes.insert(pos, std::move(biomes));
 }
 
+bool World::has_biomes(const ChunkPosXZ& pos) const
+{
+    return m_biomes.has(pos);
+}
+
 const BiomeSlice& World::biomes(const ChunkPos& pos) const
 {
     return m_biomes.get(pos);

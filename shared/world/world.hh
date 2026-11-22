@@ -180,6 +180,7 @@ public:
     biome_id_type biome(const BlockPos& pos) const;
 
     void insert_biomes(const ChunkPosXZ& pos, BiomeSlice biomes);
+    bool has_biomes(const ChunkPosXZ& pos) const;
     const BiomeSlice& biomes(const ChunkPos& pos) const;
     const BiomeSlice& biomes(const ChunkPosXZ& pos) const;
     biome_id_type biome_slow(const BlockPos& pos) const;

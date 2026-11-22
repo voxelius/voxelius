@@ -42,6 +42,19 @@ void BiomeMap::attach(entt::registry& registry, entt::entity entity, const Chunk
     registry.emplace<BiomeSlice_Component>(entity, std::move(component));
 }
 
+bool BiomeMap::has(const ChunkPosXZ& pos) const
+{
+    std::scoped_lock lock(m_mutex);
+
+    auto it = m_slices.find(pos);
+
+    if(it == m_slices.end()) {
+        return false;
+    }
+
+    return it->second.initialized;
+}
+
 void BiomeMap::insert(const ChunkPosXZ& pos, BiomeSlice biomes)
 {
     std::scoped_lock lock(m_mutex);

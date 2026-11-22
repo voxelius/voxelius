@@ -7,12 +7,14 @@
 
 #include "shared/constant.hh"
 #include "shared/globals.hh"
+#include "shared/world/biome_slice.hh"
 #include "shared/world/chunk.hh"
 #include "shared/world/world.hh"
 
 #include "server/entity/entity_loader.hh"
 #include "server/universe.hh"
 #include "server/utils/region.hh"
+#include "server/world/generator_map.hh"
 #include "server/world/world.hh"
 #include "server/world/worldgen.hh"
 #include "server/world/zvox_file.hh"
@@ -38,6 +40,7 @@ private:
     std::shared_ptr<World> m_world;
     ChunkPos m_pos;
     Chunk::Snapshot m_snapshot;
+    std::unique_ptr<BiomeSlice> m_biomes;
     bool m_found { false };
 };
 
@@ -239,6 +242,31 @@ void LoadTask::process(void)
         Chunk::decode_dat(m_snapshot, buffer);
         m_found = true;
     }
+
+    if(m_found) {
+        // A chunk file holds blocks, the tick schedule and light but no biomes,
+        // so a column loaded from disk has to rebuild them from the generator
+        // TODO: actually store biomes somewhere, maybe have specific region files
+        // biome storage; this would allow changing biomes for specific slices and
+        // even specific 2D block positions and actually preserving them across saves
+        auto world = std::static_pointer_cast<ServerWorld>(m_world);
+
+        if(auto generator = world->generator()) {
+            auto cpos_xz = ChunkPosXZ(m_pos.x(), m_pos.z());
+
+            if(m_world->has_biomes(cpos_xz)) {
+                return;
+            }
+
+            auto biomes = std::make_unique<BiomeSlice>();
+
+            generator->generate_biomes(world.get(), cpos_xz, *biomes);
+
+            if(biomes->has_any()) {
+                m_biomes = std::move(biomes);
+            }
+        }
+    }
 }
 
 void LoadTask::finalize(void)
@@ -248,6 +276,12 @@ void LoadTask::finalize(void)
     if(m_found) {
         auto chunk = m_world->create_chunk(m_pos);
         chunk->restore(std::move(m_snapshot), globals::current_tick);
+
+        if(m_biomes) {
+            auto cpos_xz = ChunkPosXZ(m_pos.x(), m_pos.z());
+            m_world->insert_biomes(cpos_xz, std::move(*m_biomes));
+            m_biomes.reset();
+        }
 
         // Not ChunkUpdateEvent: loaded-from-disk chunks are identical
         // to what's saved and must NOT be marked ChunkDirtyMarker.

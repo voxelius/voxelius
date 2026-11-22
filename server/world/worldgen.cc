@@ -69,11 +69,7 @@ void WorldgenTask::finalize(void)
     chunk->set_blocks(std::move(m_blocks));
 
     if(m_biomes) {
-        auto has_biome = std::any_of(m_biomes->cbegin(), m_biomes->cend(), [](biome_id_type id) {
-            return static_cast<bool>(id);
-        });
-
-        if(has_biome) {
+        if(m_biomes->has_any()) {
             auto cpos_xz = ChunkPosXZ(m_pos.x(), m_pos.z());
             m_world->insert_biomes(cpos_xz, std::move(*m_biomes));
         }
