@@ -287,7 +287,7 @@ bool gui::detail::stone_popup_begin(const char* id, ImVec2 item_min, ImVec2 item
 
     ImGui::SetNextWindowPos(popup_pos, ImGuiCond_Appearing);
 
-    return ImGui::BeginPopup(id);
+    return ImGui::BeginPopup(id, ImGuiWindowFlags_NoMove);
 }
 
 void gui::detail::stone_popup_end(bool open)
