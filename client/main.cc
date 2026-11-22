@@ -250,7 +250,7 @@ static void wrapped_main(int argc, char** argv)
 
     boot::init();
 
-    boot::add("net", "gui.boot.stage.net", 1.0f, [] {
+    boot::add("net", "boot.stage.net", 1.0f, [] {
         bother::init();
 
         host::init();
@@ -263,7 +263,7 @@ static void wrapped_main(int argc, char** argv)
         return true;
     });
 
-    boot::add("mods", "gui.boot.stage.mods", 4.0f, [] {
+    boot::add("mods", "boot.stage.mods", 4.0f, [] {
         shared_game::init();
         client_game::init_world();
 
@@ -274,19 +274,19 @@ static void wrapped_main(int argc, char** argv)
         return true;
     });
 
-    boot::add("render", "gui.boot.stage.render", 2.0f, [] {
+    boot::add("render", "boot.stage.render", 2.0f, [] {
         head::detail::init_renderers();
 
         return true;
     });
 
-    boot::add("atlas", "gui.boot.stage.atlas", 3.0f, [] {
+    boot::add("atlas", "boot.stage.atlas", 3.0f, [] {
         block_atlas::init();
 
         return true;
     });
 
-    boot::add("gui", "gui.boot.stage.gui", 2.0f, [] {
+    boot::add("gui", "boot.stage.gui", 2.0f, [] {
         buttons::init();
         axes::init();
         gui::ButtonBind::init();
@@ -308,14 +308,14 @@ static void wrapped_main(int argc, char** argv)
         return true;
     });
 
-    boot::add("config", "gui.boot.stage.config", 1.0f, [] {
+    boot::add("config", "boot.stage.config", 1.0f, [] {
         cvar::exec_from("client.conf");
         cvar::exec_from("client.user.conf");
 
         return true;
     });
 
-    boot::add("video", "gui.boot.stage.video", 1.0f, [] {
+    boot::add("video", "boot.stage.video", 1.0f, [] {
         static bool s_started = false;
 
         if(!s_started) {
@@ -328,7 +328,7 @@ static void wrapped_main(int argc, char** argv)
         return !video::mode_pending;
     });
 
-    boot::add("assets", "gui.boot.stage.assets", 3.0f, [] {
+    boot::add("assets", "boot.stage.assets", 3.0f, [] {
         language::init_late();
 
         block_atlas::init_late();
@@ -338,7 +338,7 @@ static void wrapped_main(int argc, char** argv)
         return true;
     });
 
-    boot::add("world", "gui.boot.stage.world", 2.0f, [] {
+    boot::add("world", "boot.stage.world", 2.0f, [] {
         shared_game::init_late();
 
         chunk_mesher::init();
@@ -346,7 +346,7 @@ static void wrapped_main(int argc, char** argv)
         return true;
     });
 
-    boot::add("menu", "gui.boot.stage.menu", 2.0f, [] {
+    boot::add("menu", "boot.stage.menu", 2.0f, [] {
         main_menu::init_late();
 
         client_game::init_late();

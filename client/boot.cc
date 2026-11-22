@@ -40,8 +40,8 @@ constexpr static float LINE_GAP = 4.0f;
 
 constexpr static std::string_view SPINNER_FRAMES[] = { "|", "/", "-", "\\" };
 
-constexpr static std::string_view READY_KEY = "gui.boot.stage.ready";
-constexpr static std::string_view HINT_KEY = "gui.boot.hint";
+constexpr static std::string_view READY_KEY = "boot.stage.ready";
+constexpr static std::string_view HINT_KEY = "boot.hint";
 
 constexpr static ImGuiWindowFlags BOOT_WINDOW_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration
     | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoSavedSettings;
