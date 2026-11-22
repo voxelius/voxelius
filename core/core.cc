@@ -4,6 +4,7 @@
 
 #include "core/cmdline.hh"
 #include "core/exception.hh"
+#include "core/res/image.hh"
 #include "core/threading.hh"
 #include "core/utils/physfs.hh"
 
@@ -90,6 +91,8 @@ void core::setup(int argc, char** argv)
 
     auto set_write_dir_ok = PHYSFS_setWriteDir(s_userpath.string().c_str());
     vx::throw_if_not_fmt(set_write_dir_ok, "failed to setwritedir {}: {}", s_userpath.string(), utils::physfs_error());
+
+    Image::register_resource();
 
     threading::init();
 }

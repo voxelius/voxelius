@@ -12,13 +12,11 @@
 #include "shared/cvar/commands.hh"
 #include "shared/game.hh"
 #include "shared/splash.hh"
-#include "shared/world/weather.hh"
-#include "shared/world/world.hh"
 
 #include "client/api/libraries.hh"
+#include "client/boot.hh"
 #include "client/camera.hh"
 #include "client/console.hh"
-#include "client/constant.hh"
 #include "client/fog.hh"
 #include "client/fonts.hh"
 #include "client/game.hh"
@@ -26,6 +24,7 @@
 #include "client/gui/button_bind.hh"
 #include "client/gui/screen.hh"
 #include "client/gui/stone.hh"
+#include "client/gui/widget.hh"
 #include "client/head.hh"
 #include "client/input/axes.hh"
 #include "client/input/buttons.hh"
@@ -67,8 +66,17 @@ static void handle_events(void)
 
     while(SDL_PollEvent(&event)) {
         if(event.type == SDL_EVENT_QUIT) {
+            if(boot::active()) {
+                boot::request_quit();
+                continue;
+            }
+
             s_is_running.store(false);
             return;
+        }
+
+        if(boot::input(event)) {
+            continue;
         }
 
         switch(event.type) {
@@ -153,19 +161,7 @@ static void zoned_update(void)
     skybox::update();
     fog::update();
 
-    int width, height;
-    SDL_GetWindowSize(globals::window, &width, &height);
-
-    auto scale_x = std::max(1.0f, std::floor(static_cast<float>(width) / static_cast<float>(constant::BASE_WIDTH)));
-    auto scale_y = std::max(1.0f, std::floor(static_cast<float>(height) / static_cast<float>(constant::BASE_HEIGHT)));
-    auto scale_min = std::min(scale_x, scale_y);
-
-    // ImGui 1.92 wants FontScaleMain instead of the legacy
-    // FontGlobalScale: only the former is visible to GetFontSize(),
-    // so the widget metrics follow the text instead of staying a step behind
-    auto& style = ImGui::GetStyle();
-    style.FontScaleMain = scale_min;
-    globals::gui_scale = static_cast<unsigned>(scale_min);
+    gui::update_scale();
 }
 
 static void zoned_render(void)
@@ -180,6 +176,8 @@ static void zoned_render(void)
         }
 
         client_game::layout();
+
+        boot::render_fade();
 
         head::present();
     }
@@ -242,20 +240,6 @@ static void wrapped_main(int argc, char** argv)
 
     Texture2D::register_resource();
 
-    bother::init();
-
-    host::init();
-    session::init();
-    receive::init();
-    replication::init();
-
-    api_client::register_libraries();
-
-    shared_game::init();
-    client_game::init_world();
-
-    splash::init(SPLASH_CLIENT);
-
     video::init();
     head::init();
     camera::init();
@@ -264,45 +248,107 @@ static void wrapped_main(int argc, char** argv)
     fonts::load();
     language::init();
 
-    block_atlas::init();
+    boot::init();
 
-    buttons::init();
-    axes::init();
-    gui::ButtonBind::init();
-    gui::detail::stone_init();
+    boot::add("net", "gui.boot.stage.net", 1.0f, [] {
+        bother::init();
 
-    settings::init();
-    main_menu::init();
+        host::init();
+        session::init();
+        receive::init();
+        replication::init();
 
-    console::init();
-    console::init_late();
+        api_client::register_libraries();
 
-    play_menu::init();
+        return true;
+    });
 
-    loading::init();
+    boot::add("mods", "gui.boot.stage.mods", 4.0f, [] {
+        shared_game::init();
+        client_game::init_world();
 
-    client_game::init();
-    skybox::init();
+        splash::init(SPLASH_CLIENT);
 
-    cvar::exec_from("client.conf");
-    cvar::exec_from("client.user.conf");
+        video::update_window_title();
 
-    video::init_late();
-    head::init_late();
+        return true;
+    });
 
-    language::init_late();
+    boot::add("render", "gui.boot.stage.render", 2.0f, [] {
+        head::detail::init_renderers();
 
-    block_atlas::init_late();
-    fluid_cache::init_late();
-    bmodel_cache::init_late();
+        return true;
+    });
 
-    shared_game::init_late();
+    boot::add("atlas", "gui.boot.stage.atlas", 3.0f, [] {
+        block_atlas::init();
 
-    chunk_mesher::init();
+        return true;
+    });
 
-    main_menu::init_late();
+    boot::add("gui", "gui.boot.stage.gui", 2.0f, [] {
+        buttons::init();
+        axes::init();
+        gui::ButtonBind::init();
+        gui::detail::stone_init();
 
-    client_game::init_late();
+        settings::init();
+        main_menu::init();
+
+        console::init();
+        console::init_late();
+
+        play_menu::init();
+
+        loading::init();
+
+        client_game::init();
+        skybox::init();
+
+        return true;
+    });
+
+    boot::add("config", "gui.boot.stage.config", 1.0f, [] {
+        cvar::exec_from("client.conf");
+        cvar::exec_from("client.user.conf");
+
+        return true;
+    });
+
+    boot::add("video", "gui.boot.stage.video", 1.0f, [] {
+        video::init_late();
+        head::init_late();
+
+        return true;
+    });
+
+    boot::add("assets", "gui.boot.stage.assets", 3.0f, [] {
+        language::init_late();
+
+        block_atlas::init_late();
+        fluid_cache::init_late();
+        bmodel_cache::init_late();
+
+        return true;
+    });
+
+    boot::add("world", "gui.boot.stage.world", 2.0f, [] {
+        shared_game::init_late();
+
+        chunk_mesher::init();
+
+        return true;
+    });
+
+    boot::add("menu", "gui.boot.stage.menu", 2.0f, [] {
+        main_menu::init_late();
+
+        client_game::init_late();
+
+        return true;
+    });
+
+    boot::start();
 
 #ifndef NDEBUG
     msg::log_warning("debug build");
@@ -351,17 +397,28 @@ static void wrapped_main(int argc, char** argv)
 
         handle_events();
 
-        zoned_fixed_update();
+        boot::update();
 
-        zoned_update();
+        if(boot::quit_requested() && !boot::active()) {
+            s_is_running.store(false);
+        }
 
-        zoned_render();
+        if(boot::active()) {
+            boot::render();
+        }
+        else {
+            zoned_fixed_update();
 
-        FrameMark;
+            zoned_update();
 
-        zoned_fixed_update_late();
+            zoned_render();
 
-        zoned_update_late();
+            FrameMark;
+
+            zoned_fixed_update_late();
+
+            zoned_update_late();
+        }
 
         globals::window_framecount += 1;
 
@@ -386,6 +443,7 @@ static void wrapped_main(int argc, char** argv)
 
     settings::shutdown();
     loading::shutdown();
+    boot::shutdown();
     play_menu::shutdown();
     main_menu::shutdown();
 

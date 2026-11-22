@@ -3,6 +3,12 @@
 
 class Camera;
 
+namespace head::detail
+{
+void begin_frame(void);
+void init_renderers(void);
+} // namespace head::detail
+
 namespace head
 {
 void init(void);

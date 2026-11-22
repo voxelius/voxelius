@@ -8,6 +8,14 @@ The `video` subsystem creates the window and resolves the video mode. At startup
 
 The `head` subsystem creates the actual OpenGL context on top of the window `video` made. This split exists for a reason: the context, and everything that depends on it (shaders, framebuffers, ImGui), can be destroyed and rebuilt without recreating the window itself.
 
+## Startup screen
+
+The client draws a boot screen from its first frame, while the rest of the startup runs. `client/boot.cc` owns the screen, and `client/main.cc` registers the startup steps in order as small lambdas. The main loop runs at least one stage per frame and stops after a six millisecond budget, so the window still handles input, resize and close. Every stage reports progress through its weight and may report a part of itself with `boot::set_progress`.
+
+The screen is a black background, a centered texture with its alpha channel, the current stage text, a progress bar, and the last five `msg` records in the bottom left corner. A texture loads with nearest filtering and an integer scale, so its pixels stay sharp. The textures are a fixed table in the client code, with an optional month and day range per entry; `-bootsplash <name>` forces one entry and `-noboot` hides the screen. `-bootdelay <ms>` waits that long after each stage, and `-bootstep` waits for a key press instead. Use them to read the stage log.
+
+When the last stage finishes, the screen stays for 1.2 seconds and then fades out. A key, a mouse button or the wheel skips this wait, and only then: the startup itself cannot be skipped. The main menu is built by the last stage, so it is ready when the screen goes away. Input does not reach the interface during the boot, except for the window events.
+
 ## Shader programs and variants
 
 A `ShaderProgram` loads a vertex and a fragment source file, named by an [identifier](arch-core.md), and compiles them into one OpenGL program. Each source file can declare numbered variant macros with a `#pragma variant N NAME` line. The shader compiler turns each declared variant into a `#define`, with the value set at runtime.

@@ -2,8 +2,6 @@
 
 #include "shared/game.hh"
 
-#include "core/res/image.hh"
-
 #include "shared/component/head.hh"
 #include "shared/component/move_mode.hh"
 #include "shared/component/player.hh"
@@ -21,8 +19,6 @@
 
 void shared_game::init(void)
 {
-    Image::register_resource();
-
     BlockCollision::register_resource();
     BlockModel::register_resource();
     Feature::register_resource();

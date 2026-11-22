@@ -153,8 +153,10 @@ differently.
 |Functions and methods|`snake_case`|`block_registry::name_of()`|
 |Public fields and members|`snake_case`|`BlockDefinition::model_offset`|
 |Private fields and members|`m_snake_case`|`Chunk::m_blocks`|
-|Constants|`UPPER_SNAKE_CASE`|`BASE_WIDTH`|
+|Constants and enum values|`UPPER_SNAKE_CASE`|`BASE_WIDTH`, `LOADING_IDLE`|
 
+- An enumeration value is a constant: the enum type is `snake_case` (`loading_stage`), and every value is
+  `UPPER_SNAKE_CASE` (`LOADING_IDLE`). This holds for `enum` and `enum class`.
 - Two names must differ by more than capitalization: `world_scope` and `WorldScope` read as the same name, so keep one of them.
 - A cvar binding takes the cvar name and the `_binding` suffix:
   `auto& gr_weather_cycle_binding = cvar::bind_var(weather, "gr_weather_cycle");`, not `weather_binding`.

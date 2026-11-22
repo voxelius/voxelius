@@ -238,6 +238,43 @@ static void on_pixel_size_changed(void)
     s_pixel_size_dirty = true;
 }
 
+void head::detail::begin_frame(void)
+{
+    int width, height;
+    SDL_GetWindowSizeInPixels(globals::window, &width, &height);
+    glViewport(0, 0, width, height);
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+    ImGui::NewFrame();
+}
+
+void head::detail::init_renderers(void)
+{
+    auto transparency_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "transparency");
+    auto transparency_ok = s_transparency.setup(transparency_id);
+    vx::throw_if_not_fmt(transparency_ok, "{}: setup failed", transparency_id.full_string());
+
+    su_diffuse_color = s_transparency.add_uniform("u_DiffuseColor");
+    su_diffuse_depth = s_transparency.add_uniform("u_DiffuseDepth");
+    su_alpha_color = s_transparency.add_uniform("u_AlphaColor");
+    su_alpha_depth = s_transparency.add_uniform("u_AlphaDepth");
+    su_fluid_color = s_transparency.add_uniform("u_FluidColor");
+    su_fluid_depth = s_transparency.add_uniform("u_FluidDepth");
+    su_cloud_color = s_transparency.add_uniform("u_CloudColor");
+    su_cloud_depth = s_transparency.add_uniform("u_CloudDepth");
+    su_cloud_range = s_transparency.add_uniform("u_CloudRange");
+    su_camera_range = s_transparency.add_uniform("u_CameraRange");
+
+    fog::init();
+
+    chunk_vbo::init();
+    chunk_renderer::init();
+    cloud_renderer::init();
+    sky_renderer::init();
+    outline::init();
+}
+
 void head::init(void)
 {
     auto& r_pixel_size_binding = cvar::bind_var(s_head_pixel_size, "r_pixel_size");
@@ -274,31 +311,6 @@ void head::init(void)
 
     auto& io = ImGui::GetIO();
     io.IniFilename = nullptr;
-
-    auto transparency_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "transparency");
-    auto transparency_ok = s_transparency.setup(transparency_id);
-    vx::throw_if_not_fmt(transparency_ok, "{}: setup failed", transparency_id.full_string());
-
-    su_diffuse_color = s_transparency.add_uniform("u_DiffuseColor");
-    su_diffuse_depth = s_transparency.add_uniform("u_DiffuseDepth");
-    su_alpha_color = s_transparency.add_uniform("u_AlphaColor");
-    su_alpha_depth = s_transparency.add_uniform("u_AlphaDepth");
-    su_fluid_color = s_transparency.add_uniform("u_FluidColor");
-    su_fluid_depth = s_transparency.add_uniform("u_FluidDepth");
-    su_cloud_color = s_transparency.add_uniform("u_CloudColor");
-    su_cloud_depth = s_transparency.add_uniform("u_CloudDepth");
-    su_cloud_range = s_transparency.add_uniform("u_CloudRange");
-    su_camera_range = s_transparency.add_uniform("u_CameraRange");
-
-    fog::init();
-
-    chunk_vbo::init();
-    chunk_renderer::init();
-    cloud_renderer::init();
-    sky_renderer::init();
-    outline::init();
-
-    SDL_ShowWindow(globals::window);
 
     globals::dispatcher.sink<SDL_WindowEvent>().connect<&on_sdl_window_event>();
 }
@@ -342,9 +354,10 @@ bool head::prepare(void)
 {
     ZoneScoped;
 
+    detail::begin_frame();
+
     int width, height;
     SDL_GetWindowSizeInPixels(globals::window, &width, &height);
-    glViewport(0, 0, width, height);
 
     if(s_pixel_size_dirty || s_diffuse.fbo == 0) {
         update_framebuffer(width, height);
@@ -353,10 +366,6 @@ bool head::prepare(void)
 
     glClearColor(0.0f, 0.0f, 0.5f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL3_NewFrame();
-    ImGui::NewFrame();
 
     return true;
 }

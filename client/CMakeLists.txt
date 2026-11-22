@@ -126,6 +126,8 @@ add_executable(vclient
     "${CMAKE_CURRENT_LIST_DIR}/world/sky_renderer.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/skybox.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/skybox.hh"
+    "${CMAKE_CURRENT_LIST_DIR}/boot.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/boot.hh"
     "${CMAKE_CURRENT_LIST_DIR}/camera.cc"
     "${CMAKE_CURRENT_LIST_DIR}/camera.hh"
     "${CMAKE_CURRENT_LIST_DIR}/console.cc"

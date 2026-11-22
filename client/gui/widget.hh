@@ -31,6 +31,11 @@ protected:
 };
 } // namespace gui
 
+namespace gui
+{
+void update_scale(void);
+} // namespace gui
+
 constexpr bool gui::Widget::visible(void) const
 {
     return m_visible;

@@ -137,15 +137,31 @@ void language::init(void)
 
     json_value_free(jsonv);
 
-    // This is temporary! This value will
-    // be overriden in init_late after the
-    // cvar system updates the current language
-    s_current_language = s_manifest.cend();
+    // The boot screen is drawn before the mods load, so only the builtin
+    // translations are available here; init_late reloads every namespace
+    auto english = s_code_map.find(DEFAULT_LANGUAGE);
+    vx::throw_if_fmt(english == s_code_map.cend(), "{}: {} missing", manifest_path, DEFAULT_LANGUAGE);
+
+    s_current_language = english->second;
+    read_mod_translations(constant::BUILTIN_NAME_SPACE);
 }
 
 void language::init_late(void)
 {
     update_language();
+
+    reload();
+}
+
+void language::reload(void)
+{
+    s_translations.clear();
+
+    for(auto& ctx : mod_loader::all()) {
+        read_mod_translations(ctx.name_space());
+    }
+
+    globals::dispatcher.trigger(LanguageUpdateEvent(s_current_language));
 }
 
 void language::set(language_iterator_type lang)

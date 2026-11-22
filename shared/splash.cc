@@ -55,7 +55,12 @@ void splash::init(std::string_view filename)
 
 std::string_view splash::get(void)
 {
-    std::uniform_int_distribution<std::size_t> dist(0, s_lines.size() - 1);
+    if(s_lines.empty()) {
+        return {};
+    }
+    else {
+        std::uniform_int_distribution<std::size_t> dist(0, s_lines.size() - 1);
 
-    return s_lines.at(dist(s_random));
+        return s_lines.at(dist(s_random));
+    }
 }

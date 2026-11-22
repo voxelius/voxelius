@@ -36,6 +36,7 @@ void init_late(void);
 namespace language
 {
 void set(language_iterator_type lang);
+void reload(void);
 } // namespace language
 
 namespace language
