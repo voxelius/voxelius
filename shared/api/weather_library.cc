@@ -5,12 +5,12 @@
 #include "core/identifier.hh"
 #include "core/msg/log.hh"
 
-#include "shared/globals.hh"
 #include "shared/mod_context.hh"
-#include "shared/utils/biome.hh"
 #include "shared/utils/lua.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
+#include "shared/world/world.hh"
+#include "shared/world/world_scope.hh"
 
 static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
 {
@@ -23,7 +23,8 @@ static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
     }
 
     for(unsigned n = 1; n < 10000; ++n) {
-        auto candidate = Identifier::from_parts(id.name_space(), std::format("{}~{}", id.value(), n));
+        auto suffix = std::format("{}~{}", id.value(), n);
+        auto candidate = Identifier::from_parts(id.name_space(), suffix);
 
         if(is_free(candidate)) {
             msg::log_warning("weather.add: {} is already registered, using {} instead", id.full_string(), candidate.full_string());
@@ -42,7 +43,7 @@ static WeatherCallback parse_callback(lua_State* L, int table_idx, const char* k
     if(lua_isfunction(L, -1)) {
         WeatherCallback callback {};
         callback.state = ctx->lua_state();
-        callback.callback_ref = luaL_ref(L, LUA_REGISTRYINDEX); // pops the function
+        callback.callback_ref = luaL_ref(L, LUA_REGISTRYINDEX); // Pops the function
         return callback;
     }
 
@@ -87,59 +88,6 @@ static bool fail(lua_State* L, int base, std::string_view message)
     lua_pushlstring(L, message.data(), message.size());
 
     return false;
-}
-
-static bool parse_realms(lua_State* L, int table_idx, WeatherTypeDefinition& def)
-{
-    auto base = lua_gettop(L);
-
-    lua_getfield(L, table_idx, "realms");
-
-    if(lua_isnoneornil(L, -1)) {
-        lua_settop(L, base);
-        def.realms_bits = 1U << BIOME_REALM_SURFACE;
-        return true;
-    }
-
-    if(lua_istable(L, -1)) {
-        auto count = static_cast<std::size_t>(lua_rawlen(L, -1));
-
-        for(std::size_t i = 0; i < count; ++i) {
-            lua_rawgeti(L, -1, static_cast<lua_Integer>(i + 1));
-
-            auto value = utils::require_integer(L, -1);
-
-            if(!value.has_value()) {
-                return fail(L, base);
-            }
-
-            if(value.value() < 0 || value.value() >= BIOME_REALM_COUNT) {
-                return fail(L, base, "realm value out of range");
-            }
-
-            def.realms_bits |= 1U << static_cast<unsigned>(value.value());
-
-            lua_pop(L, 1);
-        }
-
-        lua_settop(L, base);
-        return true;
-    }
-
-    auto bitmask = utils::require_integer(L, -1);
-
-    if(!bitmask.has_value()) {
-        return fail(L, base);
-    }
-
-    if(bitmask.value() < 0) {
-        return fail(L, base, "realms bitmask must be non-negative");
-    }
-
-    def.realms_bits = static_cast<std::uint32_t>(bitmask.value());
-
-    lua_settop(L, base);
-    return true;
 }
 
 static bool parse_cloud_body(lua_State* L, int cloud_idx, CloudBody& cloud)
@@ -212,7 +160,9 @@ static bool parse_cloud(lua_State* L, int def_idx, WeatherTypeDefinition& def)
 
     CloudBody cloud {};
 
-    if(!parse_cloud_body(L, lua_gettop(L), cloud)) {
+    auto cloud_idx = lua_gettop(L);
+
+    if(!parse_cloud_body(L, cloud_idx, cloud)) {
         return fail(L, base);
     }
 
@@ -282,11 +232,12 @@ static bool parse_precipitation(lua_State* L, int def_idx, WeatherTypeDefinition
 
 static bool parse_definition(lua_State* L, int def_idx, WeatherTypeDefinition& def, ModContext* ctx)
 {
+    auto base = lua_gettop(L);
+
     const std::array numbers = {
         std::make_pair("intensity", &def.intensity),
         std::make_pair("sky_visibility", &def.sky_visibility),
         std::make_pair("light", &def.light_scale),
-        std::make_pair("wind", &def.wind_speed),
         std::make_pair("strikes_per_minute", &def.strikes_per_minute),
         std::make_pair("strike_radius", &def.strike_radius),
     };
@@ -303,26 +254,38 @@ static bool parse_definition(lua_State* L, int def_idx, WeatherTypeDefinition& d
 
     def.sky_visibility = std::clamp(def.sky_visibility, 0.0f, 1.0f);
 
-    // The weight decides how big a slice of the type grid the type owns,
+    // The weight stretches the type's cell around its target,
     // which is the only thing that makes one weather more common than another
-    auto weight = utils::opt_integer(L, def_idx, "weight", static_cast<lua_Integer>(def.weight));
+    auto weight = utils::opt_number(L, def_idx, "weight", static_cast<lua_Number>(def.weight));
 
     if(!weight.has_value()) {
-        return false;
+        return fail(L, base, "weight must be a number");
     }
 
-    if(weight.value() < 0) {
-        lua_pushliteral(L, "weight must be non-negative");
-        return false;
+    if(weight.value() <= 0.0) {
+        return fail(L, base, "weight must be positive");
     }
 
-    def.weight = static_cast<std::uint32_t>(weight.value());
+    def.weight = static_cast<float>(weight.value());
+
+    // The target places the type in the two-axis climate square that
+    // the two noise grids span; the nearest target wins at a point
+    auto target = utils::opt_fvec<2>(L, def_idx, "target", Eigen::Vector<lua_Number, 2>(def.target.x(), def.target.y()));
+
+    if(!target.has_value()) {
+        return fail(L, base, "target must hold two numbers");
+    }
+
+    if(target->x() < 0.0 || target->x() > 1.0 || target->y() < 0.0 || target->y() > 1.0) {
+        return fail(L, base, "target must be in 0 to 1 on both axes");
+    }
+
+    def.target = target->cast<float>();
 
     def.on_tick = parse_callback(L, def_idx, "on_tick", ctx);
     def.on_strike = parse_callback(L, def_idx, "on_strike", ctx);
 
-    return parse_realms(L, def_idx, def) && parse_cloud(L, def_idx, def) && parse_precipitation(L, def_idx, def)
-        && parse_color(L, def_idx, "sky_tint", def.sky_tint);
+    return parse_cloud(L, def_idx, def) && parse_precipitation(L, def_idx, def) && parse_color(L, def_idx, "sky_tint", def.sky_tint);
 }
 
 static std::optional<weather_type_id> add_definition(lua_State* L, ModContext* ctx, const char* raw_name, int def_idx)
@@ -363,50 +326,66 @@ static int api_add(lua_State* L)
     return 1;
 }
 
-static int api_state(lua_State* L)
+static bool state(lua_State* L)
 {
-    auto raw_realm = luaL_checkinteger(L, 1);
+    auto world = WorldScope::active();
 
-    if(raw_realm < 0 || raw_realm >= BIOME_REALM_COUNT) {
-        lua_pushliteral(L, "realm out of range");
-        return lua_error(L);
+    if(world == nullptr) {
+        lua_pushliteral(L, "no active world");
+        return false;
     }
 
-    auto realm = static_cast<biome_realm>(raw_realm);
-    auto& state = weather::state(realm);
+    auto& weather_state = world->weather();
 
     lua_newtable(L);
 
-    lua_pushnumber(L, static_cast<lua_Number>(state.types.scale));
-    lua_setfield(L, -2, "types_scale");
+    lua_pushinteger(L, static_cast<lua_Integer>(weather_state.seed()));
+    lua_setfield(L, -2, "seed");
 
-    lua_pushinteger(L, static_cast<lua_Integer>(state.types.seed));
-    lua_setfield(L, -2, "types_seed");
+    lua_pushinteger(L, static_cast<lua_Integer>(world->weather_tick));
+    lua_setfield(L, -2, "tick");
 
-    lua_pushnumber(L, static_cast<lua_Number>(state.detail.scale));
-    lua_setfield(L, -2, "detail_scale");
+    auto wind = weather_state.wind_direction() * weather_state.wind_speed();
 
-    lua_pushinteger(L, static_cast<lua_Integer>(state.detail.seed));
-    lua_setfield(L, -2, "detail_seed");
-
-    lua_pushnumber(L, static_cast<lua_Number>(state.wind.x()));
+    lua_pushnumber(L, static_cast<lua_Number>(wind.x()));
     lua_setfield(L, -2, "wind_x");
 
-    lua_pushnumber(L, static_cast<lua_Number>(state.wind.y()));
+    lua_pushnumber(L, static_cast<lua_Number>(wind.y()));
     lua_setfield(L, -2, "wind_z");
+
+    lua_pushnumber(L, static_cast<lua_Number>(weather_state.wind_speed()));
+    lua_setfield(L, -2, "wind_speed");
+
+    return true;
+}
+
+static int api_state(lua_State* L)
+{
+    if(!state(L)) {
+        return lua_error(L);
+    }
 
     return 1;
 }
 
-static int api_sample(lua_State* L)
+static bool sample(lua_State* L)
 {
     auto x = luaL_checknumber(L, 1);
-    auto y = luaL_checknumber(L, 2);
-    auto z = luaL_checknumber(L, 3);
+    auto z = luaL_checknumber(L, 2);
 
-    auto realm = utils::realm_of_y(static_cast<float>(y));
-    auto coverage = weather::coverage(realm, static_cast<float>(x), static_cast<float>(z));
-    auto type = weather::type_at(realm, static_cast<float>(x), static_cast<float>(z));
+    auto world = WorldScope::active();
+
+    if(world == nullptr) {
+        lua_pushliteral(L, "no active world");
+        return false;
+    }
+
+    auto& definition = world->definition();
+    auto& weather_state = world->weather();
+    auto& allowed = definition.weather;
+
+    auto coverage = weather_state.coverage(allowed, static_cast<float>(x), static_cast<float>(z), world->weather_tick);
+    auto type = weather_state.type_at(allowed, static_cast<float>(x), static_cast<float>(z), world->weather_tick);
 
     lua_newtable(L);
 
@@ -427,52 +406,26 @@ static int api_sample(lua_State* L)
 
     lua_setfield(L, -2, "precipitation");
 
-    return 1;
+    return true;
 }
 
-static int api_force(lua_State* L)
+static int api_sample(lua_State* L)
 {
-    auto raw_realm = luaL_checkinteger(L, 1);
-    auto raw_name = luaL_checkstring(L, 2);
-
-    if(raw_realm < 0 || raw_realm >= BIOME_REALM_COUNT) {
-        lua_pushliteral(L, "realm out of range");
+    if(!sample(L)) {
         return lua_error(L);
     }
 
-    auto type = weather_registry::resolve(raw_name);
-
-    if(type == WEATHER_ID_NULL) {
-        lua_pushfstring(L, "unknown weather: %s", raw_name);
-        return lua_error(L);
-    }
-
-    auto x = luaL_optnumber(L, 3, 0.0);
-    auto z = luaL_optnumber(L, 4, 0.0);
-
-    weather::force_at(static_cast<biome_realm>(raw_realm), type, static_cast<float>(x), static_cast<float>(z));
-
-    lua_pushboolean(L, true);
     return 1;
 }
 
-void api::open_weather_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
+void api_shared::open_weather(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 {
     assert(lua);
     assert(ctx);
 
     auto L = lua.get();
 
-    lua_newtable(L); // weather
-
-    lua_pushinteger(L, BIOME_REALM_SURFACE);
-    lua_setfield(L, -2, "REALM_SURFACE");
-    lua_pushinteger(L, BIOME_REALM_UNDERGROUND);
-    lua_setfield(L, -2, "REALM_UNDERGROUND");
-    lua_pushinteger(L, BIOME_REALM_THE_DEPTHS);
-    lua_setfield(L, -2, "REALM_THE_DEPTHS");
-    lua_pushinteger(L, BIOME_REALM_SKY);
-    lua_setfield(L, -2, "REALM_SKY");
+    lua_newtable(L); // Weather
 
     lua_pushinteger(L, static_cast<lua_Integer>(precipitation_kind::NONE));
     lua_setfield(L, -2, "PRECIP_NONE");
@@ -490,9 +443,6 @@ void api::open_weather_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     lua_pushcfunction(L, &api_sample);
     lua_setfield(L, -2, "sample");
-
-    lua_pushcfunction(L, &api_force);
-    lua_setfield(L, -2, "force");
 
     lua_setglobal(L, "weather");
 }

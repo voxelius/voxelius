@@ -157,7 +157,10 @@ void gui::CommandLine::layout(void)
     if(m_button_label.size()) {
         ImGui::SameLine();
 
-        auto button_size = ImVec2(ImGui::GetContentRegionAvail().x, ImGui::GetFrameHeight());
+        auto avail = ImGui::GetContentRegionAvail();
+        auto height = ImGui::GetFrameHeight();
+
+        auto button_size = ImVec2(avail.x, height);
 
         if(gui::detail::stone_button(m_button_label.c_str(), m_button_label, button_size)) {
             submitted = true;

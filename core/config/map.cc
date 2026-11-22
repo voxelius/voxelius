@@ -78,7 +78,16 @@ void config::Map::set_raw_string(map_slot_type slot, std::string_view value)
     }
 }
 
-config::map_slot_type config::Map::find_slot(std::string_view key) const /* E */
+std::uint64_t config::Map::generation(map_slot_type slot) const
+{
+    if(slot >= m_generations.size()) {
+        return 0;
+    }
+
+    return m_generations[slot];
+}
+
+config::map_slot_type config::Map::find_slot(std::string_view key) const
 {
     auto it = m_index.find(key);
 
@@ -117,15 +126,6 @@ void config::Map::purge(void)
     m_index.clear();
 }
 
-std::uint64_t config::Map::generation(map_slot_type slot) const
-{
-    if(slot >= m_generations.size()) {
-        return 0;
-    }
-
-    return m_generations[slot];
-}
-
 void config::Map::load(std::istream& stream)
 {
     std::string line;
@@ -152,7 +152,9 @@ void config::Map::load(std::istream& stream)
         kv_name = utils::trim_whitespace(kv_name);
         kv_value = utils::trim_whitespace(kv_value);
 
-        set_raw_string(find_or_create_slot(kv_name), kv_value);
+        auto slot = find_or_create_slot(kv_name);
+
+        set_raw_string(slot, kv_value);
     }
 }
 
@@ -220,17 +222,18 @@ std::optional<bool> config::Map::value_raw<bool>(map_slot_type slot) const
     auto string = raw_string(slot);
 
     if(string.has_value()) {
+        auto text = string.value();
         auto is_true = false;
-        is_true = is_true || 0 == string.value().compare("true");
-        is_true = is_true || 0 == string.value().compare("yes");
-        is_true = is_true || 0 == string.value().compare("on");
-        is_true = is_true || 0 == string.value().compare("1");
+        is_true = is_true || 0 == text.compare("true");
+        is_true = is_true || 0 == text.compare("yes");
+        is_true = is_true || 0 == text.compare("on");
+        is_true = is_true || 0 == text.compare("1");
 
         auto is_false = false;
-        is_false = is_false || 0 == string.value().compare("false");
-        is_false = is_false || 0 == string.value().compare("off");
-        is_false = is_false || 0 == string.value().compare("no");
-        is_false = is_false || 0 == string.value().compare("0");
+        is_false = is_false || 0 == text.compare("false");
+        is_false = is_false || 0 == text.compare("off");
+        is_false = is_false || 0 == text.compare("no");
+        is_false = is_false || 0 == text.compare("0");
 
         return is_true && !is_false;
     }

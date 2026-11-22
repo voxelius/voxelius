@@ -281,9 +281,7 @@ void ReadBuffer::read_bytes(std::span<std::byte> buffer)
 
 std::vector<std::byte> ReadBuffer::read_compressed(void)
 {
-    // Mode, the size the data had before compression, and the size it takes in
-    // the buffer. The second one is what tells the caller how much to allocate;
-    // without it a compressed payload cannot be restored at all.
+    // Mode, the uncompressed size and the compressed size; the second one sizes the allocation
     if(!has_records(1, sizeof(std::uint8_t) + 2 * sizeof(std::uint32_t))) {
         return {};
     }
@@ -442,7 +440,9 @@ void WriteBuffer::write(const std::int64_t value)
 template<>
 void WriteBuffer::write<std::string_view>(const std::string_view value)
 {
-    write<std::uint16_t>(static_cast<std::uint16_t>(std::min<std::size_t>(value.size(), UINT16_MAX)));
+    auto length = static_cast<std::uint16_t>(std::min<std::size_t>(value.size(), UINT16_MAX));
+
+    write<std::uint16_t>(length);
 
     for(auto& character : value) {
         m_vector.push_back(static_cast<std::byte>(character));

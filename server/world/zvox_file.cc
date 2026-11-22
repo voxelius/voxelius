@@ -122,7 +122,8 @@ void ZvoxFile::write_slot(std::size_t slot, const WriteBuffer& buffer)
         m_stream.seekp(static_cast<std::streamoff>(offset), std::ios::beg);
     }
     else {
-        offset = static_cast<std::uint64_t>(m_stream.seekp(0, std::ios::end).tellp());
+        m_stream.seekp(0, std::ios::end);
+        offset = static_cast<std::uint64_t>(m_stream.tellp());
     }
 
     m_stream.write(reinterpret_cast<const char*>(data), static_cast<std::streamsize>(size));
@@ -182,7 +183,8 @@ bool ZvoxFile::compact(void)
     save_header();
 
     for(const auto& payload : payloads) {
-        auto offset = static_cast<std::uint64_t>(m_stream.seekp(0, std::ios::end).tellp());
+        m_stream.seekp(0, std::ios::end);
+        auto offset = static_cast<std::uint64_t>(m_stream.tellp());
         m_stream.write(reinterpret_cast<const char*>(payload.data.data()), static_cast<std::streamsize>(payload.data.size()));
         m_offsets[payload.slot] = offset;
     }

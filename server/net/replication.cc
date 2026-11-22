@@ -23,7 +23,7 @@ constexpr static std::size_t MAX_CAPTURE = 32;
 static cvar::Number<std::uint16_t> s_cmd_burst { 8, 1, 64 };
 static cvar::Number<std::uint16_t> s_cmd_rate { 4, 1, 64 };
 
-static cvar::status cmd_dbg_echo(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_dbg_echo(const cvar::Context&, std::span<const std::string_view> args)
 {
     msg::log_info("{}", utils::join(args, " "));
 
@@ -65,9 +65,8 @@ static void on_cvar_command(const packet::Cvar_Command& packet)
         ctx.is_operator = session->access == session_access::OPERATOR;
 
         auto capture = msg::ScopedCapture(msg::LEVEL_INFO, MAX_CAPTURE);
-        auto status = cvar::exec(packet.line, ctx);
 
-        static_cast<void>(status);
+        cvar::exec(packet.line, ctx);
 
         for(auto& record : capture.records()) {
             send_log_packet(session, packet.request_id, record.level, record.message);

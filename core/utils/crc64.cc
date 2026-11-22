@@ -8,7 +8,7 @@
 // - Initial value: `0x0000000000000000`
 // - Final xor: `0x0000000000000000`
 // CRC Calculator: https://www.sunshine2k.de/coding/javascript/crc/crc_js.html
-constexpr static const std::uint64_t crc_table[256] = { 0x0000000000000000, 0x42F0E1EBA9EA3693, 0x85E1C3D753D46D26, 0xC711223CFA3E5BB5,
+constexpr static std::uint64_t crc_table[256] = { 0x0000000000000000, 0x42F0E1EBA9EA3693, 0x85E1C3D753D46D26, 0xC711223CFA3E5BB5,
     0x493366450E42ECDF, 0x0BC387AEA7A8DA4C, 0xCCD2A5925D9681F9, 0x8E224479F47CB76A, 0x9266CC8A1C85D9BE, 0xD0962D61B56FEF2D,
     0x17870F5D4F51B498, 0x5577EEB6E6BB820B, 0xDB55AACF12C73561, 0x99A54B24BB2D03F2, 0x5EB4691841135847, 0x1C4488F3E8F96ED4,
     0x663D78FF90E185EF, 0x24CD9914390BB37C, 0xE3DCBB28C335E8C9, 0xA12C5AC36ADFDE5A, 0x2F0E1EBA9EA36930, 0x6DFEFF5137495FA3,
@@ -55,8 +55,11 @@ constexpr static const std::uint64_t crc_table[256] = { 0x0000000000000000, 0x42
 std::uint64_t utils::crc64(const void* buffer, std::size_t size, std::uint64_t combine)
 {
     auto data = reinterpret_cast<const std::uint8_t*>(buffer);
-    for(std::size_t i = 0; i < size; ++i)
-        combine = crc_table[((combine >> 56) ^ data[i]) & 0xFF] ^ (combine << 8);
+    for(std::size_t i = 0; i < size; ++i) {
+        auto index = ((combine >> 56) ^ data[i]) & 0xFF;
+
+        combine = crc_table[index] ^ (combine << 8);
+    }
     return combine;
 }
 

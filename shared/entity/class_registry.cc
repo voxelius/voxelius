@@ -2,6 +2,9 @@
 
 #include "shared/entity/class_registry.hh"
 
+#include "core/utils/crc64.hh"
+
+#include "shared/entity/component_map.hh"
 #include "shared/mod_context.hh"
 
 static std::vector<ClassDefinition> s_definitions;
@@ -9,9 +12,60 @@ static vx::hash_map<Identifier, class_id_type> s_names;
 static vx::hash_map<class_id_type, Identifier> s_reverse_names;
 static std::uint64_t s_checksum;
 
+static void hash_trivial(std::uint64_t& hash, const void* data, std::size_t size)
+{
+    hash = utils::crc64(data, size, hash);
+}
+
+template<typename T>
+static void hash_value(std::uint64_t& hash, const T& value)
+{
+    hash_trivial(hash, &value, sizeof(value));
+}
+
+static void hash_text(std::uint64_t& hash, std::string_view text)
+{
+    hash_value(hash, static_cast<std::uint64_t>(text.size()));
+    hash_trivial(hash, text.data(), text.size());
+}
+
 static void update_checksum(void)
 {
-    // TODO: go through each class definition and compute a checksum based on its contents
+    auto hash = std::uint64_t { 0 };
+
+    for(std::size_t i = 1; i < s_definitions.size(); ++i) {
+        auto& def = s_definitions[i];
+        auto name = s_reverse_names.find(static_cast<class_id_type>(i));
+
+        if(name != s_reverse_names.cend()) {
+            hash_text(hash, name->second.full_string());
+        }
+
+        hash_value(hash, static_cast<std::uint32_t>(def.entries.size()));
+
+        std::vector<const ClassDefinition_Entry*> entries;
+
+        for(const auto& entry : def.entries) {
+            entries.push_back(&entry);
+        }
+
+        // Class entries come from an unordered map; sort them so both sides hash the same order
+        std::sort(entries.begin(), entries.end(), [](const ClassDefinition_Entry* a, const ClassDefinition_Entry* b) {
+            if(a->id != b->id) {
+                return a->id < b->id;
+            }
+
+            return a->name < b->name;
+        });
+
+        for(const auto entry : entries) {
+            hash_value(hash, entry->id);
+            hash_text(hash, entry->name);
+            component_map::hash_config(hash, entry->id, entry->config);
+        }
+    }
+
+    s_checksum = hash;
 }
 
 std::span<const ClassDefinition> class_registry::all_definitions(void)
@@ -33,13 +87,15 @@ void class_registry::commit(ModContext& ctx)
     auto classes = ctx.take_classes();
     auto names = ctx.take_class_names();
 
+    auto class_count = static_cast<class_id_type>(s_definitions.size());
+
     class_id_type class_offset;
 
     if(classes.empty()) {
-        class_offset = static_cast<class_id_type>(s_definitions.size());
+        class_offset = class_count;
     }
     else {
-        class_offset = static_cast<class_id_type>(s_definitions.size()) - 1;
+        class_offset = class_count - 1;
     }
 
     for(const auto& entry : names) {
@@ -56,8 +112,16 @@ void class_registry::commit(ModContext& ctx)
     }
 
     if(classes.size()) {
-        s_definitions.insert(s_definitions.end(), std::make_move_iterator(classes.begin() + 1), std::make_move_iterator(classes.end()));
+        auto source_begin = std::next(classes.begin());
+        auto source_end = classes.end();
+        auto first = std::make_move_iterator(source_begin);
+        auto last = std::make_move_iterator(source_end);
+        auto destination = s_definitions.end();
+
+        s_definitions.insert(destination, first, last);
     }
+
+    update_checksum();
 }
 
 void class_registry::purge(void)

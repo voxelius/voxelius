@@ -1,6 +1,6 @@
 #include "server/pch.hh"
 
-#include "server/world/noise_cache_3D.hh"
+#include "server/world/noise_cache_3d.hh"
 
 #include "core/utils/modulo.hh"
 
@@ -60,7 +60,10 @@ const float NoiseCache3D<CellW, CellH, CellD>::get_slow(const BlockPos& pos)
 {
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
-    return sample(get(cpos), lpos);
+
+    auto& values = get(cpos);
+
+    return sample(values, lpos);
 }
 
 template<unsigned CellW, unsigned CellH, unsigned CellD>
@@ -108,7 +111,7 @@ void NoiseCache3D<CellW, CellH, CellD>::generate(const ChunkPos& pos, array_type
 {
     auto bpos = utils::to_block(pos);
 
-    fnl_state noise = m_noise; // copy is intentional - thread safety
+    fnl_state noise = m_noise; // Copy is intentional - thread safety
 
     for(unsigned z = 0U; z < GRID_D; ++z) {
         for(unsigned y = 0U; y < GRID_H; ++y) {

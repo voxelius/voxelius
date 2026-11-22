@@ -61,6 +61,13 @@ static block_face rotate_face(block_face face, block_face facing)
     return FACE_ROTATIONS[facing][face];
 }
 
+static Eigen::Matrix3f angle_axis_rotation(float angle, const Eigen::Vector3f& axis)
+{
+    auto rotation = Eigen::AngleAxisf(angle, axis);
+
+    return rotation.toRotationMatrix();
+}
+
 static Eigen::Matrix3f facing_rotation(block_face facing)
 {
     constexpr auto pi = std::numbers::pi_v<float>;
@@ -70,19 +77,19 @@ static Eigen::Matrix3f facing_rotation(block_face facing)
             return Eigen::Matrix3f::Identity();
 
         case BLOCK_FACE_SOUTH:
-            return Eigen::AngleAxisf(pi, Eigen::Vector3f::UnitY()).toRotationMatrix();
+            return angle_axis_rotation(pi, Eigen::Vector3f::UnitY());
 
         case BLOCK_FACE_EAST:
-            return Eigen::AngleAxisf(-pi * 0.5f, Eigen::Vector3f::UnitY()).toRotationMatrix();
+            return angle_axis_rotation(-pi * 0.5f, Eigen::Vector3f::UnitY());
 
         case BLOCK_FACE_WEST:
-            return Eigen::AngleAxisf(pi * 0.5f, Eigen::Vector3f::UnitY()).toRotationMatrix();
+            return angle_axis_rotation(pi * 0.5f, Eigen::Vector3f::UnitY());
 
         case BLOCK_FACE_TOP:
-            return Eigen::AngleAxisf(-pi * 0.5f, Eigen::Vector3f::UnitX()).toRotationMatrix();
+            return angle_axis_rotation(-pi * 0.5f, Eigen::Vector3f::UnitX());
 
         case BLOCK_FACE_BOTTOM:
-            return Eigen::AngleAxisf(pi * 0.5f, Eigen::Vector3f::UnitX()).toRotationMatrix();
+            return angle_axis_rotation(pi * 0.5f, Eigen::Vector3f::UnitX());
     }
 
     return Eigen::Matrix3f::Identity();
@@ -456,7 +463,10 @@ static std::unique_ptr<CachedBlockModel> bake_model(const BlockDefinition& def)
                 position += def.model_offset;
             }
 
-            quad.packed_normal = pack_normal_2_10_10_10(facing_rot * (element_rot * face_normal(face)));
+            auto normal = face_normal(face);
+            auto transformed_normal = facing_rot * (element_rot * normal);
+
+            quad.packed_normal = pack_normal_2_10_10_10(transformed_normal);
 
             if(face_def.cull_face.has_value()) {
                 baked->face_quads[rotated_face].push_back(quad);
@@ -472,6 +482,32 @@ static std::unique_ptr<CachedBlockModel> bake_model(const BlockDefinition& def)
     }
 
     return baked;
+}
+
+void bmodel_cache::init_late(void)
+{
+    auto definitions = block_registry::all_definitions();
+
+    s_models.clear();
+    s_models.resize(definitions.size());
+
+    for(block_id_type id = 0; id < definitions.size(); id += 1) {
+        s_models[id] = bake_model(definitions[id]);
+    }
+}
+
+void bmodel_cache::shutdown(void)
+{
+    s_models.clear();
+}
+
+const CachedBlockModel* bmodel_cache::find(block_id_type id)
+{
+    if(id == BLOCK_ID_NULL || id >= s_models.size()) {
+        return nullptr;
+    }
+
+    return s_models[id].get();
 }
 
 block_face bmodel_cache::face_from_normal(std::uint32_t packed_normal)
@@ -505,30 +541,4 @@ block_face bmodel_cache::face_from_normal(std::uint32_t packed_normal)
     }
 
     return BLOCK_FACE_NORTH;
-}
-
-void bmodel_cache::init_late(void)
-{
-    auto definitions = block_registry::all_definitions();
-
-    s_models.clear();
-    s_models.resize(definitions.size());
-
-    for(block_id_type id = 0; id < definitions.size(); id += 1) {
-        s_models[id] = bake_model(definitions[id]);
-    }
-}
-
-void bmodel_cache::shutdown(void)
-{
-    s_models.clear();
-}
-
-const CachedBlockModel* bmodel_cache::find(block_id_type id)
-{
-    if(id == BLOCK_ID_NULL || id >= s_models.size()) {
-        return nullptr;
-    }
-
-    return s_models[id].get();
 }

@@ -13,7 +13,9 @@
 #include "shared/game.hh"
 #include "shared/splash.hh"
 #include "shared/world/weather.hh"
+#include "shared/world/world.hh"
 
+#include "client/api/libraries.hh"
 #include "client/camera.hh"
 #include "client/console.hh"
 #include "client/constant.hh"
@@ -28,6 +30,7 @@
 #include "client/input/axes.hh"
 #include "client/input/buttons.hh"
 #include "client/language.hh"
+#include "client/loading.hh"
 #include "client/main_menu.hh"
 #include "client/net/bother.hh"
 #include "client/net/host.hh"
@@ -35,7 +38,7 @@
 #include "client/net/replication.hh"
 #include "client/net/session.hh"
 #include "client/play_menu.hh"
-#include "client/res/texture2D.hh"
+#include "client/res/texture_2d.hh"
 #include "client/settings.hh"
 #include "client/style.hh"
 #include "client/video.hh"
@@ -126,8 +129,8 @@ static void zoned_fixed_update(void)
     for(std::uint64_t i = 0; i < globals::fixed_framecount; ++i) {
         FrameMarkStart("Fixed");
 
-        client_game::fixed_update();
-        shared_game::fixed_update();
+        client_game::fixed_update(globals::world);
+        shared_game::fixed_update(globals::world);
 
         FrameMarkEnd("Fixed");
     }
@@ -145,9 +148,7 @@ static void zoned_update(void)
 
     camera::update();
 
-    // The snapshot only says where the field started; the
-    // drift is advanced here, every frame, so it never steps
-    weather::advance(globals::window_frametime);
+    loading::update();
 
     skybox::update();
     fog::update();
@@ -162,7 +163,8 @@ static void zoned_update(void)
     // ImGui 1.92 wants FontScaleMain instead of the legacy
     // FontGlobalScale: only the former is visible to GetFontSize(),
     // so the widget metrics follow the text instead of staying a step behind
-    ImGui::GetStyle().FontScaleMain = scale_min;
+    auto& style = ImGui::GetStyle();
+    style.FontScaleMain = scale_min;
     globals::gui_scale = static_cast<unsigned>(scale_min);
 }
 
@@ -235,7 +237,8 @@ static void wrapped_main(int argc, char** argv)
     std::signal(SIGSEGV, &signal_handler);
     std::signal(SIGTERM, &signal_handler);
 
-    vx::throw_if_not_fmt(SDL_Init(SDL_INIT_EVENTS), "SDL_Init failed: {}", SDL_GetError());
+    auto sdl_ok = SDL_Init(SDL_INIT_EVENTS);
+    vx::throw_if_not_fmt(sdl_ok, "SDL_Init failed: {}", SDL_GetError());
 
     Texture2D::register_resource();
 
@@ -246,7 +249,10 @@ static void wrapped_main(int argc, char** argv)
     receive::init();
     replication::init();
 
+    api_client::register_libraries();
+
     shared_game::init();
+    client_game::init_world();
 
     splash::init(SPLASH_CLIENT);
 
@@ -272,6 +278,8 @@ static void wrapped_main(int argc, char** argv)
     console::init_late();
 
     play_menu::init();
+
+    loading::init();
 
     client_game::init();
     skybox::init();
@@ -314,7 +322,7 @@ static void wrapped_main(int argc, char** argv)
 
     auto last_curtime_us = globals::curtime_us;
 
-    // STUB: enable fixed steps at 20 FPS
+    // UNDONE: enable fixed steps at 20 FPS
     globals::fixed_frametime_us = 50000;
     globals::fixed_frametime = 1.0e-6f * static_cast<float>(globals::fixed_frametime_us);
 
@@ -377,12 +385,13 @@ static void wrapped_main(int argc, char** argv)
     block_atlas::shutdown();
 
     settings::shutdown();
+    loading::shutdown();
     play_menu::shutdown();
     main_menu::shutdown();
 
     client_game::shutdown();
 
-    // TODO: game_ui::shutdown();
+    // TODO: shut down the game UI
 
     shared_game::shutdown();
 
@@ -419,12 +428,16 @@ int main(int argc, char** argv)
     }
     catch(const std::exception& ex) {
         msg::log_error(std::string_view(ex.what()));
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Engine Error", ex.what(), nullptr);
+
+        auto message = ex.what();
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Engine Error", message, nullptr);
         return EXIT_FAILURE;
     }
     catch(const vx::detail::Exception& ex) {
         msg::log_error(ex.what_standard(), ex.location());
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Engine Error", ex.what_standard(), nullptr);
+
+        auto message = ex.what_standard();
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Engine Error", message, nullptr);
         return EXIT_FAILURE;
     }
     catch(...) {

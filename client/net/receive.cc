@@ -6,10 +6,12 @@
 #include "core/cvar/host.hh"
 #include "core/msg/log.hh"
 
+#include "shared/component/transform.hh"
 #include "shared/constant.hh"
 #include "shared/cvar/server.hh"
 #include "shared/entity/class_registry.hh"
 #include "shared/entity/component_map.hh"
+#include "shared/globals.hh"
 #include "shared/net/packet_entity.hh"
 #include "shared/net/packet_session.hh"
 #include "shared/net/packet_world.hh"
@@ -22,20 +24,20 @@
 #include "shared/world/world_clock.hh"
 
 #include "client/camera.hh"
+#include "client/game.hh"
 #include "client/globals.hh"
+#include "client/loading.hh"
 #include "client/net/session.hh"
+#include "client/system/interpolation.hh"
 #include "client/world/cloud_renderer.hh"
 #include "client/world/skybox.hh"
 
-// The first weather packet of a connection sets the whole drift;
-// later packets only correct it, so the deck does not slide on join
-static bool s_weather_synced;
-
 static void on_entity_spawn(const packet::Entity_Spawn& packet)
 {
-    auto entity = utils::spawn(packet.class_id, packet.entity);
+    auto& registry = globals::world->registry();
+    auto entity = utils::spawn(registry, packet.class_id, packet.entity);
 
-    if(!globals::registry.valid(entity)) {
+    if(!registry.valid(entity)) {
         session::disconnect(packet::Session_Disconnect::ENTITY_ID_DESYNC);
         return;
     }
@@ -59,10 +61,25 @@ static void on_entity_patch(const packet::Entity_Patch& packet)
 {
     static ReadBuffer buffer;
 
+    auto& registry = globals::world->registry();
+    auto has_transform = false;
+
     for(auto& it : packet.components) {
         buffer.reset(it.data);
 
-        component_map::decode_net(it.id, packet.entity, buffer);
+        component_map::decode_net(registry, it.id, packet.entity, buffer);
+
+        has_transform = has_transform || it.id == component_map::from_type<Transform>();
+    }
+
+    // The server only patches the local player's components to correct them:
+    // a rubberband or a fresh snapshot has to snap the camera, not drag it
+    if(packet.entity == globals::player) {
+        interpolation::snap(packet.entity);
+
+        if(has_transform) {
+            loading::on_local_patch();
+        }
     }
 
     msg::log_info("entity patch: id={} components={}", static_cast<std::uint64_t>(packet.entity), packet.components.size());
@@ -70,9 +87,11 @@ static void on_entity_patch(const packet::Entity_Patch& packet)
 
 static void on_entity_remove(const packet::Entity_Remove& packet)
 {
+    auto& registry = globals::world->registry();
+
     msg::log_info("entity remove: id={}", static_cast<std::uint64_t>(packet.entity));
 
-    globals::registry.destroy(packet.entity);
+    registry.destroy(packet.entity);
 
     if(globals::player == packet.entity) {
         globals::player = entt::null;
@@ -87,7 +106,13 @@ static void on_entity_client(const packet::Entity_Client& packet)
 
     globals::player = packet.entity;
 
+    // The entity may already hold its spawn snapshot; start the camera
+    // from it instead of interpolating from the defaults set on construction
+    interpolation::snap(packet.entity);
+
     session::notify_spawned();
+
+    loading::attach_player();
 }
 
 static void on_world_blocks(const packet::World_Blocks& packet)
@@ -96,10 +121,10 @@ static void on_world_blocks(const packet::World_Blocks& packet)
     // resync the server sends to roll a stale client world back. Block edits
     // made after the packet was queued arrive as SetBlock on the same reliable
     // channel, so applying the whole chunk here cannot win over a newer prediction
-    auto chunk = world::find_chunk(packet.cpos);
+    auto chunk = globals::world->find_chunk(packet.cpos);
 
     if(chunk == nullptr) {
-        chunk = world::create_chunk(packet.cpos);
+        chunk = globals::world->create_chunk(packet.cpos);
     }
 
     chunk->set_blocks(packet.blocks);
@@ -111,18 +136,18 @@ static void on_world_blocks(const packet::World_Blocks& packet)
         chunk->clear_light();
     }
 
-    globals::dispatcher.trigger(ChunkUpdateEvent(packet.cpos, chunk));
+    globals::dispatcher.trigger(ChunkUpdateEvent(globals::world, packet.cpos, chunk));
 }
 
 static void on_world_biomes(const packet::World_Biomes& packet)
 {
-    biome_map::insert(packet.realm, packet.cpos, packet.biomes);
+    globals::world->insert_biomes(packet.cpos, packet.biomes);
 }
 
 static void on_world_light(const packet::World_Light& packet)
 {
     for(const auto& entry : packet.entries) {
-        auto chunk = world::find_chunk(entry.cpos);
+        auto chunk = globals::world->find_chunk(entry.cpos);
 
         if(chunk == nullptr) {
             continue;
@@ -143,87 +168,98 @@ static void on_world_light(const packet::World_Light& packet)
             }
         }
 
-        globals::dispatcher.trigger(ChunkLightUpdateEvent(entry.cpos));
+        globals::dispatcher.trigger(ChunkLightUpdateEvent(globals::world, entry.cpos));
     }
 }
 
 static void on_world_set_block(const packet::World_SetBlock& packet)
 {
-    world::set_block(packet.bpos, packet.block);
+    globals::world->set_block(packet.bpos, packet.block);
 }
 
 static void on_world_timings(const packet::World_Timings& packet)
 {
-    auto previous_tick = globals::daylight_tick;
-    auto jump = packet.daylight_tick > previous_tick ? packet.daylight_tick - previous_tick : previous_tick - packet.daylight_tick;
+    auto previous_tick = globals::world->daylight_tick;
+    auto jump = packet.daylight_tick - previous_tick;
+
+    if(previous_tick > packet.daylight_tick) {
+        jump = previous_tick - packet.daylight_tick;
+    }
+
+    auto previous_weather_tick = globals::world->weather_tick;
+    auto weather_jump = packet.weather_tick - previous_weather_tick;
+
+    if(previous_weather_tick > packet.weather_tick) {
+        weather_jump = previous_weather_tick - packet.weather_tick;
+    }
 
     globals::current_tick = packet.current_tick;
-    globals::daylight_tick = packet.daylight_tick;
-    globals::day = packet.day;
+    globals::world->daylight_tick = packet.daylight_tick;
+    globals::world->weather_tick = packet.weather_tick;
 
     // A jump of a second or more is a deliberate time_set; the
     // ordinary one-tick step is left for the sky to interpolate
     if(jump > constant::FIXED_TICKRATE) {
         skybox::snap();
     }
-}
 
-static void on_world_info(const packet::World_Info& packet)
-{
-    weather::apply_info(packet);
-
-    skybox::set_star_seed(packet.star_seed);
-}
-
-static void on_world_weather(const packet::World_Weather& packet)
-{
-    // The first packet after connecting replaces the drift whole, so
-    // the deck that was built from the old field must not slide to it
-    auto baseline = !s_weather_synced;
-    s_weather_synced = true;
-
-    weather::apply_packet(packet, baseline);
-
-    if(baseline) {
+    // The weather clock only jumps at a forced front, a rewind or a world
+    // switch; the deck is rebuilt for those instead of sliding to the field
+    if(weather_jump > constant::FIXED_TICKRATE) {
         cloud_renderer::reset();
     }
 }
 
-static cvar::status cmd_time_query(const cvar::Context& ctx, std::span<const std::string_view> args)
+static void on_world_info(const packet::World_Info& packet)
 {
-    auto phase = world_clock::phase(globals::daylight_tick, server_vars::day_length_ticks());
-    auto daylight = world_clock::daylight(phase);
+    client_game::open_world(packet);
 
-    msg::log_info("time: tick={} daylight_tick={} day={} phase={:.3f} daylight={:.2f}", globals::current_tick, globals::daylight_tick,
-        globals::day, phase, daylight);
+    cloud_renderer::reset();
+    skybox::set_star_seed(weather::star_seed(packet.weather_seed));
+    skybox::snap();
+}
+
+static cvar::status cmd_time_query(const cvar::Context&, std::span<const std::string_view>)
+{
+    auto day_length = server_vars::day_length_ticks();
+
+    auto phase = world_clock::phase(globals::world->daylight_tick, day_length);
+    auto daylight = world_clock::daylight(phase);
+    auto day = world_clock::day(globals::world->daylight_tick, day_length);
+
+    msg::log_info("time: tick={} daylight_tick={} day={} phase={:.3f} daylight={:.2f}", globals::current_tick,
+        globals::world->daylight_tick, day, phase, daylight);
 
     return cvar::status::OK;
 }
 
-static cvar::status cmd_weather_status(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_weather_status(const cvar::Context&, std::span<const std::string_view>)
 {
-    auto world = utils::to_fvec(camera::chunk) + camera::local;
+    auto position = utils::to_fvec(camera::chunk) + camera::local;
 
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        auto realm = static_cast<biome_realm>(i);
-        auto& state = weather::state(realm);
+    auto& definition = globals::world->definition();
+    auto& state = globals::world->weather();
+    auto& allowed = definition.weather;
 
-        auto type = weather::type_at(realm, world.x(), world.z());
-        auto coverage = weather::coverage(realm, world.x(), world.z());
+    auto type = state.type_at(allowed, position.x(), position.z(), globals::world->weather_tick);
+    auto coverage = state.coverage(allowed, position.x(), position.z(), globals::world->weather_tick);
 
-        std::string description = "none";
+    std::string description = "none";
 
-        if(auto name = weather_registry::name_of(type)) {
-            // The identifier is a temporary, so its view must be copied
-            // before the optional goes out of scope
-            description = name->full_string();
-        }
-
-        auto types = std::format("({:.0f}, {:.0f})/{}", state.types.drift.x(), state.types.drift.y(), state.types.scale);
-        auto detail = std::format("({:.0f}, {:.0f})/{}", state.detail.drift.x(), state.detail.drift.y(), state.detail.scale);
-
-        msg::log_info("weather[{}]: type={} coverage={:.2f} types={} detail={}", i, description, coverage, types, detail);
+    if(auto name = weather_registry::name_of(type)) {
+        // The identifier is a temporary, so its view must
+        // be copied before the optional goes out of scope
+        description = name->full_string();
     }
+
+    auto bpos = utils::to_block(camera::chunk, camera::local.cast<LocalPos::value_type>());
+    auto temperature = globals::world->get_temperature(bpos);
+    auto temperature_base = globals::world->get_temperature_base(bpos);
+    auto humidity = globals::world->get_humidity(bpos);
+    auto humidity_base = globals::world->get_humidity_base(bpos);
+
+    msg::log_info("weather: type={} coverage={:.2f} temperature={:.1f}C base={:.1f}C humidity={:.2f} base={:.2f} tick={}", description,
+        coverage, temperature, temperature_base, humidity, humidity_base, globals::world->weather_tick);
 
     return cvar::status::OK;
 }
@@ -232,11 +268,6 @@ static void on_session_state(const SessionStateEvent& event)
 {
     if(SESSION_DISCONNECTED == event.state()) {
         globals::player = entt::null;
-        s_weather_synced = false;
-    }
-
-    if(SESSION_AUTHENTICATING == event.state()) {
-        s_weather_synced = false;
     }
 }
 
@@ -253,7 +284,6 @@ void receive::init(void)
     globals::dispatcher.sink<packet::World_SetBlock>().connect<&on_world_set_block>();
     globals::dispatcher.sink<packet::World_Timings>().connect<&on_world_timings>();
     globals::dispatcher.sink<packet::World_Info>().connect<&on_world_info>();
-    globals::dispatcher.sink<packet::World_Weather>().connect<&on_world_weather>();
 
     globals::dispatcher.sink<SessionStateEvent>().connect<&on_session_state>();
 

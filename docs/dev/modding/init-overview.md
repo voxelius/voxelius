@@ -24,6 +24,32 @@ Valid characters in both namespace and identifier:
 
 On init, if the engine finds a duplicate registry entry (for example `mymod:myblock` registered twice), it appends `~N` and retries. After 10000 renames, behaviour is undefined.
 
+## Sides
+
+A mod runs on both the client and the server from the same `scripts/init.lua`. The engine exposes the side as two booleans:
+
+|Value|Description|
+|----|----|
+|`core.IS_CLIENT`|True on the client|
+|`core.IS_SERVER`|True on the server|
+
+Some APIs exist on the server only: `worlds`, `world.schedule`, `world.seed` and `weather.force`. Their table or field is absent on the client, so an unguarded call fails the mod on that side. Guard it with `core.IS_SERVER`:
+
+```lua
+if core.IS_SERVER then
+  dofile("world/overworld.lua")
+end
+```
+
+|Callback|Runs on|
+|----|----|
+|`blocks.on_place`, `blocks.on_break`|Both sides; the client predicts, the server decides|
+|`blocks.on_tick`|Server only|
+|`blocks.on_interact`|Server only; the engine does not call it yet|
+|`weather.on_tick`, `weather.on_strike`|Server only|
+
+Register content such as blocks, biomes and weather types unconditionally. A definition registered on one side only changes the numeric IDs on that side and desynchronizes the two sides.
+
 ## Error handling
 
 The mod root script `modname/scripts/init.lua` can catch its own errors. If an error escapes that script and reaches the init `lua_pcall`, the engine marks the mod load as a failure.

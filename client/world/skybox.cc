@@ -12,6 +12,7 @@
 #include "shared/globals.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/weather.hh"
+#include "shared/world/world.hh"
 #include "shared/world/world_clock.hh"
 
 #include "client/camera.hh"
@@ -19,10 +20,10 @@
 #include "client/gui/container.hh"
 #include "client/gui/slider.hh"
 #include "client/settings.hh"
+#include "client/utils/world.hh"
 
 constexpr static float SMOOTH_RATE = 3.0f;
 constexpr static float MAX_STEP_TIME = 0.1f;
-constexpr static float WEATHER_RADIUS = 256.0f;
 
 // The phase runs on the client's own clock and only corrects
 // towards the server, so a packet that arrives late or in a
@@ -30,7 +31,6 @@ constexpr static float WEATHER_RADIUS = 256.0f;
 constexpr static float PHASE_CORRECTION_RATE = 1.0f;
 constexpr static float PHASE_SNAP_THRESHOLD = 0.25f;
 
-constexpr static float TWILIGHT_HEIGHT = 0.35f;
 constexpr static std::uint32_t MOON_PHASE_COUNT = 8;
 
 // A cheap Rayleigh model: the air mass the sunlight crosses grows as
@@ -41,12 +41,6 @@ constexpr static float AIRMASS_FLOOR = 0.15f;
 constexpr static float RAYLEIGH_RED = 0.04f;
 constexpr static float RAYLEIGH_GREEN = 0.18f;
 constexpr static float RAYLEIGH_BLUE = 0.55f;
-
-static const Eigen::Vector3f DAY_HORIZON { 0.64f, 0.76f, 0.94f };
-static const Eigen::Vector3f DAY_ZENITH { 0.26f, 0.46f, 0.85f };
-static const Eigen::Vector3f NIGHT_HORIZON { 0.020f, 0.030f, 0.060f };
-static const Eigen::Vector3f NIGHT_ZENITH { 0.004f, 0.007f, 0.018f };
-static const Eigen::Vector3f MOON_COLOR { 0.86f, 0.90f, 1.0f };
 
 Eigen::Vector3f skybox::horizon_color;
 Eigen::Vector3f skybox::sun_horizon_color;
@@ -117,9 +111,9 @@ static Eigen::Vector3f tilt_about_x(const Eigen::Vector3f& direction, float tilt
 
 void skybox::init(void)
 {
-    auto& sun_angle_binding = cvar::bind_var(s_sun_angle, "r_sun_angle");
-    sun_angle_binding.set_help("Tilt of the sun's path in degrees; 0 rises due east and sets due west");
-    sun_angle_binding.set_flags(FCVAR_ARCHIVE);
+    auto& r_sun_angle_binding = cvar::bind_var(s_sun_angle, "r_sun_angle");
+    r_sun_angle_binding.set_help("Tilt of the sun's path in degrees; 0 rises due east and sets due west");
+    r_sun_angle_binding.set_flags(FCVAR_ARCHIVE);
 
     s_sun_angle_gui.set_range(-90.0f, 90.0f);
     s_sun_angle_gui.set_format("%.0f");
@@ -128,12 +122,19 @@ void skybox::init(void)
 
     reset();
 
-    s_phase = 0.25f;
-    s_horizon = DAY_HORIZON;
-    s_zenith = DAY_ZENITH;
+    auto& visuals = utils::world_visuals();
 
-    horizon_color = DAY_HORIZON;
-    zenith_color = DAY_ZENITH;
+    s_phase = 0.25f;
+    s_horizon = Eigen::Vector3f::Zero();
+    s_zenith = Eigen::Vector3f::Zero();
+
+    if(visuals.sky) {
+        s_horizon = visuals.sky->day.horizon;
+        s_zenith = visuals.sky->day.zenith;
+    }
+
+    horizon_color = s_horizon;
+    zenith_color = s_zenith;
     daylight = 1.0f;
     light_scale = 1.0f;
 }
@@ -141,7 +142,7 @@ void skybox::init(void)
 void skybox::update(void)
 {
     auto day_length = server_vars::day_length_ticks();
-    auto target_phase = world_clock::phase(globals::daylight_tick, day_length);
+    auto target_phase = world_clock::phase(globals::world->daylight_tick, day_length);
     auto snap_state = !s_primed || s_snap;
 
     if(snap_state) {
@@ -176,6 +177,32 @@ void skybox::update(void)
         s_phase -= std::floor(s_phase);
     }
 
+    auto& visuals = utils::world_visuals();
+
+    Eigen::Vector3f day_horizon = Eigen::Vector3f::Zero();
+    Eigen::Vector3f day_zenith = Eigen::Vector3f::Zero();
+    Eigen::Vector3f night_horizon = Eigen::Vector3f::Zero();
+    Eigen::Vector3f night_zenith = Eigen::Vector3f::Zero();
+    auto twilight_height = 1.0f;
+
+    if(visuals.sky.has_value()) {
+        day_horizon = visuals.sky->day.horizon;
+        day_zenith = visuals.sky->day.zenith;
+        night_horizon = visuals.sky->night.horizon;
+        night_zenith = visuals.sky->night.zenith;
+        twilight_height = visuals.sky->twilight_height;
+    }
+
+    auto sun_factor = visuals.sun ? 1.0f : 0.0f;
+    auto moon_factor = visuals.moon ? 1.0f : 0.0f;
+    auto star_factor = visuals.stars ? 1.0f : 0.0f;
+    auto sun_tilt_offset = visuals.sun ? visuals.sun->tilt : 0.0f;
+    Eigen::Vector3f moon_color = Eigen::Vector3f::Zero();
+
+    if(visuals.moon) {
+        moon_color = visuals.moon->color;
+    }
+
     auto height = std::sin(s_phase * std::numbers::pi_v<float> * 2.0f);
     auto light = world_clock::daylight(s_phase);
     auto tilt = s_sun_angle.value() * std::numbers::pi_v<float> / 180.0f;
@@ -183,8 +210,11 @@ void skybox::update(void)
     auto sun_vector = tilt_about_x(world_clock::sun_direction(s_phase), tilt);
     auto moon_vector = tilt_about_x(world_clock::sun_direction(s_phase + 0.5f), tilt);
 
-    Eigen::Vector3f world = utils::to_fvec(camera::chunk) + camera::local;
-    auto blend = weather::blend_region(world.x(), world.y(), world.z(), WEATHER_RADIUS);
+    Eigen::Vector3f world_position = utils::to_fvec(camera::chunk) + camera::local;
+    auto& definition = globals::world->definition();
+    auto& state = globals::world->weather();
+    auto& allowed = definition.weather;
+    auto blend = state.blend(allowed, world_position.x(), world_position.z(), globals::world->weather_tick);
     auto visibility = std::clamp(blend.sky_visibility, 0.0f, 1.0f);
 
     // The sunlight crosses more air as the sun sinks, losing blue
@@ -197,10 +227,10 @@ void skybox::update(void)
     transmittance.z() = std::exp(-RAYLEIGH_BLUE * airmass);
 
     Eigen::Vector3f tint = transmittance / transmittance.maxCoeff();
-    auto twilight = std::clamp(1.0f - std::abs(height) / TWILIGHT_HEIGHT, 0.0f, 1.0f);
 
-    Eigen::Vector3f base_horizon = NIGHT_HORIZON + (DAY_HORIZON - NIGHT_HORIZON) * light;
-    Eigen::Vector3f base_zenith = NIGHT_ZENITH + (DAY_ZENITH - NIGHT_ZENITH) * light;
+    auto twilight = std::clamp(1.0f - std::abs(height) / twilight_height, 0.0f, 1.0f);
+    auto base_horizon = night_horizon + (day_horizon - night_horizon) * light;
+    auto base_zenith = night_zenith + (day_zenith - night_zenith) * light;
 
     // The clear horizon is neutral away from the sun and warms towards
     // the reddened sunlight on the sun's side; the zenith stays blue
@@ -246,7 +276,7 @@ void skybox::update(void)
         alignment = camera_flat.dot(sun_flat) / (camera_length * sun_length);
     }
 
-    auto warmth = std::pow(std::max(alignment, 0.0f), 2.0f) * twilight * visibility;
+    auto warmth = std::pow(std::max(alignment, 0.0f), 2.0f) * twilight * visibility * sun_factor;
 
     skybox::horizon_color = s_horizon;
     skybox::sun_horizon_color = s_warm_horizon;
@@ -256,19 +286,19 @@ void skybox::update(void)
     skybox::daylight = light;
     skybox::light_scale = s_light;
 
-    skybox::sun_tilt = tilt;
+    skybox::sun_tilt = tilt + sun_tilt_offset;
     skybox::sun_tint = tint;
     skybox::sun_direction = sun_vector;
-    skybox::sun_strength = utils::smoothstep(-0.05f, 0.05f, height) * visibility;
+    skybox::sun_strength = utils::smoothstep(-0.05f, 0.05f, height) * visibility * sun_factor;
 
     skybox::moon_direction = moon_vector;
-    skybox::moon_tint = MOON_COLOR + (tint - MOON_COLOR) * (twilight * 0.85f);
-    skybox::moon_strength = utils::smoothstep(-0.05f, 0.05f, -height) * visibility * 0.85f;
-    skybox::moon_phase = static_cast<std::uint32_t>(globals::day % MOON_PHASE_COUNT);
+    skybox::moon_tint = moon_color + (tint - moon_color) * (twilight * 0.85f);
+    skybox::moon_strength = utils::smoothstep(-0.05f, 0.05f, -height) * visibility * 0.85f * moon_factor;
+    skybox::moon_phase = static_cast<std::uint32_t>(world_clock::day(globals::world->daylight_tick, day_length) % MOON_PHASE_COUNT);
 
     skybox::cloud_tint = Eigen::Vector3f::Ones() + (tint - Eigen::Vector3f::Ones()) * (twilight * visibility * 0.85f);
     skybox::twilight = twilight * visibility;
-    skybox::star_visibility = (1.0f - light) * visibility;
+    skybox::star_visibility = (1.0f - light) * visibility * star_factor;
 }
 
 void skybox::reset(void)

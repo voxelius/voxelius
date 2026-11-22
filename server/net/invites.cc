@@ -20,7 +20,7 @@ static std::uint64_t generate_token(void)
     return token;
 }
 
-static cvar::status cmd_invite(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_invite(const cvar::Context&, std::span<const std::string_view>)
 {
     msg::log_info("invite code: {}", invites::issue());
 
@@ -42,7 +42,7 @@ void invites::shutdown(void)
 
 std::uint64_t invites::issue(void)
 {
-    // Zero on the wire means "no invite", so it is never issued.
+    // Zero on the wire means "no invite", so it is never issued
     std::uint64_t token = generate_token();
 
     while(token == 0 || s_invites.contains(token)) {

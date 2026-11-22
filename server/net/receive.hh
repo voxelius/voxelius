@@ -3,9 +3,8 @@
 
 #include "shared/coord.hh"
 
-// A chunk was handed to ENet for a peer. The delivery state lives with the
-// stream planner, but only after this point: queueing a send is not the same
-// as the peer having the data.
+// A chunk was handed to ENet for a peer. The delivery state lives with the stream
+// planner, but only after this point: queueing a send is not the same as the peer having the data
 class ChunkSentEvent final {
 public:
     explicit ChunkSentEvent(ENetPeer* peer, const ChunkPos& pos);
@@ -29,16 +28,14 @@ void fixed_update_late(void);
 
 namespace receive
 {
-// Drops every queued chunk send and pending chunk request that targets the
-// peer. ENet reuses host->peers slots, so a stale entry would leak into the
-// next connection that lands on the same address.
+// Drops every queued chunk send and pending chunk request that targets the peer. ENet reuses
+// host->peers slots, so a stale entry would leak into the next connection on the same address
 void forget_peer(ENetPeer* peer);
 } // namespace receive
 
 namespace receive
 {
-// Queues a chunk for the peer, starting the load or generation when it is
-// not in the world yet.
+// Queues a chunk for the peer, starting the load or generation when it is not in the world yet
 void enqueue_chunk(ENetPeer* peer, const ChunkPos& cpos);
 } // namespace receive
 

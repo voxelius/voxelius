@@ -38,11 +38,4 @@ namespace weather_registry
 weather_type_id resolve(std::string_view name);
 } // namespace weather_registry
 
-namespace weather_registry
-{
-// The slice of the [0, 1) roll range this type owns in the realm; the slices
-// of all types tile the range, which is what makes the spatial weights continuous
-bool type_interval(biome_realm realm, weather_type_id type, float& start, float& end);
-} // namespace weather_registry
-
 #endif /* B7D3E2A8_5C41_4D9B_8E27_3A9F1C6D0B52 */

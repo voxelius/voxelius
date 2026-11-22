@@ -134,5 +134,6 @@ void packet::Cvar_Command::encode(const Cvar_Command& packet, WriteBuffer& buffe
 void packet::Cvar_Command::decode(Cvar_Command& packet, ReadBuffer& buffer)
 {
     packet.request_id = buffer.read<std::uint32_t>();
-    packet.line = buffer.read<std::string>().substr(0, MAX_LINE);
+    auto line = buffer.read<std::string>();
+    packet.line = line.substr(0, MAX_LINE);
 }

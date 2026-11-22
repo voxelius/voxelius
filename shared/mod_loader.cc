@@ -13,8 +13,10 @@
 #include "shared/world/fluid_registry.hh"
 #include "shared/world/tint_registry.hh"
 #include "shared/world/weather_registry.hh"
+#include "shared/world/world_registry.hh"
 
 static std::vector<ModContext> s_mods;
+static std::vector<library_opener> s_libraries;
 
 static std::vector<ModInfo> discover_mods(void)
 {
@@ -136,18 +138,55 @@ static std::vector<ModInfo> resolve_load_order(std::vector<ModInfo> mods)
         std::sort(ready.begin(), ready.end());
 
         for(const auto& name : ready) {
-            result.push_back(std::move(*map.at(name)));
+            auto info = map.at(name);
+            result.push_back(std::move(*info));
             resolved.insert(name);
             remaining.erase(name);
+        }
+    }
+
+    std::vector<std::string> unresolved(remaining.begin(), remaining.end());
+    std::sort(unresolved.begin(), unresolved.end());
+
+    for(const auto& name : unresolved) {
+        auto info = map.at(name);
+        auto reported = false;
+
+        for(const auto& dep : info->hard_depends) {
+            if(resolved.contains(dep.first)) {
+                continue;
+            }
+
+            if(versions.contains(dep.first)) {
+                msg::log_error("{}: dependency {} was not loaded", name, dep.first);
+            }
+            else {
+                msg::log_error("{}: missing dependency {}", name, dep.first);
+            }
+
+            reported = true;
+            break;
+        }
+
+        if(!reported) {
+            msg::log_error("{}: dependency cycle", name);
         }
     }
 
     return result;
 }
 
+void mod_loader::detail::add_library(library_opener opener)
+{
+    assert(s_mods.empty());
+
+    s_libraries.push_back(std::move(opener));
+}
+
 void mod_loader::init(void)
 {
     auto mods = resolve_load_order(discover_mods());
+    auto libraries = std::span<const library_opener>(s_libraries);
 
     s_mods.clear();
     s_mods.reserve(mods.size());
@@ -168,7 +207,7 @@ void mod_loader::init(void)
         auto name = info.name;
         auto& ctx = s_mods.emplace_back(std::move(info));
 
-        if(!ctx.initialize()) {
+        if(!ctx.initialize(libraries)) {
             vx::throw_if(name == constant::BUILTIN_NAME_SPACE, "you have met a terrible fate, haven't you?");
             failed.insert(name);
             continue;
@@ -195,6 +234,7 @@ void mod_loader::shutdown(void)
 {
     s_mods.clear();
 
+    world_registry::purge();
     class_registry::purge();
     weather_registry::purge();
     biome_registry::purge();

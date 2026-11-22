@@ -2,21 +2,32 @@
 #define B0F02F57_26DF_495B_8E6D_A132AAC33F58
 
 #include "shared/coord.hh"
+#include "shared/world/biome.hh"
 #include "shared/world/biome_slice.hh"
 
-namespace biome_map
-{
-void init(void);
-void purge(void);
-void insert(biome_realm realm, const ChunkPosXZ& pos, BiomeSlice biomes);
-} // namespace biome_map
+class BiomeMap final {
+public:
+    BiomeMap(void);
 
-namespace biome_map
-{
-biome_id_type get_slow(const BlockPos& pos);
-biome_id_type get_slow(biome_realm realm, const BlockPosXZ& pos);
-const BiomeSlice& get(const ChunkPos& pos);
-const BiomeSlice& get(biome_realm realm, const ChunkPosXZ& pos);
-} // namespace biome_map
+    void purge(void);
+
+    void insert(const ChunkPosXZ& pos, BiomeSlice biomes);
+    void attach(entt::registry& registry, entt::entity entity, const ChunkPos& pos);
+
+    biome_id_type get_slow(const BlockPos& pos) const;
+
+    const BiomeSlice& get(const ChunkPos& pos) const;
+    const BiomeSlice& get(const ChunkPosXZ& pos) const;
+
+private:
+    struct Entry final {
+        std::shared_ptr<BiomeSlice> ptr;
+        bool initialized { false };
+    };
+
+    mutable std::mutex m_mutex;
+    vx::hash_map<ChunkPosXZ, Entry> m_slices;
+    std::shared_ptr<BiomeSlice> m_void;
+};
 
 #endif /* B0F02F57_26DF_495B_8E6D_A132AAC33F58 */

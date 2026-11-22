@@ -12,15 +12,18 @@
 #include "shared/net/packet_entity.hh"
 #include "shared/net/packet_world.hh"
 #include "shared/utils/view.hh"
+#include "shared/world/world.hh"
 
 #include "server/globals.hh"
 #include "server/net/sessions.hh"
+#include "server/universe.hh"
+#include "server/world/world.hh"
 
 cvar::Number<unsigned> interest::view_distance { 8, 1, 32 };
 
-static void send_full_snapshot(ENetPeer* peer, entt::entity entity)
+static void send_full_snapshot(entt::registry& registry, ENetPeer* peer, entt::entity entity)
 {
-    auto& entity_class = globals::registry.get<EntityClass>(entity);
+    auto& entity_class = registry.get<EntityClass>(entity);
 
     packet::Entity_Spawn spawn_packet {};
     spawn_packet.entity = entity;
@@ -35,7 +38,7 @@ static void send_full_snapshot(ENetPeer* peer, entt::entity entity)
         component.id = id;
 
         WriteBuffer buffer;
-        component_map::encode_net(id, entity, buffer);
+        component_map::encode_net(registry, id, entity, buffer);
         component.data = std::move(buffer.take());
 
         patch_packet.components.emplace_back(std::move(component));
@@ -50,26 +53,29 @@ static void update_visibility(void)
 {
     ZoneScoped;
 
-    auto entities = globals::registry.view<EntityClass, Transform>();
+    for(const auto& world : universe::worlds()) {
+        auto& registry = world->registry();
+        auto entities = registry.view<EntityClass, Transform>();
 
-    for(auto& session : sessions::all()) {
-        if(session.peer == nullptr) {
-            continue;
-        }
-
-        for(const auto [entity, cls, transform] : entities.each()) {
-            auto in_box = session.view_box.contains(transform.chunk);
-            auto is_known = session.known_entities.contains(entity);
-
-            if(in_box && !is_known) {
-                send_full_snapshot(session.peer, entity);
-                session.known_entities.insert(entity);
+        for(auto& session : sessions::all()) {
+            if(session.world.get() != static_cast<World*>(world.get()) || session.peer == nullptr) {
+                continue;
             }
-            else if(!in_box && is_known) {
-                packet::Entity_Remove packet {};
-                packet.entity = entity;
-                protocol::send(packet, session.peer);
-                session.known_entities.erase(entity);
+
+            for(const auto [entity, cls, transform] : entities.each()) {
+                auto in_box = session.view_box.contains(transform.chunk);
+                auto is_known = session.known_entities.contains(entity);
+
+                if(in_box && !is_known) {
+                    send_full_snapshot(registry, session.peer, entity);
+                    session.known_entities.insert(entity);
+                }
+                else if(!in_box && is_known) {
+                    packet::Entity_Remove packet {};
+                    packet.entity = entity;
+                    protocol::send(packet, session.peer);
+                    session.known_entities.erase(entity);
+                }
             }
         }
     }
@@ -89,8 +95,14 @@ void interest::fixed_update_late(void)
     auto radius = static_cast<ChunkPos::value_type>(view_distance.value());
 
     for(auto& session : sessions::all()) {
-        if(globals::registry.valid(session.player)) {
-            auto& transform = globals::registry.get<Transform>(session.player);
+        if(session.peer == nullptr || session.world == nullptr) {
+            continue;
+        }
+
+        auto& registry = session.world->registry();
+
+        if(registry.valid(session.player)) {
+            auto& transform = registry.get<Transform>(session.player);
             session.view_box = utils::view_box(transform.chunk, radius);
         }
     }
@@ -99,10 +111,16 @@ void interest::fixed_update_late(void)
 }
 
 template<typename T>
-void interest::broadcast(const T& packet, const ChunkPos& origin, ENetPeer* except)
+void interest::broadcast(const World* world, const T& packet, const ChunkPos& origin, ENetPeer* except)
 {
+    assert(world);
+
     for(const auto& session : sessions::all()) {
         if(session.peer == nullptr || session.peer == except) {
+            continue;
+        }
+
+        if(session.world.get() != world) {
             continue;
         }
 
@@ -112,33 +130,77 @@ void interest::broadcast(const T& packet, const ChunkPos& origin, ENetPeer* exce
     }
 }
 
-template void interest::broadcast<packet::World_SetBlock>(const packet::World_SetBlock& packet, const ChunkPos& origin, ENetPeer* except);
-template void interest::broadcast<packet::World_Light>(const packet::World_Light& packet, const ChunkPos& origin, ENetPeer* except);
-template void interest::broadcast<packet::Entity_Spawn>(const packet::Entity_Spawn& packet, const ChunkPos& origin, ENetPeer* except);
-template void interest::broadcast<packet::Entity_Patch>(const packet::Entity_Patch& packet, const ChunkPos& origin, ENetPeer* except);
-template void interest::broadcast<packet::Entity_Remove>(const packet::Entity_Remove& packet, const ChunkPos& origin, ENetPeer* except);
-
-void interest::mark_known(entt::entity entity, const ChunkPos& chunk)
+template<typename T>
+void interest::broadcast(const World* world, const T& packet, ENetPeer* except)
 {
+    assert(world);
+
+    for(const auto& session : sessions::all()) {
+        if(session.peer == nullptr || session.peer == except) {
+            continue;
+        }
+
+        if(session.world.get() != world) {
+            continue;
+        }
+
+        protocol::send(packet, session.peer);
+    }
+}
+
+template void interest::broadcast<packet::World_SetBlock>(const World* world, const packet::World_SetBlock& packet, const ChunkPos& origin,
+    ENetPeer* except);
+template void interest::broadcast<packet::Entity_Spawn>(const World* world, const packet::Entity_Spawn& packet, const ChunkPos& origin,
+    ENetPeer* except);
+template void interest::broadcast<packet::Entity_Patch>(const World* world, const packet::Entity_Patch& packet, const ChunkPos& origin,
+    ENetPeer* except);
+template void interest::broadcast<packet::Entity_Remove>(const World* world, const packet::Entity_Remove& packet, const ChunkPos& origin,
+    ENetPeer* except);
+
+template void interest::broadcast<packet::Entity_Spawn>(const World* world, const packet::Entity_Spawn& packet, ENetPeer* except);
+template void interest::broadcast<packet::Entity_Patch>(const World* world, const packet::Entity_Patch& packet, ENetPeer* except);
+template void interest::broadcast<packet::Entity_Remove>(const World* world, const packet::Entity_Remove& packet, ENetPeer* except);
+template void interest::broadcast<packet::World_Timings>(const World* world, const packet::World_Timings& packet, ENetPeer* except);
+
+void interest::mark_known(const World* world, entt::entity entity, const ChunkPos& chunk)
+{
+    assert(world);
+
     for(auto& session : sessions::all()) {
+        if(session.world.get() != world) {
+            continue;
+        }
+
         if(session.peer && session.view_box.contains(chunk)) {
             session.known_entities.insert(entity);
         }
     }
 }
 
-void interest::mark_known(entt::entity entity)
+void interest::mark_known(const World* world, entt::entity entity)
 {
+    assert(world);
+
     for(auto& session : sessions::all()) {
+        if(session.world.get() != world) {
+            continue;
+        }
+
         if(session.peer) {
             session.known_entities.insert(entity);
         }
     }
 }
 
-void interest::forget(entt::entity entity)
+void interest::forget(const World* world, entt::entity entity)
 {
+    assert(world);
+
     for(auto& session : sessions::all()) {
+        if(session.world.get() != world) {
+            continue;
+        }
+
         session.known_entities.erase(entity);
     }
 }

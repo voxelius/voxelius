@@ -9,12 +9,11 @@
 #include "shared/entity/class_registry.hh"
 #include "shared/entity/component_map.hh"
 #include "shared/globals.hh"
-#include "shared/utils/biome.hh"
 #include "shared/utils/entity.hh"
+#include "shared/world/world.hh"
 
 #include "server/constant.hh"
 #include "server/entity/zent_file.hh"
-#include "server/universe.hh"
 #include "server/utils/region.hh"
 
 constexpr static std::size_t MAX_REGIONS = 32;
@@ -27,26 +26,21 @@ struct EntityRegionEntry final {
     std::chrono::steady_clock::time_point last_used;
 };
 
-EntityRegionEntry::EntityRegionEntry(std::filesystem::path path) : region_file(std::move(path))
-{
-    // empty
-}
-
 static vx::hash_map<RegionKey, std::shared_ptr<EntityRegionEntry>> s_cache;
 
-static std::filesystem::path region_path(biome_realm realm, const RegionPos& region)
+static std::filesystem::path region_path(const World* world, const RegionPos& region)
 {
     auto ux = std::bit_cast<std::uint32_t>(region.x());
     auto uy = std::bit_cast<std::uint32_t>(region.y());
     auto uz = std::bit_cast<std::uint32_t>(region.z());
-    auto name = std::format("R{}X{:08X}Y{:08X}Z{:08X}.zent", static_cast<unsigned>(realm), ux, uy, uz);
-    return universe::entity_dir() / name;
+    auto name = std::format("R{:08X}{:08X}{:08X}.zent", ux, uy, uz);
+    return world->entity_dir() / name;
 }
 
-static std::shared_ptr<EntityRegionEntry> find_region(biome_realm realm, const RegionPos& pos)
+static std::shared_ptr<EntityRegionEntry> find_region(const World* world, const RegionPos& pos)
 {
     RegionKey key {};
-    key.realm = realm;
+    key.world = world;
     key.pos = pos;
 
     auto it = s_cache.find(key);
@@ -58,17 +52,17 @@ static std::shared_ptr<EntityRegionEntry> find_region(biome_realm realm, const R
     return it->second;
 }
 
-static std::shared_ptr<EntityRegionEntry> get_region(biome_realm realm, const RegionPos& pos)
+static std::shared_ptr<EntityRegionEntry> get_region(const World* world, const RegionPos& pos)
 {
-    if(auto entry = find_region(realm, pos)) {
+    if(auto entry = find_region(world, pos)) {
         return entry;
     }
 
     RegionKey key {};
-    key.realm = realm;
+    key.world = world;
     key.pos = pos;
 
-    auto entry = std::make_shared<EntityRegionEntry>(region_path(realm, pos));
+    auto entry = std::make_shared<EntityRegionEntry>(region_path(world, pos));
     entry->last_used = std::chrono::steady_clock::now();
 
     if(s_cache.size() > MAX_REGIONS) {
@@ -91,11 +85,11 @@ static std::shared_ptr<EntityRegionEntry> get_region(biome_realm realm, const Re
     return entry;
 }
 
-static void encode_entity(entt::entity entity, WriteBuffer& buffer)
+static void encode_entity(entt::registry& registry, entt::entity entity, WriteBuffer& buffer)
 {
     thread_local std::vector<component_id_type> components;
 
-    auto& entity_class = globals::registry.get<EntityClass>(entity);
+    auto& entity_class = registry.get<EntityClass>(entity);
     auto name = class_registry::name_of(entity_class.id);
 
     if(name.has_value()) {
@@ -117,14 +111,14 @@ static void encode_entity(entt::entity entity, WriteBuffer& buffer)
         buffer.write<std::string_view>(component_map::name_of(id));
 
         WriteBuffer component_buffer;
-        component_map::encode_dat(id, entity, component_buffer);
+        component_map::encode_dat(registry, id, entity, component_buffer);
 
         buffer.write<std::uint32_t>(static_cast<std::uint32_t>(component_buffer.size()));
         buffer.write_bytes(component_buffer.take());
     }
 }
 
-static void decode_entity(ReadBuffer& buffer)
+static void decode_entity(entt::registry& registry, ReadBuffer& buffer)
 {
     thread_local std::vector<std::pair<std::string, std::vector<std::byte>>> components;
 
@@ -153,7 +147,7 @@ static void decode_entity(ReadBuffer& buffer)
         return;
     }
 
-    auto entity = utils::spawn(class_id);
+    auto entity = utils::spawn(registry, class_id);
 
     if(entity == entt::null) {
         return;
@@ -169,40 +163,51 @@ static void decode_entity(ReadBuffer& buffer)
         ReadBuffer component_buffer;
         component_buffer.reset(it.second);
 
-        component_map::decode_dat(component_id, entity, component_buffer);
+        component_map::decode_dat(registry, component_id, entity, component_buffer);
     }
 }
 
-void entity_loader::save(const ChunkPos& pos, std::span<const entt::entity> entities)
+EntityRegionEntry::EntityRegionEntry(std::filesystem::path path) : region_file(std::move(path))
 {
+    // empty
+}
+
+void entity_loader::save(World* world, const ChunkPos& pos, std::span<const entt::entity> entities)
+{
+    assert(world);
+
+    auto& registry = world->registry();
+
     if(entities.empty()) {
         return;
     }
 
-    auto realm = utils::realm(pos.y());
     auto region = utils::region_of(pos);
     auto slot = utils::region_slot(pos, region);
 
-    auto entry = get_region(realm, region);
+    auto entry = get_region(world, region);
 
     WriteBuffer buffer;
     buffer.write<std::uint32_t>(static_cast<std::uint32_t>(entities.size()));
 
     for(auto entity : entities) {
-        encode_entity(entity, buffer);
+        encode_entity(registry, entity, buffer);
     }
 
     std::scoped_lock io_lock(entry->io_mutex);
     entry->region_file.write_slot(slot, buffer);
 }
 
-void entity_loader::load(const ChunkPos& pos)
+void entity_loader::load(World* world, const ChunkPos& pos)
 {
-    auto realm = utils::realm(pos.y());
+    assert(world);
+
+    auto& registry = world->registry();
+
     auto region = utils::region_of(pos);
     auto slot = utils::region_slot(pos, region);
 
-    auto entry = get_region(realm, region);
+    auto entry = get_region(world, region);
 
     ReadBuffer buffer;
 
@@ -215,6 +220,6 @@ void entity_loader::load(const ChunkPos& pos)
     auto num_entities = buffer.read<std::uint32_t>();
 
     for(std::size_t i = 0; i < num_entities; ++i) {
-        decode_entity(buffer);
+        decode_entity(registry, buffer);
     }
 }

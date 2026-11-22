@@ -15,6 +15,8 @@
 #include "client/language.hh"
 #include "client/main_menu.hh"
 
+constexpr static float BODY_MARGIN = 16.0f;
+
 gui::Screen settings::screen;
 
 gui::Container settings::general;
@@ -47,9 +49,7 @@ static gui::ChoicePopup s_video_mode_popup;
 static std::optional<bool> s_video_mode_decision;
 static bool s_video_mode_prompted;
 
-constexpr static float BODY_MARGIN = 16.0f;
-
-static void on_language_update(const LanguageUpdateEvent& event)
+static void on_language_update(const LanguageUpdateEvent&)
 {
     settings::screen.translate();
 }

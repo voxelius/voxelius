@@ -28,7 +28,9 @@ static gui::LanguageSelector s_language_selector;
 
 static void read_mod_translations(std::string_view name_space)
 {
-    auto path = Identifier::from_parts(name_space, std::format("lang.{}", s_current_language->code())).as_file_path("lang", ".json");
+    auto lang_file = std::format("lang.{}", s_current_language->code());
+    auto lang_id = Identifier::from_parts(name_space, lang_file);
+    auto path = lang_id.as_file_path("lang", ".json");
     std::string source;
 
     if(!utils::read_file(path, source)) {
@@ -59,17 +61,6 @@ static void read_mod_translations(std::string_view name_space)
     json_value_free(jsonv);
 }
 
-LanguageInfo::LanguageInfo(std::string endonym, std::string display, std::string code)
-    : m_endonym(std::move(endonym)), m_display(std::move(display)), m_code(std::move(code))
-{
-    // empty
-}
-
-LanguageUpdateEvent::LanguageUpdateEvent(language_iterator_type lang) : m_language(lang)
-{
-    // empty
-}
-
 static void update_language(void)
 {
     auto lang = s_code_map.find(s_lang_current.value());
@@ -92,14 +83,27 @@ static void update_language(void)
     language::set(lang->second);
 }
 
+LanguageInfo::LanguageInfo(std::string endonym, std::string display, std::string code)
+    : m_endonym(std::move(endonym)), m_display(std::move(display)), m_code(std::move(code))
+{
+    // empty
+}
+
+LanguageUpdateEvent::LanguageUpdateEvent(language_iterator_type lang) : m_language(lang)
+{
+    // empty
+}
+
 void language::init(void)
 {
-    auto manifest_path = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "manifest").as_file_path("lang", ".json");
+    auto manifest_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "manifest");
+    auto manifest_path = manifest_id.as_file_path("lang", ".json");
 
     auto& lang_binding = cvar::bind_var(s_lang_current, "lang");
     lang_binding.set_help("Language");
     lang_binding.set_flags(FCVAR_ARCHIVE);
-    lang_binding.changed().connect<&update_language>();
+    auto lang_changed = lang_binding.changed();
+    lang_changed.connect<&update_language>();
 
     s_language_selector.set_key("lang");
     settings::general.add_child(s_language_selector, 0);

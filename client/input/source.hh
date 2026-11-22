@@ -1,6 +1,14 @@
 #ifndef A73825E6_9EFA_4923_8983_5CC3F7D83B45
 #define A73825E6_9EFA_4923_8983_5CC3F7D83B45
 
+constexpr static std::uint32_t MAXIS_X = 0;
+constexpr static std::uint32_t MAXIS_Y = 1;
+
+constexpr static std::uint32_t MWHEEL_XUP = 0;
+constexpr static std::uint32_t MWHEEL_XDOWN = 1;
+constexpr static std::uint32_t MWHEEL_YUP = 2;
+constexpr static std::uint32_t MWHEEL_YDOWN = 3;
+
 enum class input_device : std::uint32_t {
     KEYBOARD,
     MOUSE,
@@ -12,14 +20,6 @@ enum class input_edge : std::uint32_t {
     DOWN,
     UP,
 };
-
-constexpr static std::uint32_t MAXIS_X = 0;
-constexpr static std::uint32_t MAXIS_Y = 1;
-
-constexpr static std::uint32_t MWHEEL_XUP = 0;
-constexpr static std::uint32_t MWHEEL_XDOWN = 1;
-constexpr static std::uint32_t MWHEEL_YUP = 2;
-constexpr static std::uint32_t MWHEEL_YDOWN = 3;
 
 class ButtonSource final {
 public:
@@ -37,6 +37,14 @@ private:
     std::uint32_t m_value { 0 };
 };
 
+template<>
+struct std::hash<ButtonSource> final {
+    std::size_t operator()(const ButtonSource& source) const
+    {
+        return static_cast<std::size_t>(source.value());
+    }
+};
+
 class AxisSource final {
 public:
     constexpr AxisSource(void) = default;
@@ -50,6 +58,14 @@ public:
 
 private:
     std::uint32_t m_value { 0 };
+};
+
+template<>
+struct std::hash<AxisSource> final {
+    std::size_t operator()(const AxisSource& source) const
+    {
+        return static_cast<std::size_t>(source.value());
+    }
 };
 
 namespace input
@@ -117,21 +133,5 @@ constexpr std::uint32_t AxisSource::value(void) const
 {
     return m_value;
 }
-
-template<>
-struct std::hash<ButtonSource> final {
-    std::size_t operator()(const ButtonSource& source) const
-    {
-        return static_cast<std::size_t>(source.value());
-    }
-};
-
-template<>
-struct std::hash<AxisSource> final {
-    std::size_t operator()(const AxisSource& source) const
-    {
-        return static_cast<std::size_t>(source.value());
-    }
-};
 
 #endif /* A73825E6_9EFA_4923_8983_5CC3F7D83B45 */

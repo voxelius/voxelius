@@ -40,7 +40,7 @@ std::optional<physics::BlockHit> physics::raycast_block(const Ray& ray, block_fi
     std::optional<physics::BlockHit> closest = std::nullopt;
     auto closest_distance = std::numeric_limits<float>::max();
 
-    Ray_DDA dda(ray.start_chunk, ray.start, ray.direction);
+    Ray_DDA dda(ray.world, ray.start_chunk, ray.start, ray.direction);
 
     while(dda.distance() < ray.max_distance) {
         auto block_id = dda.step();
@@ -75,6 +75,7 @@ std::optional<physics::BlockHit> physics::raycast_block(const Ray& ray, block_fi
                 if(hit->distance <= ray.max_distance) {
                     if(hit->distance < closest_distance) {
                         physics::BlockHit new_hit {};
+                        new_hit.world = ray.world;
 
                         new_hit.distance = hit->distance;
                         new_hit.point = utils::to_relative(hit_cpos, ray.start_chunk, hit->point);
@@ -83,7 +84,14 @@ std::optional<physics::BlockHit> physics::raycast_block(const Ray& ray, block_fi
                         auto family = block_registry::find_family(def->family);
 
                         new_hit.id = block_id;
-                        new_hit.stem = family ? family->stem_id : block_id;
+
+                        if(family) {
+                            new_hit.stem = family->stem_id;
+                        }
+                        else {
+                            new_hit.stem = block_id;
+                        }
+
                         new_hit.face = make_block_face(hit->normal);
 
                         new_hit.block_pos = dda.position();
@@ -107,11 +115,11 @@ std::optional<physics::BlockHit> physics::raycast_block(const Ray& ray, block_fi
     return closest;
 }
 
-std::optional<physics::EntityHit> physics::raycast_entity(const Ray& ray, entity_filter efilter)
+std::optional<physics::EntityHit> physics::raycast_entity(const Ray&, entity_filter efilter)
 {
     assert(efilter);
 
-    return std::nullopt; // TODO
+    return std::nullopt; // TODO: raycast entities once the registry can enumerate candidates
 }
 
 physics::Hit physics::raycast(const Ray& ray, block_filter bfilter, entity_filter efilter)

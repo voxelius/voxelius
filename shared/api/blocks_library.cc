@@ -14,7 +14,6 @@ public:
     explicit BlockDefReader(lua_State* L, int def_idx, int proto_idx);
     bool try_push(const char* key) const;
 
-public:
     lua_State* L;
     int def_idx;
     int proto_idx;
@@ -498,7 +497,9 @@ static bool parse_overrides(lua_State* L, int idx, ModContext* ctx, BlockOverrid
     if(reader.try_push("drops")) {
         std::vector<BlockDrop> drops;
 
-        if(!parse_drops(L, lua_gettop(L), ctx, drops)) {
+        auto drops_idx = lua_gettop(L);
+
+        if(!parse_drops(L, drops_idx, ctx, drops)) {
             return false;
         }
 
@@ -805,7 +806,9 @@ static bool parse_definition(const BlockDefReader& reader, ModContext* ctx, Bloc
     }
 
     if(reader.try_push("drops")) {
-        if(!parse_drops(L, lua_gettop(L), ctx, def.drops)) {
+        auto drops_idx = lua_gettop(L);
+
+        if(!parse_drops(L, drops_idx, ctx, def.drops)) {
             return false;
         }
 
@@ -939,7 +942,9 @@ static bool parse_variant_overrides(lua_State* L, int entry_idx, BlockVariantRul
         return true;
     }
 
-    if(!parse_overrides(L, lua_gettop(L), ctx, rule.overrides)) {
+    auto overrides_idx = lua_gettop(L);
+
+    if(!parse_overrides(L, overrides_idx, ctx, rule.overrides)) {
         return false;
     }
 
@@ -985,7 +990,7 @@ static BlockCallback parse_callback(lua_State* L, int table_idx, const char* key
     if(lua_isfunction(L, -1)) {
         BlockCallback callback {};
         callback.state = ctx->lua_state();
-        callback.callback_ref = luaL_ref(L, LUA_REGISTRYINDEX); // pops the function
+        callback.callback_ref = luaL_ref(L, LUA_REGISTRYINDEX); // Pops the function
         return callback;
     }
 
@@ -1004,7 +1009,8 @@ static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
     }
 
     for(unsigned n = 1; n < 10000; ++n) {
-        auto candidate = Identifier::from_parts(id.name_space(), std::format("{}~{}", id.value(), n));
+        auto suffix = std::format("{}~{}", id.value(), n);
+        auto candidate = Identifier::from_parts(id.name_space(), suffix);
 
         if(is_free(candidate)) {
             msg::log_warning("blocks.add: {} is already registered, using {} instead", id.full_string(), candidate.full_string());
@@ -1108,7 +1114,7 @@ static bool add_block(lua_State* L, ModContext* ctx, const char* raw_name, int d
         return false;
     }
 
-    // a block that resolves into variants is allowed to omit model_name at
+    // A block that resolves into variants may omit model_name at
     // the top level - each variants[].overrides is expected to supply its
     // own (eg. a slab's base registration has no sensible single model)
     auto has_variants = reader.try_push("variants");
@@ -1118,7 +1124,13 @@ static bool add_block(lua_State* L, ModContext* ctx, const char* raw_name, int d
     }
 
     if(!has_variants && def.render != BLOCK_RENDER_NONE && def.model_name.is_empty()) {
-        lua_pushfstring(L, "blocks.add: [%s]: model_name is required unless render is blocks.RENDER_NONE", id.full_string().data());
+        auto id_string = id.full_string();
+
+        lua_pushliteral(L, "blocks.add: [");
+        lua_pushlstring(L, id_string.data(), id_string.size());
+        lua_pushliteral(L, "]: model_name is required unless render is blocks.RENDER_NONE");
+        lua_concat(L, 3);
+
         return false;
     }
 
@@ -1149,7 +1161,8 @@ static bool add_block(lua_State* L, ModContext* ctx, const char* raw_name, int d
         family.default_variant = BLOCK_ID_NULL;
 
         if(reader.try_push("states")) {
-            auto states_ok = parse_states(L, lua_gettop(L), family);
+            auto states_idx = lua_gettop(L);
+            auto states_ok = parse_states(L, states_idx, family);
             lua_pop(L, 1);
 
             if(!states_ok) {
@@ -1158,7 +1171,8 @@ static bool add_block(lua_State* L, ModContext* ctx, const char* raw_name, int d
         }
 
         if(reader.try_push("variants")) {
-            auto variants_ok = parse_variants(L, lua_gettop(L), ctx, family);
+            auto variants_idx = lua_gettop(L);
+            auto variants_ok = parse_variants(L, variants_idx, ctx, family);
             lua_pop(L, 1);
 
             if(!variants_ok) {
@@ -1208,14 +1222,14 @@ static int api_add(lua_State* L)
     return 1;
 }
 
-void api::open_blocks_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
+void api_shared::open_blocks(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 {
     assert(lua);
     assert(ctx);
 
     auto L = lua.get();
 
-    lua_newtable(L); // blocks
+    lua_newtable(L); // Blocks
 
     lua_pushinteger(L, BLOCK_RENDER_SOLID);
     lua_setfield(L, -2, "RENDER_SOLID");

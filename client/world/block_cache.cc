@@ -2,22 +2,25 @@
 
 #include "client/world/block_cache.hh"
 
+#include "shared/globals.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/chunk.hh"
 #include "shared/world/light_material.hh"
 #include "shared/world/lighting.hh"
 #include "shared/world/world.hh"
 
-static std::size_t cache_index(std::size_t x, std::size_t y, std::size_t z, std::size_t size)
-{
-    return x + y * size + z * size * size;
-}
+#include "client/globals.hh"
 
 constexpr static std::int32_t CHUNK_TOP_LOCAL_Y = static_cast<std::int32_t>(constant::CHUNK_SIZE) - 1;
 
 // The engine has no sea level yet. It only affects the guess for chunks
 // whose top layer lies below it, so one number in one place is enough.
 constexpr static std::int32_t ESTIMATED_SEA_LEVEL = 0;
+
+static std::size_t cache_index(std::size_t x, std::size_t y, std::size_t z, std::size_t size)
+{
+    return x + y * size + z * size * size;
+}
 
 void BlockCache::init(const ChunkPos& cpos)
 {
@@ -32,7 +35,7 @@ void BlockCache::init(const ChunkPos& cpos)
                 auto delta = ChunkPos(dx, dy, dz);
                 auto query_pos = cpos + delta;
 
-                if(auto chunk = world::find_chunk(query_pos)) {
+                if(auto chunk = globals::world->find_chunk(query_pos)) {
                     chunks[dx + 1][dy + 1][dz + 1] = chunk;
                 }
             }
@@ -52,7 +55,8 @@ void BlockCache::init(const ChunkPos& cpos)
                 }
 
                 auto& blocks = chunk->blocks();
-                auto light = chunk->light().data();
+                auto& light_storage = chunk->light();
+                auto light = light_storage.data();
 
                 // A neighbour only contributes the slice that lands inside the
                 // cache, so clip the range instead of walking its whole volume
@@ -120,7 +124,12 @@ void BlockCache::init(const ChunkPos& cpos)
                     auto depth = static_cast<unsigned>(ESTIMATED_SEA_LEVEL - 1 - top_y);
                     auto consumed = depth * opacity;
 
-                    level = (consumed >= BLOCK_LIGHT_MAX) ? BLOCK_LIGHT_MIN : static_cast<block_light_type>(BLOCK_LIGHT_MAX - consumed);
+                    if(consumed >= BLOCK_LIGHT_MAX) {
+                        level = BLOCK_LIGHT_MIN;
+                    }
+                    else {
+                        level = static_cast<block_light_type>(BLOCK_LIGHT_MAX - consumed);
+                    }
                 }
 
                 auto above = BLOCK_ID_NULL;

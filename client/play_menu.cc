@@ -24,6 +24,7 @@
 #include "client/gui/screen.hh"
 #include "client/gui/stack.hh"
 #include "client/language.hh"
+#include "client/loading.hh"
 #include "client/main_menu.hh"
 #include "client/net/bother.hh"
 #include "client/net/session.hh"
@@ -93,13 +94,12 @@ static gui::Container s_worlds_tab;
 static gui::VerticalStack s_servers_tab;
 static gui::InputPopup s_server_popup;
 static gui::InputPopup s_direct_popup;
-static gui::ProgressPopup s_connect_popup;
 static gui::ChoicePopup s_error_popup;
 
 gui::Screen play_menu::screen;
 
-// Greedy word wrap over the width the draw list gives us; words longer than
-// the row are left whole instead of being cut in the middle
+// Greedy word wrap over the width the draw list gives us; words longer
+// than the row are left whole instead of being cut in the middle of a word
 static std::vector<std::string> wrap_text(std::string_view text, float max_width, std::size_t max_lines)
 {
     std::vector<std::string> lines;
@@ -117,9 +117,17 @@ static std::vector<std::string> wrap_text(std::string_view text, float max_width
 
         auto word = text.substr(index, end - index);
 
-        auto candidate = current.empty() ? std::string(word) : current + " " + std::string(word);
+        std::string candidate;
+        if(current.empty()) {
+            candidate = std::string(word);
+        }
+        else {
+            candidate = current + " " + std::string(word);
+        }
 
-        if(current.empty() || ImGui::CalcTextSize(candidate.c_str()).x <= max_width) {
+        auto candidate_size = ImGui::CalcTextSize(candidate.c_str());
+
+        if(current.empty() || candidate_size.x <= max_width) {
             current = std::move(candidate);
         }
         else {
@@ -146,156 +154,6 @@ static std::vector<std::string> wrap_text(std::string_view text, float max_width
     return lines;
 }
 
-void ServerListItem::layout(void)
-{
-    const auto& style = ImGui::GetStyle();
-    const auto& padding = style.FramePadding;
-    const auto& spacing = style.ItemSpacing;
-
-    ImU32 motd_color {};
-    std::string_view motd_text {};
-
-    switch(status) {
-        case UNKNOWN:
-            motd_color = ImGui::GetColorU32(ImGuiCol_TextDisabled);
-            motd_text = s_motd_init;
-            break;
-
-        case PINGING:
-            motd_color = ImGui::GetColorU32(ImGuiCol_TextDisabled);
-            motd_text = s_motd_ping;
-            break;
-
-        case REACHED:
-            motd_color = ImGui::GetColorU32(ImGuiCol_TextDisabled);
-            motd_text = motd;
-            break;
-
-        default:
-            motd_color = ImGui::GetColorU32(ImGuiCol_PlotLinesHovered);
-            motd_text = s_motd_fail;
-            break;
-    }
-
-    auto item_size = ImGui::GetContentRegionAvail();
-    auto line_height = ImGui::GetTextLineHeightWithSpacing();
-
-    auto text_width = std::max(1.0f, item_size.x - 2.0f * padding.x - spacing.x);
-    auto motd_lines = wrap_text(motd_text, text_width, MAX_MOTD_LINES);
-
-    // Rows never drop below three lines, so a wrapped MOTD does not make
-    // the whole list jump
-    auto rows = std::max<std::size_t>(MIN_ROW_LINES, 1 + motd_lines.size());
-    auto row_height = static_cast<float>(rows) * (line_height + padding.y + spacing.y);
-
-    auto cursor_pos = this->begin_row(ImVec2(0.0f, row_height));
-    auto draw_list = ImGui::GetWindowDrawList();
-
-    ImVec2 name_pos {};
-    name_pos.x = cursor_pos.x + padding.x + 0.5f * spacing.x;
-    name_pos.y = cursor_pos.y + padding.y;
-
-    auto text_shadow_color = ImGui::GetColorU32(ImVec4(0.000f, 0.000f, 0.000f, 0.750f));
-    auto text_shadow_offset = static_cast<float>(globals::gui_scale);
-
-    draw_list->AddText(ImVec2(name_pos.x + text_shadow_offset, name_pos.y + text_shadow_offset), text_shadow_color, name.c_str(),
-        name.c_str() + name.size());
-    draw_list->AddText(name_pos, ImGui::GetColorU32(ImGuiCol_Text), name.c_str(), name.c_str() + name.size());
-
-    if(status == REACHED) {
-        if(!stats_string.has_value()) {
-            stats_string = std::format("{}/{}", num_players, max_players);
-        }
-
-        auto stats_cbegin = stats_string->data();
-        auto stats_cend = stats_cbegin + stats_string->size();
-        auto stats_size = ImGui::CalcTextSize(stats_cbegin, stats_cend);
-
-        ImVec2 stats_pos {};
-        stats_pos.x = cursor_pos.x + item_size.x - stats_size.x - padding.x - 0.5f * spacing.x;
-        stats_pos.y = cursor_pos.y + padding.y;
-
-        draw_list->AddText(ImVec2(stats_pos.x + text_shadow_offset, stats_pos.y + text_shadow_offset), text_shadow_color, stats_cbegin,
-            stats_cend);
-        draw_list->AddText(stats_pos, ImGui::GetColorU32(ImGuiCol_TextDisabled), stats_cbegin, stats_cend);
-
-        auto major_match = version_major == version::major;
-        auto minor_match = version_minor == version::minor;
-        auto patch_match = version_patch == version::patch;
-
-        ImU32 version_color {};
-
-        if(major_match && minor_match && patch_match) {
-            version_color = ImGui::GetColorU32(ImGuiCol_PlotHistogram);
-        }
-        else if(major_match && minor_match) {
-            version_color = ImGui::GetColorU32(ImGuiCol_DragDropTarget);
-        }
-        else {
-            version_color = ImGui::GetColorU32(ImGuiCol_PlotLinesHovered);
-        }
-
-        if(!version_string.has_value()) {
-            // NOTE: we're not doing the 16.x.x thing
-            // and not bothering with custom diplay formats
-            // now since 16.x.x and 17.x.x are fundamentally different
-            version_string = std::format("{}.{}.{}", version_major, version_minor, version_patch);
-        }
-
-        ImGui::PushFont(fonts::unscii8, 4.0f);
-
-        auto version_cbegin = version_string->data();
-        auto version_cend = version_cbegin + version_string->size();
-        auto version_size = ImGui::CalcTextSize(version_cbegin, version_cend);
-
-        ImVec2 version_pos {};
-        version_pos.x = stats_pos.x - version_size.x - padding.x - 0.5f * spacing.x;
-        version_pos.y = stats_pos.y + 0.5f * (stats_size.y - version_size.y);
-
-        ImVec2 version_end {};
-        version_end.x = version_pos.x + version_size.x;
-        version_end.y = version_pos.y + version_size.y;
-
-        ImVec2 outline_pos {};
-        outline_pos.x = version_pos.x - 1.0f * static_cast<float>(globals::gui_scale);
-        outline_pos.y = std::max(cursor_pos.y, version_pos.y - 1.0f * static_cast<float>(globals::gui_scale));
-
-        ImVec2 outline_end {};
-        outline_end.x = version_end.x + 1.0f * static_cast<float>(globals::gui_scale);
-        outline_end.y = version_end.y + 1.0f * static_cast<float>(globals::gui_scale);
-
-        auto outline_thickness = std::max(1.0f, 0.5f * static_cast<float>(globals::gui_scale));
-
-        draw_list->AddRect(outline_pos, outline_end, version_color, 0.0f, 0, outline_thickness);
-        draw_list->AddText(version_pos, version_color, version_cbegin, version_cend);
-
-        ImGui::PopFont();
-    }
-
-    // The MOTD sits behind the row highlight, so its shadow is as thick as
-    // one glyph pixel instead of the single pixel that stone labels use
-    auto motd_shadow_color = ImGui::GetColorU32(ImVec4(0.000f, 0.000f, 0.000f, 0.750f));
-    auto motd_shadow_offset = static_cast<float>(globals::gui_scale);
-
-    for(std::size_t i = 0; i < motd_lines.size(); ++i) {
-        auto& line = motd_lines[i];
-
-        ImVec2 motd_pos {};
-        motd_pos.x = cursor_pos.x + padding.x + 0.5f * spacing.x;
-        motd_pos.y = cursor_pos.y + padding.y + line_height * static_cast<float>(1 + i);
-
-        draw_list->AddText(ImVec2(motd_pos.x + motd_shadow_offset, motd_pos.y + motd_shadow_offset), motd_shadow_color, line.c_str(),
-            line.c_str() + line.size());
-        draw_list->AddText(motd_pos, motd_color, line.c_str(), line.c_str() + line.size());
-    }
-}
-
-void ServerListItem::invalidate(void)
-{
-    stats_string.reset();
-    version_string.reset();
-}
-
 static void select_server(ServerListItem* item)
 {
     if(s_selected_server) {
@@ -313,8 +171,8 @@ static void select_server(ServerListItem* item)
     s_btn_remove.set_enabled(s_selected_server);
 }
 
-// Clicking the row that already holds the selection clears it, so the list
-// does not keep a server picked forever
+// Clicking the row that already holds the selection
+// clears it, so the list does not keep a server picked forever
 static void toggle_server(ServerListItem* item)
 {
     select_server((s_selected_server == item) ? nullptr : item);
@@ -512,7 +370,7 @@ static void on_bother_response(const BotherResponseEvent& event)
     item->invalidate();
 }
 
-static void on_language_update(const LanguageUpdateEvent& event)
+static void on_language_update(const LanguageUpdateEvent&)
 {
     play_menu::screen.translate();
 
@@ -537,26 +395,21 @@ static void on_session_state(const SessionStateEvent& event)
 {
     switch(event.state()) {
         case SESSION_CONNECTING:
-            play_menu::open_connect_popup("play_menu.connect.stage.connecting", [] {
-                session::disconnect(packet::Session_Disconnect::CLIENT_DISCONNECT);
-            });
+            loading::show_stage(LOADING_CONNECTING);
             break;
 
         case SESSION_AUTHENTICATING:
-            play_menu::set_connect_message("play_menu.connect.stage.authenticating");
+            loading::show_stage(LOADING_AUTHENTICATING);
             break;
 
         case SESSION_SPAWNING:
-            play_menu::set_connect_message("play_menu.connect.stage.spawning");
+            loading::show_stage(LOADING_SPAWNING);
             break;
 
         case SESSION_INGAME:
-            play_menu::close_connect_popup();
-            globals::gui_screen = nullptr;
-            break;
-
         case SESSION_DISCONNECTED:
-            play_menu::close_connect_popup();
+            // The loading screen switches itself on the player
+            // assignment and closes itself on a disconnect
             break;
     }
 }
@@ -612,7 +465,8 @@ static void load_servers_json(void)
             auto hostname = json_object_get_string(item, "hostname");
             auto invite_str = json_object_get_string(item, "invite");
 
-            if(item == nullptr || name == nullptr || hostname == nullptr || invite_str == nullptr) {
+            auto item_ok = item && name;
+            if(!item_ok || hostname == nullptr || invite_str == nullptr) {
                 msg::log_warning("{}: expected JSON object with name, hostname, and invite keys", JSON_PATH);
                 continue;
             }
@@ -644,8 +498,11 @@ static void save_servers_json(void)
     auto json = json_value_get_object(jsonv);
     vx::throw_if(jsonv == nullptr || json == nullptr);
 
-    json_object_set_string(json, "direct_hostname", std::string(s_direct_popup.value(0)).c_str());
-    json_object_set_string(json, "direct_invite", std::string(s_direct_popup.value(1)).c_str());
+    auto direct_hostname = std::string(s_direct_popup.value(0));
+    auto direct_invite = std::string(s_direct_popup.value(1));
+
+    json_object_set_string(json, "direct_hostname", direct_hostname.c_str());
+    json_object_set_string(json, "direct_invite", direct_invite.c_str());
 
     auto serversv = json_value_init_array();
     auto servers = json_value_get_array(serversv);
@@ -677,6 +534,161 @@ static void save_servers_json(void)
     utils::write_file(JSON_PATH, source);
 
     json_value_free(jsonv);
+}
+
+void ServerListItem::layout(void)
+{
+    const auto& style = ImGui::GetStyle();
+    const auto& padding = style.FramePadding;
+    const auto& spacing = style.ItemSpacing;
+
+    ImU32 motd_color {};
+    std::string_view motd_text {};
+
+    switch(status) {
+        case UNKNOWN:
+            motd_color = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+            motd_text = s_motd_init;
+            break;
+
+        case PINGING:
+            motd_color = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+            motd_text = s_motd_ping;
+            break;
+
+        case REACHED:
+            motd_color = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+            motd_text = motd;
+            break;
+
+        default:
+            motd_color = ImGui::GetColorU32(ImGuiCol_PlotLinesHovered);
+            motd_text = s_motd_fail;
+            break;
+    }
+
+    auto item_size = ImGui::GetContentRegionAvail();
+    auto line_height = ImGui::GetTextLineHeightWithSpacing();
+
+    auto text_width = std::max(1.0f, item_size.x - 2.0f * padding.x - spacing.x);
+    auto motd_lines = wrap_text(motd_text, text_width, MAX_MOTD_LINES);
+
+    // Rows never drop below three lines,
+    // so a wrapped MOTD does not make the whole list jump
+    auto rows = std::max<std::size_t>(MIN_ROW_LINES, 1 + motd_lines.size());
+    auto row_height = static_cast<float>(rows) * (line_height + padding.y + spacing.y);
+
+    auto cursor_pos = this->begin_row(ImVec2(0.0f, row_height));
+    auto draw_list = ImGui::GetWindowDrawList();
+
+    ImVec2 name_pos {};
+    name_pos.x = cursor_pos.x + padding.x + 0.5f * spacing.x;
+    name_pos.y = cursor_pos.y + padding.y;
+
+    auto text_shadow_color = ImGui::GetColorU32(ImVec4(0.000f, 0.000f, 0.000f, 0.750f));
+    auto text_shadow_offset = static_cast<float>(globals::gui_scale);
+
+    auto name_shadow_pos = ImVec2(name_pos.x + text_shadow_offset, name_pos.y + text_shadow_offset);
+    auto name_color = ImGui::GetColorU32(ImGuiCol_Text);
+
+    draw_list->AddText(name_shadow_pos, text_shadow_color, name.c_str(), name.c_str() + name.size());
+    draw_list->AddText(name_pos, name_color, name.c_str(), name.c_str() + name.size());
+
+    if(status == REACHED) {
+        if(!stats_string.has_value()) {
+            stats_string = std::format("{}/{}", num_players, max_players);
+        }
+
+        auto stats_cbegin = stats_string->data();
+        auto stats_cend = stats_cbegin + stats_string->size();
+        auto stats_size = ImGui::CalcTextSize(stats_cbegin, stats_cend);
+
+        ImVec2 stats_pos {};
+        stats_pos.x = cursor_pos.x + item_size.x - stats_size.x - padding.x - 0.5f * spacing.x;
+        stats_pos.y = cursor_pos.y + padding.y;
+
+        auto stats_shadow_pos = ImVec2(stats_pos.x + text_shadow_offset, stats_pos.y + text_shadow_offset);
+        auto stats_color = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+
+        draw_list->AddText(stats_shadow_pos, text_shadow_color, stats_cbegin, stats_cend);
+        draw_list->AddText(stats_pos, stats_color, stats_cbegin, stats_cend);
+
+        auto major_match = version_major == version::major;
+        auto minor_match = version_minor == version::minor;
+        auto patch_match = version_patch == version::patch;
+
+        ImU32 version_color {};
+
+        if(major_match && minor_match && patch_match) {
+            version_color = ImGui::GetColorU32(ImGuiCol_PlotHistogram);
+        }
+        else if(major_match && minor_match) {
+            version_color = ImGui::GetColorU32(ImGuiCol_DragDropTarget);
+        }
+        else {
+            version_color = ImGui::GetColorU32(ImGuiCol_PlotLinesHovered);
+        }
+
+        if(!version_string.has_value()) {
+            // NOTE: we're not doing the 16.x.x thing
+            // and not bothering with custom diplay formats
+            // now since 16.x.x and 17.x.x are fundamentally different
+            version_string = std::format("{}.{}.{}", version_major, version_minor, version_patch);
+        }
+
+        ImGui::PushFont(fonts::unscii8, 4.0f);
+
+        auto version_cbegin = version_string->data();
+        auto version_cend = version_cbegin + version_string->size();
+        auto version_size = ImGui::CalcTextSize(version_cbegin, version_cend);
+
+        ImVec2 version_pos {};
+        version_pos.x = stats_pos.x - version_size.x - padding.x - 0.5f * spacing.x;
+        version_pos.y = stats_pos.y + 0.5f * (stats_size.y - version_size.y);
+
+        ImVec2 version_end {};
+        version_end.x = version_pos.x + version_size.x;
+        version_end.y = version_pos.y + version_size.y;
+
+        ImVec2 outline_pos {};
+        outline_pos.x = version_pos.x - 1.0f * static_cast<float>(globals::gui_scale);
+        outline_pos.y = std::max(cursor_pos.y, version_pos.y - 1.0f * static_cast<float>(globals::gui_scale));
+
+        ImVec2 outline_end {};
+        outline_end.x = version_end.x + 1.0f * static_cast<float>(globals::gui_scale);
+        outline_end.y = version_end.y + 1.0f * static_cast<float>(globals::gui_scale);
+
+        auto outline_thickness = std::max(1.0f, 0.5f * static_cast<float>(globals::gui_scale));
+
+        draw_list->AddRect(outline_pos, outline_end, version_color, 0.0f, 0, outline_thickness);
+        draw_list->AddText(version_pos, version_color, version_cbegin, version_cend);
+
+        ImGui::PopFont();
+    }
+
+    // The MOTD sits behind the row highlight, so its shadow is as thick as
+    // one glyph pixel instead of the single pixel that stone labels use
+    auto motd_shadow_color = ImGui::GetColorU32(ImVec4(0.000f, 0.000f, 0.000f, 0.750f));
+    auto motd_shadow_offset = static_cast<float>(globals::gui_scale);
+
+    for(std::size_t i = 0; i < motd_lines.size(); ++i) {
+        auto& line = motd_lines[i];
+
+        ImVec2 motd_pos {};
+        motd_pos.x = cursor_pos.x + padding.x + 0.5f * spacing.x;
+        motd_pos.y = cursor_pos.y + padding.y + line_height * static_cast<float>(1 + i);
+
+        auto motd_shadow_pos = ImVec2(motd_pos.x + motd_shadow_offset, motd_pos.y + motd_shadow_offset);
+
+        draw_list->AddText(motd_shadow_pos, motd_shadow_color, line.c_str(), line.c_str() + line.size());
+        draw_list->AddText(motd_pos, motd_color, line.c_str(), line.c_str() + line.size());
+    }
+}
+
+void ServerListItem::invalidate(void)
+{
+    stats_string.reset();
+    version_string.reset();
 }
 
 void play_menu::init(void)
@@ -772,9 +784,6 @@ void play_menu::init(void)
         session::connect(parts.first, parts.second, invite);
     });
 
-    s_connect_popup.set_title("play_menu.connect.title");
-    screen.add_child(s_connect_popup, 3);
-
     s_error_popup.set_title("play_menu.connect.error.title");
     s_error_popup.add_choice("play_menu.connect.error.ok");
     screen.add_child(s_error_popup, 3);
@@ -804,29 +813,6 @@ void play_menu::update_late(void)
             owned->invalidate();
         }
     }
-}
-
-void play_menu::open_connect_popup(std::string_view message, std::function<void(void)> on_cancel)
-{
-    s_connect_popup.set_message(message);
-    s_connect_popup.set_progress(std::nullopt);
-    s_connect_popup.on_cancel(std::move(on_cancel));
-    s_connect_popup.open();
-}
-
-void play_menu::set_connect_message(std::string_view message)
-{
-    s_connect_popup.set_message(message);
-}
-
-void play_menu::set_connect_progress(std::optional<float> progress)
-{
-    s_connect_popup.set_progress(progress);
-}
-
-void play_menu::close_connect_popup(void)
-{
-    s_connect_popup.close();
 }
 
 void play_menu::show_error(std::string_view message)

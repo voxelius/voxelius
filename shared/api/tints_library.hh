@@ -3,9 +3,9 @@
 
 class ModContext;
 
-namespace api
+namespace api_shared
 {
-void open_tints_library(std::shared_ptr<lua_State>& lua, ModContext* ctx);
-} // namespace api
+void open_tints(std::shared_ptr<lua_State>& lua, ModContext* ctx);
+} // namespace api_shared
 
 #endif /* CE3C83EC_A094_45C7_8F32_F70299B1E517 */

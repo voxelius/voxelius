@@ -4,6 +4,8 @@
 #include "shared/coord.hh"
 #include "shared/world/block.hh"
 
+class World;
+
 namespace physics
 {
 enum block_filter {
@@ -21,6 +23,7 @@ enum entity_filter {
 namespace physics
 {
 struct Ray final {
+    World* world;
     ChunkPos start_chunk;
     Eigen::Vector3f start;
     Eigen::Vector3f direction;
@@ -31,6 +34,8 @@ struct Ray final {
 namespace physics
 {
 struct BlockHit final {
+    World* world;
+
     float distance;
     Eigen::Vector3f point; // float variant of local_pos
     Eigen::Vector3f normal;

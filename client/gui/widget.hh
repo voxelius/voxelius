@@ -12,13 +12,13 @@ public:
     constexpr bool visible(void) const;
     void set_visible(bool visible);
 
+protected:
+    const std::string& imgui_id(void) const;
+
 private:
     bool m_visible { true };
     mutable std::string m_imgui_id {};
     mutable const void* m_last_this { nullptr };
-
-protected:
-    const std::string& imgui_id(void) const;
 };
 } // namespace gui
 

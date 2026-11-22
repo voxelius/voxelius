@@ -5,15 +5,15 @@ namespace vx
 {
 template<typename... Args>
 struct FormatWithLocation final {
-    std::format_string<Args...> value;
-    std::source_location location;
-
     template<typename StringT>
     consteval FormatWithLocation(const StringT& value, std::source_location location = std::source_location::current())
         : value(value), location(std::move(location))
     {
         // empty
     }
+
+    std::format_string<Args...> value;
+    std::source_location location;
 };
 } // namespace vx
 

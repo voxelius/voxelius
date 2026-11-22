@@ -104,8 +104,10 @@ void outline::prepare(void)
     glDisable(GL_CULL_FACE);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
+    auto view_projection = camera::instance.view_projection();
+
     glUseProgram(s_program.handle);
-    glUniformMatrix4fv(s_program.uniforms[su_ViewProjection].location, 1, false, camera::instance.view_projection().data());
+    glUniformMatrix4fv(s_program.uniforms[su_ViewProjection].location, 1, false, view_projection.data());
     glUniform1f(s_program.uniforms[su_ViewDistance].location, static_cast<float>(constant::CHUNK_SIZE * camera::view_distance.value()));
 
     glBindVertexArray(s_vao);
@@ -120,7 +122,9 @@ void outline::cube(const ChunkPos& cpos, const Eigen::Vector3f& fpos, const Eige
 
     glLineWidth(thickness);
 
-    glUniform3fv(s_program.uniforms[su_WorldPosition].location, 1, utils::to_fvec(patch_cpos, fpos).data());
+    auto world_position = utils::to_fvec(patch_cpos, fpos);
+
+    glUniform3fv(s_program.uniforms[su_WorldPosition].location, 1, world_position.data());
     glUniform4fv(s_program.uniforms[su_Modulate].location, 1, color.data());
     glUniform3fv(s_program.uniforms[su_Scale].location, 1, size.data());
 
@@ -136,7 +140,9 @@ void outline::line(const ChunkPos& cpos, const Eigen::Vector3f& fpos, const Eige
 
     glLineWidth(thickness);
 
-    glUniform3fv(s_program.uniforms[su_WorldPosition].location, 1, utils::to_fvec(patch_cpos, fpos).data());
+    auto world_position = utils::to_fvec(patch_cpos, fpos);
+
+    glUniform3fv(s_program.uniforms[su_WorldPosition].location, 1, world_position.data());
     glUniform4fv(s_program.uniforms[su_Modulate].location, 1, color.data());
     glUniform3fv(s_program.uniforms[su_Scale].location, 1, size.data());
 

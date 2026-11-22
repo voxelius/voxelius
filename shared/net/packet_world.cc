@@ -3,6 +3,12 @@
 #include "shared/net/packet_world.hh"
 
 #include "core/buffer.hh"
+#include "core/identifier.hh"
+
+#include "shared/world/world_definition.hh"
+
+constexpr static std::size_t ENTRY_HEADER_SIZE = 3 * sizeof(std::int32_t) + sizeof(std::uint8_t);
+constexpr static std::size_t CELL_SIZE = sizeof(std::uint16_t) + sizeof(std::uint8_t);
 
 void packet::World_Request::encode(const World_Request& packet, WriteBuffer& buffer)
 {
@@ -30,7 +36,8 @@ void packet::World_Blocks::encode(const World_Blocks& packet, WriteBuffer& buffe
 
 void packet::World_Blocks::decode(World_Blocks& packet, ReadBuffer& buffer)
 {
-    packet.cpos = buffer.read_vector<std::int32_t, 3>().cast<ChunkPos::value_type>();
+    auto cpos = buffer.read_vector<std::int32_t, 3>();
+    packet.cpos = cpos.cast<ChunkPos::value_type>();
     BlockStorage::decode_net(packet.blocks, buffer);
     LightStorage::decode_net(packet.light, buffer);
     packet.light_valid = buffer.read<std::uint8_t>();
@@ -38,15 +45,14 @@ void packet::World_Blocks::decode(World_Blocks& packet, ReadBuffer& buffer)
 
 void packet::World_Biomes::encode(const World_Biomes& packet, WriteBuffer& buffer)
 {
-    buffer.write<std::uint32_t>(static_cast<std::uint32_t>(packet.realm));
     buffer.write_vector<std::int32_t, 2>(packet.cpos.cast<std::int32_t>());
     BiomeSlice::encode(packet.biomes, buffer);
 }
 
 void packet::World_Biomes::decode(World_Biomes& packet, ReadBuffer& buffer)
 {
-    packet.realm = static_cast<biome_realm>(buffer.read<std::uint32_t>());
-    packet.cpos = buffer.read_vector<std::int32_t, 2>().cast<ChunkPosXZ::value_type>();
+    auto cpos = buffer.read_vector<std::int32_t, 2>();
+    packet.cpos = cpos.cast<ChunkPosXZ::value_type>();
     BiomeSlice::decode(packet.biomes, buffer);
 }
 
@@ -83,14 +89,15 @@ void packet::World_Light::decode(World_Light& packet, ReadBuffer& buffer)
     auto count = buffer.read<std::uint16_t>();
 
     for(std::uint16_t i = 0; i < count; ++i) {
-        // Chunk position plus the full flag.
-        if(!buffer.has_records(1, 3 * sizeof(std::int32_t) + sizeof(std::uint8_t))) {
+        // Chunk position plus the full flag
+        if(!buffer.has_records(1, ENTRY_HEADER_SIZE)) {
             return;
         }
 
         Entry entry;
 
-        entry.cpos = buffer.read_vector<std::int32_t, 3>().cast<ChunkPos::value_type>();
+        auto cpos = buffer.read_vector<std::int32_t, 3>();
+        entry.cpos = cpos.cast<ChunkPos::value_type>();
         entry.full = buffer.read<std::uint8_t>();
 
         if(entry.full) {
@@ -105,7 +112,7 @@ void packet::World_Light::decode(World_Light& packet, ReadBuffer& buffer)
 
         auto cells = buffer.read<std::uint16_t>();
 
-        if(!buffer.has_records(cells, sizeof(std::uint16_t) + sizeof(std::uint8_t))) {
+        if(!buffer.has_records(cells, CELL_SIZE)) {
             return;
         }
 
@@ -129,7 +136,8 @@ void packet::World_SetBlock::encode(const World_SetBlock& packet, WriteBuffer& b
 
 void packet::World_SetBlock::decode(World_SetBlock& packet, ReadBuffer& buffer)
 {
-    packet.bpos = buffer.read_vector<std::int64_t, 3>().cast<BlockPos::value_type>();
+    auto bpos = buffer.read_vector<std::int64_t, 3>();
+    packet.bpos = bpos.cast<BlockPos::value_type>();
     packet.block = buffer.read<std::uint32_t>();
 }
 
@@ -138,6 +146,8 @@ void packet::World_Timings::encode(const World_Timings& packet, WriteBuffer& buf
     buffer.write<std::uint64_t>(packet.current_tick);
     buffer.write<std::uint64_t>(packet.daylight_tick);
     buffer.write<std::uint64_t>(packet.day);
+    buffer.write<std::uint64_t>(packet.weather_tick);
+    buffer.write<std::uint64_t>(packet.season_tick);
 }
 
 void packet::World_Timings::decode(World_Timings& packet, ReadBuffer& buffer)
@@ -145,66 +155,70 @@ void packet::World_Timings::decode(World_Timings& packet, ReadBuffer& buffer)
     packet.current_tick = buffer.read<std::uint64_t>();
     packet.daylight_tick = buffer.read<std::uint64_t>();
     packet.day = buffer.read<std::uint64_t>();
+    packet.weather_tick = buffer.read<std::uint64_t>();
+    packet.season_tick = buffer.read<std::uint64_t>();
 }
 
 void packet::World_Info::encode(const World_Info& packet, WriteBuffer& buffer)
 {
-    buffer.write<std::uint64_t>(packet.seed);
-    buffer.write<std::uint32_t>(packet.star_seed);
+    buffer.write<std::string_view>(packet.id);
+    buffer.write<std::uint64_t>(packet.weather_seed);
 
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        buffer.write<std::uint32_t>(packet.types_seed[i]);
+    buffer.write<std::int64_t>(packet.min_y);
+    buffer.write<std::int64_t>(packet.max_y);
+    buffer.write_vector<std::int64_t, 3>(packet.spawn);
+
+    buffer.write<std::uint16_t>(static_cast<std::uint16_t>(packet.weather.size()));
+
+    for(auto type : packet.weather) {
+        buffer.write<std::uint32_t>(type);
     }
 
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        buffer.write<float>(packet.types_scale[i]);
-    }
-
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        buffer.write<std::uint32_t>(packet.detail_seed[i]);
-    }
-
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        buffer.write<float>(packet.detail_scale[i]);
-    }
+    WorldVisuals::encode(packet.visuals, buffer);
 }
 
 void packet::World_Info::decode(World_Info& packet, ReadBuffer& buffer)
 {
-    packet.seed = buffer.read<std::uint64_t>();
-    packet.star_seed = buffer.read<std::uint32_t>();
+    packet.id = buffer.read<std::string>();
+    packet.weather_seed = buffer.read<std::uint64_t>();
 
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        packet.types_seed[i] = buffer.read<std::uint32_t>();
+    packet.min_y = buffer.read<std::int64_t>();
+    packet.max_y = buffer.read<std::int64_t>();
+    packet.spawn = buffer.read_vector<std::int64_t, 3>();
+
+    packet.weather.clear();
+
+    if(buffer.has_records(1, sizeof(std::uint16_t))) {
+        auto count = buffer.read<std::uint16_t>();
+
+        if(buffer.has_records(count, sizeof(std::uint32_t))) {
+            packet.weather.reserve(count);
+
+            for(std::uint16_t i = 0; i < count; ++i) {
+                packet.weather.push_back(buffer.read<std::uint32_t>());
+            }
+        }
     }
 
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        packet.types_scale[i] = buffer.read<float>();
-    }
-
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        packet.detail_seed[i] = buffer.read<std::uint32_t>();
-    }
-
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        packet.detail_scale[i] = buffer.read<float>();
-    }
+    WorldVisuals::decode(packet.visuals, buffer);
 }
 
-void packet::World_Weather::encode(const World_Weather& packet, WriteBuffer& buffer)
+void packet::World_Info::fill(const WorldDefinition& definition)
 {
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        buffer.write_vector<float, 2>(packet.types_drift[i]);
-        buffer.write_vector<float, 2>(packet.detail_drift[i]);
-        buffer.write_vector<float, 2>(packet.wind[i]);
-    }
+    id = std::string(definition.id.full_string());
+    min_y = definition.min_y;
+    max_y = definition.max_y;
+    spawn = definition.spawn;
+    weather = definition.weather;
+    visuals = definition.visuals;
 }
 
-void packet::World_Weather::decode(World_Weather& packet, ReadBuffer& buffer)
+void packet::World_Info::to_definition(WorldDefinition& definition) const
 {
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        packet.types_drift[i] = buffer.read_vector<float, 2>();
-        packet.detail_drift[i] = buffer.read_vector<float, 2>();
-        packet.wind[i] = buffer.read_vector<float, 2>();
-    }
+    definition.id = Identifier::from_string(id);
+    definition.min_y = min_y;
+    definition.max_y = max_y;
+    definition.spawn = spawn;
+    definition.weather = weather;
+    definition.visuals = visuals;
 }

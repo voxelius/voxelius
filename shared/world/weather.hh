@@ -3,14 +3,6 @@
 
 #include "core/identifier.hh"
 
-#include "shared/world/biome.hh"
-
-namespace packet
-{
-struct World_Info;
-struct World_Weather;
-} // namespace packet
-
 using weather_type_id = std::uint32_t;
 
 constexpr static weather_type_id WEATHER_ID_NULL = 0;
@@ -54,7 +46,6 @@ struct WeatherCallback final {
 struct WeatherTypeDefinition final {
     Identifier name;
     weather_type_id id { WEATHER_ID_NULL };
-    std::uint32_t realms_bits { 0 }; // A type is only ever selected in the realms these bits name
 
     CloudBody cloud;
 
@@ -65,31 +56,17 @@ struct WeatherTypeDefinition final {
     float light_scale { 1.0f };
 
     float intensity { 1.0f };
-    float wind_speed { 0.0f };
 
-    std::uint32_t weight { 1 }; // Relative size of this type's slice of the type grid
+    // Point this type owns in the climate square; the nearest target
+    // wins, and weight stretches its cell so it covers more of the world
+    Eigen::Vector2f target { Eigen::Vector2f(0.5f, 0.5f) };
+    float weight { 1.0f };
 
     float strikes_per_minute { 0.0f };
     float strike_radius { 96.0f };
 
     WeatherCallback on_tick;
     WeatherCallback on_strike;
-};
-
-struct WeatherField final {
-    Eigen::Vector2f drift { Eigen::Vector2f::Zero() }; // Where the noise pattern has drifted to, in blocks; the wind moves it
-    float scale { 512.0f };                            // Blocks per noise cell; far larger than a chunk on purpose
-    std::uint32_t seed { 0 };
-};
-
-struct WeatherRealmState final {
-    // One field picks the type, the other one drives how strong it
-    // is right here. Both drift with the wind and are rebuilt from a
-    // seed on both sides, so no per-cell data travels over the network
-    WeatherField types;
-    WeatherField detail;
-
-    Eigen::Vector2f wind { Eigen::Vector2f::Zero() };
 };
 
 struct WeatherBlend final {
@@ -101,58 +78,57 @@ struct WeatherBlend final {
 
 namespace weather
 {
-std::span<WeatherRealmState, NUM_BIOME_REALMS> states(void);
+std::uint32_t star_seed(std::uint64_t weather_seed);
 } // namespace weather
 
-namespace weather
-{
-WeatherRealmState& state(biome_realm realm);
-} // namespace weather
+// Weather is a pure function of the world's weather seed, the world's
+// weather tick and the world position. Two noise grids form the two axes
+// of a climate square; every type owns a target point in it and a type
+// covers the points closest to its target, so the field needs no state
+// and travels over the network as one tick value
+class WeatherState final {
+public:
+    void reseed(std::uint64_t weather_seed);
 
-namespace weather
-{
-void reset(void);
-void advance(float delta_time);
-void force_at(biome_realm realm, weather_type_id type, float x, float z);
-} // namespace weather
+    constexpr std::uint64_t seed(void) const;
 
-namespace weather
-{
-float noise_at(float x, float z, std::uint32_t seed);
-float cell_random(std::int32_t x, std::int32_t z, std::uint32_t seed);
-} // namespace weather
+    Eigen::Vector2f drift(std::uint64_t weather_tick) const;
 
-namespace weather
-{
-weather_type_id type_at(biome_realm realm, float x, float z);
-float type_weight(biome_realm realm, weather_type_id type, float x, float z);
-float coverage_of(biome_realm realm, weather_type_id type, float x, float z);
-float coverage(biome_realm realm, float x, float z);
-} // namespace weather
+    Eigen::Vector2f wind_direction(void) const;
+    float wind_speed(void) const;
 
-namespace weather
-{
-float type_weight_in_field(const WeatherRealmState& state, biome_realm realm, weather_type_id type, float fx, float fz);
-float coverage_in_field(const WeatherRealmState& state, biome_realm realm, weather_type_id type, float fx, float fz);
-} // namespace weather
+    weather_type_id type_at(std::span<const weather_type_id> allowed, float x, float z, std::uint64_t weather_tick) const;
+    float coverage_of(std::span<const weather_type_id> allowed, weather_type_id type, float x, float z, std::uint64_t weather_tick) const;
+    float coverage(std::span<const weather_type_id> allowed, float x, float z, std::uint64_t weather_tick) const;
+    WeatherBlend blend(std::span<const weather_type_id> allowed, float x, float z, std::uint64_t weather_tick) const;
 
-namespace weather
-{
-WeatherBlend blend(biome_realm realm, float x, float z);
-WeatherBlend blend_overhead(float x, float y, float z);
-WeatherBlend blend_region(float x, float y, float z, float radius);
-} // namespace weather
+    float coverage_in_field(std::span<const weather_type_id> allowed, weather_type_id type, float fx, float fz) const;
 
-namespace weather
-{
-void fill_info(packet::World_Info& packet);
-void apply_info(const packet::World_Info& packet);
-} // namespace weather
+    // A forced front is a jump of the weather clock: the first tick at or
+    // after from_tick where the type covers the point wins, so both sides
+    // keep deriving the same field from the same tick. Returns that tick,
+    // or nothing when no tick within the horizon brings the type there
+    std::optional<std::uint64_t> solve_force(std::span<const weather_type_id> allowed, weather_type_id type, float x, float z,
+        std::uint64_t from_tick) const;
 
-namespace weather
+private:
+    Eigen::Vector2d drift_double(std::uint64_t weather_tick) const;
+
+    float climate_a_in_field(float fx, float fz) const;
+    float climate_b_in_field(float fx, float fz) const;
+    float share_in_field(std::span<const weather_type_id> allowed, weather_type_id type, float fx, float fz) const;
+    float share_at(std::span<const weather_type_id> allowed, weather_type_id type, float x, float z, std::uint64_t weather_tick) const;
+
+    std::uint64_t m_seed { 0 };
+    std::uint32_t m_seed_a { 0 };
+    std::uint32_t m_seed_b { 0 };
+    Eigen::Vector2f m_wind_direction { Eigen::Vector2f::Zero() };
+    float m_wind_speed { 0.0f };
+};
+
+constexpr std::uint64_t WeatherState::seed(void) const
 {
-void fill_packet(packet::World_Weather& packet);
-void apply_packet(const packet::World_Weather& packet, bool baseline);
-} // namespace weather
+    return m_seed;
+}
 
 #endif /* A6B2C1D9_4E7F_4A3B_9C51_2F0D8E6B7A14 */

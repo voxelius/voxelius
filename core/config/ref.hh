@@ -43,7 +43,9 @@ template<typename T>
 const T& config::Ref<T>::value(void) const
 {
     if(dirty()) {
-        m_value = m_map->value_raw<T>(m_slot).value_or(m_value);
+        auto stored = m_map->value_raw<T>(m_slot);
+
+        m_value = stored.value_or(m_value);
         m_generation = m_map->generation(m_slot);
     }
 
@@ -104,7 +106,10 @@ void config::Ref<T>::bind(Map& map, std::string_view key)
 {
     m_map = &map;
     m_slot = map.find_or_create_slot(key);
-    m_value = map.value_raw<T>(m_slot).value_or(m_value);
+
+    auto stored = map.value_raw<T>(m_slot);
+
+    m_value = stored.value_or(m_value);
     m_generation = map.generation(m_slot);
 
     map.set_value_raw<T>(m_slot, m_value);

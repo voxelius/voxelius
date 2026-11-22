@@ -2,61 +2,138 @@
 
 #include "shared/world/world.hh"
 
+#include "shared/entity/component_map.hh"
 #include "shared/globals.hh"
 #include "shared/utils/coord.hh"
-#include "shared/utils/world.hh"
 #include "shared/world/biome_map.hh"
+#include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
+#include "shared/world/weather_registry.hh"
 
-vx::hash_map<ChunkPos, std::shared_ptr<Chunk>> world::chunk_map;
-entt::registry world::chunk_registry;
+constexpr static float WEATHER_COOLING = 2.0f;     // Celsius lost under full precipitation
+constexpr static float WEATHER_SATURATION = 0.98f; // Humidity under full precipitation
 
-ChunkCreateEvent::ChunkCreateEvent(const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk) : m_chunk(chunk), m_pos(pos)
+// A precipitating front cools the air and raises the humidity under it.
+// The result scales with the local coverage, so a fringe of the front
+// moves the climate less than its centre does
+static float weather_coverage_at(const World& world, float x, float z)
 {
-    // empty
+    auto& definition = world.definition();
+    auto& state = world.weather();
+
+    auto type = state.type_at(definition.weather, x, z, world.weather_tick);
+    auto def = weather_registry::find_definition(type);
+
+    if(def == nullptr || def->precipitation.kind == precipitation_kind::NONE) {
+        return 0.0f;
+    }
+
+    return state.coverage(definition.weather, x, z, world.weather_tick);
 }
 
-ChunkRemoveEvent::ChunkRemoveEvent(const ChunkPos& pos, const std::shared_ptr<const Chunk>& chunk) : m_chunk(chunk), m_pos(pos)
+ChunkCreateEvent::ChunkCreateEvent(World* world, const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk)
+    : m_world(world), m_chunk(chunk), m_pos(pos)
 {
-    // empty
+    assert(world);
 }
 
-ChunkUpdateEvent::ChunkUpdateEvent(const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk) : m_chunk(chunk), m_pos(pos)
+ChunkRemoveEvent::ChunkRemoveEvent(World* world, const ChunkPos& pos, const std::shared_ptr<const Chunk>& chunk)
+    : m_world(world), m_chunk(chunk), m_pos(pos)
 {
-    // empty
+    assert(world);
 }
 
-ChunkReadyEvent::ChunkReadyEvent(const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk) : m_chunk(chunk), m_pos(pos)
+ChunkUpdateEvent::ChunkUpdateEvent(World* world, const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk)
+    : m_world(world), m_chunk(chunk), m_pos(pos)
 {
-    // empty
+    assert(world);
 }
 
-ChunkLightUpdateEvent::ChunkLightUpdateEvent(const ChunkPos& pos) : m_pos(pos)
+ChunkReadyEvent::ChunkReadyEvent(World* world, const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk)
+    : m_world(world), m_chunk(chunk), m_pos(pos)
 {
-    // empty
+    assert(world);
 }
 
-BlockUpdateEvent::BlockUpdateEvent(const BlockPos& pos, block_id_type id, const std::shared_ptr<Chunk>& chunk)
-    : m_chunk(chunk), m_id(id), m_bpos(pos), m_cpos(utils::to_chunk(pos)), m_lpos(utils::to_local(pos))
+ChunkLightUpdateEvent::ChunkLightUpdateEvent(World* world, const ChunkPos& pos) : m_world(world), m_pos(pos)
 {
-    // empty
+    assert(world);
 }
 
-std::shared_ptr<Chunk> world::create_chunk(const ChunkPos& pos)
+BlockUpdateEvent::BlockUpdateEvent(World* world, const BlockPos& pos, block_id_type id, const std::shared_ptr<Chunk>& chunk)
+    : m_world(world), m_chunk(chunk), m_id(id), m_bpos(pos), m_cpos(utils::to_chunk(pos)), m_lpos(utils::to_local(pos))
 {
-    auto it = chunk_map.find(pos);
+    assert(world);
+}
 
-    if(it == chunk_map.cend()) {
-        auto entity = chunk_registry.create();
+World* World::of(entt::registry& registry)
+{
+    return registry.ctx().get<World*>();
+}
+
+World::World(std::shared_ptr<const WorldDefinition> definition) : m_definition(std::move(definition))
+{
+    m_registry.ctx().emplace<World*>(this);
+    m_chunk_registry.ctx().emplace<World*>(this);
+
+    component_map::connect_all(m_registry);
+}
+
+void World::set_root(std::filesystem::path root)
+{
+    m_root = std::move(root);
+    m_chunk_dir = m_root / "chunk";
+    m_entity_dir = m_root / "entity";
+}
+
+void World::set_definition(std::shared_ptr<const WorldDefinition> definition)
+{
+    assert(definition);
+
+    m_definition = std::move(definition);
+}
+
+void World::load_config(void)
+{
+    std::ifstream in(m_root / "world.conf", std::ios::in);
+
+    if(in.is_open()) {
+        m_config.load(in);
+    }
+}
+
+void World::save_config(void)
+{
+    std::ofstream out(m_root / "world.conf", std::ios::binary | std::ios::trunc);
+
+    if(out.is_open()) {
+        m_config.save(out);
+    }
+}
+
+void World::set_weather_seed(std::uint64_t value)
+{
+    weather_seed = value;
+    m_weather.reseed(value);
+}
+
+std::shared_ptr<Chunk> World::create_chunk(const ChunkPos& pos)
+{
+    auto it = m_chunks.find(pos);
+
+    if(it == m_chunks.cend()) {
+        auto entity = m_chunk_registry.create();
         auto chunk = std::make_shared<Chunk>(entity);
 
-        auto& component = chunk_registry.emplace<Chunk_Component>(entity);
+        auto& component = m_chunk_registry.emplace<Chunk_Component>(entity);
         component.position = pos;
         component.ptr = chunk;
 
-        chunk_map.insert_or_assign(ChunkPos(pos), std::shared_ptr(chunk));
+        m_chunks.insert_or_assign(ChunkPos(pos), std::shared_ptr(chunk));
 
-        globals::dispatcher.trigger(ChunkCreateEvent(pos, chunk));
+        m_biomes.attach(m_chunk_registry, entity, pos);
+
+        globals::dispatcher.trigger(ChunkCreateEvent(this, pos, chunk));
 
         return chunk;
     }
@@ -64,61 +141,61 @@ std::shared_ptr<Chunk> world::create_chunk(const ChunkPos& pos)
     return it->second;
 }
 
-std::shared_ptr<Chunk> world::find_chunk(const ChunkPos& pos)
+std::shared_ptr<Chunk> World::find_chunk(const ChunkPos& pos) const
 {
-    auto it = chunk_map.find(pos);
+    auto it = m_chunks.find(pos);
 
-    if(it == chunk_map.cend()) {
+    if(it == m_chunks.cend()) {
         return nullptr;
     }
 
     return it->second;
 }
 
-std::shared_ptr<Chunk> world::find_chunk(entt::entity entity)
+std::shared_ptr<Chunk> World::find_chunk(entt::entity entity) const
 {
-    if(chunk_registry.valid(entity)) {
-        auto& component = chunk_registry.get<Chunk_Component>(entity);
+    if(m_chunk_registry.valid(entity)) {
+        auto& component = m_chunk_registry.get<Chunk_Component>(entity);
         return component.ptr;
     }
 
     return nullptr;
 }
 
-void world::remove_chunk(const std::shared_ptr<const Chunk>& chunk)
+void World::remove_chunk(const std::shared_ptr<const Chunk>& chunk)
 {
     if(chunk) {
         remove_chunk(chunk->entity());
     }
 }
 
-void world::remove_chunk(const ChunkPos& pos)
+void World::remove_chunk(const ChunkPos& pos)
 {
-    auto it = chunk_map.find(pos);
+    auto it = m_chunks.find(pos);
 
-    if(it == chunk_map.cend()) {
+    if(it == m_chunks.cend()) {
         return;
     }
 
-    globals::dispatcher.trigger(ChunkRemoveEvent(pos, it->second));
+    globals::dispatcher.trigger(ChunkRemoveEvent(this, pos, it->second));
 
-    chunk_registry.destroy(it->second->entity());
-    chunk_map.erase(it);
+    m_chunk_registry.destroy(it->second->entity());
+    m_chunks.erase(it);
 }
 
-void world::remove_chunk(entt::entity entity)
+void World::remove_chunk(entt::entity entity)
 {
-    if(chunk_registry.valid(entity)) {
-        const auto& component = chunk_registry.get<Chunk_Component>(entity);
+    if(m_chunk_registry.valid(entity)) {
+        const auto& component = m_chunk_registry.get<Chunk_Component>(entity);
 
-        globals::dispatcher.trigger(ChunkRemoveEvent(component.position, component.ptr));
+        globals::dispatcher.trigger(ChunkRemoveEvent(this, component.position, component.ptr));
 
-        chunk_map.erase(component.position);
-        chunk_registry.destroy(entity);
+        m_chunks.erase(component.position);
+        m_chunk_registry.destroy(entity);
     }
 }
 
-block_id_type world::get_block(const ChunkPos& cpos, const LocalPos& lpos)
+block_id_type World::get_block(const ChunkPos& cpos, const LocalPos& lpos) const
 {
     if(auto chunk = find_chunk(cpos)) {
         return chunk->get_block(lpos);
@@ -127,14 +204,14 @@ block_id_type world::get_block(const ChunkPos& cpos, const LocalPos& lpos)
     return BLOCK_ID_NULL;
 }
 
-block_id_type world::get_block(const BlockPos& pos)
+block_id_type World::get_block(const BlockPos& pos) const
 {
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
     return get_block(cpos, lpos);
 }
 
-fluid_id_type world::get_fluid(const ChunkPos& cpos, const LocalPos& lpos)
+fluid_id_type World::get_fluid(const ChunkPos& cpos, const LocalPos& lpos) const
 {
     auto id = get_block(cpos, lpos);
 
@@ -145,14 +222,14 @@ fluid_id_type world::get_fluid(const ChunkPos& cpos, const LocalPos& lpos)
     return FLUID_ID_NULL;
 }
 
-fluid_id_type world::get_fluid(const BlockPos& pos)
+fluid_id_type World::get_fluid(const BlockPos& pos) const
 {
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
     return get_fluid(cpos, lpos);
 }
 
-std::uint32_t world::get_fluid_faces(const ChunkPos& cpos, const LocalPos& lpos)
+std::uint32_t World::get_fluid_faces(const ChunkPos& cpos, const LocalPos& lpos) const
 {
     auto id = get_block(cpos, lpos);
 
@@ -163,14 +240,14 @@ std::uint32_t world::get_fluid_faces(const ChunkPos& cpos, const LocalPos& lpos)
     return 0;
 }
 
-std::uint32_t world::get_fluid_faces(const BlockPos& pos)
+std::uint32_t World::get_fluid_faces(const BlockPos& pos) const
 {
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
     return get_fluid_faces(cpos, lpos);
 }
 
-fluid_id_type world::get_state_fluid(const ChunkPos& cpos, const LocalPos& lpos, std::string_view state, std::string_view value)
+fluid_id_type World::get_state_fluid(const ChunkPos& cpos, const LocalPos& lpos, std::string_view state, std::string_view value) const
 {
     auto id = get_block(cpos, lpos);
     auto def = block_registry::find_definition(id);
@@ -196,14 +273,14 @@ fluid_id_type world::get_state_fluid(const ChunkPos& cpos, const LocalPos& lpos,
     return block_registry::preview_fluid(id, state_key, value_key);
 }
 
-fluid_id_type world::get_state_fluid(const BlockPos& pos, std::string_view state, std::string_view value)
+fluid_id_type World::get_state_fluid(const BlockPos& pos, std::string_view state, std::string_view value) const
 {
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
     return get_state_fluid(cpos, lpos, state, value);
 }
 
-bool world::set_block(const ChunkPos& cpos, const LocalPos& lpos, block_id_type id)
+bool World::set_block(const ChunkPos& cpos, const LocalPos& lpos, block_id_type id)
 {
     if(auto chunk = find_chunk(cpos)) {
         if(chunk->get_block(lpos) == id) {
@@ -212,31 +289,7 @@ bool world::set_block(const ChunkPos& cpos, const LocalPos& lpos, block_id_type 
 
         chunk->set_block(lpos, id);
 
-        globals::dispatcher.trigger(BlockUpdateEvent(utils::to_block(cpos, lpos), id, chunk));
-
-        const std::array neighbours = {
-            BlockPos(+1, 0, 0),
-            BlockPos(-1, 0, 0),
-            BlockPos(0, +1, 0),
-            BlockPos(0, -1, 0),
-            BlockPos(0, 0, +1),
-            BlockPos(0, 0, -1),
-        };
-
-        auto bpos = utils::to_block(cpos, lpos);
-
-        // Schedule for the next tick so neighbour updates never fire mid-pass
-        // in an order that depends on chunk iteration order.
-        auto neighbour_deadline = globals::current_tick + 1;
-
-        for(const auto& npos : neighbours) {
-            auto nbpos = bpos + npos;
-            auto ncpos = utils::to_chunk(nbpos);
-
-            if(chunk_map.contains(ncpos)) {
-                schedule(nbpos, neighbour_deadline, BLOCK_TICK_NEIGHBOUR);
-            }
-        }
+        globals::dispatcher.trigger(BlockUpdateEvent(this, utils::to_block(cpos, lpos), id, chunk));
 
         return true;
     }
@@ -244,14 +297,14 @@ bool world::set_block(const ChunkPos& cpos, const LocalPos& lpos, block_id_type 
     return false;
 }
 
-bool world::set_block(const BlockPos& pos, block_id_type id)
+bool World::set_block(const BlockPos& pos, block_id_type id)
 {
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
     return set_block(cpos, lpos, id);
 }
 
-block_light_type world::get_light(const ChunkPos& cpos, const LocalPos& lpos)
+block_light_type World::get_light(const ChunkPos& cpos, const LocalPos& lpos) const
 {
     if(auto chunk = find_chunk(cpos)) {
         auto index = utils::to_index(lpos);
@@ -263,14 +316,14 @@ block_light_type world::get_light(const ChunkPos& cpos, const LocalPos& lpos)
     return BLOCK_LIGHT_MIN;
 }
 
-block_light_type world::get_light(const BlockPos& pos)
+block_light_type World::get_light(const BlockPos& pos) const
 {
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
     return get_light(cpos, lpos);
 }
 
-std::optional<std::string_view> world::get_state(const ChunkPos& cpos, const LocalPos& lpos, std::string_view state)
+std::optional<std::string_view> World::get_state(const ChunkPos& cpos, const LocalPos& lpos, std::string_view state) const
 {
     auto id = get_block(cpos, lpos);
 
@@ -306,14 +359,14 @@ std::optional<std::string_view> world::get_state(const ChunkPos& cpos, const Loc
     return family->state_value(val_it->second);
 }
 
-std::optional<std::string_view> world::get_state(const BlockPos& pos, std::string_view state)
+std::optional<std::string_view> World::get_state(const BlockPos& pos, std::string_view state) const
 {
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
     return get_state(cpos, lpos, state);
 }
 
-bool world::set_state(const ChunkPos& cpos, const LocalPos& lpos, std::string_view state, std::string_view value)
+bool World::set_state(const ChunkPos& cpos, const LocalPos& lpos, std::string_view state, std::string_view value)
 {
     auto id = get_block(cpos, lpos);
 
@@ -333,103 +386,137 @@ bool world::set_state(const ChunkPos& cpos, const LocalPos& lpos, std::string_vi
         return false;
     }
 
-    vx::hash_map<blockstate_key_type, blockstate_val_type> chunk_map;
+    vx::hash_map<blockstate_key_type, blockstate_val_type> states;
 
     for(const auto& it : family->states) {
-        chunk_map.try_emplace(it.first, it.second.default_value);
+        states.try_emplace(it.first, it.second.default_value);
     }
 
     auto id_it = family->id_states.find(id);
 
     if(id_it != family->id_states.cend()) {
         for(const auto& it : id_it->second) {
-            chunk_map.insert_or_assign(blockstate_key_type(it.first), blockstate_val_type(it.second));
+            states.insert_or_assign(blockstate_key_type(it.first), blockstate_val_type(it.second));
         }
     }
 
-    chunk_map.insert_or_assign(key, family->state_hash(value));
+    states.insert_or_assign(key, family->state_hash(value));
 
-    auto new_id = block_registry::resolve_variant(family->stem_id, chunk_map);
+    auto new_id = block_registry::resolve_variant(family->stem_id, states);
 
     return set_block(cpos, lpos, new_id);
 }
 
-bool world::set_state(const BlockPos& pos, std::string_view state, std::string_view value)
+bool World::set_state(const BlockPos& pos, std::string_view state, std::string_view value)
 {
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
     return set_state(cpos, lpos, state, value);
 }
 
-std::int32_t world::get_temperature_base(const ChunkPos& cpos, const LocalPos& lpos)
+float World::get_temperature_base(const ChunkPos& cpos, const LocalPos& lpos) const
 {
-    return 298; // TODO
+    auto biome_def = biome_registry::find_definition(biome(cpos, lpos));
+
+    if(biome_def) {
+        return biome_def->temperature;
+    }
+
+    return 15.0f;
 }
 
-std::int32_t world::get_temperature_base(const BlockPos& pos)
+float World::get_temperature_base(const BlockPos& pos) const
 {
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
     return get_temperature_base(cpos, lpos);
 }
 
-std::int32_t world::get_temperature(const ChunkPos& cpos, const LocalPos& lpos)
+float World::get_temperature(const ChunkPos& cpos, const LocalPos& lpos) const
 {
-    return 298; // TODO
+    auto bpos = utils::to_block(cpos, lpos);
+    auto coverage = weather_coverage_at(*this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
+
+    return get_temperature_base(cpos, lpos) - WEATHER_COOLING * coverage; // TODO: add the season bias
 }
 
-std::int32_t world::get_temperature(const BlockPos& pos)
+float World::get_temperature(const BlockPos& pos) const
 {
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
     return get_temperature(cpos, lpos);
 }
 
-biome_id_type world::get_biome(const ChunkPos& cpos, const LocalPos& lpos)
+float World::get_humidity_base(const ChunkPos& cpos, const LocalPos& lpos) const
 {
-    return biome_map::get_slow(utils::to_block(cpos, lpos));
-}
+    auto biome_def = biome_registry::find_definition(biome(cpos, lpos));
 
-biome_id_type world::get_biome(const BlockPos& pos)
-{
-    return biome_map::get_slow(pos);
-}
-
-void world::schedule(const ChunkPos& cpos, const LocalPos& lpos, std::uint64_t deadline, block_tick_source source)
-{
-    if(auto chunk = find_chunk(cpos)) {
-        auto index = utils::to_index(lpos);
-
-        chunk->schedule(index, deadline, source);
+    if(biome_def) {
+        return biome_def->humidity;
     }
+
+    return 0.5f;
 }
 
-void world::schedule(const BlockPos& pos, std::uint64_t deadline, block_tick_source source)
+float World::get_humidity_base(const BlockPos& pos) const
 {
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
-    schedule(cpos, lpos, deadline, source);
+    return get_humidity_base(cpos, lpos);
 }
 
-void world::purge(void)
+float World::get_humidity(const ChunkPos& cpos, const LocalPos& lpos) const
 {
-    chunk_map.clear();
-    chunk_registry.clear();
+    auto bpos = utils::to_block(cpos, lpos);
+    auto base = get_humidity_base(cpos, lpos);
+    auto coverage = weather_coverage_at(*this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
 
-    biome_map::purge();
+    return std::clamp(base + (WEATHER_SATURATION - base) * coverage, 0.0f, 1.0f); // TODO: add the season bias
 }
 
-void world::fixed_update(void)
+float World::get_humidity(const BlockPos& pos) const
 {
-    std::vector<std::pair<std::size_t, block_tick_source>> due;
+    auto cpos = utils::to_chunk(pos);
+    auto lpos = utils::to_local(pos);
+    return get_humidity(cpos, lpos);
+}
 
-    chunk_registry.view<Chunk_Component>().each([&](Chunk_Component& component) {
-        due.clear();
+biome_id_type World::biome(const ChunkPos& cpos, const LocalPos& lpos) const
+{
+    return m_biomes.get_slow(utils::to_block(cpos, lpos));
+}
 
-        component.ptr->pop_due(globals::current_tick, due);
+biome_id_type World::biome(const BlockPos& pos) const
+{
+    return m_biomes.get_slow(pos);
+}
 
-        for(auto it : due) {
-            utils::block_sched_tick(component.position, component.ptr, it.first, it.second);
-        }
-    });
+void World::insert_biomes(const ChunkPosXZ& pos, BiomeSlice biomes)
+{
+    m_biomes.insert(pos, std::move(biomes));
+}
+
+const BiomeSlice& World::biomes(const ChunkPos& pos) const
+{
+    return m_biomes.get(pos);
+}
+
+const BiomeSlice& World::biomes(const ChunkPosXZ& pos) const
+{
+    return m_biomes.get(pos);
+}
+
+biome_id_type World::biome_slow(const BlockPos& pos) const
+{
+    return m_biomes.get_slow(pos);
+}
+
+void World::purge(void)
+{
+    m_chunks.clear();
+    m_chunk_registry.clear();
+    m_registry.clear();
+    m_biomes.purge();
+    m_heightmap.purge();
+    m_weather = {};
 }

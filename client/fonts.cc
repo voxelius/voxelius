@@ -44,8 +44,10 @@ void fonts::load(void)
     s_font_config = {};
     s_font_config.FontDataOwnedByAtlas = false;
 
-    auto unscii16_path = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "unscii-16").as_file_path("fonts", ".ttf");
-    auto unscii8_path = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "unscii-8").as_file_path("fonts", ".ttf");
+    auto unscii16_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "unscii-16");
+    auto unscii16_path = unscii16_id.as_file_path("fonts", ".ttf");
+    auto unscii8_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "unscii-8");
+    auto unscii8_path = unscii8_id.as_file_path("fonts", ".ttf");
 
     fonts::proggy_clean = io.Fonts->AddFontDefault();
     vx::throw_if_not(fonts::proggy_clean, "proggyclean: load failed");

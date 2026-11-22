@@ -40,8 +40,17 @@ static void place_block(void)
     const auto& hit = std::get<physics::BlockHit>(player_target::hit);
 
     // TODO: hardcoded placed block until an inventory/hotbar system exists
-    auto family = block_registry::find_family(Identifier::from_string("builtin:emitter"));
-    auto block = family ? family->default_variant : block_registry::find(Identifier::from_string("builtin:emitter"));
+    auto emitter_id = Identifier::from_string("builtin:emitter");
+    auto family = block_registry::find_family(emitter_id);
+    block_id_type block;
+
+    if(family) {
+        block = family->default_variant;
+    }
+    else {
+        block = block_registry::find(emitter_id);
+    }
+
     utils::block_place(hit, globals::player, block);
 
     if(globals::peer) {
@@ -77,21 +86,21 @@ static void break_block(void)
     }
 }
 
-static cvar::status cmd_place(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_place(const cvar::Context&, std::span<const std::string_view>)
 {
     place_block();
 
     return cvar::status::OK;
 }
 
-static cvar::status cmd_break(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_break(const cvar::Context&, std::span<const std::string_view>)
 {
     break_block();
 
     return cvar::status::OK;
 }
 
-static cvar::status cmd_release(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_release(const cvar::Context&, std::span<const std::string_view>)
 {
     return cvar::status::OK;
 }
@@ -100,10 +109,17 @@ void player_target::init(void)
 {
     hit = std::monostate();
 
-    cvar::bind_cmd("+place").connect<&cmd_place>();
-    cvar::bind_cmd("-place").connect<&cmd_release>();
-    cvar::bind_cmd("+break").connect<&cmd_break>();
-    cvar::bind_cmd("-break").connect<&cmd_release>();
+    auto& place_command = cvar::bind_cmd("+place");
+    place_command.connect<&cmd_place>();
+
+    auto& release_place_command = cvar::bind_cmd("-place");
+    release_place_command.connect<&cmd_release>();
+
+    auto& break_command = cvar::bind_cmd("+break");
+    break_command.connect<&cmd_break>();
+
+    auto& release_break_command = cvar::bind_cmd("-break");
+    release_break_command.connect<&cmd_release>();
 
     buttons::bind(ButtonSource(input_device::MOUSE, SDL_BUTTON_RIGHT, input_edge::DOWN), "+place");
     buttons::bind(ButtonSource(input_device::MOUSE, SDL_BUTTON_RIGHT, input_edge::UP), "-place");
@@ -120,6 +136,7 @@ void player_target::init(void)
 void player_target::update(void)
 {
     physics::Ray ray {};
+    ray.world = globals::world;
     ray.start_chunk = camera::chunk;
     ray.start = camera::instance.position();
     ray.direction = camera::forward;

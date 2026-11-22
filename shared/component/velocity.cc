@@ -12,70 +12,78 @@
 #include "shared/utils/lua.hh"
 
 template<>
-std::any Component<Velocity>::prepare(lua_State* L, int config_idx)
+std::any Component<Velocity>::prepare(lua_State*, int)
 {
     return std::monostate {};
 }
 
 template<>
-void Component<Velocity>::attach(entt::entity entity, const std::any& config)
+void Component<Velocity>::connect(entt::registry& registry)
+{
+    registry.on_update<Velocity>().connect<&component_map::on_update<Velocity>>();
+}
+
+template<>
+void Component<Velocity>::attach(entt::registry& registry, entt::entity entity, const std::any&)
 {
     Velocity velocity {};
     velocity.value = Eigen::Vector3f::Zero();
 
-    globals::registry.emplace_or_replace<Velocity>(entity, std::move(velocity));
+    registry.emplace_or_replace<Velocity>(entity, std::move(velocity));
 }
 
 template<>
-bool Component<Velocity>::patch(entt::entity entity, lua_State* L, int kv_idx)
+bool Component<Velocity>::patch(entt::registry& registry, entt::entity entity, lua_State* L, int kv_idx)
 {
-    auto& current = globals::registry.get<Velocity>(entity);
+    auto& current = registry.get<Velocity>(entity);
     auto value = utils::opt_fvec<3>(L, kv_idx, current.value.cast<lua_Number>());
 
     if(!value.has_value()) {
         return false;
     }
 
-    globals::registry.patch<Velocity>(entity, [&](Velocity& velocity) {
-        velocity.value = value.value().cast<float>();
+    auto value_vec = value.value();
+
+    registry.patch<Velocity>(entity, [&](Velocity& velocity) {
+        velocity.value = value_vec.cast<float>();
     });
 
     return true;
 }
 
 template<>
-void Component<Velocity>::encode_net(entt::entity entity, WriteBuffer& buffer)
+void Component<Velocity>::encode_net(entt::registry& registry, entt::entity entity, WriteBuffer& buffer)
 {
-    const auto& velocity = globals::registry.get<Velocity>(entity);
+    const auto& velocity = registry.get<Velocity>(entity);
     buffer.write_vector<float, 3>(velocity.value);
 }
 
 template<>
-void Component<Velocity>::decode_net(entt::entity entity, ReadBuffer& buffer)
+void Component<Velocity>::decode_net(entt::registry& registry, entt::entity entity, ReadBuffer& buffer)
 {
-    globals::registry.patch<Velocity>(entity, [&](Velocity& velocity) {
+    registry.patch<Velocity>(entity, [&](Velocity& velocity) {
         velocity.value = buffer.read_vector<float, 3>();
     });
 }
 
 template<>
-void Component<Velocity>::encode_dat(entt::entity entity, WriteBuffer& buffer)
+void Component<Velocity>::encode_dat(entt::registry& registry, entt::entity entity, WriteBuffer& buffer)
 {
-    encode_net(entity, buffer);
+    encode_net(registry, entity, buffer);
 }
 
 template<>
-void Component<Velocity>::decode_dat(entt::entity entity, ReadBuffer& buffer)
+void Component<Velocity>::decode_dat(entt::registry& registry, entt::entity entity, ReadBuffer& buffer)
 {
-    decode_net(entity, buffer);
+    decode_net(registry, entity, buffer);
 }
 
 template<>
-void Component<Velocity>::interpolate(entt::entity entity, float alpha)
+void Component<Velocity>::interpolate(entt::registry& registry, entt::entity entity, float alpha)
 {
-    auto* current = globals::registry.try_get<Velocity>(entity);
-    auto* previous = globals::registry.try_get<Velocity_Prev>(entity);
-    auto* interp = globals::registry.try_get<Velocity_Intr>(entity);
+    auto current = registry.try_get<Velocity>(entity);
+    auto previous = registry.try_get<Velocity_Prev>(entity);
+    auto interp = registry.try_get<Velocity_Intr>(entity);
 
     if(current == nullptr || previous == nullptr || interp == nullptr) {
         return;
@@ -89,13 +97,11 @@ void Component<Velocity>::interpolate(entt::entity entity, float alpha)
 void Velocity::register_component(void)
 {
     component_map::add<Velocity>("velocity");
-
-    globals::registry.on_update<Velocity>().connect<&component_map::on_update<Velocity>>();
 }
 
-void Velocity::fixed_update(void)
+void Velocity::fixed_update(entt::registry& registry)
 {
-    auto view = globals::registry.view<Velocity, Transform>(entt::exclude<Stasis>);
+    auto view = registry.view<Velocity, Transform>(entt::exclude<Stasis>);
 
     for(auto [entity, velocity, transform] : view.each()) {
         auto speed_sq = velocity.value.squaredNorm();
@@ -103,12 +109,12 @@ void Velocity::fixed_update(void)
         if(speed_sq >= constant::VELOCITY_EPS_SQ) {
             transform.local += velocity.value * globals::fixed_frametime;
 
-            globals::registry.patch<Transform>(entity);
+            registry.patch<Transform>(entity);
         }
         else if(speed_sq) {
             velocity.value.setZero();
 
-            globals::registry.patch<Velocity>(entity);
+            registry.patch<Velocity>(entity);
         }
     }
 }

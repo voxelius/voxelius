@@ -10,10 +10,10 @@
 
 #include "shared/coord.hh"
 #include "shared/cvar/commands.hh"
-#include "shared/cvar/gamerules.hh"
 #include "shared/game.hh"
 #include "shared/splash.hh"
 
+#include "server/api/libraries.hh"
 #include "server/constant.hh"
 #include "server/game.hh"
 #include "server/globals.hh"
@@ -32,7 +32,9 @@
 #include "server/universe.hh"
 #include "server/world/chunk_loader.hh"
 #include "server/world/chunk_unloader.hh"
-#include "server/world/climate.hh"
+#include "server/world/generator_superflat.hh"
+#include "server/world/generator_vox17.hh"
+#include "server/world/world.hh"
 #include "server/world/worldgen.hh"
 
 static std::atomic_bool s_is_running;
@@ -48,8 +50,12 @@ static void zoned_fixed_update(void)
 {
     ZoneScopedN("server::fixed_update");
 
-    shared_game::fixed_update();
-    server_game::fixed_update();
+    // Light runs after the block ticks, as it does on the client, so an edit
+    // made by a block tick is lit in the same tick
+    for(const auto& world : universe::worlds()) {
+        server_game::fixed_update(world.get());
+        shared_game::fixed_update(world.get());
+    }
 }
 
 static void zoned_fixed_update_late(void)
@@ -95,8 +101,17 @@ static void wrapped_main(int argc, char** argv)
 
     host::init();
 
+    api_server::register_libraries();
+
+    Vox17::register_generator();
+    Superflat::register_generator();
+
     shared_game::init();
     server_game::init();
+
+    // The universe seed has to be loaded before worldgen
+    // derives its noise and feature seeds from it
+    universe::init();
 
     collector::init();
 
@@ -112,10 +127,6 @@ static void wrapped_main(int argc, char** argv)
     transmit::init();
 
     streaming::init();
-
-    // The universe seed has to be loaded before worldgen
-    // derives its noise and feature seeds from it
-    universe::init();
 
     worldgen::init();
     chunk_loader::init();
@@ -137,8 +148,6 @@ static void wrapped_main(int argc, char** argv)
     server_game::init_late();
 
     sessions::init_late();
-
-    climate::rebuild();
 
 #ifndef NDEBUG
     msg::log_warning("debug build");
@@ -179,10 +188,6 @@ static void wrapped_main(int argc, char** argv)
 
         globals::current_tick += 1;
 
-        if(gamerules::daylight_cycle.value()) {
-            globals::daylight_tick += 1;
-        }
-
         zoned_fixed_update();
 
         zoned_fixed_update_late();
@@ -217,7 +222,7 @@ static void wrapped_main(int argc, char** argv)
     shared_game::shutdown();
 
     // The world config is written last: every subsystem that keeps state in it
-    // has already put its own there.
+    // has already put its own there
     universe::shutdown();
 
     host::shutdown();

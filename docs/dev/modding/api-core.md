@@ -19,3 +19,12 @@ These values match the game and engine version. See `core/version.hh` for the C+
 ## Current namespace
 
 As noted in the [overview](init-overview.md), namespaced identifiers may omit the namespace. The engine fills in a default. For mods, that default is also available as `core.NAMESPACE`.
+
+## Sides
+
+|Value|Description|
+|----|----|
+|`core.IS_CLIENT`|True on the client|
+|`core.IS_SERVER`|True on the server|
+
+Use these to guard APIs that exist on one side only. See [Sides](init-overview.md#sides).

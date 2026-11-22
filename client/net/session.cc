@@ -13,6 +13,7 @@
 #include "core/version.hh"
 
 #include "shared/entity/class_registry.hh"
+#include "shared/globals.hh"
 #include "shared/net/packet_auth.hh"
 #include "shared/net/packet_session.hh"
 #include "shared/net/protocol.hh"
@@ -68,6 +69,8 @@ static void reset_session(void)
 
 static void handle_disconnect(std::uint32_t reason)
 {
+    auto& registry = globals::world->registry();
+
     replication::clear();
 
     if(session::state) {
@@ -78,15 +81,19 @@ static void handle_disconnect(std::uint32_t reason)
         globals::dispatcher.trigger(SessionStateEvent(SESSION_DISCONNECTED, reason));
     }
 
-    globals::registry.clear();
+    registry.clear();
+
     globals::player = entt::null;
-    biome_map::purge();
-    weather::reset();
+
+    if(globals::world) {
+        globals::world->purge();
+        globals::world->set_weather_seed(0);
+    }
+
     fog::reset();
     skybox::reset();
     cloud_renderer::reset();
-    world::purge();
-    lighting::reset();
+    lighting::reset(globals::world);
 
     video::update_window_title();
 }
@@ -121,7 +128,7 @@ static void on_host_connect(const HostConnectEvent& event)
     protocol::send(request, enet_event.peer);
 }
 
-static void on_host_disconnect(const HostDisconnectEvent& event)
+static void on_host_disconnect(const HostDisconnectEvent&)
 {
     if(session::state) {
         globals::dispatcher.trigger(SessionErrorEvent(packet::Session_Disconnect::UNSPECIFIED));
@@ -137,9 +144,13 @@ static void on_auth_challenge(const packet::Auth_Challenge& packet)
     auto timestamp_str = std::to_string(timestamp_min);
 
     std::vector<std::byte> nonce;
-    nonce.resize(packet.nonce.size() + timestamp_str.size());
-    std::memcpy(nonce.data(), packet.nonce.data(), packet.nonce.size());
-    std::memcpy(nonce.data() + packet.nonce.size(), timestamp_str.data(), timestamp_str.size());
+
+    auto challenge_size = packet.nonce.size();
+    auto nonce_size = challenge_size + timestamp_str.size();
+
+    nonce.resize(nonce_size);
+    std::memcpy(nonce.data(), packet.nonce.data(), challenge_size);
+    std::memcpy(nonce.data() + challenge_size, timestamp_str.data(), timestamp_str.size());
 
     packet::Auth_Response response {};
     response.signature = ed25519::sign(s_auth_pair, nonce);
@@ -162,7 +173,7 @@ static void on_session_disconnect(const packet::Session_Disconnect& packet)
     handle_disconnect(packet.reason);
 }
 
-static cvar::status cmd_whoami(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_whoami(const cvar::Context&, std::span<const std::string_view>)
 {
     msg::log_info("public key: {}", ed25519::export_pkey(s_auth_pair.first));
     msg::log_info("identity: {}", utils::crc64(s_auth_pair.first));
@@ -171,9 +182,9 @@ static cvar::status cmd_whoami(const cvar::Context& ctx, std::span<const std::st
 
 void session::init(void)
 {
-    auto& username_binding = cvar::bind_var(s_desired_username, "net_username");
-    username_binding.set_help("Name sent to the server");
-    username_binding.set_flags(FCVAR_ARCHIVE);
+    auto& net_username_binding = cvar::bind_var(s_desired_username, "net_username");
+    net_username_binding.set_help("Name sent to the server");
+    net_username_binding.set_flags(FCVAR_ARCHIVE);
 
     s_desired_username_gui.enable_tooltip();
     s_desired_username_gui.set_flags(ImGuiInputTextFlags_CharsNoBlank);
@@ -259,6 +270,12 @@ void session::connect(std::string_view host, std::uint16_t port, std::uint64_t i
 
 void session::disconnect(std::uint32_t reason)
 {
+    // A user-initiated disconnect returns to the menu without an error; every
+    // other reason is a failure the player has to see
+    if(reason != packet::Session_Disconnect::CLIENT_DISCONNECT && reason != packet::Session_Disconnect::CLIENT_SHUTDOWN) {
+        globals::dispatcher.trigger(SessionErrorEvent(reason));
+    }
+
     if(state && globals::peer) {
         packet::Session_Disconnect packet {};
         packet.reason = reason;

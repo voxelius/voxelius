@@ -4,6 +4,13 @@
 
 static_assert(sizeof(CloudVertex) == 10 * sizeof(float), "CloudVertex must stay packed for the vertex layout");
 
+// One ring of the deck that is actually built: the ring itself and the band it covers
+struct CloudSpan final {
+    const CloudRing* ring;
+    float inner;
+    float outer;
+};
+
 static std::size_t column_index(const CloudWindow& window, std::size_t x, std::size_t z)
 {
     return z * window.width + x;
@@ -231,12 +238,15 @@ static void mesh_ring(CloudMesh& mesh, const CloudInput& input, const CloudGroup
     if(count) {
         // The ring dissolves over the last two cells of the coarser ring into
         // it; the ring at the deck's edge keeps its own wide fade instead.
-        auto blend_width = (outer < input.radius) ? std::min(ring.cell * 8.0f, outer - inner) : 0.0f;
+        auto blend_width = 0.0f;
+
+        if(outer < input.radius) {
+            blend_width = std::min(ring.cell * 8.0f, outer - inner);
+        }
 
         CloudBatch batch {};
         batch.offset = offset;
         batch.count = count;
-        batch.realm = group.realm;
         batch.center = Eigen::Vector2f(deck.center.x(), deck.center.z());
         batch.fade = fade;
         batch.blend_start = outer - blend_width;
@@ -246,13 +256,6 @@ static void mesh_ring(CloudMesh& mesh, const CloudInput& input, const CloudGroup
         mesh.batches.push_back(batch);
     }
 }
-
-// One ring of the deck that is actually built: the ring itself and the band it covers
-struct CloudSpan final {
-    const CloudRing* ring;
-    float inner;
-    float outer;
-};
 
 // The rings tile the range from the camera out to r_cloud_range, and they are
 // meshed from the coarsest to the finest: a finer ring then draws over the
@@ -270,7 +273,12 @@ static void mesh_layer(CloudMesh& mesh, const CloudInput& input, const CloudGrou
             break;
         }
 
-        spans[span_count] = CloudSpan { &ring, inner, outer };
+        CloudSpan span {};
+        span.ring = &ring;
+        span.inner = inner;
+        span.outer = outer;
+
+        spans[span_count] = span;
         span_count += 1;
         inner = outer;
     }

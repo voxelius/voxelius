@@ -11,10 +11,7 @@ static std::unique_ptr<BS::light_thread_pool> s_threads;
 static std::deque<std::unique_ptr<Task>> s_deque;
 static std::deque<std::unique_ptr<Task>> s_finalize_queue;
 
-// The pool sets the promise after the task body returns, so a ready future
-// proves that the worker has left task_process. The status alone does not:
-// a worker stores it before it returns, and the main thread that frees the
-// object on that store leaves the worker with a dangling pointer
+// A ready future proves the worker left task_process; freeing on the status alone dangles
 static bool task_joined(const std::unique_ptr<Task>& task)
 {
     if(!task->future.valid()) {
@@ -45,7 +42,8 @@ void threading::detail::submit_new(std::unique_ptr<Task>&& task)
 
 void threading::init(void)
 {
-    auto argument = cmdline::value("threads").value_or(DEFAULT_POOL_SIZE_ARG);
+    auto threads_option = cmdline::value("threads");
+    auto argument = threads_option.value_or(DEFAULT_POOL_SIZE_ARG);
     auto num_concurrent_threads = std::thread::hardware_concurrency();
     unsigned thread_pool_size;
 
@@ -89,8 +87,7 @@ void threading::init(void)
 void threading::shutdown(void)
 {
     if(s_threads == nullptr) {
-        // entry points stop the pool before the hard purge, so
-        // core::teardown usually calls this a second time
+        // Entry points stop the pool before the hard purge, so teardown calls this a second time
         return;
     }
 
@@ -108,15 +105,6 @@ void threading::shutdown(void)
     s_deque.clear();
     s_finalize_queue.clear();
     s_threads.reset();
-}
-
-void threading::wait(void)
-{
-    for(auto& task : s_deque) {
-        if(task->future.valid()) {
-            task->future.wait();
-        }
-    }
 }
 
 void threading::update(void)
@@ -167,4 +155,28 @@ void threading::update(void)
             break;
         }
     }
+}
+
+void threading::wait(void)
+{
+    for(auto& task : s_deque) {
+        if(task->future.valid()) {
+            task->future.wait();
+        }
+    }
+}
+
+void threading::cancel_all(void)
+{
+    if(s_threads == nullptr) {
+        return;
+    }
+
+    // The pool discards queued work, but the tasks it already picked up still
+    // read the old world; join those before the caller frees it
+    s_threads->purge();
+    threading::wait();
+
+    s_deque.clear();
+    s_finalize_queue.clear();
 }

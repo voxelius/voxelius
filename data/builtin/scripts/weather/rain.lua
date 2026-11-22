@@ -1,11 +1,8 @@
 weather.add("rain", {
-  realms = { weather.REALM_SURFACE },
-
   intensity = 1.0,
   sky_tint = { 0.388, 0.451, 0.541 },
   sky_visibility = 0.10,
   light = 0.50,
-  wind = 1.2,
 
   cloud = {
     height = 176,
@@ -27,5 +24,6 @@ weather.add("rain", {
     color = { 0.55, 0.66, 0.80 },
   },
 
-  weight = 3,
+  target = { 0.62, 0.62 },
+  weight = 3.0,
 })

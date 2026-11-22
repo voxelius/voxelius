@@ -3,7 +3,7 @@
 #include "client/world/cloud_field.hh"
 
 #include "shared/constant.hh"
-#include "shared/utils/biome.hh"
+#include "shared/utils/weather.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
 
@@ -23,47 +23,6 @@ constexpr static CloudRing CLOUD_RINGS[] = {
 
 constexpr static float CLOUD_FINE_CELL_BLOCKS = CLOUD_RINGS[0].cell;
 
-std::span<const CloudRing> cloud_field::rings(void)
-{
-    return CLOUD_RINGS;
-}
-
-float cloud_field::max_radius_blocks(void)
-{
-    return CLOUD_MAX_RADIUS_BLOCKS;
-}
-
-float cloud_field::fine_cell_blocks(void)
-{
-    return CLOUD_FINE_CELL_BLOCKS;
-}
-
-CloudDeck cloud_field::make_deck(const CloudInput& input, const CloudGroup& group, const CloudRing& ring)
-{
-    CloudDeck deck {};
-    deck.realm = group.realm;
-    deck.type = group.type;
-    deck.body = group.body;
-    deck.cell = ring.cell;
-    deck.height = ring.height;
-
-    auto realm_index = static_cast<std::size_t>(group.realm);
-    auto offset = input.offsets[realm_index];
-
-    deck.state = &input.states[realm_index];
-    deck.anchor = input.anchors[realm_index];
-    deck.center = input.center - Eigen::Vector3f(offset.x(), 0.0f, offset.y());
-
-    deck.scale = std::max(group.body.scale, 8.0f);
-    deck.max_levels = std::clamp(static_cast<int>(group.body.thickness / deck.height), 1, CLOUD_COLUMN_MAX_VOXELS);
-    deck.opacity = std::clamp(group.body.opacity, 0.05f, 1.0f);
-    deck.shadow = group.body.shadow_color;
-    deck.lit = group.body.lit_color;
-    deck.side = (deck.shadow + deck.lit) * 0.5f;
-
-    return deck;
-}
-
 // A coarse cell stands for the whole patch the finer ring resolves: averaging
 // its corners keeps the two rings on the same structure, where a point sample
 // would give the coarse ring a pattern the fine one never draws.
@@ -72,10 +31,10 @@ static float cell_coverage(const CloudDeck& deck, float field_x, float field_z)
     auto step = deck.cell * 0.25f;
     auto state = *deck.state;
 
-    auto a = weather::coverage_in_field(state, deck.realm, deck.type, field_x - step, field_z - step);
-    auto b = weather::coverage_in_field(state, deck.realm, deck.type, field_x + step, field_z - step);
-    auto c = weather::coverage_in_field(state, deck.realm, deck.type, field_x - step, field_z + step);
-    auto d = weather::coverage_in_field(state, deck.realm, deck.type, field_x + step, field_z + step);
+    auto a = state.coverage_in_field(deck.allowed, deck.type, field_x - step, field_z - step);
+    auto b = state.coverage_in_field(deck.allowed, deck.type, field_x + step, field_z - step);
+    auto c = state.coverage_in_field(deck.allowed, deck.type, field_x - step, field_z + step);
+    auto d = state.coverage_in_field(deck.allowed, deck.type, field_x + step, field_z + step);
 
     return (a + b + c + d) * 0.25f;
 }
@@ -86,7 +45,7 @@ static float column_coverage(const CloudDeck& deck, float field_x, float field_z
         return cell_coverage(deck, field_x, field_z);
     }
 
-    return weather::coverage_in_field(*deck.state, deck.realm, deck.type, field_x, field_z);
+    return deck.state->coverage_in_field(deck.allowed, deck.type, field_x, field_z);
 }
 
 static float shell_hash(std::int32_t x, std::int32_t y, std::int32_t z, std::uint32_t seed)
@@ -130,6 +89,58 @@ static float shell_noise(float x, float y, float z, std::uint32_t seed)
     return top * (1.0f - fz) + bottom * fz;
 }
 
+static void add_group(weather_type_id type, const CloudBody& body, float camera_y, std::vector<CloudGroup>& out)
+{
+    if(body.coverage <= 0.02f) {
+        return;
+    }
+
+    CloudGroup group {};
+    group.type = type;
+    group.body = body;
+    group.distance = std::abs(body.height - camera_y);
+
+    out.push_back(group);
+}
+
+std::span<const CloudRing> cloud_field::rings(void)
+{
+    return CLOUD_RINGS;
+}
+
+float cloud_field::max_radius_blocks(void)
+{
+    return CLOUD_MAX_RADIUS_BLOCKS;
+}
+
+float cloud_field::fine_cell_blocks(void)
+{
+    return CLOUD_FINE_CELL_BLOCKS;
+}
+
+CloudDeck cloud_field::make_deck(const CloudInput& input, const CloudGroup& group, const CloudRing& ring)
+{
+    CloudDeck deck {};
+    deck.type = group.type;
+    deck.body = group.body;
+    deck.cell = ring.cell;
+    deck.height = ring.height;
+
+    deck.state = &input.state;
+    deck.allowed = input.allowed;
+    deck.anchor = input.anchor;
+    deck.center = input.center - Eigen::Vector3f(input.offset.x(), 0.0f, input.offset.y());
+
+    deck.scale = std::max(group.body.scale, 8.0f);
+    deck.max_levels = std::clamp(static_cast<int>(group.body.thickness / deck.height), 1, CLOUD_COLUMN_MAX_VOXELS);
+    deck.opacity = std::clamp(group.body.opacity, 0.05f, 1.0f);
+    deck.shadow = group.body.shadow_color;
+    deck.lit = group.body.lit_color;
+    deck.side = (deck.shadow + deck.lit) * 0.5f;
+
+    return deck;
+}
+
 CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_x, std::int32_t cell_z)
 {
     auto grid_x = deck.cell * (static_cast<float>(cell_x) + 0.5f);
@@ -150,13 +161,15 @@ CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_
 
     // Two coarse octaves: the broad one carries the weight of the deck, the
     // smaller one keeps a thin deck from collapsing.
-    auto clump = weather::noise_at(field_x / (deck.scale * 2.0f), field_z / (deck.scale * 2.0f), deck.body.seed + 5);
-    auto mass = weather::noise_at(field_x / deck.scale, field_z / deck.scale, deck.body.seed);
+    auto clump = utils::weather_noise(field_x / (deck.scale * 2.0f), field_z / (deck.scale * 2.0f), deck.body.seed + 5);
+    auto mass = utils::weather_noise(field_x / deck.scale, field_z / deck.scale, deck.body.seed);
     auto clump_weight = 0.45f + 0.30f * std::clamp(coverage, 0.0f, 1.0f);
     auto density = clump * clump_weight + mass * (1.0f - clump_weight);
 
-    // A thin type keeps only its densest lumps, an overcast keeps almost the whole field
-    auto threshold = 0.62f - std::clamp(coverage, 0.0f, 1.0f) * 0.22f;
+    // A thin type keeps only a few of its densest lumps, an overcast keeps
+    // most of the field and a rain or a storm almost all of it: the covered
+    // fraction runs from a few percent to nearly every cell
+    auto threshold = 0.894f - std::clamp(coverage, 0.0f, 1.0f) * 0.714f;
     auto headroom = density - threshold;
 
     // The per-cell crumble breaks a thin deck into scraps and frays the rim
@@ -165,7 +178,7 @@ CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_
     auto hash_z = static_cast<std::int32_t>(std::floor(field_z / deck.cell));
     auto open = 1.0f - std::clamp(coverage, 0.0f, 1.0f);
     auto seam = 1.0f - std::clamp(headroom / 0.18f, 0.0f, 1.0f);
-    auto bias = weather::cell_random(hash_x, hash_z, deck.body.seed + 17) - 0.5f;
+    auto bias = utils::weather_cell(hash_x, hash_z, deck.body.seed + 17) - 0.5f;
     auto value = headroom + bias * 0.5f * std::max(open, seam * 0.4f);
 
     if(value <= 0.0f) {
@@ -189,7 +202,7 @@ CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_
 
     // The column's own brightness, kept in the field's frame like everything
     // else so a rebuild never repaints the deck.
-    auto shade = 1.0f + (weather::cell_random(hash_x, hash_z, deck.body.seed + 41) - 0.5f) * CLOUD_SHADE_VARIATION;
+    auto shade = 1.0f + (utils::weather_cell(hash_x, hash_z, deck.body.seed + 41) - 0.5f) * CLOUD_SHADE_VARIATION;
 
     CloudColumn column {};
     column.bottom = static_cast<std::int16_t>(step);
@@ -199,43 +212,13 @@ CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_
     return column;
 }
 
-static void add_group(biome_realm realm, weather_type_id type, const CloudBody& body, float camera_y, std::vector<CloudGroup>& out)
+void cloud_field::collect_groups(float camera_y, std::vector<CloudGroup>& out)
 {
-    if(body.coverage <= 0.02f) {
-        return;
-    }
-
-    // A deck belongs to the realm its height sits in; otherwise a type shared
-    // by two realms would be built twice in place.
-    if(utils::realm_of_y(body.height) != realm) {
-        return;
-    }
-
-    CloudGroup group {};
-    group.realm = realm;
-    group.type = type;
-    group.body = body;
-    group.distance = std::abs(body.height - camera_y);
-
-    out.push_back(group);
-}
-
-static void collect_realm_groups(biome_realm realm, float camera_y, std::vector<CloudGroup>& out)
-{
-    auto bit = 1U << static_cast<unsigned>(realm);
-
     for(const auto& def : weather_registry::all_definitions()) {
-        if(def.id == WEATHER_ID_NULL || 0 == (def.realms_bits & bit)) {
+        if(def.id == WEATHER_ID_NULL) {
             continue;
         }
 
-        add_group(realm, def.id, def.cloud, camera_y, out);
-    }
-}
-
-void cloud_field::collect_groups(float camera_y, std::vector<CloudGroup>& out)
-{
-    for(std::size_t i = 0; i < NUM_BIOME_REALMS; ++i) {
-        collect_realm_groups(static_cast<biome_realm>(i), camera_y, out);
+        add_group(def.id, def.cloud, camera_y, out);
     }
 }

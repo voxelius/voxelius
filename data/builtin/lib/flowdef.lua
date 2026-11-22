@@ -1,10 +1,10 @@
 local flowdef = {}
 
--- This library follows net.minecraft.world.level.material.FlowingFluid.
+-- This library follows net.minecraft.world.level.material.FlowingFluid
 -- A cell stores the vanilla amount in "level" and keeps "source" apart, so a
 -- non-source cell with level == max_level is the falling state. A block that
 -- can hold a fluid declares a string state (flowdef.filled_state) whose value
--- is the fluid name, and a variant that binds the fluid through fluid_name.
+-- is the fluid name, and a variant that binds the fluid through fluid_name
 
 -- A sentinel value used to indicate if
 -- a slope search has failed to find a drop
@@ -12,7 +12,7 @@ local SLOPE_INF <const> = 1000
 
 -- Horizontal offsets for the four cardinal directions. The last field is the
 -- face of the neighbour that a fluid would enter through; the face the fluid
--- leaves the current cell through is the opposite one.
+-- leaves the current cell through is the opposite one
 local HORIZONTAL <const> = {
   { 1, 0, 0, blocks.FACE_WEST },
   { -1, 0, 0, blocks.FACE_EAST },
@@ -29,12 +29,12 @@ local OPPOSITE <const> = {
   [blocks.FACE_BOTTOM] = blocks.FACE_TOP,
 }
 
--- The blockstate that marks a cell as filled with a fluid. Its values are
--- fluid names, eg "water"; "none" means the cell is empty. Change this before
--- any fillable block is registered.
+-- The blockstate that marks a cell as filled with a fluid. Its
+-- values are fluid names, eg "water"; "none" means the cell
+-- is empty. Change this before any fillable block is registered
 flowdef.filled_state = "fluid"
 
--- Flow configs registered during mod load, keyed by fluid id after commit.
+-- Flow configs registered during mod load, keyed by fluid id after commit
 local registered = {}
 local flows = {}
 local resolved = false
@@ -90,7 +90,7 @@ local function read_cell(config, bx, by, bz)
   local level_state = world.get_state(bx, by, bz, "level")
 
   if not level_state then
-    -- A filled block always holds a full source.
+    -- A filled block always holds a full source
     return {
       level = config.max_level,
       source = true,
@@ -125,7 +125,7 @@ end
 -- block stands in for an empty shape here, a replaceable block never closes a
 -- face, and a fillable block opens only the faces it declares. The same test
 -- serves both ends of a movement: this is what stops a fluid from leaving a
--- cell through a solid face of its own block.
+-- cell through a solid face of its own block
 local function is_face_open(bx, by, bz, face)
   if world.get_state(bx, by, bz, "level") then
     return true
@@ -138,7 +138,7 @@ local function is_face_open(bx, by, bz, face)
   return world.get_fluid_faces(bx, by, bz) & (1 << face) ~= 0
 end
 
--- Vanilla's canPassThroughWall: both cells must expose the shared face.
+-- Vanilla's canPassThroughWall: both cells must expose the shared face
 local function can_pass_wall(bx, by, bz, exit_face, nx, ny, nz)
   if not is_face_open(bx, by, bz, exit_face) then
     return false
@@ -147,8 +147,8 @@ local function can_pass_wall(bx, by, bz, exit_face, nx, ny, nz)
   return is_face_open(nx, ny, nz, OPPOSITE[exit_face])
 end
 
--- Vanilla's canHoldAnyFluid: a replaceable cell takes any fluid, a fillable cell
--- takes the fluid it binds.
+-- Vanilla's canHoldAnyFluid: a replaceable cell takes
+-- any fluid, a fillable cell takes the fluid it binds
 local function can_hold_cell(config, bx, by, bz)
   if world.get_state_fluid(bx, by, bz, flowdef.filled_state, config.fluid) == config.fluid_id then
     return true
@@ -161,7 +161,7 @@ end
 -- LiquidBlockContainer.canPlaceLiquid compares the fluid type with the source:
 -- flowing water never waterlogs a block. Without that check every filled cell
 -- would act as a source, seed another source at every neighbour and the flow
--- would flood the whole floor instead of stopping after max_level blocks.
+-- would flood the whole floor instead of stopping after max_level blocks
 local function can_hold_specific(config, bx, by, bz, cell)
   if world.get_state_fluid(bx, by, bz, flowdef.filled_state, config.fluid) ~= config.fluid_id then
     return true
@@ -171,12 +171,12 @@ local function can_hold_specific(config, bx, by, bz, cell)
 end
 
 -- Vanilla's canBeReplacedWith for water: a cell that already holds a fluid keeps
--- its own state and is never overwritten sideways or from above.
+-- its own state and is never overwritten sideways or from above
 local function can_be_replaced(bx, by, bz)
   return world.get_fluid(bx, by, bz) == 0
 end
 
--- True when an empty cell can take this fluid through the given entry face.
+-- True when an empty cell can take this fluid through the given entry face
 local function can_fill_cell(config, bx, by, bz, face)
   if world.get_fluid(bx, by, bz) ~= 0 then
     return false
@@ -190,7 +190,7 @@ local function can_fill_cell(config, bx, by, bz, face)
 end
 
 -- Vanilla's canMaybePassThrough: the fluid may cross the shared face into a cell
--- that can hold it, but never into a cell that already holds a source.
+-- that can hold it, but never into a cell that already holds a source
 local function can_reach_cell(config, bx, by, bz, exit_face, nx, ny, nz)
   if not can_pass_wall(bx, by, bz, exit_face, nx, ny, nz) then
     return false
@@ -205,9 +205,9 @@ local function can_reach_cell(config, bx, by, bz, exit_face, nx, ny, nz)
   return can_hold_cell(config, nx, ny, nz)
 end
 
--- Vanilla's isWaterHole: the cell can drop into the one below. The check is made
--- against the flowing fluid, which a fillable cell refuses, so it never counts
--- as a hole.
+-- Vanilla's isWaterHole: the cell can drop into the
+-- one below. The check is made against the flowing fluid,
+-- which a fillable cell refuses, so it never counts as a hole
 local function is_fluid_hole(config, bx, by, bz)
   if not can_pass_wall(bx, by, bz, blocks.FACE_BOTTOM, bx, by - 1, bz) then
     return false
@@ -241,7 +241,7 @@ local function is_solid(bx, by, bz)
     return false
   end
 
-  -- A fluid block itself is not solid, a block that merely holds a fluid is.
+  -- A fluid block itself is not solid, a block that merely holds a fluid is
   if world.get_fluid(bx, by, bz) ~= 0 and world.get_state(bx, by, bz, "level") then
     return false
   end
@@ -249,7 +249,7 @@ local function is_solid(bx, by, bz)
   return not blocks.is_replaceable(id)
 end
 
--- Vanilla's getNewLiquid: the state a cell settles into on its own.
+-- Vanilla's getNewLiquid: the state a cell settles into on its own
 local function new_cell(config, bx, by, bz)
   local highest = 0
   local sources = 0
@@ -307,7 +307,7 @@ local function write_cell(config, bx, by, bz, cell, face)
   local existing = read_cell(config, bx, by, bz)
 
   if existing then
-    -- A filled block owns its cell; its levels never change.
+    -- A filled block owns its cell; its levels never change
     if existing.filled then
       return false
     end
@@ -340,7 +340,7 @@ local function write_cell(config, bx, by, bz, cell, face)
   return true
 end
 
--- Vanilla's getSlopeDistance: how far a corridor runs before it finds a drop.
+-- Vanilla's getSlopeDistance: how far a corridor runs before it finds a drop
 local function slope_distance(config, bx, by, bz, pass, from_dx, from_dz)
   local lowest = SLOPE_INF
 
@@ -369,7 +369,7 @@ local function slope_distance(config, bx, by, bz, pass, from_dx, from_dz)
 end
 
 -- Vanilla's getSpread: the directions that lead to the nearest drop, each with
--- the state the target cell computes for itself.
+-- the state the target cell computes for itself
 local function spread_directions(config, bx, by, bz)
   local lowest = SLOPE_INF
   local spreads = {}
@@ -425,7 +425,7 @@ local function spread_sides(config, bx, by, bz, cell)
     local nx = bx + entry.dx
     local nz = bz + entry.dz
 
-    -- A filled target ticks on its own, so every written cell is scheduled.
+    -- A filled target ticks on its own, so every written cell is scheduled
     if write_cell(config, nx, by, nz, entry.cell, entry.face) then
       world.schedule(nx, by, nz, config.delay)
     end
@@ -433,7 +433,7 @@ local function spread_sides(config, bx, by, bz, cell)
 end
 
 -- Vanilla's spread: always fall first, and only fan out at the bottom or at
--- the top of a waterfall fed by three or more sources.
+-- the top of a waterfall fed by three or more sources
 local function spread(config, bx, by, bz, cell)
   if can_reach_cell(config, bx, by, bz, blocks.FACE_BOTTOM, bx, by - 1, bz) then
     local below = new_cell(config, bx, by - 1, bz)
@@ -483,9 +483,9 @@ local function update_fluid(config, bx, by, bz)
   spread(config, bx, by, bz, cell)
 end
 
--- The scheduled tick shared by fluid blocks and fillable blocks. A filled cell
--- keeps a source and still flows out of its open faces, like a waterlogged
--- block in vanilla.
+-- The scheduled tick shared by fluid blocks and fillable
+-- blocks. A filled cell keeps a source and still flows
+-- out of its open faces, like a waterlogged block in vanilla
 function flowdef.tick(bx, by, bz, source)
   resolve_flows()
 
@@ -496,7 +496,7 @@ function flowdef.tick(bx, by, bz, source)
   end
 
   -- A neighbour change reschedules the cell, like LiquidBlock.updateShape and
-  -- SlabBlock.updateShape do. Only scripted and random ticks actually flow.
+  -- SlabBlock.updateShape do. Only scripted and random ticks actually flow
   if source == blocks.TICK_NEIGHBOUR then
     world.schedule(bx, by, bz, config.delay)
     return
@@ -509,7 +509,7 @@ function flowdef.tick(bx, by, bz, source)
   update_fluid(config, bx, by, bz)
 end
 
--- Places a source of the given fluid, eg when a filled block is broken.
+-- Places a source of the given fluid, eg when a filled block is broken
 function flowdef.place_source(fluid_id, bx, by, bz)
   resolve_flows()
 
@@ -522,14 +522,21 @@ function flowdef.place_source(fluid_id, bx, by, bz)
   world.set_block(bx, by, bz, config.block_id)
   world.set_state(bx, by, bz, "level", tostring(config.max_level))
   world.set_state(bx, by, bz, "source", "true")
-  world.schedule(bx, by, bz, config.delay)
+
+  if core.IS_SERVER then
+    world.schedule(bx, by, bz, config.delay)
+  end
 
   return true
 end
 
 -- Schedules the first tick of a cell that has just started holding a fluid,
--- like LiquidBlockContainer.placeLiquid does.
+-- like LiquidBlockContainer.placeLiquid does
 function flowdef.schedule(fluid_id, bx, by, bz)
+  if not core.IS_SERVER then
+    return false
+  end
+
   resolve_flows()
 
   local config = flows[fluid_id]
@@ -583,7 +590,7 @@ function flowdef.variants(config_src)
 
   for level = 1, config.max_level - 1 do
     -- Vanilla draws a level at amount / 9 of a block, so full_height stands for
-    -- max_level / 9 and every level lands on the same 1/16th of a block.
+    -- max_level / 9 and every level lands on the same 1/16th of a block
     local height = math.floor(level * config.full_height / config.max_level + 0.5)
     height = math.max(1, height)
 
@@ -610,7 +617,7 @@ function flowdef.on_place(config_src)
     end
 
     -- Using a fluid on a fillable block fills that block instead of placing a
-    -- fluid block next to it, like a bucket does.
+    -- fluid block next to it, like a bucket does
     local can_fill = config.fluid_id ~= 0
     can_fill = can_fill and world.get_fluid(target.bx, target.by, target.bz) == 0
     can_fill = can_fill and world.get_state_fluid(target.bx, target.by, target.bz, flowdef.filled_state, config.fluid) == config.fluid_id

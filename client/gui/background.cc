@@ -2,6 +2,8 @@
 
 #include "client/gui/background.hh"
 
+#include "shared/world/world.hh"
+
 #include "client/constant.hh"
 #include "client/globals.hh"
 
@@ -54,7 +56,11 @@ static const Cloud CLOUDS[] = {
 
 static ImVec4 lighten(const ImVec4& color, float factor)
 {
-    return ImVec4(std::min(1.0f, factor * color.x), std::min(1.0f, factor * color.y), std::min(1.0f, factor * color.z), color.w);
+    auto red = std::min(1.0f, factor * color.x);
+    auto green = std::min(1.0f, factor * color.y);
+    auto blue = std::min(1.0f, factor * color.z);
+
+    return ImVec4(red, green, blue, color.w);
 }
 
 static void draw_sun(ImDrawList* draw_list, ImVec2 origin, ImVec2 size)
@@ -158,6 +164,13 @@ gui::Background& gui::Background::enable_scene(void)
     return self();
 }
 
+gui::Background& gui::Background::force_scene(bool force)
+{
+    m_force_scene = force;
+
+    return self();
+}
+
 void gui::Background::layout_scene(ImVec2 window_pos, ImVec2 window_size)
 {
     auto draw_list = ImGui::GetWindowDrawList();
@@ -165,8 +178,10 @@ void gui::Background::layout_scene(ImVec2 window_pos, ImVec2 window_size)
 
     auto window_end = ImVec2(window_pos.x + window_size.x, window_pos.y + window_size.y);
 
-    draw_list->AddRectFilledMultiColor(window_pos, window_end, ImGui::GetColorU32(SKY_TOP), ImGui::GetColorU32(SKY_TOP),
-        ImGui::GetColorU32(SKY_BOTTOM), ImGui::GetColorU32(SKY_BOTTOM));
+    auto top_color = ImGui::GetColorU32(SKY_TOP);
+    auto bottom_color = ImGui::GetColorU32(SKY_BOTTOM);
+
+    draw_list->AddRectFilledMultiColor(window_pos, window_end, top_color, top_color, bottom_color, bottom_color);
 
     draw_sun(draw_list, window_pos, window_size);
     draw_clouds(draw_list, window_pos, window_size, time);
@@ -189,16 +204,21 @@ void gui::Background::layout_dim(ImVec2 window_pos, ImVec2 window_size)
 
 void gui::Background::layout(void)
 {
+    auto& registry = globals::world->registry();
+
     auto window_pos = ImGui::GetWindowPos();
     auto window_size = ImGui::GetWindowSize();
 
-    if(globals::registry.valid(globals::player)) {
+    if(registry.valid(globals::player) && !m_force_scene) {
         layout_dim(window_pos, window_size);
 
         // The pause menu sits on top of the world itself, so it needs a
         // darker scrim than the menu scene does
         auto window_end = ImVec2(window_pos.x + window_size.x, window_pos.y + window_size.y);
-        ImGui::GetWindowDrawList()->AddRectFilled(window_pos, window_end, ImGui::GetColorU32(ImVec4(0.0f, 0.0f, 0.0f, 0.45f)));
+        auto scrim_color = ImGui::GetColorU32(ImVec4(0.0f, 0.0f, 0.0f, 0.45f));
+        auto draw_list = ImGui::GetWindowDrawList();
+
+        draw_list->AddRectFilled(window_pos, window_end, scrim_color);
         return;
     }
 
@@ -209,7 +229,9 @@ void gui::Background::layout(void)
 
     if(m_texture) {
         auto window_end = ImVec2(window_pos.x + window_size.x, window_pos.y + window_size.y);
-        ImGui::GetWindowDrawList()->AddImage(m_texture, window_pos, window_end);
+        auto draw_list = ImGui::GetWindowDrawList();
+
+        draw_list->AddImage(m_texture, window_pos, window_end);
         return;
     }
 

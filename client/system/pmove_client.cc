@@ -8,6 +8,7 @@
 #include "shared/component/transform.hh"
 #include "shared/component/velocity.hh"
 #include "shared/system/pmove.hh"
+#include "shared/world/world.hh"
 
 #include "client/globals.hh"
 #include "client/gui/button_bind.hh"
@@ -34,7 +35,7 @@ static gui::ButtonBind s_jump_bind;
 static gui::ButtonBind s_sneak_bind;
 
 template<std::uint32_t Bit>
-static cvar::status cmd_press(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_press(const cvar::Context&, std::span<const std::string_view>)
 {
     s_input_held |= Bit;
 
@@ -42,7 +43,7 @@ static cvar::status cmd_press(const cvar::Context& ctx, std::span<const std::str
 }
 
 template<std::uint32_t Bit>
-static cvar::status cmd_release(const cvar::Context& ctx, std::span<const std::string_view> args)
+static cvar::status cmd_release(const cvar::Context&, std::span<const std::string_view>)
 {
     s_input_held &= ~Bit;
 
@@ -64,18 +65,30 @@ static void on_window_event(const SDL_WindowEvent& event)
 
 void player_move::init(void)
 {
-    cvar::bind_cmd("+forward").connect<&cmd_press<IN_FORWARD>>();
-    cvar::bind_cmd("-forward").connect<&cmd_release<IN_FORWARD>>();
-    cvar::bind_cmd("+back").connect<&cmd_press<IN_BACK>>();
-    cvar::bind_cmd("-back").connect<&cmd_release<IN_BACK>>();
-    cvar::bind_cmd("+moveleft").connect<&cmd_press<IN_LEFT>>();
-    cvar::bind_cmd("-moveleft").connect<&cmd_release<IN_LEFT>>();
-    cvar::bind_cmd("+moveright").connect<&cmd_press<IN_RIGHT>>();
-    cvar::bind_cmd("-moveright").connect<&cmd_release<IN_RIGHT>>();
-    cvar::bind_cmd("+jump").connect<&cmd_press<IN_JUMP>>();
-    cvar::bind_cmd("-jump").connect<&cmd_release<IN_JUMP>>();
-    cvar::bind_cmd("+sneak").connect<&cmd_press<IN_SNEAK>>();
-    cvar::bind_cmd("-sneak").connect<&cmd_release<IN_SNEAK>>();
+    auto& forward_press = cvar::bind_cmd("+forward");
+    forward_press.connect<&cmd_press<IN_FORWARD>>();
+    auto& forward_release = cvar::bind_cmd("-forward");
+    forward_release.connect<&cmd_release<IN_FORWARD>>();
+    auto& back_press = cvar::bind_cmd("+back");
+    back_press.connect<&cmd_press<IN_BACK>>();
+    auto& back_release = cvar::bind_cmd("-back");
+    back_release.connect<&cmd_release<IN_BACK>>();
+    auto& left_press = cvar::bind_cmd("+moveleft");
+    left_press.connect<&cmd_press<IN_LEFT>>();
+    auto& left_release = cvar::bind_cmd("-moveleft");
+    left_release.connect<&cmd_release<IN_LEFT>>();
+    auto& right_press = cvar::bind_cmd("+moveright");
+    right_press.connect<&cmd_press<IN_RIGHT>>();
+    auto& right_release = cvar::bind_cmd("-moveright");
+    right_release.connect<&cmd_release<IN_RIGHT>>();
+    auto& jump_press = cvar::bind_cmd("+jump");
+    jump_press.connect<&cmd_press<IN_JUMP>>();
+    auto& jump_release = cvar::bind_cmd("-jump");
+    jump_release.connect<&cmd_release<IN_JUMP>>();
+    auto& sneak_press = cvar::bind_cmd("+sneak");
+    sneak_press.connect<&cmd_press<IN_SNEAK>>();
+    auto& sneak_release = cvar::bind_cmd("-sneak");
+    sneak_release.connect<&cmd_release<IN_SNEAK>>();
 
     s_forward_bind.bind_action("forward");
     s_back_bind.bind_action("back");
@@ -109,29 +122,33 @@ void player_move::init(void)
 
 void player_move::fixed_update(void)
 {
-    if(globals::registry.valid(globals::player)) {
-        const auto& transform = globals::registry.get<Transform>(globals::player);
-        const auto& velocity = globals::registry.get<Velocity>(globals::player);
-        globals::registry.emplace_or_replace<Transform_Prev>(globals::player, transform);
-        globals::registry.emplace_or_replace<Velocity_Prev>(globals::player, velocity);
+    auto& registry = globals::world->registry();
+
+    if(registry.valid(globals::player)) {
+        const auto& transform = registry.get<Transform>(globals::player);
+        const auto& velocity = registry.get<Velocity>(globals::player);
+        registry.emplace_or_replace<Transform_Prev>(globals::player, transform);
+        registry.emplace_or_replace<Velocity_Prev>(globals::player, velocity);
     }
 }
 
 void player_move::update(void)
 {
+    auto& registry = globals::world->registry();
+
     if(globals::gui_screen && !s_gui_was_open) {
         release_all();
     }
 
     s_gui_was_open = globals::gui_screen;
 
-    if(!globals::registry.valid(globals::player)) {
+    if(!registry.valid(globals::player)) {
         return;
     }
 
     Eigen::Vector3f wishdir = Eigen::Vector3f::Zero();
 
-    if(!globals::gui_screen) {
+    if(globals::gui_screen == nullptr) {
         if(s_input_held & IN_FORWARD) {
             wishdir.z() -= 1.0f;
         }
@@ -157,7 +174,7 @@ void player_move::update(void)
         }
 
         if(!wishdir.isZero()) {
-            const auto& head = globals::registry.get<Head>(globals::player);
+            const auto& head = registry.get<Head>(globals::player);
             auto yaw = Eigen::AngleAxisf(head.angles.y(), Eigen::Vector3f::UnitY());
             wishdir = yaw * wishdir;
             wishdir.normalize();
@@ -167,5 +184,5 @@ void player_move::update(void)
     MoveData move_data {};
     move_data.wishdir = wishdir;
 
-    globals::registry.emplace_or_replace<MoveData>(globals::player, std::move(move_data));
+    registry.emplace_or_replace<MoveData>(globals::player, std::move(move_data));
 }

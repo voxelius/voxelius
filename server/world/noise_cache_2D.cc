@@ -1,6 +1,6 @@
 #include "server/pch.hh"
 
-#include "server/world/noise_cache_2D.hh"
+#include "server/world/noise_cache_2d.hh"
 
 #include "core/utils/modulo.hh"
 
@@ -54,7 +54,9 @@ const float NoiseCache2D<CellW, CellH>::get_slow(const BlockPosXZ& pos)
     lpos[0] = static_cast<LocalPosXZ::value_type>(utils::mod_signed<BlockPosXZ::value_type>(pos[0], constant::CHUNK_SIZE));
     lpos[1] = static_cast<LocalPosXZ::value_type>(utils::mod_signed<BlockPosXZ::value_type>(pos[1], constant::CHUNK_SIZE));
 
-    return sample(get(cpos), lpos);
+    auto& values = get(cpos);
+
+    return sample(values, lpos);
 }
 
 template<unsigned CellW, unsigned CellH>
@@ -104,7 +106,7 @@ void NoiseCache2D<CellW, CellH>::generate(const ChunkPosXZ& pos, array_type& val
     chunk_origin[0] = static_cast<BlockPosXZ::value_type>(pos[0]) * constant::CHUNK_SIZE;
     chunk_origin[1] = static_cast<BlockPosXZ::value_type>(pos[1]) * constant::CHUNK_SIZE;
 
-    fnl_state noise_copy = m_noise; // copy is intentional - thread safety
+    fnl_state noise_copy = m_noise; // Copy is intentional - thread safety
 
     for(unsigned y = 0; y < GRID_H; ++y) {
         for(unsigned x = 0; x < GRID_W; ++x) {

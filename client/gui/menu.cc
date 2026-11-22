@@ -2,6 +2,8 @@
 
 #include "client/gui/menu.hh"
 
+#include "shared/world/world.hh"
+
 #include "client/globals.hh"
 
 constexpr static unsigned CONDITION_ANY = 0xFFFF;
@@ -12,7 +14,9 @@ constexpr static float BUTTON_GAP = 6.0f;
 
 static bool condition_met(unsigned condition)
 {
-    if(globals::registry.valid(globals::player)) {
+    auto& registry = globals::world->registry();
+
+    if(registry.valid(globals::player)) {
         return static_cast<bool>(condition & CONDITION_INGAME);
     }
     else {

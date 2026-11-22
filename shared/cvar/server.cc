@@ -18,7 +18,7 @@ std::uint32_t server_vars::day_length_ticks(void)
 
 void server_vars::init(void)
 {
-    auto& day_length_binding = cvar::bind_var(day_length, "sv_day_length");
-    day_length_binding.set_help("Length of a full day, in ticks");
-    day_length_binding.set_flags(FCVAR_REPLICATED | FCVAR_ARCHIVE | FCVAR_ADMIN);
+    auto& sv_day_length_binding = cvar::bind_var(day_length, "sv_day_length");
+    sv_day_length_binding.set_help("Length of a full day, in ticks");
+    sv_day_length_binding.set_flags(FCVAR_REPLICATED | FCVAR_ARCHIVE | FCVAR_ADMIN);
 }

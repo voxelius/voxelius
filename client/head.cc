@@ -38,16 +38,16 @@ static GLuint s_compose_fbo;
 static GLuint s_compose_color;
 
 static ShaderProgram s_transparency;
-static std::size_t su_DiffuseColor;
-static std::size_t su_DiffuseDepth;
-static std::size_t su_AlphaColor;
-static std::size_t su_AlphaDepth;
-static std::size_t su_FluidColor;
-static std::size_t su_FluidDepth;
-static std::size_t su_CloudColor;
-static std::size_t su_CloudDepth;
-static std::size_t su_CloudRange;
-static std::size_t su_CameraRange;
+static std::size_t su_diffuse_color;
+static std::size_t su_diffuse_depth;
+static std::size_t su_alpha_color;
+static std::size_t su_alpha_depth;
+static std::size_t su_fluid_color;
+static std::size_t su_fluid_depth;
+static std::size_t su_cloud_color;
+static std::size_t su_cloud_depth;
+static std::size_t su_cloud_range;
+static std::size_t su_camera_range;
 
 static cvar::Number<int> s_head_pixel_size { 1, 1, 4 };
 static gui::SliderInt s_pixel_size_gui;
@@ -187,38 +187,38 @@ static void composite_layers(void)
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, s_diffuse.color);
-    glUniform1i(s_transparency.uniforms[su_DiffuseColor].location, 0);
+    glUniform1i(s_transparency.uniforms[su_diffuse_color].location, 0);
 
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, s_diffuse.depth);
-    glUniform1i(s_transparency.uniforms[su_DiffuseDepth].location, 1);
+    glUniform1i(s_transparency.uniforms[su_diffuse_depth].location, 1);
 
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, s_alpha.color);
-    glUniform1i(s_transparency.uniforms[su_AlphaColor].location, 2);
+    glUniform1i(s_transparency.uniforms[su_alpha_color].location, 2);
 
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, s_alpha.depth);
-    glUniform1i(s_transparency.uniforms[su_AlphaDepth].location, 3);
+    glUniform1i(s_transparency.uniforms[su_alpha_depth].location, 3);
 
     glActiveTexture(GL_TEXTURE4);
     glBindTexture(GL_TEXTURE_2D, s_fluid.color);
-    glUniform1i(s_transparency.uniforms[su_FluidColor].location, 4);
+    glUniform1i(s_transparency.uniforms[su_fluid_color].location, 4);
 
     glActiveTexture(GL_TEXTURE5);
     glBindTexture(GL_TEXTURE_2D, s_fluid.depth);
-    glUniform1i(s_transparency.uniforms[su_FluidDepth].location, 5);
+    glUniform1i(s_transparency.uniforms[su_fluid_depth].location, 5);
 
     glActiveTexture(GL_TEXTURE6);
     glBindTexture(GL_TEXTURE_2D, s_clouds.color);
-    glUniform1i(s_transparency.uniforms[su_CloudColor].location, 6);
+    glUniform1i(s_transparency.uniforms[su_cloud_color].location, 6);
 
     glActiveTexture(GL_TEXTURE7);
     glBindTexture(GL_TEXTURE_2D, s_clouds.depth);
-    glUniform1i(s_transparency.uniforms[su_CloudDepth].location, 7);
+    glUniform1i(s_transparency.uniforms[su_cloud_depth].location, 7);
 
-    glUniform2f(s_transparency.uniforms[su_CloudRange].location, cloud_renderer::z_near, cloud_renderer::z_far);
-    glUniform2f(s_transparency.uniforms[su_CameraRange].location, camera::z_near, camera::z_far);
+    glUniform2f(s_transparency.uniforms[su_cloud_range].location, cloud_renderer::z_near, cloud_renderer::z_far);
+    glUniform2f(s_transparency.uniforms[su_camera_range].location, camera::z_near, camera::z_far);
 
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
@@ -240,12 +240,14 @@ static void on_pixel_size_changed(void)
 
 void head::init(void)
 {
-    auto& pixel_size_binding = cvar::bind_var(s_head_pixel_size, "r_pixel_size");
-    pixel_size_binding.set_help("Internal render scale, in pixels");
-    pixel_size_binding.set_flags(FCVAR_ARCHIVE);
-    pixel_size_binding.changed().connect<&on_pixel_size_changed>();
+    auto& r_pixel_size_binding = cvar::bind_var(s_head_pixel_size, "r_pixel_size");
+    r_pixel_size_binding.set_help("Internal render scale, in pixels");
+    r_pixel_size_binding.set_flags(FCVAR_ARCHIVE);
+    auto pixel_size_changed = r_pixel_size_binding.changed();
+    pixel_size_changed.connect<&on_pixel_size_changed>();
 
-    s_pixel_size_gui.set_range(1, 4).enable_tooltip();
+    s_pixel_size_gui.set_range(1, 4);
+    s_pixel_size_gui.enable_tooltip();
     s_pixel_size_gui.bind("r_pixel_size");
     settings::video.add_child(s_pixel_size_gui, 2);
 
@@ -270,22 +272,23 @@ void head::init(void)
     auto imgui_renderer_ok = ImGui_ImplOpenGL3_Init("#version 330 core");
     vx::throw_if_not(imgui_renderer_ok, "ImGui_ImplOpenGL3_Init failed");
 
-    ImGui::GetIO().IniFilename = nullptr;
+    auto& io = ImGui::GetIO();
+    io.IniFilename = nullptr;
 
     auto transparency_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "transparency");
     auto transparency_ok = s_transparency.setup(transparency_id);
     vx::throw_if_not_fmt(transparency_ok, "{}: setup failed", transparency_id.full_string());
 
-    su_DiffuseColor = s_transparency.add_uniform("u_DiffuseColor");
-    su_DiffuseDepth = s_transparency.add_uniform("u_DiffuseDepth");
-    su_AlphaColor = s_transparency.add_uniform("u_AlphaColor");
-    su_AlphaDepth = s_transparency.add_uniform("u_AlphaDepth");
-    su_FluidColor = s_transparency.add_uniform("u_FluidColor");
-    su_FluidDepth = s_transparency.add_uniform("u_FluidDepth");
-    su_CloudColor = s_transparency.add_uniform("u_CloudColor");
-    su_CloudDepth = s_transparency.add_uniform("u_CloudDepth");
-    su_CloudRange = s_transparency.add_uniform("u_CloudRange");
-    su_CameraRange = s_transparency.add_uniform("u_CameraRange");
+    su_diffuse_color = s_transparency.add_uniform("u_DiffuseColor");
+    su_diffuse_depth = s_transparency.add_uniform("u_DiffuseDepth");
+    su_alpha_color = s_transparency.add_uniform("u_AlphaColor");
+    su_alpha_depth = s_transparency.add_uniform("u_AlphaDepth");
+    su_fluid_color = s_transparency.add_uniform("u_FluidColor");
+    su_fluid_depth = s_transparency.add_uniform("u_FluidDepth");
+    su_cloud_color = s_transparency.add_uniform("u_CloudColor");
+    su_cloud_depth = s_transparency.add_uniform("u_CloudDepth");
+    su_cloud_range = s_transparency.add_uniform("u_CloudRange");
+    su_camera_range = s_transparency.add_uniform("u_CameraRange");
 
     fog::init();
 

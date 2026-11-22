@@ -2,6 +2,8 @@
 
 #include "client/globals.hh"
 
+World* globals::world;
+
 SDL_Window* globals::window;
 SDL_GLContext globals::gl_context;
 

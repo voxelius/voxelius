@@ -56,7 +56,11 @@ res::handle<void> res::detail::load_resource(const std::type_info& type, std::st
             return nullptr;
         }
 
-        handle<void> resource(raw, [](const void* ptr) { /* empty */ });
+        auto no_delete = [](const void*) {
+            // empty
+        };
+
+        handle<void> resource(raw, no_delete);
 
         auto loaded = loader->second->resources.insert_or_assign(full_path, std::move(resource));
 
@@ -97,13 +101,11 @@ void res::soft_purge(bool include_cached)
         auto& loader = it.second;
 
         if(include_cached) {
-            // Normally soft_purge is called after every
-            // frame is rendered, but it also may be called
-            // whenever we disconnect, so certain cached
-            // resources might need to be freed; calling
-            // hard_purge is also not an option specifically
-            // because it doesn't care about use_count and
-            // very unpleasant things (UAF) might happen
+            // Normally soft_purge is called after every frame is rendered,
+            // but it also may be called whenever we disconnect, so certain
+            // cached resources might need to be freed; calling hard_purge
+            // is also not an option specifically because it doesn't care
+            // about use_count and very unpleasant things (UAF) might happen
             loader->cache.clear();
         }
 

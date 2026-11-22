@@ -26,17 +26,16 @@ public:
 
     bool has_records(std::uint32_t count, std::size_t record_size) const;
 
-    void read_bytes(std::span<std::byte> buffer);
-
-    // Takes back what WriteBuffer::write_compressed put in. The size is carried
-    // by the buffer itself, so the caller only has to check what came out.
-    std::vector<std::byte> read_compressed(void);
-
     template<typename T>
     T read(void);
 
     template<typename T, std::size_t N>
     Eigen::Vector<T, N> read_vector(void);
+
+    void read_bytes(std::span<std::byte> buffer);
+
+    // Takes back what WriteBuffer::write_compressed put in; the size rides in the buffer
+    std::vector<std::byte> read_compressed(void);
 
 private:
     std::vector<std::byte> m_vector;
@@ -57,16 +56,14 @@ public:
     void write_buffer(const WriteBuffer& other);
     void write_bytes(std::span<const std::byte> data);
 
-    // One place for the compression every network format uses. Whole arrays go
-    // in, so the ratio is the one zlib gets over a whole chunk rather than the
-    // one a transport can get out of a 1400 byte datagram.
-    void write_compressed(std::span<const std::byte> data);
-
     template<typename T>
     void write(const T value);
 
     template<typename T, std::size_t N>
     void write_vector(const Eigen::Vector<T, N>& value);
+
+    // The compression every network format uses, over whole arrays, so the ratio is chunk-wide
+    void write_compressed(std::span<const std::byte> data);
 
     PHYSFS_File* to_file(std::string_view path, bool append = false) const;
     ENetPacket* to_packet(enet_uint32 flags = ENET_PACKET_FLAG_RELIABLE) const;

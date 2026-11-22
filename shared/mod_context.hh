@@ -13,6 +13,10 @@ namespace config
 class Map;
 } // namespace config
 
+class ModContext;
+
+using library_opener = entt::delegate<void(std::shared_ptr<lua_State>&, ModContext*)>;
+
 enum class mod_status {
     PENDING, ///< The mod is pending to be loaded
     LOADING, ///< The mod is currently being loaded
@@ -67,19 +71,19 @@ public:
 
     void set_status(mod_status status);
 
-    bool initialize(void);
+    bool initialize(std::span<const library_opener> libraries);
 
-    // non-owning: callers that need to keep a mod's Lua state alive past
-    // ModContext's own lifetime (eg. BlockCallback) should copy this
+    // Non-owning: callers that need to keep a mod's Lua state alive
+    // past ModContext's own lifetime (eg. BlockCallback) should copy this
     const std::shared_ptr<lua_State>& lua_state(void) const;
 
     block_id_type find_block(const Identifier& name) const;
     block_id_type register_block(const Identifier& name, BlockDefinition def);
     block_family_id_type register_block_family(BlockFamily family);
 
-    // patches a block registered earlier in this same loading pass to
-    // point at the family that was, in turn, only registerable after
-    // the block itself (family.stem_id needs the block's local id first)
+    // Patches a block registered earlier in this same loading pass to point
+    // at its family. The family becomes registerable only after the
+    // block, because family.stem_id needs the block's local id first
     bool set_block_family(block_id_type id, block_family_id_type family);
 
     std::vector<BlockDefinition> take_blocks(void);

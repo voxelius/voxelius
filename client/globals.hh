@@ -3,10 +3,17 @@
 
 #include "shared/globals.hh"
 
+class World;
+
 namespace gui
 {
 class Screen;
 } // namespace gui
+
+namespace globals
+{
+extern World* world;
+} // namespace globals
 
 namespace globals
 {

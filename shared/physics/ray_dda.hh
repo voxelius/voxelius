@@ -5,11 +5,12 @@
 #include "shared/world/block.hh"
 
 class Chunk;
+class World;
 
 class Ray_DDA final {
 public:
     Ray_DDA(void) = default;
-    explicit Ray_DDA(const ChunkPos& start_chunk, const Eigen::Vector3f& start_pos, const Eigen::Vector3f& direction);
+    Ray_DDA(World* world, const ChunkPos& start_chunk, const Eigen::Vector3f& start_pos, const Eigen::Vector3f& direction);
 
     void reset(const ChunkPos& start_chunk, const Eigen::Vector3f& start_pos, const Eigen::Vector3f& direction);
 
@@ -28,6 +29,7 @@ public:
     constexpr const BlockPos& normal(void) const;
 
 private:
+    World* m_world { nullptr };
     ChunkPos m_start_chunk;
     Eigen::Vector3f m_start_pos;
     Eigen::Vector3f m_direction;

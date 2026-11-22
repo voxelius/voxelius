@@ -15,5 +15,6 @@ void packet::Msg_Log::decode(Msg_Log& packet, ReadBuffer& buffer)
 {
     packet.request_id = buffer.read<std::uint32_t>();
     packet.level = buffer.read<std::uint8_t>();
-    packet.message = buffer.read<std::string>().substr(0, MAX_MESSAGE);
+    auto message = buffer.read<std::string>();
+    packet.message = message.substr(0, MAX_MESSAGE);
 }

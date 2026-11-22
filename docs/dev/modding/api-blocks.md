@@ -176,6 +176,14 @@ Returns the numeric block ID.
 |`on_break`|`function`|no|`nil`|Break handler|
 |`on_interact`|`function`|no|`nil`|Interaction handler|
 
+#### Where callbacks run
+
+|Callback|Runs on|
+|----|----|
+|`on_place`, `on_break`|Both sides; the client predicts, the server decides|
+|`on_tick`|Server only|
+|`on_interact`|Server only; the engine does not call it yet|
+
 ### Textures
 
 #### Albedo

@@ -9,14 +9,14 @@
 #include "core/utils/angles.hh"
 
 #include "shared/constant.hh"
+#include "shared/world/world.hh"
 
 #include "client/camera.hh"
 #include "client/globals.hh"
-#include "client/res/texture2D.hh"
+#include "client/res/texture_2d.hh"
 #include "client/shader_program.hh"
+#include "client/utils/world.hh"
 #include "client/world/skybox.hh"
-
-constexpr static std::size_t STAR_COUNT = 1500;
 
 // The sky spheres have to stay inside the camera's far plane
 // even at the shortest view distance, which is twenty blocks
@@ -84,7 +84,7 @@ static GLuint s_quad_vao;
 static GLuint s_star_vao;
 static GLuint s_star_vbo;
 static GLsizei s_star_vertices;
-static std::uint32_t s_built_seed;
+static std::optional<std::pair<std::uint32_t, std::uint32_t>> s_built_stars;
 
 static float next_float(std::mt19937_64& random)
 {
@@ -130,12 +130,15 @@ static void push_vertex(std::vector<StarVertex>& vertices, const Eigen::Vector3f
 // star angle moves the whole field, so a still sky costs no upload
 static void build_stars(void)
 {
+    auto& visuals = utils::world_visuals();
+    auto count = static_cast<std::size_t>(visuals.stars ? visuals.stars->count : 0U);
+
     std::mt19937_64 random(skybox::star_seed);
     std::vector<StarVertex> vertices;
 
-    vertices.reserve(STAR_COUNT * 6);
+    vertices.reserve(count * 6);
 
-    for(std::size_t i = 0; i < STAR_COUNT; ++i) {
+    for(std::size_t i = 0; i < count; ++i) {
         Eigen::Vector3f direction;
 
         for(;;) {
@@ -155,7 +158,12 @@ static void build_stars(void)
         auto size = STAR_MIN_SIZE + (STAR_MAX_SIZE - STAR_MIN_SIZE) * next_float(random);
         auto brightness = STAR_MIN_BRIGHTNESS + (STAR_MAX_BRIGHTNESS - STAR_MIN_BRIGHTNESS) * next_float(random);
 
-        auto helper = std::abs(direction.y()) < 0.99f ? Eigen::Vector3f::UnitY() : Eigen::Vector3f::UnitX();
+        auto helper = Eigen::Vector3f::UnitX().eval();
+
+        if(std::abs(direction.y()) < 0.99f) {
+            helper = Eigen::Vector3f::UnitY();
+        }
+
         auto tangent = direction.cross(helper).normalized();
         auto bitangent = direction.cross(tangent);
 
@@ -183,7 +191,7 @@ static void build_stars(void)
     glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(vertices.size() * sizeof(StarVertex)), vertices.data(), GL_STATIC_DRAW);
 
     s_star_vertices = static_cast<GLsizei>(vertices.size());
-    s_built_seed = skybox::star_seed;
+    s_built_stars = std::make_pair(skybox::star_seed, static_cast<std::uint32_t>(count));
 }
 
 static void draw_stars(const Eigen::Matrix4f& sky_view_projection)
@@ -289,14 +297,14 @@ void sky_renderer::init(void)
     auto sun_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "sun");
     s_sun_texture = res::load<Texture2D>(sun_id, "textures/environment", ".png", RESFLAG_TEX_NEAREST);
 
-    if(!s_sun_texture) {
+    if(s_sun_texture == nullptr) {
         msg::log_warning("{}: texture load failed", sun_id.full_string());
     }
 
     auto moon_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "moon_phases");
     s_moon_texture = res::load<Texture2D>(moon_id, "textures/environment", ".png", RESFLAG_TEX_NEAREST);
 
-    if(!s_moon_texture) {
+    if(s_moon_texture == nullptr) {
         msg::log_warning("{}: texture load failed", moon_id.full_string());
     }
 
@@ -318,8 +326,6 @@ void sky_renderer::init(void)
     glEnableVertexAttribArray(2);
 
     glBindVertexArray(0);
-
-    s_built_seed = skybox::star_seed;
 
     build_stars();
 }
@@ -345,23 +351,23 @@ void sky_renderer::render(void)
 
     // The camera has no valid matrices until a player exists; the
     // flat clear colour is the right sky for the menu that follows
-    if(camera::instance.view().hasNaN() || camera::instance.projection().hasNaN()) {
+    auto view = camera::instance.view();
+    auto projection = camera::instance.projection();
+
+    if(view.hasNaN() || projection.hasNaN()) {
         return;
     }
 
-    if(skybox::star_seed != s_built_seed) {
+    auto& visuals = utils::world_visuals();
+    auto expected_count = visuals.stars ? visuals.stars->count : 0U;
+    auto draw_sky = visuals.sky.has_value();
+
+    if(!s_built_stars.has_value()) {
         build_stars();
     }
-
-    vx::throw_if_not(s_sky.update());
-
-    auto half_fov = 0.5f * utils::radians(camera::vertical_fov.value());
-    auto tan_half_fov = std::tan(half_fov);
-    auto ground_color = Eigen::Vector3f(skybox::horizon_color * 0.35f);
-
-    auto forward = camera::instance.forward_vector();
-    auto right = camera::instance.right_vector();
-    auto up = camera::instance.up_vector();
+    else if(s_built_stars->first != skybox::star_seed || s_built_stars->second != expected_count) {
+        build_stars();
+    }
 
     // The sky spheres turn with the camera, so the view
     // matrix loses its translation and keeps only its rotation
@@ -370,30 +376,45 @@ void sky_renderer::render(void)
     view_rotation(1, 3) = 0.0f;
     view_rotation(2, 3) = 0.0f;
 
-    Eigen::Matrix4f sky_view_projection = camera::instance.projection() * view_rotation;
-
-    glUseProgram(s_sky.handle);
-    glUniform3fv(s_sky.uniforms[su_CameraForward].location, 1, forward.data());
-    glUniform3fv(s_sky.uniforms[su_CameraRight].location, 1, right.data());
-    glUniform3fv(s_sky.uniforms[su_CameraUp].location, 1, up.data());
-    glUniform1f(s_sky.uniforms[su_TanHalfFov].location, tan_half_fov);
-    glUniform1f(s_sky.uniforms[su_Aspect].location, globals::aspect);
-    glUniform3fv(s_sky.uniforms[su_HorizonColor].location, 1, skybox::horizon_color.data());
-    glUniform3fv(s_sky.uniforms[su_SunHorizonColor].location, 1, skybox::sun_horizon_color.data());
-    glUniform3fv(s_sky.uniforms[su_ZenithColor].location, 1, skybox::zenith_color.data());
-    glUniform3fv(s_sky.uniforms[su_GroundColor].location, 1, ground_color.data());
-    glUniform3fv(s_sky.uniforms[su_SunDirection].location, 1, skybox::sun_direction.data());
-    glUniform3fv(s_sky.uniforms[su_SunTint].location, 1, skybox::sun_tint.data());
-    glUniform1f(s_sky.uniforms[su_SunStrength].location, skybox::sun_strength);
-    glUniform1f(s_sky.uniforms[su_Twilight].location, skybox::twilight);
+    Eigen::Matrix4f sky_view_projection = projection * view_rotation;
 
     glDisable(GL_DEPTH_TEST);
     glDepthMask(GL_FALSE);
     glDisable(GL_CULL_FACE);
     glDisable(GL_BLEND);
 
-    glBindVertexArray(s_quad_vao);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    if(draw_sky) {
+        vx::throw_if_not(s_sky.update());
+
+        auto half_fov = 0.5f * utils::radians(camera::vertical_fov.value());
+        auto tan_half_fov = std::tan(half_fov);
+        auto ground_color = Eigen::Vector3f(skybox::horizon_color * 0.35f);
+
+        auto forward = camera::instance.forward_vector();
+        auto right = camera::instance.right_vector();
+        auto up = camera::instance.up_vector();
+
+        glUseProgram(s_sky.handle);
+        glUniform3fv(s_sky.uniforms[su_CameraForward].location, 1, forward.data());
+        glUniform3fv(s_sky.uniforms[su_CameraRight].location, 1, right.data());
+        glUniform3fv(s_sky.uniforms[su_CameraUp].location, 1, up.data());
+        glUniform1f(s_sky.uniforms[su_TanHalfFov].location, tan_half_fov);
+        glUniform1f(s_sky.uniforms[su_Aspect].location, globals::aspect);
+        glUniform3fv(s_sky.uniforms[su_HorizonColor].location, 1, skybox::horizon_color.data());
+        glUniform3fv(s_sky.uniforms[su_SunHorizonColor].location, 1, skybox::sun_horizon_color.data());
+        glUniform3fv(s_sky.uniforms[su_ZenithColor].location, 1, skybox::zenith_color.data());
+        glUniform3fv(s_sky.uniforms[su_GroundColor].location, 1, ground_color.data());
+        glUniform3fv(s_sky.uniforms[su_SunDirection].location, 1, skybox::sun_direction.data());
+        glUniform3fv(s_sky.uniforms[su_SunTint].location, 1, skybox::sun_tint.data());
+        glUniform1f(s_sky.uniforms[su_SunStrength].location, skybox::sun_strength);
+        glUniform1f(s_sky.uniforms[su_Twilight].location, skybox::twilight);
+
+        glBindVertexArray(s_quad_vao);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        globals::num_draw_calls += 1;
+        globals::num_draw_vertices += 3;
+    }
 
     auto draw_star_field = skybox::star_visibility > 0.001f;
 
@@ -420,9 +441,6 @@ void sky_renderer::render(void)
     glBindVertexArray(0);
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
-
-    globals::num_draw_calls += 1;
-    globals::num_draw_vertices += 3;
 
     if(draw_star_field) {
         globals::num_draw_calls += 1;

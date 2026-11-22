@@ -39,6 +39,13 @@ void wait(void);
 
 namespace threading
 {
+// Drops every task that has not started, joins the ones that already run and
+// clears both queues; the caller is about to free what those tasks read
+void cancel_all(void);
+} // namespace threading
+
+namespace threading
+{
 template<vx::derived_task T, typename... AT>
 requires std::constructible_from<T, AT...>
 void submit(AT&&... args);

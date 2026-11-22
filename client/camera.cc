@@ -9,6 +9,7 @@
 #include "shared/component/head.hh"
 #include "shared/component/transform.hh"
 #include "shared/component/velocity.hh"
+#include "shared/globals.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
@@ -69,7 +70,7 @@ static void reset_camera(void)
 
 Eigen::Vector3f camera::lookahead(float chunks)
 {
-    auto& registry = globals::registry;
+    auto& registry = globals::world->registry();
 
     if(!registry.valid(globals::player) || !registry.all_of<Velocity_Intr>(globals::player)) {
         return Eigen::Vector3f::Zero();
@@ -92,25 +93,27 @@ Eigen::Vector3f camera::lookahead(float chunks)
 
 void camera::init(void)
 {
-    auto& vertical_fov_binding = cvar::bind_var(vertical_fov, "r_fov");
-    vertical_fov_binding.set_help("Vertical field of view");
-    vertical_fov_binding.set_flags(FCVAR_ARCHIVE);
+    auto& r_fov_binding = cvar::bind_var(vertical_fov, "r_fov");
+    r_fov_binding.set_help("Vertical field of view");
+    r_fov_binding.set_flags(FCVAR_ARCHIVE);
 
-    s_vertical_fov_gui.set_range(45.0f, 110.0f).set_format("%.0f").enable_tooltip();
+    s_vertical_fov_gui.set_range(45.0f, 110.0f);
+    s_vertical_fov_gui.set_format("%.0f");
+    s_vertical_fov_gui.enable_tooltip();
     s_vertical_fov_gui.bind("r_fov");
     settings::general.add_child(s_vertical_fov_gui, 1);
 
-    auto& view_distance_binding = cvar::bind_var(view_distance, "r_view_distance");
-    view_distance_binding.set_help("View distance, in chunks");
-    view_distance_binding.set_flags(FCVAR_ARCHIVE);
+    auto& r_view_distance_binding = cvar::bind_var(view_distance, "r_view_distance");
+    r_view_distance_binding.set_help("View distance, in chunks");
+    r_view_distance_binding.set_flags(FCVAR_ARCHIVE);
 
     s_view_distance_gui.set_range(1, 32);
     s_view_distance_gui.bind("r_view_distance");
     settings::video.add_child(s_view_distance_gui, 3);
 
-    auto& cloud_range_binding = cvar::bind_var(cloud_range, "r_cloud_range");
-    cloud_range_binding.set_help("Cloud render range, in chunks");
-    cloud_range_binding.set_flags(FCVAR_ARCHIVE);
+    auto& r_cloud_range_binding = cvar::bind_var(cloud_range, "r_cloud_range");
+    r_cloud_range_binding.set_help("Cloud render range, in chunks");
+    r_cloud_range_binding.set_flags(FCVAR_ARCHIVE);
 
     s_cloud_range_gui.set_range(8, 256);
     s_cloud_range_gui.bind("r_cloud_range");
@@ -124,13 +127,15 @@ void camera::init(void)
 
 void camera::update(void)
 {
-    if(!globals::registry.valid(globals::player)) {
+    auto& registry = globals::world->registry();
+
+    if(!registry.valid(globals::player)) {
         reset_camera();
         return;
     }
 
-    const auto& head = globals::registry.get<Head_Intr>(globals::player);
-    const auto& transform = globals::registry.get<Transform_Intr>(globals::player);
+    const auto& head = registry.get<Head_Intr>(globals::player);
+    const auto& transform = registry.get<Transform_Intr>(globals::player);
 
     camera::angles = head.angles;
     camera::chunk = transform.chunk;
@@ -139,7 +144,8 @@ void camera::update(void)
     camera::z_near = 0.01f;
     camera::z_far = 1.25f * static_cast<float>(constant::CHUNK_SIZE * view_distance.value());
 
-    instance.set_perspective(utils::radians(vertical_fov.value()), globals::aspect, camera::z_near, camera::z_far);
+    auto fov_radians = utils::radians(vertical_fov.value());
+    instance.set_perspective(fov_radians, globals::aspect, camera::z_near, camera::z_far);
     instance.set_view(camera::local, camera::angles);
     instance.update();
 
@@ -147,10 +153,12 @@ void camera::update(void)
     right = instance.right_vector();
     up = instance.up_vector();
 
-    s_eye_lpos = camera::local.array().floor().cast<LocalPos::value_type>();
+    auto local_array = camera::local.array();
+    auto floored = local_array.floor();
+    s_eye_lpos = floored.cast<LocalPos::value_type>();
     s_eye_bpos = utils::to_block(camera::chunk, s_eye_lpos);
 
-    inside_block = world::get_block(s_eye_bpos);
+    inside_block = globals::world->get_block(s_eye_bpos);
     inside_fluid = FLUID_ID_NULL;
 
     auto block_def = block_registry::find_definition(inside_block);
@@ -170,7 +178,7 @@ void camera::update(void)
                 above.y() -= 1;
             }
 
-            auto above_def = block_registry::find_definition(world::get_block(above));
+            auto above_def = block_registry::find_definition(globals::world->get_block(above));
 
             if(above_def && above_def->fluid == block_def->fluid) {
                 height = 1.0f;

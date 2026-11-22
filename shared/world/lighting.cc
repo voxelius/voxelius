@@ -8,7 +8,6 @@
 #include "shared/component/transform.hh"
 #include "shared/constant.hh"
 #include "shared/globals.hh"
-#include "shared/utils/biome.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/chunk.hh"
 #include "shared/world/light_material.hh"
@@ -60,9 +59,21 @@ struct NeighbourCell final {
     bool downward;
 };
 
+struct LightState final {
+    vx::hash_set<ChunkPos> dirty;
+    vx::hash_set<ChunkPos> in_flight;
+    std::array<std::deque<LightNode>, 16> add;
+    std::deque<LightNode> remove;
+    std::vector<BlockPos> pending_relight;
+    vx::hash_set<ChunkPos> changed;
+    vx::hash_map<ChunkPos, lighting::LightChange> change;
+    std::size_t queued { 0 };
+    std::uint64_t generation { 0 };
+};
+
 class ChunkLightTask final : public Task {
 public:
-    explicit ChunkLightTask(ChunkPos pos);
+    ChunkLightTask(World* world, ChunkPos pos);
     virtual ~ChunkLightTask(void) override;
     virtual void process(void) override;
     virtual void finalize(void) override;
@@ -70,6 +81,7 @@ public:
 private:
     std::size_t index(int x, int y, int z) const;
 
+    World* m_world;
     ChunkPos m_cpos;
     std::array<block_id_type, LIGHT_GRID_VOLUME> m_blocks;
     std::array<std::uint8_t, LIGHT_GRID_VOLUME> m_light;
@@ -79,6 +91,7 @@ private:
     bool m_ready { false };
     bool m_empty { true };
     bool m_open_sky { false };
+    bool m_realm_top { false };
 };
 
 constexpr static std::array<std::array<int, 4>, 6> NEIGHBOURS = { {
@@ -90,18 +103,26 @@ constexpr static std::array<std::array<int, 4>, 6> NEIGHBOURS = { {
     { { 0, 0, +1, 2 } },
 } };
 
-static vx::hash_set<ChunkPos> s_dirty;
-static vx::hash_set<ChunkPos> s_in_flight;
-
-static std::array<std::deque<LightNode>, 16> s_add;
-static std::deque<LightNode> s_remove;
-static std::vector<BlockPos> s_pending_relight;
-static vx::hash_set<ChunkPos> s_changed;
-static vx::hash_map<ChunkPos, lighting::LightChange> s_change;
-static std::size_t s_queued;
-
-static std::uint64_t s_generation;
+static vx::hash_map<const World*, LightState> s_states;
 static bool s_replica;
+
+static LightState& state_of(World* world)
+{
+    assert(world);
+
+    return s_states[world];
+}
+
+static LightState* find_state(World* world)
+{
+    auto it = s_states.find(world);
+
+    if(it == s_states.cend()) {
+        return nullptr;
+    }
+
+    return &it->second;
+}
 
 static std::size_t grid_index(int x, int y, int z)
 {
@@ -146,34 +167,28 @@ static bool needs_seed(const std::array<std::uint8_t, LIGHT_GRID_VOLUME>& light,
     return false;
 }
 
-static bool realm_top(ChunkPos::value_type y)
+static bool registry_valid(World& world, entt::entity entity)
 {
-    switch(utils::realm(y)) {
-        case BIOME_REALM_SURFACE:
-            return y == constant::SURFACE_MAX_CHUNK_Y;
-
-        case BIOME_REALM_SKY:
-            return y == constant::SKY_MAX_CHUNK_Y;
-
-        case BIOME_REALM_UNDERGROUND:
-        case BIOME_REALM_THE_DEPTHS:
-        case BIOME_REALM_VOID:
-        case BIOME_REALM_COUNT:
-            break;
-    }
-
-    return true;
+    auto& chunk_registry = world.chunk_registry();
+    return chunk_registry.valid(entity);
 }
 
-static bool sky_ready(const ChunkPos& pos)
+static bool realm_top(const World& world, ChunkPos::value_type y)
+{
+    auto& definition = world.definition();
+    auto top = static_cast<ChunkPos::value_type>(definition.max_y >> constant::CHUNK_SIZE_LOG2);
+    return y == top;
+}
+
+static bool sky_ready(const World& world, const ChunkPos& pos)
 {
     // Sunlight enters a chunk through the bottom row of the chunk above, so
     // a chunk below an unlit one has to wait for it.
-    if(realm_top(pos.y())) {
+    if(realm_top(world, pos.y())) {
         return true;
     }
 
-    auto above = world::find_chunk(ChunkPos(pos.x(), pos.y() + 1, pos.z()));
+    auto above = world.find_chunk(ChunkPos(pos.x(), pos.y() + 1, pos.z()));
 
     // A chunk at the top of the loaded world has nothing above it and the
     // column pass already treats that as open sky. Waiting for a neighbour
@@ -182,10 +197,12 @@ static bool sky_ready(const ChunkPos& pos)
     return above == nullptr || above->has_light();
 }
 
-static std::int64_t chunk_distance(const ChunkPos& pos)
+static std::int64_t chunk_distance(World& world, const ChunkPos& pos)
 {
+    auto& registry = world.registry();
+
     auto best = std::numeric_limits<std::int64_t>::max();
-    auto players = globals::registry.view<Player, Transform>();
+    auto players = registry.view<Player, Transform>();
 
     for(const auto [entity, transform] : players.each()) {
         auto dx = static_cast<std::int64_t>(pos.x()) - transform.chunk.x();
@@ -239,16 +256,16 @@ static block_face enter_face(const std::array<int, 4>& offset)
     return BLOCK_FACE_NORTH;
 }
 
-static void mark_dirty(const ChunkPos& pos)
+static void mark_dirty(LightState& state, const ChunkPos& pos)
 {
     if(!s_replica) {
-        s_dirty.insert(pos);
+        state.dirty.insert(pos);
     }
 }
 
-static void record_light_change(const ChunkPos& pos, std::size_t index)
+static void record_light_change(LightState& state, const ChunkPos& pos, std::size_t index)
 {
-    auto& change = s_change[pos];
+    auto& change = state.change[pos];
 
     if(change.full) {
         return;
@@ -257,18 +274,18 @@ static void record_light_change(const ChunkPos& pos, std::size_t index)
     change.indices.push_back(static_cast<std::uint16_t>(index));
 }
 
-static void mark_full_light_change(const ChunkPos& pos)
+static void mark_full_light_change(LightState& state, const ChunkPos& pos)
 {
-    auto& change = s_change[pos];
+    auto& change = state.change[pos];
 
     change.full = true;
     change.indices.clear();
 }
 
-static void mark_face_neighbors_dirty(const ChunkPos& pos)
+static void mark_face_neighbors_dirty(LightState& state, const ChunkPos& pos)
 {
     for(const auto& offset : NEIGHBOURS) {
-        mark_dirty(pos + ChunkPos(offset[0], offset[1], offset[2]));
+        mark_dirty(state, pos + ChunkPos(offset[0], offset[1], offset[2]));
     }
 }
 
@@ -279,8 +296,11 @@ static bool same_light(const LightStorage& first, const LightStorage& second)
     return std::equal(left.begin(), left.end(), right.begin());
 }
 
-ChunkLightTask::ChunkLightTask(ChunkPos pos) : m_cpos(std::move(pos)), m_generation(s_generation)
+ChunkLightTask::ChunkLightTask(World* world, ChunkPos pos) : m_world(world), m_cpos(std::move(pos))
 {
+    auto& state = state_of(world);
+
+    m_generation = state.generation;
     m_blocks.fill(BLOCK_ID_NULL);
     m_light.fill(0x00);
 
@@ -290,9 +310,9 @@ ChunkLightTask::ChunkLightTask(ChunkPos pos) : m_cpos(std::move(pos)), m_generat
         for(int dz = -1; dz <= 1; dz += 1) {
             for(int dx = -1; dx <= 1; dx += 1) {
                 auto cpos = ChunkPos(m_cpos.x() + dx, m_cpos.y() + dy, m_cpos.z() + dz);
-                auto chunk = world::find_chunk(cpos);
+                auto chunk = world->find_chunk(cpos);
 
-                if(chunk == nullptr || !world::chunk_registry.valid(chunk->entity())) {
+                if(chunk == nullptr || !registry_valid(*world, chunk->entity())) {
                     continue;
                 }
 
@@ -300,7 +320,8 @@ ChunkLightTask::ChunkLightTask(ChunkPos pos) : m_cpos(std::move(pos)), m_generat
                     m_above = true;
                 }
 
-                auto light = chunk->light().data();
+                auto& light_storage = chunk->light();
+                auto light = light_storage.data();
 
                 auto gx_begin = dx * chunk_size + LIGHT_PADDING;
                 auto gy_begin = dy * chunk_size + LIGHT_PADDING;
@@ -342,7 +363,8 @@ ChunkLightTask::ChunkLightTask(ChunkPos pos) : m_cpos(std::move(pos)), m_generat
     // Sunlight enters through the row above the chunk, so an empty chunk is
     // uniformly lit only when that row is already at full level. At the top
     // of a realm the sky is open by definition.
-    m_open_sky = realm_top(m_cpos.y());
+    m_realm_top = realm_top(*world, m_cpos.y());
+    m_open_sky = m_realm_top;
 
     if(!m_open_sky) {
         m_open_sky = true;
@@ -361,8 +383,10 @@ ChunkLightTask::ChunkLightTask(ChunkPos pos) : m_cpos(std::move(pos)), m_generat
 
 ChunkLightTask::~ChunkLightTask(void)
 {
-    if(m_generation == s_generation) {
-        s_in_flight.erase(m_cpos);
+    auto state = find_state(m_world);
+
+    if(state && m_generation == state->generation) {
+        state->in_flight.erase(m_cpos);
     }
 }
 
@@ -384,7 +408,7 @@ void ChunkLightTask::process(void)
     // bottom of the chunk above, or open sky at the top of a realm. A
     // missing above chunk can only happen if it unloaded after the task was
     // submitted; treating it as open sky keeps the chunk from going black.
-    auto seed_sky = !realm_top(m_cpos.y()) && m_above;
+    auto seed_sky = !m_realm_top && m_above;
 
     for(int z = 0; z < chunk_size; ++z) {
         for(int x = 0; x < chunk_size; ++x) {
@@ -539,61 +563,64 @@ void ChunkLightTask::process(void)
 
 void ChunkLightTask::finalize(void)
 {
-    if(!m_ready || m_generation != s_generation || s_replica) {
+    auto state = find_state(m_world);
+
+    if(state == nullptr || !m_ready || m_generation != state->generation || s_replica) {
         return;
     }
 
-    auto chunk = world::find_chunk(m_cpos);
+    auto chunk = m_world->find_chunk(m_cpos);
 
-    if(chunk == nullptr || !world::chunk_registry.valid(chunk->entity())) {
+    if(chunk == nullptr || !registry_valid(*m_world, chunk->entity())) {
         return;
     }
 
     if(!chunk->has_light() || !same_light(chunk->light(), m_result)) {
         chunk->set_light(std::move(m_result));
 
-        mark_full_light_change(m_cpos);
+        mark_full_light_change(*state, m_cpos);
 
-        globals::dispatcher.trigger(ChunkLightUpdateEvent(m_cpos));
+        globals::dispatcher.trigger(ChunkLightUpdateEvent(m_world, m_cpos));
 
         // A changed border is a seed for the six chunks that share a face
         // with this one; the diagonal chunks are reached through them.
-        mark_face_neighbors_dirty(m_cpos);
+        mark_face_neighbors_dirty(*state, m_cpos);
     }
 }
 
-static bool node_alive(const LightNode& node)
+static bool node_alive(const World& world, const LightNode& node)
 {
-    auto it = world::chunk_map.find(node.cpos);
-    return it != world::chunk_map.cend() && it->second.get() == node.chunk.get();
+    auto& chunks = world.chunks();
+    auto it = chunks.find(node.cpos);
+    return it != chunks.cend() && it->second.get() == node.chunk.get();
 }
 
-static void push_add(const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpos, std::size_t index, block_light_type level,
-    light_channel channel)
+static void push_add(LightState& state, const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpos, std::size_t index,
+    block_light_type level, light_channel channel)
 {
-    if(level == BLOCK_LIGHT_MIN || s_queued >= LOCAL_MAX_QUEUED) {
+    if(level == BLOCK_LIGHT_MIN || state.queued >= LOCAL_MAX_QUEUED) {
         return;
     }
 
     auto clamped = std::min<block_light_type>(level, BLOCK_LIGHT_MAX);
 
-    s_add[clamped].push_back(LightNode { chunk, cpos, static_cast<std::uint16_t>(index), clamped, channel });
-    s_queued += 1;
+    state.add[clamped].push_back(LightNode { chunk, cpos, static_cast<std::uint16_t>(index), clamped, channel });
+    state.queued += 1;
 }
 
-static void push_remove(const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpos, std::size_t index, block_light_type level,
-    light_channel channel)
+static void push_remove(LightState& state, const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpos, std::size_t index,
+    block_light_type level, light_channel channel)
 {
-    if(level == BLOCK_LIGHT_MIN || s_queued >= LOCAL_MAX_QUEUED) {
+    if(level == BLOCK_LIGHT_MIN || state.queued >= LOCAL_MAX_QUEUED) {
         return;
     }
 
-    s_remove.push_back(LightNode { chunk, cpos, static_cast<std::uint16_t>(index), level, channel });
-    s_queued += 1;
+    state.remove.push_back(LightNode { chunk, cpos, static_cast<std::uint16_t>(index), level, channel });
+    state.queued += 1;
 }
 
-static std::optional<NeighbourCell> find_neighbour(const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpos, std::size_t index,
-    const std::array<int, 4>& offset)
+static std::optional<NeighbourCell> find_neighbour(World& world, const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpos,
+    std::size_t index, const std::array<int, 4>& offset)
 {
     auto lpos = utils::to_local(index);
     auto shifted = LocalPos(lpos.x() + offset[0], lpos.y() + offset[1], lpos.z() + offset[2]);
@@ -608,10 +635,10 @@ static std::optional<NeighbourCell> find_neighbour(const std::shared_ptr<Chunk>&
         neighbour = chunk;
     }
     else {
-        neighbour = world::find_chunk(ncpos);
+        neighbour = world.find_chunk(ncpos);
     }
 
-    if(neighbour == nullptr || !world::chunk_registry.valid(neighbour->entity())) {
+    if(neighbour == nullptr || !registry_valid(world, neighbour->entity())) {
         return std::nullopt;
     }
 
@@ -623,30 +650,30 @@ static std::optional<NeighbourCell> find_neighbour(const std::shared_ptr<Chunk>&
     return result;
 }
 
-static void write_light(const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpos, std::size_t index, light_channel channel,
-    block_light_type value)
+static void write_light(LightState& state, const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpos, std::size_t index,
+    light_channel channel, block_light_type value)
 {
     if(chunk->get_light(index, channel) == value) {
         return;
     }
 
     chunk->set_light(index, channel, value);
-    s_changed.insert(cpos);
-    record_light_change(cpos, index);
+    state.changed.insert(cpos);
+    record_light_change(state, cpos, index);
 }
 
-static void seed_cell(const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpos, std::size_t index)
+static void seed_cell(LightState& state, const std::shared_ptr<Chunk>& chunk, const ChunkPos& cpos, std::size_t index)
 {
-    push_add(chunk, cpos, index, chunk->get_light(index, LIGHT_SKY), LIGHT_SKY);
-    push_add(chunk, cpos, index, chunk->get_light(index, LIGHT_BLOCK), LIGHT_BLOCK);
+    push_add(state, chunk, cpos, index, chunk->get_light(index, LIGHT_SKY), LIGHT_SKY);
+    push_add(state, chunk, cpos, index, chunk->get_light(index, LIGHT_BLOCK), LIGHT_BLOCK);
 }
 
-static void relight_position(const BlockPos& bpos)
+static void relight_position(World& world, LightState& state, const BlockPos& bpos)
 {
     auto cpos = utils::to_chunk(bpos);
-    auto chunk = world::find_chunk(cpos);
+    auto chunk = world.find_chunk(cpos);
 
-    if(chunk == nullptr || !world::chunk_registry.valid(chunk->entity())) {
+    if(chunk == nullptr || !registry_valid(world, chunk->entity())) {
         return;
     }
 
@@ -663,9 +690,9 @@ static void relight_position(const BlockPos& bpos)
         // the light invalid makes the client fall back to its own estimate
         // until the fill below delivers the real thing.
         chunk->clear_light();
-        mark_full_light_change(cpos);
-        s_changed.insert(cpos);
-        mark_dirty(cpos);
+        mark_full_light_change(state, cpos);
+        state.changed.insert(cpos);
+        mark_dirty(state, cpos);
     }
 
     auto index = utils::to_index(utils::to_local(bpos));
@@ -673,19 +700,19 @@ static void relight_position(const BlockPos& bpos)
     auto old_block = chunk->get_light(index, LIGHT_BLOCK);
     auto emission = light_material::get(chunk->get_block(index)).emission;
 
-    write_light(chunk, cpos, index, LIGHT_SKY, BLOCK_LIGHT_MIN);
-    write_light(chunk, cpos, index, LIGHT_BLOCK, emission);
+    write_light(state, chunk, cpos, index, LIGHT_SKY, BLOCK_LIGHT_MIN);
+    write_light(state, chunk, cpos, index, LIGHT_BLOCK, emission);
 
     if(old_sky != BLOCK_LIGHT_MIN) {
-        push_remove(chunk, cpos, index, old_sky, LIGHT_SKY);
+        push_remove(state, chunk, cpos, index, old_sky, LIGHT_SKY);
     }
 
     if(old_block > emission) {
-        push_remove(chunk, cpos, index, old_block, LIGHT_BLOCK);
+        push_remove(state, chunk, cpos, index, old_block, LIGHT_BLOCK);
     }
 
     if(emission != BLOCK_LIGHT_MIN) {
-        push_add(chunk, cpos, index, emission, LIGHT_BLOCK);
+        push_add(state, chunk, cpos, index, emission, LIGHT_BLOCK);
     }
 
     if(!s_replica) {
@@ -695,8 +722,8 @@ static void relight_position(const BlockPos& bpos)
                 for(ChunkPos::value_type dx = -1; dx <= 1; dx += 1) {
                     auto pos = cpos + ChunkPos(dx, dy, dz);
 
-                    if(s_in_flight.contains(pos)) {
-                        s_dirty.insert(pos);
+                    if(state.in_flight.contains(pos)) {
+                        state.dirty.insert(pos);
                     }
                 }
             }
@@ -704,35 +731,35 @@ static void relight_position(const BlockPos& bpos)
     }
 
     for(const auto& offset : NEIGHBOURS) {
-        auto cell = find_neighbour(chunk, cpos, index, offset);
+        auto cell = find_neighbour(world, chunk, cpos, index, offset);
 
         if(!cell.has_value()) {
             continue;
         }
 
-        seed_cell(cell->chunk, cell->cpos, cell->index);
+        seed_cell(state, cell->chunk, cell->cpos, cell->index);
     }
 }
 
-static void process_remove(std::size_t& budget)
+static void process_remove(World& world, LightState& state, std::size_t& budget)
 {
-    while(!s_remove.empty()) {
+    while(!state.remove.empty()) {
         if(budget == 0) {
             return;
         }
 
-        auto node = std::move(s_remove.front());
+        auto node = std::move(state.remove.front());
 
-        s_remove.pop_front();
-        s_queued -= 1;
+        state.remove.pop_front();
+        state.queued -= 1;
         budget -= 1;
 
-        if(!node_alive(node)) {
+        if(!node_alive(world, node)) {
             continue;
         }
 
         for(const auto& offset : NEIGHBOURS) {
-            auto cell = find_neighbour(node.chunk, node.cpos, node.index, offset);
+            auto cell = find_neighbour(world, node.chunk, node.cpos, node.index, offset);
 
             if(!cell.has_value()) {
                 continue;
@@ -750,20 +777,20 @@ static void process_remove(std::size_t& budget)
             auto expected = lighting::step_level(node.level, cost, node.channel, cell->downward);
 
             if(current > expected) {
-                push_add(cell->chunk, cell->cpos, cell->index, current, node.channel);
+                push_add(state, cell->chunk, cell->cpos, cell->index, current, node.channel);
             }
             else {
-                write_light(cell->chunk, cell->cpos, cell->index, node.channel, BLOCK_LIGHT_MIN);
-                push_remove(cell->chunk, cell->cpos, cell->index, current, node.channel);
+                write_light(state, cell->chunk, cell->cpos, cell->index, node.channel, BLOCK_LIGHT_MIN);
+                push_remove(state, cell->chunk, cell->cpos, cell->index, current, node.channel);
             }
         }
     }
 }
 
-static void process_add(std::size_t& budget)
+static void process_add(World& world, LightState& state, std::size_t& budget)
 {
     for(auto level = static_cast<int>(BLOCK_LIGHT_MAX); level > 0; level -= 1) {
-        auto& bucket = s_add[static_cast<std::size_t>(level)];
+        auto& bucket = state.add[static_cast<std::size_t>(level)];
 
         while(!bucket.empty()) {
             if(budget == 0) {
@@ -773,10 +800,10 @@ static void process_add(std::size_t& budget)
             auto node = std::move(bucket.front());
 
             bucket.pop_front();
-            s_queued -= 1;
+            state.queued -= 1;
             budget -= 1;
 
-            if(!node_alive(node)) {
+            if(!node_alive(world, node)) {
                 continue;
             }
 
@@ -785,7 +812,7 @@ static void process_add(std::size_t& budget)
             }
 
             for(const auto& offset : NEIGHBOURS) {
-                auto cell = find_neighbour(node.chunk, node.cpos, node.index, offset);
+                auto cell = find_neighbour(world, node.chunk, node.cpos, node.index, offset);
 
                 if(!cell.has_value()) {
                     continue;
@@ -804,8 +831,8 @@ static void process_add(std::size_t& budget)
                     continue;
                 }
 
-                write_light(cell->chunk, cell->cpos, cell->index, node.channel, next);
-                push_add(cell->chunk, cell->cpos, cell->index, next, node.channel);
+                write_light(state, cell->chunk, cell->cpos, cell->index, node.channel, next);
+                push_add(state, cell->chunk, cell->cpos, cell->index, next, node.channel);
             }
         }
     }
@@ -813,26 +840,34 @@ static void process_add(std::size_t& budget)
 
 static void on_chunk_ready(const ChunkReadyEvent& event)
 {
-    mark_dirty(event.pos());
-    mark_face_neighbors_dirty(event.pos());
+    auto& state = state_of(event.world());
+
+    mark_dirty(state, event.pos());
+    mark_face_neighbors_dirty(state, event.pos());
 }
 
 static void on_chunk_update(const ChunkUpdateEvent& event)
 {
-    mark_dirty(event.pos());
-    mark_face_neighbors_dirty(event.pos());
+    auto& state = state_of(event.world());
+
+    mark_dirty(state, event.pos());
+    mark_face_neighbors_dirty(state, event.pos());
 }
 
 static void on_chunk_remove(const ChunkRemoveEvent& event)
 {
     // The chunk is gone, so a queued task would find nothing. The neighbours
     // are not recomputed here: they are dirtied again when the chunk loads.
-    s_dirty.erase(event.pos());
+    auto& state = state_of(event.world());
+
+    state.dirty.erase(event.pos());
 }
 
 static void on_block_update(const BlockUpdateEvent& event)
 {
-    s_pending_relight.push_back(event.bpos());
+    auto& state = state_of(event.world());
+
+    state.pending_relight.push_back(event.bpos());
 }
 
 void lighting::init(void)
@@ -848,37 +883,114 @@ void lighting::set_replica(bool value)
     s_replica = value;
 }
 
-void lighting::reset(void)
-{
-    s_generation += 1;
-
-    s_dirty.clear();
-    s_in_flight.clear();
-
-    s_add = {};
-    s_remove.clear();
-    s_pending_relight.clear();
-    s_changed.clear();
-    s_change.clear();
-    s_queued = 0;
-}
-
 void lighting::shutdown(void)
 {
-    reset();
+    s_states.clear();
 }
 
-lighting::LightChange lighting::take_change(const ChunkPos& pos)
+void lighting::fixed_update(World* world)
 {
-    auto it = s_change.find(pos);
+    ZoneScoped;
 
-    if(it == s_change.cend()) {
+    auto& state = state_of(world);
+
+    // Block edits are processed first: they are the visible, interactive
+    // change and must not wait behind chunk snapshot copies.
+    if(!state.pending_relight.empty()) {
+        auto positions = std::move(state.pending_relight);
+
+        state.pending_relight.clear();
+
+        for(const auto& bpos : positions) {
+            relight_position(*world, state, bpos);
+        }
+    }
+
+    auto budget = LOCAL_BUDGET;
+
+    process_remove(*world, state, budget);
+    process_add(*world, state, budget);
+
+    for(const auto& cpos : state.changed) {
+        globals::dispatcher.trigger(ChunkLightUpdateEvent(world, cpos));
+    }
+
+    state.changed.clear();
+    state.change.clear();
+
+    if(s_replica || state.dirty.empty()) {
+        return;
+    }
+
+    std::vector<std::pair<std::int64_t, ChunkPos>> ordered;
+    ordered.reserve(state.dirty.size());
+
+    for(const auto& pos : state.dirty) {
+        if(world->find_chunk(pos) == nullptr) {
+            continue;
+        }
+
+        ordered.emplace_back(chunk_distance(*world, pos), pos);
+    }
+
+    state.dirty.clear();
+
+    std::sort(ordered.begin(), ordered.end(), [](const auto& lhs, const auto& rhs) {
+        return lhs.first < rhs.first;
+    });
+
+    std::size_t submitted = 0;
+
+    for(const auto& entry : ordered) {
+        auto pos = entry.second;
+
+        if(submitted >= LIGHT_TASKS_PER_TICK || state.in_flight.contains(pos) || !sky_ready(*world, pos)) {
+            // Not this tick: the budget is spent, a task is already running,
+            // or the chunk above has not been lit yet.
+            state.dirty.insert(pos);
+            continue;
+        }
+
+        state.in_flight.insert(pos);
+        threading::submit<ChunkLightTask>(world, pos);
+        submitted += 1;
+    }
+}
+
+void lighting::reset(World* world)
+{
+    auto& state = state_of(world);
+
+    state.generation += 1;
+
+    state.dirty.clear();
+    state.in_flight.clear();
+
+    state.add = {};
+    state.remove.clear();
+    state.pending_relight.clear();
+    state.changed.clear();
+    state.change.clear();
+    state.queued = 0;
+}
+
+lighting::LightChange lighting::take_change(World* world, const ChunkPos& pos)
+{
+    auto state = find_state(world);
+
+    if(state == nullptr) {
+        return LightChange {};
+    }
+
+    auto it = state->change.find(pos);
+
+    if(it == state->change.cend()) {
         return LightChange {};
     }
 
     auto result = std::move(it->second);
 
-    s_change.erase(it);
+    state->change.erase(it);
 
     if(result.full) {
         return result;
@@ -893,71 +1005,4 @@ lighting::LightChange lighting::take_change(const ChunkPos& pos)
     }
 
     return result;
-}
-
-void lighting::fixed_update(void)
-{
-    ZoneScoped;
-
-    // Block edits are processed first: they are the visible, interactive
-    // change and must not wait behind chunk snapshot copies.
-    if(!s_pending_relight.empty()) {
-        auto positions = std::move(s_pending_relight);
-
-        s_pending_relight.clear();
-
-        for(const auto& bpos : positions) {
-            relight_position(bpos);
-        }
-    }
-
-    auto budget = LOCAL_BUDGET;
-
-    process_remove(budget);
-    process_add(budget);
-
-    for(const auto& cpos : s_changed) {
-        globals::dispatcher.trigger(ChunkLightUpdateEvent(cpos));
-    }
-
-    s_changed.clear();
-    s_change.clear();
-
-    if(s_replica || s_dirty.empty()) {
-        return;
-    }
-
-    std::vector<std::pair<std::int64_t, ChunkPos>> ordered;
-    ordered.reserve(s_dirty.size());
-
-    for(const auto& pos : s_dirty) {
-        if(world::find_chunk(pos) == nullptr) {
-            continue;
-        }
-
-        ordered.emplace_back(chunk_distance(pos), pos);
-    }
-
-    s_dirty.clear();
-
-    std::sort(ordered.begin(), ordered.end(), [](const auto& lhs, const auto& rhs) {
-        return lhs.first < rhs.first;
-    });
-
-    std::size_t submitted = 0;
-
-    for(const auto& entry : ordered) {
-        auto pos = entry.second;
-
-        if(submitted >= LIGHT_TASKS_PER_TICK || s_in_flight.contains(pos) || !sky_ready(pos)) {
-            // Not this tick: the budget is spent, a task is already running,
-            // or the chunk above has not been lit yet.
-            s_dirty.insert(pos);
-            continue;
-        }
-
-        s_in_flight.insert(pos);
-        threading::submit<ChunkLightTask>(pos);
-        submitted += 1;
-    }
 }

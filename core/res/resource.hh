@@ -88,21 +88,24 @@ res::handle<T> res::find_by_path(std::string_view path)
 template<typename T>
 res::handle<T> res::load(const Identifier& id, std::uint32_t flags)
 {
-    auto result = res::detail::load_resource(typeid(T), id.as_file_path({}), flags);
+    auto path = id.as_file_path({});
+    auto result = res::detail::load_resource(typeid(T), path, flags);
     return std::reinterpret_pointer_cast<const T>(result);
 }
 
 template<typename T>
 res::handle<T> res::load(const Identifier& id, std::string_view subdirectory, std::uint32_t flags)
 {
-    auto result = res::detail::load_resource(typeid(T), id.as_file_path(subdirectory, {}), flags);
+    auto path = id.as_file_path(subdirectory, {});
+    auto result = res::detail::load_resource(typeid(T), path, flags);
     return std::reinterpret_pointer_cast<const T>(result);
 }
 
 template<typename T>
 res::handle<T> res::load(const Identifier& id, std::string_view subdirectory, std::string_view extension, std::uint32_t flags)
 {
-    auto result = res::detail::load_resource(typeid(T), id.as_file_path(subdirectory, extension), flags);
+    auto path = id.as_file_path(subdirectory, extension);
+    auto result = res::detail::load_resource(typeid(T), path, flags);
     return std::reinterpret_pointer_cast<const T>(result);
 }
 

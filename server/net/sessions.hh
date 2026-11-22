@@ -7,10 +7,8 @@
 #include "shared/net/ed25519.hh"
 #include "shared/utils/view.hh"
 
-namespace sessions
-{
-extern cvar::Boolean strict_version;
-} // namespace sessions
+class World;
+class ServerWorld;
 
 enum class session_state : std::uint8_t {
     UNCONNECTED,
@@ -36,6 +34,8 @@ struct Session final {
     std::string username;
     entt::entity player;
 
+    std::shared_ptr<World> world;
+
     ENetPeer* peer;
 
     ChunkAlignedBox view_box;
@@ -56,6 +56,11 @@ struct Session final {
 struct SessionRef final {
     Session* ptr;
 };
+
+namespace sessions
+{
+extern cvar::Boolean strict_version;
+} // namespace sessions
 
 namespace sessions
 {
@@ -88,6 +93,11 @@ Session* find(std::uint16_t client_id);
 Session* find(std::uint64_t identity);
 Session* find(const ENetPeer* peer);
 void destroy(Session* session, std::optional<std::uint32_t> reason = std::nullopt);
+} // namespace sessions
+
+namespace sessions
+{
+bool transfer(Session* session, const std::shared_ptr<ServerWorld>& world, std::optional<BlockPos> position);
 } // namespace sessions
 
 #endif /* CB1D9924_5E4E_4165_AAD7_7B58D385FFA7 */

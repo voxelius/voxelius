@@ -120,7 +120,9 @@ std::optional<std::uint32_t> input::parse_button_code(input_device device, std::
         }
 
         unsigned number;
-        auto check = std::from_chars(normalized.data(), normalized.data() + normalized.size(), number);
+        auto begin = normalized.data();
+        auto end = begin + normalized.size();
+        auto check = std::from_chars(begin, end, number);
 
         if(check.ec == std::errc() && number >= 1) {
             return static_cast<std::uint32_t>(number);
@@ -131,7 +133,7 @@ std::optional<std::uint32_t> input::parse_button_code(input_device device, std::
 
     switch(device) {
         case input_device::MOUSE:
-            return std::nullopt; // handled above
+            return std::nullopt; // Handled above
 
         case input_device::KEYBOARD:
             return parse_scancode(normalized);
@@ -159,7 +161,7 @@ std::optional<std::uint32_t> input::parse_axis_code(input_device device, std::st
 
         case input_device::KEYBOARD:
         case input_device::MWHEEL:
-            // these devices have no axes
+            // These devices have no axes
             break;
     }
 
@@ -191,7 +193,7 @@ std::string input::format_button_code(input_device device, std::uint32_t code)
     switch(device) {
         case input_device::KEYBOARD:
         case input_device::MOUSE:
-            // handled above
+            // Handled above
             break;
 
         case input_device::MWHEEL:
@@ -215,7 +217,7 @@ std::string input::format_axis_code(input_device device, std::uint32_t code)
 
         case input_device::KEYBOARD:
         case input_device::MWHEEL:
-            // these devices have no axes
+            // These devices have no axes
             break;
     }
 
@@ -277,7 +279,7 @@ std::string_view input::format_axis_cmd(input_device device)
 
         case input_device::KEYBOARD:
         case input_device::MWHEEL:
-            // these devices have no axis command
+            // These devices have no axis command
             break;
     }
 

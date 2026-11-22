@@ -19,7 +19,8 @@ static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
     }
 
     for(unsigned n = 1; n < 10000; ++n) {
-        auto candidate = Identifier::from_parts(id.name_space(), std::format("{}~{}", id.value(), n));
+        auto suffix = std::format("{}~{}", id.value(), n);
+        auto candidate = Identifier::from_parts(id.name_space(), suffix);
 
         if(is_free(candidate)) {
             msg::log_warning("biomes.add: {} is already registered, using {} instead", id.full_string(), candidate.full_string());
@@ -125,7 +126,8 @@ static bool parse_palette_entry(lua_State* L, int entry_idx, BiomePaletteEntry& 
     }
 
     if(!lua_istable(L, -1)) {
-        lua_pushfstring(L, "expected a table, got %s", lua_typename(L, lua_type(L, -1)));
+        auto type_name = lua_typename(L, lua_type(L, -1));
+        lua_pushfstring(L, "expected a table, got %s", type_name);
         return false;
     }
 
@@ -171,7 +173,9 @@ static bool parse_palette(lua_State* L, int palette_idx, BiomeDefinition& def, M
         lua_getfield(L, palette_idx, field_name);
 
         if(!lua_isnil(L, -1)) {
-            if(!parse_palette_entry(L, lua_gettop(L), field_ptr[0], ctx)) {
+            auto entry_idx = lua_gettop(L);
+
+            if(!parse_palette_entry(L, entry_idx, field_ptr[0], ctx)) {
                 return false;
             }
         }
@@ -184,73 +188,39 @@ static bool parse_palette(lua_State* L, int palette_idx, BiomeDefinition& def, M
 
 static bool parse_definition(lua_State* L, int def_idx, BiomeDefinition& def, ModContext* ctx)
 {
-    auto realm = utils::require_integer(L, def_idx, "realm");
+    auto temperature = utils::opt_number(L, def_idx, "temperature", 15.0);
 
-    if(!realm.has_value()) {
+    if(!temperature.has_value()) {
         return false;
     }
 
-    def.realm = static_cast<biome_realm>(realm.value());
+    def.temperature = static_cast<float>(temperature.value());
 
-    const std::array climate_fields = {
-        std::make_pair("temperature", &def.temperature),
-        std::make_pair("humidity", &def.humidity),
-        std::make_pair("continentalness", &def.continentalness),
-        std::make_pair("erosion", &def.erosion),
-        std::make_pair("weirdness", &def.weirdness),
-    };
+    auto humidity = utils::opt_number(L, def_idx, "humidity", 50.0);
 
-    for(const auto& [field_name, field_ptr] : climate_fields) {
-        lua_getfield(L, def_idx, field_name);
-
-        if(!lua_isnil(L, -1)) {
-            auto value = utils::require_integer(L, -1);
-
-            if(!value.has_value()) {
-                return false;
-            }
-
-            if(value.value() < 0 || value.value() > 99) {
-                lua_pushliteral(L, "climate value out of range [0..99]");
-                return false;
-            }
-
-            field_ptr[0] = static_cast<std::uint8_t>(value.value());
-        }
-
-        lua_pop(L, 1);
-    }
-
-    auto priority = utils::opt_integer(L, def_idx, "priority", 0);
-
-    if(!priority.has_value()) {
+    if(!humidity.has_value()) {
         return false;
     }
 
-    if(priority.value() < 0) {
-        lua_pushliteral(L, "priority must be non-negative");
+    if(humidity.value() < 0.0 || humidity.value() > 100.0) {
+        lua_pushstring(L, "humidity must be in the range [0, 100]");
         return false;
     }
 
-    def.priority = static_cast<unsigned>(priority.value());
-
-    auto offset = utils::opt_number(L, def_idx, "offset", 0.0);
-
-    if(!offset.has_value()) {
-        return false;
-    }
-
-    def.offset = static_cast<float>(offset.value());
+    def.humidity = static_cast<float>(humidity.value()) / 100.0f;
 
     lua_getfield(L, def_idx, "palette");
 
     if(!lua_isnil(L, -1)) {
         if(!lua_istable(L, -1)) {
-            lua_pushfstring(L, "expected a table, got %s", lua_typename(L, lua_type(L, -1)));
+            auto type_name = lua_typename(L, lua_type(L, -1));
+            lua_pushfstring(L, "expected a table, got %s", type_name);
             return false;
         }
 
-        if(!parse_palette(L, lua_gettop(L), def, ctx)) {
+        auto palette_idx = lua_gettop(L);
+
+        if(!parse_palette(L, palette_idx, def, ctx)) {
             return false;
         }
     }
@@ -263,7 +233,8 @@ static bool parse_definition(lua_State* L, int def_idx, BiomeDefinition& def, Mo
 
     if(!lua_isnil(L, -1)) {
         if(!lua_istable(L, -1)) {
-            lua_pushfstring(L, "expected a table, got %s", lua_typename(L, lua_type(L, -1)));
+            auto type_name = lua_typename(L, lua_type(L, -1));
+            lua_pushfstring(L, "expected a table, got %s", type_name);
             return false;
         }
 
@@ -275,7 +246,8 @@ static bool parse_definition(lua_State* L, int def_idx, BiomeDefinition& def, Mo
             auto entry_idx = lua_gettop(L);
 
             if(!lua_istable(L, entry_idx)) {
-                lua_pushfstring(L, "expected a table, got %s", lua_typename(L, lua_type(L, entry_idx)));
+                auto type_name = lua_typename(L, lua_type(L, entry_idx));
+                lua_pushfstring(L, "expected a table, got %s", type_name);
                 return false;
             }
 
@@ -297,7 +269,8 @@ static bool parse_definition(lua_State* L, int def_idx, BiomeDefinition& def, Mo
 
     if(!lua_isnil(L, -1)) {
         if(!lua_istable(L, -1)) {
-            lua_pushfstring(L, "expected a table, got %s", lua_typename(L, lua_type(L, -1)));
+            auto type_name = lua_typename(L, lua_type(L, -1));
+            lua_pushfstring(L, "expected a table, got %s", type_name);
             return false;
         }
 
@@ -319,7 +292,9 @@ static bool parse_definition(lua_State* L, int def_idx, BiomeDefinition& def, Mo
             }
 
             auto key_id = Identifier::from_string(key_str.value(), ctx->name_space());
-            auto color = value_vec->cast<float>().cwiseMin(1.0f).cwiseMax(0.0f);
+            auto color = Eigen::Vector3f(value_vec->cast<float>());
+            color = color.cwiseMin(1.0f);
+            color = color.cwiseMax(0.0f);
 
             def.tint_map.insert_or_assign(std::move(key_id), std::move(color));
 
@@ -344,15 +319,6 @@ static bool add_biome(lua_State* L, ModContext* ctx, const char* raw_name, int d
     id = make_unique_id(id, ctx);
 
     BiomeDefinition def {};
-
-    def.temperature = 50;
-    def.humidity = 50;
-    def.continentalness = 50;
-    def.erosion = 50;
-    def.weirdness = 50;
-    def.offset = 0.0f;
-
-    def.priority = 0;
 
     if(!parse_definition(L, def_idx, def, ctx)) {
         return false;
@@ -383,23 +349,14 @@ static int api_add(lua_State* L)
     return 1;
 }
 
-void api::open_biomes_library(std::shared_ptr<lua_State>& lua, ModContext* ctx)
+void api_shared::open_biomes(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 {
     assert(lua);
     assert(ctx);
 
     auto L = lua.get();
 
-    lua_newtable(L); // biomes
-
-    lua_pushinteger(L, BIOME_REALM_SURFACE);
-    lua_setfield(L, -2, "REALM_SURFACE");
-    lua_pushinteger(L, BIOME_REALM_UNDERGROUND);
-    lua_setfield(L, -2, "REALM_UNDERGROUND");
-    lua_pushinteger(L, BIOME_REALM_THE_DEPTHS);
-    lua_setfield(L, -2, "REALM_THE_DEPTHS");
-    lua_pushinteger(L, BIOME_REALM_SKY);
-    lua_setfield(L, -2, "REALM_SKY");
+    lua_newtable(L); // Biomes
 
     lua_pushinteger(L, BIOME_ID_NULL);
     lua_setfield(L, -2, "NULL_BIOME");

@@ -4,10 +4,10 @@ blocks.add("dev_vtest", {
 
   albedo = {
     default = {
-      "dev/vtest_F1.png",
-      "dev/vtest_F2.png",
-      "dev/vtest_F3.png",
-      "dev/vtest_F4.png",
+      "dev/vtest_f1.png",
+      "dev/vtest_f2.png",
+      "dev/vtest_f3.png",
+      "dev/vtest_f4.png",
     }
   },
 

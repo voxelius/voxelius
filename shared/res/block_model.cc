@@ -162,7 +162,7 @@ static std::optional<BlockModel_Element> parse_element(const JSON_Object* object
     return std::nullopt;
 }
 
-static const void* block_model_load_fn(const char* path, std::uint32_t flags)
+static const void* block_model_load_fn(const char* path, std::uint32_t)
 {
     std::string source;
 

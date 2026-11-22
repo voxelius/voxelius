@@ -2,10 +2,11 @@
 
 #include "client/gui/checkbox.hh"
 
+#include "core/cvar/host.hh"
+
 #include "client/gui/stone.hh"
 #include "client/language.hh"
 #include "client/style.hh"
-#include "core/cvar/host.hh"
 
 gui::CheckBox& gui::CheckBox::bind(std::string_view name)
 {
@@ -34,7 +35,10 @@ void gui::CheckBox::layout_control(void)
 
     // The toggle takes the whole control column: it is a row-level switch,
     // and a narrower one reads as a stray button
-    auto size = ImVec2(ImGui::CalcItemWidth(), ImGui::GetFrameHeight());
+    auto width = ImGui::CalcItemWidth();
+    auto height = ImGui::GetFrameHeight();
+
+    auto size = ImVec2(width, height);
 
     auto clicked = ImGui::InvisibleButton(imgui_id().c_str(), size);
 

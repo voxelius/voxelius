@@ -52,6 +52,9 @@ std::string_view packet::Session_Disconnect::reason_string_client(std::uint32_t 
 
         case KICKED:
             return std::string_view("protocol.disconnect.kicked");
+
+        case WORLD_UNKNOWN:
+            return std::string_view("protocol.disconnect.world_unknown");
     }
 
     return std::string_view("protocol.disconnect.unspecified");
@@ -95,6 +98,9 @@ std::string_view packet::Session_Disconnect::reason_string_server(std::uint32_t 
 
         case KICKED:
             return std::string_view("kicked");
+
+        case WORLD_UNKNOWN:
+            return std::string_view("world unknown");
     }
 
     return std::string_view("unspecified");

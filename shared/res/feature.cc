@@ -150,7 +150,7 @@ static std::optional<std::vector<Feature_Part>> parse_parts(const JSON_Array* ar
     return parts;
 }
 
-static const void* feature_load_fn(const char* path, std::uint32_t flags)
+static const void* feature_load_fn(const char* path, std::uint32_t)
 {
     std::string source;
 

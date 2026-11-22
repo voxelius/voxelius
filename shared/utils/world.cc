@@ -8,6 +8,13 @@
 #include "shared/utils/coord.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/world.hh"
+#include "shared/world/world_scope.hh"
+
+static std::string_view callback_name(const BlockFamily* family)
+{
+    auto& name = family->name;
+    return name.full_string();
+}
 
 static bool call_routine(lua_State* L, int argc, int retc, std::string_view debug_name)
 {
@@ -24,6 +31,12 @@ static bool call_routine(lua_State* L, int argc, int retc, std::string_view debu
 
 bool utils::block_place(const physics::BlockHit& hit, entt::entity actor, block_id_type id)
 {
+    assert(hit.world);
+
+    WorldScope scope(hit.world);
+
+    auto world = hit.world;
+
     auto family = block_registry::find_family_of(id);
     auto pos = hit.block_pos + hit.normal.cast<BlockPos::value_type>();
 
@@ -39,7 +52,7 @@ bool utils::block_place(const physics::BlockHit& hit, entt::entity actor, block_
     has_on_place = has_on_place && callback->state;
 
     auto can_occupy = true;
-    auto existing = world::get_block(pos);
+    auto existing = world->get_block(pos);
 
     if(existing) {
         auto def = block_registry::find_definition(existing);
@@ -51,7 +64,7 @@ bool utils::block_place(const physics::BlockHit& hit, entt::entity actor, block_
     }
 
     if(!has_on_place) {
-        return world::set_block(pos, id);
+        return world->set_block(pos, id);
     }
 
     auto L = callback->state.get();
@@ -99,7 +112,7 @@ bool utils::block_place(const physics::BlockHit& hit, entt::entity actor, block_
 
     lua_pushinteger(L, static_cast<lua_Integer>(actor));
 
-    if(!call_routine(L, 6, 1, family->name.full_string())) {
+    if(!call_routine(L, 6, 1, callback_name(family))) {
         return false;
     }
 
@@ -139,22 +152,28 @@ bool utils::block_place(const physics::BlockHit& hit, entt::entity actor, block_
         id = block_registry::resolve_variant(family->stem_id, states);
     }
 
-    return world::set_block(pos, id);
+    return world->set_block(pos, id);
 }
 
 bool utils::block_break(const physics::BlockHit& hit, entt::entity actor)
 {
+    assert(hit.world);
+
+    WorldScope scope(hit.world);
+
+    auto world = hit.world;
+
     auto replace_block = BLOCK_ID_NULL; // TODO: ask biome subsystem for this
     auto family = block_registry::find_family_of(hit.id);
 
     if(family == nullptr) {
-        return world::set_block(hit.block_pos, replace_block);
+        return world->set_block(hit.block_pos, replace_block);
     }
 
     const auto& callback = family->on_break;
 
     if(callback.callback_ref == LUA_NOREF || callback.state == nullptr) {
-        return world::set_block(hit.block_pos, replace_block);
+        return world->set_block(hit.block_pos, replace_block);
     }
 
     auto L = callback.state.get();
@@ -167,7 +186,7 @@ bool utils::block_break(const physics::BlockHit& hit, entt::entity actor)
 
     auto keep = false;
 
-    if(call_routine(L, 4, 1, family->name.full_string())) {
+    if(call_routine(L, 4, 1, callback_name(family))) {
         if(lua_isboolean(L, -1)) {
             keep = static_cast<bool>(lua_toboolean(L, -1));
         }
@@ -179,11 +198,15 @@ bool utils::block_break(const physics::BlockHit& hit, entt::entity actor)
         return true;
     }
 
-    return world::set_block(hit.block_pos, replace_block);
+    return world->set_block(hit.block_pos, replace_block);
 }
 
 bool utils::block_interact(const physics::BlockHit& hit, entt::entity actor)
 {
+    assert(hit.world);
+
+    WorldScope scope(hit.world);
+
     auto family = block_registry::find_family_of(hit.id);
 
     if(family == nullptr) {
@@ -227,7 +250,7 @@ bool utils::block_interact(const physics::BlockHit& hit, entt::entity actor)
 
     lua_pushinteger(L, static_cast<lua_Integer>(actor));
 
-    return call_routine(L, 5, 1, family->name.full_string());
+    return call_routine(L, 5, 1, callback_name(family));
 }
 
 bool utils::block_sched_tick(const ChunkPos& cpos, const std::shared_ptr<Chunk>& chunk, std::size_t index, block_tick_source source)
@@ -257,5 +280,5 @@ bool utils::block_sched_tick(const ChunkPos& cpos, const std::shared_ptr<Chunk>&
 
     lua_pushinteger(L, static_cast<lua_Integer>(source));
 
-    return call_routine(L, 4, 1, family->name.full_string());
+    return call_routine(L, 4, 1, callback_name(family));
 }

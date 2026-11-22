@@ -22,7 +22,8 @@ void packet::Player_AttackB::encode(const Player_AttackB& packet, WriteBuffer& b
 
 void packet::Player_AttackB::decode(Player_AttackB& packet, ReadBuffer& buffer)
 {
-    packet.bpos = buffer.read_vector<std::int64_t, 3>().cast<BlockPos::value_type>();
+    auto bpos = buffer.read_vector<std::int64_t, 3>();
+    packet.bpos = bpos.cast<BlockPos::value_type>();
     packet.expected = buffer.read<std::uint32_t>();
 }
 
@@ -47,7 +48,8 @@ void packet::Player_InteractB::encode(const Player_InteractB& packet, WriteBuffe
 
 void packet::Player_InteractB::decode(Player_InteractB& packet, ReadBuffer& buffer)
 {
-    packet.bpos = buffer.read_vector<std::int64_t, 3>().cast<BlockPos::value_type>();
+    auto bpos = buffer.read_vector<std::int64_t, 3>();
+    packet.bpos = bpos.cast<BlockPos::value_type>();
     packet.expected = buffer.read<std::uint32_t>();
     packet.face = static_cast<block_face>(buffer.read<std::uint8_t>());
     packet.normal = buffer.read_vector<float, 3>();
@@ -65,7 +67,8 @@ void packet::Player_MoveData::encode(const Player_MoveData& packet, WriteBuffer&
 
 void packet::Player_MoveData::decode(Player_MoveData& packet, ReadBuffer& buffer)
 {
-    packet.simulated_cpos = buffer.read_vector<std::int32_t, 3>().cast<ChunkPos::value_type>();
+    auto cpos = buffer.read_vector<std::int32_t, 3>();
+    packet.simulated_cpos = cpos.cast<ChunkPos::value_type>();
     packet.camera_angles = buffer.read_vector<float, 3>();
     packet.simulated_lpos = buffer.read_vector<float, 3>();
     packet.velocity = buffer.read_vector<float, 3>();

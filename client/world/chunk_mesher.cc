@@ -26,6 +26,7 @@
 #include "client/world/fluid_cache.hh"
 
 #include "client/camera.hh"
+#include "client/globals.hh"
 
 constexpr static std::size_t MAX_SUBMIT_PER_FRAME = 64;
 
@@ -42,6 +43,56 @@ constexpr static std::array ALL_FACES = {
     BLOCK_FACE_TOP,
     BLOCK_FACE_BOTTOM,
 };
+
+class MeshingTask final : public Task {
+public:
+    explicit MeshingTask(entt::entity entity, const ChunkPos& cpos);
+    virtual ~MeshingTask(void) override = default;
+    virtual void process(void) override;
+    virtual void finalize(void) override;
+
+private:
+    std::uint32_t calculate_ao(const LocalPos& lpos, block_face face, const Eigen::Vector3f& vertex) const;
+    block_light_type sample_light(const LocalPos& lpos, block_face face, const Eigen::Vector3f& vertex, light_channel channel) const;
+
+    bool is_culled_block(const LocalPos& lpos, block_face face, block_render self_render) const;
+    bool is_culled_fluid(const LocalPos& lpos, block_face face, fluid_id_type fluid_id, bool face_flush) const;
+    bool is_occluder(const LocalPos& lpos, block_face exposed_face) const;
+
+    void emit_block_quads(std::vector<ChunkMesh_Vertex>& out, std::span<const CachedBlockModel_Quad> quads, const LocalPos& lpos,
+        std::uint64_t entropy, std::optional<block_face> face) const;
+    void emit_fluid_face(std::vector<ChunkMesh_Vertex>& out, const LocalPos& lpos, const std::array<Eigen::Vector3f, 4>& positions,
+        block_face face, const AtlasStrip* strip, tint_id_type tint, std::uint32_t mask_frame,
+        std::optional<std::array<Eigen::Vector2f, 4>> uvs_override = std::nullopt) const;
+
+    Eigen::Vector3f resolve_tint(const LocalPos& lpos, tint_id_type tint) const;
+
+    void mesh_fluid(const LocalPos& lpos, const BlockDefinition& def);
+    void mesh_block(const LocalPos& lpos, block_id_type id);
+
+    void reset_tint_cache(void);
+
+    BlockCache m_cache;
+    BiomeCache m_biomes;
+
+    mutable std::array<std::pair<tint_id_type, Eigen::Vector3f>, 8> m_tint_cache;
+    mutable std::size_t m_tint_cache_size { 0 };
+
+    std::vector<ChunkMesh_Vertex> m_opaque;
+    std::vector<ChunkMesh_Vertex> m_alpha;
+    std::vector<ChunkMesh_Vertex> m_fluid;
+    entt::entity m_entity;
+    ChunkPos m_cpos;
+};
+
+struct CornerSamples final {
+    LocalPos side1;
+    LocalPos side2;
+    LocalPos corner;
+};
+
+static vx::hash_set<ChunkPos> s_pending;
+static std::size_t s_backlog;
 
 constexpr static block_face opposite_face(block_face face)
 {
@@ -99,56 +150,6 @@ static float mesh_queue_distance_sq(const ChunkPos& cpos, const Eigen::Vector3f&
     Eigen::Vector3f delta = position - camera::local - focus;
     return delta.squaredNorm();
 }
-
-static vx::hash_set<ChunkPos> s_pending;
-static std::size_t s_backlog;
-
-class MeshingTask final : public Task {
-public:
-    explicit MeshingTask(entt::entity entity, const ChunkPos& cpos);
-    virtual ~MeshingTask(void) override = default;
-    virtual void process(void) override;
-    virtual void finalize(void) override;
-
-private:
-    std::uint32_t calculate_ao(const LocalPos& lpos, block_face face, const Eigen::Vector3f& vertex) const;
-    block_light_type sample_light(const LocalPos& lpos, block_face face, const Eigen::Vector3f& vertex, light_channel channel) const;
-
-    bool is_culled_block(const LocalPos& lpos, block_face face, block_render self_render) const;
-    bool is_culled_fluid(const LocalPos& lpos, block_face face, fluid_id_type fluid_id, bool face_flush) const;
-    bool is_occluder(const LocalPos& lpos, block_face exposed_face) const;
-
-    void emit_block_quads(std::vector<ChunkMesh_Vertex>& out, std::span<const CachedBlockModel_Quad> quads, const LocalPos& lpos,
-        std::uint64_t entropy, std::optional<block_face> face) const;
-    void emit_fluid_face(std::vector<ChunkMesh_Vertex>& out, const LocalPos& lpos, const std::array<Eigen::Vector3f, 4>& positions,
-        block_face face, const AtlasStrip* strip, tint_id_type tint, std::uint32_t mask_frame,
-        std::optional<std::array<Eigen::Vector2f, 4>> uvs_override = std::nullopt) const;
-
-    Eigen::Vector3f resolve_tint(const LocalPos& lpos, tint_id_type tint) const;
-
-    void mesh_fluid(const LocalPos& lpos, const BlockDefinition& def);
-    void mesh_block(const LocalPos& lpos, block_id_type id);
-
-    void reset_tint_cache(void);
-
-    BlockCache m_cache;
-    BiomeCache m_biomes;
-
-    mutable std::array<std::pair<tint_id_type, Eigen::Vector3f>, 8> m_tint_cache;
-    mutable std::size_t m_tint_cache_size { 0 };
-
-    std::vector<ChunkMesh_Vertex> m_opaque;
-    std::vector<ChunkMesh_Vertex> m_alpha;
-    std::vector<ChunkMesh_Vertex> m_fluid;
-    entt::entity m_entity;
-    ChunkPos m_cpos;
-};
-
-struct CornerSamples final {
-    LocalPos side1;
-    LocalPos side2;
-    LocalPos corner;
-};
 
 static float shade_factor(const Eigen::Vector3f& normal)
 {
@@ -297,12 +298,14 @@ void MeshingTask::finalize(void)
 {
     ZoneScopedN("chunk_mesher::finalize");
 
-    if(!world::chunk_registry.valid(m_entity) || !world::chunk_registry.all_of<Chunk_Component>(m_entity)) {
+    auto& chunk_registry = globals::world->chunk_registry();
+
+    if(!chunk_registry.valid(m_entity) || !chunk_registry.all_of<Chunk_Component>(m_entity)) {
         s_pending.erase(m_cpos);
         return;
     }
 
-    const auto& chunk = world::chunk_registry.get<Chunk_Component>(m_entity);
+    const auto& chunk = chunk_registry.get<Chunk_Component>(m_entity);
 
     if(chunk.position != m_cpos) {
         s_pending.erase(m_cpos);
@@ -310,12 +313,12 @@ void MeshingTask::finalize(void)
     }
 
     if(m_opaque.empty() && m_alpha.empty() && m_fluid.empty()) {
-        world::chunk_registry.remove<ChunkMesh>(m_entity);
+        chunk_registry.remove<ChunkMesh>(m_entity);
         s_pending.erase(m_cpos);
         return;
     }
 
-    auto& component = world::chunk_registry.get_or_emplace<ChunkMesh>(m_entity);
+    auto& component = chunk_registry.get_or_emplace<ChunkMesh>(m_entity);
 
     component.opaque.vertices = std::move(m_opaque);
     sync_part(component.opaque, component.slot);
@@ -332,7 +335,7 @@ void MeshingTask::finalize(void)
     component.opaque.vertices.clear();
     component.opaque.vertices.shrink_to_fit();
 
-    world::chunk_registry.patch<ChunkMesh>(m_entity);
+    chunk_registry.patch<ChunkMesh>(m_entity);
 
     s_pending.erase(m_cpos);
 }
@@ -634,8 +637,8 @@ static float fluid_corner_height(const BlockCache& cache, const LocalPos& lpos, 
     auto weight_sum = 0.0f;
     auto full_height = 0.0625f * static_cast<float>(full_level);
 
-    for(int dx = sx - 1; dx <= sx; ++dx) {
-        for(int dz = sz - 1; dz <= sz; ++dz) {
+    for(int dx = sx - 1; dx <= sx; dx += 1) {
+        for(int dz = sz - 1; dz <= sz; dz += 1) {
             auto height = fluid_cell_height(cache, lpos + LocalPos(dx, 0, dz), fluid_id, gravity, full_level);
 
             if(!height.has_value()) {
@@ -1107,12 +1110,13 @@ void MeshingTask::reset_tint_cache(void)
 
 static void mark_dirty(entt::entity entity)
 {
-    world::chunk_registry.emplace_or_replace<ChunkMesh_DirtyMarker>(entity);
+    auto& chunk_registry = globals::world->chunk_registry();
+    chunk_registry.emplace_or_replace<ChunkMesh_DirtyMarker>(entity);
 }
 
 static void mark_dirty(const ChunkPos& cpos)
 {
-    if(auto chunk = world::find_chunk(cpos)) {
+    if(auto chunk = globals::world->find_chunk(cpos)) {
         mark_dirty(chunk->entity());
     }
 }
@@ -1150,9 +1154,9 @@ static bool touches_neighbor_chunk(const LocalPos& lpos, ChunkPos::value_type dx
 
 static void mark_neighbors_dirty(const ChunkPos& cpos)
 {
-    for(ChunkPos::value_type dz = -1; dz <= 1; ++dz) {
-        for(ChunkPos::value_type dy = -1; dy <= 1; ++dy) {
-            for(ChunkPos::value_type dx = -1; dx <= 1; ++dx) {
+    for(ChunkPos::value_type dz = -1; dz <= 1; dz += 1) {
+        for(ChunkPos::value_type dy = -1; dy <= 1; dy += 1) {
+            for(ChunkPos::value_type dx = -1; dx <= 1; dx += 1) {
                 if(dx == 0 && dy == 0 && dz == 0) {
                     continue;
                 }
@@ -1165,9 +1169,9 @@ static void mark_neighbors_dirty(const ChunkPos& cpos)
 
 static void mark_border_neighbors_dirty(const ChunkPos& cpos, const LocalPos& lpos)
 {
-    for(ChunkPos::value_type dz = -1; dz <= 1; ++dz) {
-        for(ChunkPos::value_type dy = -1; dy <= 1; ++dy) {
-            for(ChunkPos::value_type dx = -1; dx <= 1; ++dx) {
+    for(ChunkPos::value_type dz = -1; dz <= 1; dz += 1) {
+        for(ChunkPos::value_type dy = -1; dy <= 1; dy += 1) {
+            for(ChunkPos::value_type dx = -1; dx <= 1; dx += 1) {
                 if(dx == 0 && dy == 0 && dz == 0) {
                     continue;
                 }
@@ -1201,9 +1205,11 @@ static void on_chunk_remove(const ChunkRemoveEvent& event)
     auto chunk = event.chunk();
     auto entity = chunk->entity();
 
-    if(world::chunk_registry.valid(entity)) {
-        world::chunk_registry.remove<ChunkMesh_DirtyMarker>(entity);
-        world::chunk_registry.remove<ChunkMesh>(entity);
+    auto& chunk_registry = globals::world->chunk_registry();
+
+    if(chunk_registry.valid(entity)) {
+        chunk_registry.remove<ChunkMesh_DirtyMarker>(entity);
+        chunk_registry.remove<ChunkMesh>(entity);
     }
 }
 
@@ -1231,9 +1237,9 @@ void chunk_mesher::init(void)
     globals::dispatcher.sink<ChunkLightUpdateEvent>().connect<&on_chunk_light>();
 }
 
-std::size_t chunk_mesher::backlog(void)
+void chunk_mesher::reset(void)
 {
-    return s_backlog;
+    s_pending.clear();
 }
 
 void chunk_mesher::update(void)
@@ -1244,7 +1250,8 @@ void chunk_mesher::update(void)
 
     TracyPlot("Mesh queue", static_cast<int64_t>(s_pending.size()));
 
-    auto group = world::chunk_registry.group<ChunkMesh_DirtyMarker>(entt::get<Chunk_Component>);
+    auto& chunk_registry = globals::world->chunk_registry();
+    auto group = chunk_registry.group<ChunkMesh_DirtyMarker>(entt::get<Chunk_Component>);
 
     batch.clear();
 
@@ -1269,7 +1276,17 @@ void chunk_mesher::update(void)
     for(std::size_t i = 0; i < submit_count; ++i) {
         const auto& [entity, position, dist_sq] = batch[i];
         s_pending.emplace(position);
-        world::chunk_registry.remove<ChunkMesh_DirtyMarker>(entity);
+        chunk_registry.remove<ChunkMesh_DirtyMarker>(entity);
         threading::submit<MeshingTask>(entity, position);
     }
+}
+
+std::size_t chunk_mesher::backlog(void)
+{
+    return s_backlog;
+}
+
+bool chunk_mesher::is_pending(const ChunkPos& cpos)
+{
+    return s_pending.contains(cpos);
 }

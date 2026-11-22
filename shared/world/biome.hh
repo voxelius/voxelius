@@ -8,17 +8,6 @@
 
 struct Feature;
 
-enum biome_realm : unsigned {
-    BIOME_REALM_SURFACE = 0,
-    BIOME_REALM_UNDERGROUND,
-    BIOME_REALM_THE_DEPTHS,
-    BIOME_REALM_SKY,
-    BIOME_REALM_COUNT,
-    BIOME_REALM_VOID = 0xFFFF,
-};
-
-constexpr static std::size_t NUM_BIOME_REALMS = static_cast<std::size_t>(BIOME_REALM_COUNT);
-
 using biome_id_type = std::uint32_t;
 constexpr static biome_id_type BIOME_ID_NULL = 0;
 constexpr static biome_id_type BIOME_ID_MAX = std::numeric_limits<biome_id_type>::max();
@@ -44,16 +33,8 @@ struct BiomePaletteEntry final {
 struct BiomeDefinition {
     BiomeDefinition(void) = default;
 
-    biome_realm realm;
-
-    std::uint8_t temperature;
-    std::uint8_t humidity;
-    std::uint8_t continentalness;
-    std::uint8_t erosion;
-    std::uint8_t weirdness;
-
-    unsigned priority;
-    float offset;
+    float temperature { 15.0f }; // Base temperature in Celsius
+    float humidity { 0.5f };     // Relative humidity, 0.00 to 1.00
 
     BiomePaletteEntry palette_basic;
     BiomePaletteEntry palette_filler;

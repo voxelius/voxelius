@@ -39,7 +39,7 @@ Eigen::Vector3f Camera::angles(void) const
     rotation.col(1) = up_vector();
     rotation.col(2) = -forward_vector();
 
-    return rotation.canonicalEulerAngles(0, 1, 2); // pitch, yaw, roll
+    return rotation.canonicalEulerAngles(0, 1, 2); // Pitch, yaw, roll
 }
 
 void Camera::set_orthographic(float left, float right, float bottom, float top, float z_near, float z_far)
@@ -110,9 +110,9 @@ void Camera::set_view(const Eigen::Vector3f& position, const Eigen::Vector3f& an
     assert(position.allFinite());
     assert(angles.allFinite());
 
-    Eigen::AngleAxisf pitch(angles.x(), Eigen::Vector3f::UnitX()); // pitch-around-X
-    Eigen::AngleAxisf yaw(angles.y(), Eigen::Vector3f::UnitY());   // yaw-around-Y
-    Eigen::AngleAxisf roll(angles.z(), Eigen::Vector3f::UnitZ());  // roll-around-Z
+    Eigen::AngleAxisf pitch(angles.x(), Eigen::Vector3f::UnitX()); // Pitch-around-X
+    Eigen::AngleAxisf yaw(angles.y(), Eigen::Vector3f::UnitY());   // Yaw-around-Y
+    Eigen::AngleAxisf roll(angles.z(), Eigen::Vector3f::UnitZ());  // Roll-around-Z
 
     set_view(position, Eigen::Quaternionf(yaw * pitch * roll));
 }

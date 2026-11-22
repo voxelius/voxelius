@@ -5,6 +5,9 @@
   "gui.input_popup.cancel": "Cancel",
   "gui.progress_popup.cancel": "Cancel",
 
+  "gui.loading.title": "Loading level",
+  "gui.loading.status": "Building terrain",
+
   "protocol.disconnect.unspecified": "Connection closed",
   "protocol.disconnect.client_disconnect": "Client disconnect",
   "protocol.disconnect.client_shutdown": "Client shutdown",
@@ -18,6 +21,7 @@
   "protocol.disconnect.server_shutdown": "Server shutdown",
   "protocol.disconnect.cvar_rejected": "Server variable rejected",
   "protocol.disconnect.kicked": "Kicked",
+  "protocol.disconnect.world_unknown": "Unknown world",
 
   "main_menu.button.play": "Play Game",
   "main_menu.button.resume": "Resume",

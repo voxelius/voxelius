@@ -3,6 +3,7 @@
 #include "server/net/streaming.hh"
 
 #include "shared/component/transform.hh"
+#include "shared/constant.hh"
 #include "shared/globals.hh"
 #include "shared/net/packet_world.hh"
 #include "shared/utils/view.hh"
@@ -33,8 +34,13 @@ static bool box_is_same(const ChunkAlignedBox& a, const ChunkAlignedBox& b)
 
 static ChunkAlignedBox intersect_boxes(const ChunkAlignedBox& a, const ChunkAlignedBox& b)
 {
-    auto min = a.min().cwiseMax(b.min());
-    auto max = a.max().cwiseMin(b.max());
+    auto a_min = a.min();
+    auto b_min = b.min();
+    auto min = a_min.cwiseMax(b_min);
+
+    auto a_max = a.max();
+    auto b_max = b.max();
+    auto max = a_max.cwiseMin(b_max);
     return ChunkAlignedBox(min, max);
 }
 
@@ -46,7 +52,9 @@ static void rebuild(Session& session, const ChunkPos& player)
 
     auto view = session.stream_view_box;
 
-    for(auto it = session.stream_sent_chunks.begin(); it != session.stream_sent_chunks.end();) {
+    auto it = session.stream_sent_chunks.begin();
+
+    while(it != session.stream_sent_chunks.end()) {
         if(view.contains(*it)) {
             it = std::next(it);
         }
@@ -81,8 +89,10 @@ static void rebuild(Session& session, const ChunkPos& player)
 static void on_chunk_remove(const ChunkRemoveEvent& event)
 {
     for(auto& session : sessions::all()) {
-        if(session.stream_sent_chunks.erase(event.pos())) {
-            session.stream_rebuild = true;
+        if(session.world.get() == event.world()) {
+            if(session.stream_sent_chunks.erase(event.pos())) {
+                session.stream_rebuild = true;
+            }
         }
     }
 }
@@ -117,15 +127,17 @@ void streaming::fixed_update_late(void)
     ZoneScoped;
 
     for(auto& session : sessions::all()) {
-        if(session.peer == nullptr) {
+        if(session.peer == nullptr || session.world == nullptr) {
             continue;
         }
 
-        if(!globals::registry.valid(session.player) || !globals::registry.all_of<Transform>(session.player)) {
+        auto& registry = session.world->registry();
+
+        if(!registry.valid(session.player) || !registry.all_of<Transform>(session.player)) {
             continue;
         }
 
-        const auto& transform = globals::registry.get<Transform>(session.player);
+        const auto& transform = registry.get<Transform>(session.player);
 
         if(session.stream_rebuild) {
             rebuild(session, transform.chunk);
@@ -147,15 +159,28 @@ void streaming::fixed_update_late(void)
 
 void streaming::subscribe(Session& session, const packet::World_Request& packet)
 {
-    if(!globals::registry.valid(session.player) || !globals::registry.all_of<Transform>(session.player)) {
+    if(session.world == nullptr) {
         return;
     }
 
-    const auto& transform = globals::registry.get<Transform>(session.player);
-    const auto& player = transform.chunk;
+    auto& registry = session.world->registry();
+
+    if(!registry.valid(session.player) || !registry.all_of<Transform>(session.player)) {
+        return;
+    }
+
+    const auto& transform = registry.get<Transform>(session.player);
+    auto& player = transform.chunk;
 
     auto allowed_view = utils::view_box(player, static_cast<ChunkPos::value_type>(interest::view_distance.value()));
     auto view = intersect_boxes(packet.view, allowed_view);
+
+    auto& definition = session.world->definition();
+    auto min_y = static_cast<ChunkPos::value_type>(definition.min_y >> constant::CHUNK_SIZE_LOG2);
+    auto max_y = static_cast<ChunkPos::value_type>(definition.max_y >> constant::CHUNK_SIZE_LOG2);
+
+    view.min().y() = std::max(view.min().y(), min_y);
+    view.max().y() = std::min(view.max().y(), max_y);
 
     auto changed = !box_is_same(session.stream_view_box, view);
     changed = changed || (session.stream_player_chunk.array() != player.array()).any();

@@ -1,4 +1,5 @@
 ((void *)(0))
+(Not Responding)
 [deleted]
 [REDACTED]
 #define FALSE 1
@@ -6,6 +7,7 @@
 #define NULL ((void *)(0))
 #define NULL ((void *)(1))
 #define TRUE 0
+67 67 67 67 67 67 67 67 67 67 67 67 67 67
 A Voxelius Server
 All your base are belong to us
 Also try CaveCube!
@@ -13,8 +15,12 @@ Also try OpenBuilder!
 BlockStorage overflow detected
 Cache my chunks if you can
 Chicken and sphere challenge
+Coming soon to a computer near you
 Connection limit: YES
+Daily reminder to brush your teeth.
+DELEEEEEEEEEEEEETE THIIIIIISSSSSS!!!!!
 Don't eat yellow snow!
+Drink Pepis everyday!
 ENetPacket tastes like purple
 Error 418: I'm a teapot
 Experiencing technical gremlins
@@ -28,9 +34,13 @@ Insert more server RAM here
 It's all connected!
 It's not a bug - it's lore
 ITS ALL CONNECTED
+Large Blocks
 Maximum sass capacity reached
+Muck ficrosoft
+Muck fojang
 My stepdads play in here
 No cookies, only sessions
+Now with cubes!!!
 protocol.entity_id_desync
 Rebooting the matrix...
 REEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
@@ -39,7 +49,12 @@ Server hamsters need coffee
 Stay hydrated. This is a threat.
 STOP POSTING ABOUT AMONG US
 Stop reading this and join
+TASTE THE PEANESS
 this_is_fine_20220224.png
 Uptime: 30 years... maybe
 We ran out of stack traces
+Will never go after modders
+Will never go full proprietary
+Will never sign your chat messages
+Will never spy on you
 You wouldn't download a server

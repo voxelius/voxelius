@@ -39,14 +39,14 @@ static bool load_dofile_chunk(lua_State* L, const ModContext* ctx, std::string_v
 static int api_override_dofile(lua_State* L)
 {
     auto raw_path = luaL_checkstring(L, 1);
-    auto path = std::string_view(raw_path, std::strlen(raw_path));
+    auto path = std::string_view(raw_path);
     auto ctx = static_cast<const ModContext*>(lua_touserdata(L, lua_upvalueindex(1)));
 
     if(!load_dofile_chunk(L, ctx, path)) {
         return lua_error(L);
     }
 
-    auto stack_base = lua_gettop(L);
+    auto stack_base = lua_gettop(L) - 1; // The chunk itself sits on top
     auto pcall_status = lua_pcall(L, 0, LUA_MULTRET, 0);
 
     if(pcall_status != LUA_OK) {
@@ -82,7 +82,7 @@ static bool do_require(lua_State* L, std::string_view path)
     lua_rawget(L, -2);
 
     if(!lua_isnil(L, -1)) {
-        return true; // cache hit
+        return true; // Cache hit
     }
 
     lua_pop(L, 1);
@@ -126,7 +126,7 @@ static bool do_require(lua_State* L, std::string_view path)
 static int api_override_require(lua_State* L)
 {
     auto raw_path = luaL_checkstring(L, 1);
-    auto path = std::string_view(raw_path, std::strlen(raw_path));
+    auto path = std::string_view(raw_path);
 
     if(!do_require(L, path)) {
         return lua_error(L);
@@ -167,7 +167,7 @@ static int api_override_print(lua_State* L)
     return 0;
 }
 
-void api::open_lua_libraries(std::shared_ptr<lua_State>& lua, const ModContext* ctx)
+void api_shared::open_lua_libraries(std::shared_ptr<lua_State>& lua, const ModContext* ctx)
 {
     assert(lua);
     assert(ctx);

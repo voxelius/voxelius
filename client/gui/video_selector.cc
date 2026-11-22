@@ -82,7 +82,10 @@ void gui::VideoSelector::layout_control(void)
         }
     }
 
-    auto size = ImVec2(ImGui::CalcItemWidth(), ImGui::GetFrameHeight());
+    auto width = ImGui::CalcItemWidth();
+    auto height = ImGui::GetFrameHeight();
+
+    auto size = ImVec2(width, height);
     auto& control_id = imgui_id();
 
     if(gui::detail::stone_combo(control_id.c_str(), m_choice_labels[current_index], size)) {
@@ -132,5 +135,8 @@ void gui::VideoSelector::translate_control(void)
 {
     ensure_choices();
 
-    m_choice_labels[0] = std::format("{}{}[0]", language::resolve("settings.choice.video_mode.windowed"), imgui_id());
+    auto label = language::resolve("settings.choice.video_mode.windowed");
+    auto id = imgui_id();
+
+    m_choice_labels[0] = std::format("{}{}[0]", label, id);
 }
