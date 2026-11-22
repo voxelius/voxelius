@@ -18,6 +18,9 @@
 #include "client/gui/video_selector.hh"
 #include "client/settings.hh"
 
+constexpr static std::chrono::milliseconds MODE_TIMEOUT { 5000 };
+constexpr static std::chrono::milliseconds MODE_SETTLE { 5000 };
+
 static Eigen::Vector2i s_last_windowed_size;
 static cvar::Boolean s_enable_vsync { true };
 static cvar::String s_current_mode { "windowed" };
@@ -29,23 +32,51 @@ static SDL_DisplayID s_display;
 static SDL_GPUPresentMode s_unlocked_present_mode;
 static std::vector<SDL_DisplayMode> s_fullscreen_modes;
 
+bool video::mode_pending;
+static std::chrono::steady_clock::time_point s_mode_deadline;
+static std::optional<std::chrono::steady_clock::time_point> s_mode_settle_at;
+
+static void mode_requested(void)
+{
+    video::mode_pending = true;
+    s_mode_deadline = MODE_TIMEOUT + std::chrono::steady_clock::now();
+    s_mode_settle_at.reset();
+
+    msg::log_debug("waiting for the window mode");
+}
+
+static void mode_applied(void)
+{
+    if(video::mode_pending) {
+        s_mode_settle_at = MODE_SETTLE + std::chrono::steady_clock::now();
+    }
+}
+
 static void on_sdl_window_event(const SDL_WindowEvent& event)
 {
-    if(event.type != SDL_EVENT_WINDOW_RESIZED) {
-        return;
-    }
+    if(event.windowID == SDL_GetWindowID(globals::window)) {
+        switch(event.type) {
+            case SDL_EVENT_WINDOW_RESIZED:
+            case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
+            case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
+            case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+                mode_applied();
+                break;
 
-    if(event.windowID != SDL_GetWindowID(globals::window)) {
-        return;
-    }
+            default:
+                break;
+        }
 
-    globals::width = event.data1;
-    globals::height = event.data2;
-    globals::aspect = static_cast<float>(event.data1) / static_cast<float>(event.data2);
+        if(event.type == SDL_EVENT_WINDOW_RESIZED) {
+            globals::width = event.data1;
+            globals::height = event.data2;
+            globals::aspect = static_cast<float>(event.data1) / static_cast<float>(event.data2);
 
-    if(SDL_GetWindowFullscreenMode(globals::window) == nullptr) {
-        s_last_windowed_size.x() = event.data1;
-        s_last_windowed_size.y() = event.data2;
+            if(SDL_GetWindowFullscreenMode(globals::window) == nullptr) {
+                s_last_windowed_size.x() = event.data1;
+                s_last_windowed_size.y() = event.data2;
+            }
+        }
     }
 }
 
@@ -204,7 +235,26 @@ void video::shutdown(void)
 
 void video::update(void)
 {
-    // empty
+    if(mode_pending) {
+        auto now = std::chrono::steady_clock::now();
+
+        if(s_mode_settle_at.has_value()) {
+            if(now >= s_mode_settle_at.value()) {
+                mode_pending = false;
+                s_mode_settle_at.reset();
+
+                msg::log_debug("window mode settled");
+            }
+
+            return;
+        }
+
+        if(now >= s_mode_deadline) {
+            mode_pending = false;
+
+            msg::log_debug("the window mode change is not reported, moving on");
+        }
+    }
 }
 
 void video::update_late(void)
@@ -274,8 +324,18 @@ void video::request_fullscreen(int width, int height, int rate)
 
     const auto& best_mode = s_fullscreen_modes[best_index];
 
+    auto flags = SDL_GetWindowFlags(globals::window);
+    auto already_fullscreen = SDL_WINDOW_FULLSCREEN == (flags & SDL_WINDOW_FULLSCREEN);
+    auto current = SDL_GetWindowFullscreenMode(globals::window);
+    auto same_size = current != nullptr && current->w == best_mode.w && current->h == best_mode.h;
+    auto same_mode = same_size && current->refresh_rate == best_mode.refresh_rate;
+
     SDL_SetWindowFullscreenMode(globals::window, &best_mode);
     SDL_SetWindowFullscreen(globals::window, true);
+
+    if(!already_fullscreen || !same_mode) {
+        mode_requested();
+    }
 
     s_current_mode.set_value(std::format("{}:{}:{}", best_mode.w, best_mode.h, static_cast<int>(best_mode.refresh_rate)));
 
@@ -284,6 +344,13 @@ void video::request_fullscreen(int width, int height, int rate)
 
 void video::request_windowed(int width, int height)
 {
+    auto flags = SDL_GetWindowFlags(globals::window);
+    auto was_fullscreen = SDL_WINDOW_FULLSCREEN == (flags & SDL_WINDOW_FULLSCREEN);
+
+    int current_width, current_height;
+    SDL_GetWindowSize(globals::window, &current_width, &current_height);
+    auto size_differs = current_width != width || current_height != height;
+
     SDL_SetWindowFullscreen(globals::window, false);
     SDL_SetWindowSize(globals::window, width, height);
 
@@ -294,6 +361,10 @@ void video::request_windowed(int width, int height)
     auto center_y = usable_bounds.y + (usable_bounds.h - height) / 2;
 
     SDL_SetWindowPosition(globals::window, center_x, center_y);
+
+    if(was_fullscreen || size_differs) {
+        mode_requested();
+    }
 
     s_current_mode.set_value("windowed");
 

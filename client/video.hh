@@ -3,6 +3,11 @@
 
 namespace video
 {
+extern bool mode_pending;
+} // namespace video
+
+namespace video
+{
 void init(void);
 void init_late(void);
 void shutdown(void);

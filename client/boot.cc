@@ -16,6 +16,7 @@
 #include "client/language.hh"
 #include "client/res/texture_2d.hh"
 #include "client/style.hh"
+#include "client/video.hh"
 
 constexpr static std::chrono::milliseconds FRAME_BUDGET { 6 };
 constexpr static std::chrono::milliseconds CARD_FADE_IN { 300 };
@@ -600,6 +601,8 @@ void boot::update(void)
     if(s_state == boot_state::IDLE || s_state == boot_state::DONE) {
         return;
     }
+
+    video::update();
 
     if(s_state == boot_state::LOADING) {
         advance();

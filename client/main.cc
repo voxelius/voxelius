@@ -316,10 +316,16 @@ static void wrapped_main(int argc, char** argv)
     });
 
     boot::add("video", "gui.boot.stage.video", 1.0f, [] {
-        video::init_late();
-        head::init_late();
+        static bool s_started = false;
 
-        return true;
+        if(!s_started) {
+            s_started = true;
+
+            video::init_late();
+            head::init_late();
+        }
+
+        return !video::mode_pending;
     });
 
     boot::add("assets", "gui.boot.stage.assets", 3.0f, [] {
