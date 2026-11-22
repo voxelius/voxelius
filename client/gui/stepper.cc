@@ -109,15 +109,15 @@ void gui::Stepper<T>::layout_control(void)
 
     index = std::min(static_cast<std::size_t>((current - m_min) / m_step), m_labels.size() - 1);
 
-    gui::detail::draw_stone_label(draw_list, previous_min, previous_max, "<", false, true);
-    gui::detail::draw_stone_label(draw_list, next_min, next_max, ">", false, true);
-    gui::detail::draw_stone_label(draw_list, value_min, value_max, m_labels[index], false, true);
+    detail::draw_stone_label(draw_list, previous_min, previous_max, "<", false, true);
+    detail::draw_stone_label(draw_list, next_min, next_max, ">", false, true);
+    detail::draw_stone_label(draw_list, value_min, value_max, m_labels[index], false, true);
 
     if(value_clicked) {
         ImGui::OpenPopup("###list");
     }
 
-    auto open = gui::detail::stone_popup_begin("###list", value_min, value_max);
+    auto open = detail::stone_popup_begin("###list", value_min, value_max);
 
     if(open) {
         for(std::size_t i = 0; i < m_labels.size(); ++i) {
@@ -127,7 +127,7 @@ void gui::Stepper<T>::layout_control(void)
         }
     }
 
-    gui::detail::stone_popup_end(open);
+    detail::stone_popup_end(open);
 
     ImGui::PopID();
 }

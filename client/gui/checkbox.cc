@@ -59,8 +59,8 @@ void gui::CheckBox::layout_control(void)
 
     auto draw_list = ImGui::GetWindowDrawList();
 
-    gui::detail::draw_stone_face(draw_list, item_min, item_max, base);
-    gui::detail::draw_stone_label(draw_list, item_min, item_max, current ? m_label_true : m_label_false, held, true);
+    detail::draw_stone_face(draw_list, item_min, item_max, base);
+    detail::draw_stone_label(draw_list, item_min, item_max, current ? m_label_true : m_label_false, held, true);
 
     if(clicked) {
         m_value.set_value(!current);

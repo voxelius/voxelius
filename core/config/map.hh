@@ -58,7 +58,7 @@ std::optional<T> config::Map::value(std::string_view key) const
 {
     auto slot = find_slot(key);
 
-    if(slot == config::NULL_SLOT) {
+    if(slot == NULL_SLOT) {
         return std::nullopt;
     }
 

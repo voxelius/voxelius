@@ -108,7 +108,7 @@ void gui::ChoicePopup::layout(void)
         for(std::size_t i = 0; i < m_choices.size(); ++i) {
             const auto& choice = m_choices[i];
 
-            if(gui::detail::stone_button(choice.label.c_str(), choice.label, button_size)) {
+            if(detail::stone_button(choice.label.c_str(), choice.label, button_size)) {
                 if(choice.callback) {
                     choice.callback();
                 }
@@ -287,7 +287,7 @@ void gui::InputPopup::layout(void)
         button_size.x = 0.5f * content_width - 0.5f * spacing.x;
         button_size.y = BUTTON_HEIGHT * static_cast<float>(globals::gui_scale);
 
-        if(gui::detail::stone_button(m_cancel_label.c_str(), m_cancel_label, button_size)) {
+        if(detail::stone_button(m_cancel_label.c_str(), m_cancel_label, button_size)) {
             if(m_cancel) {
                 m_cancel();
             }
@@ -297,7 +297,7 @@ void gui::InputPopup::layout(void)
 
         ImGui::SameLine();
 
-        if(gui::detail::stone_button(m_submit_label.c_str(), m_submit_label, button_size) || enter_pressed) {
+        if(detail::stone_button(m_submit_label.c_str(), m_submit_label, button_size) || enter_pressed) {
             if(m_submit) {
                 std::vector<std::string> values;
                 values.reserve(m_fields.size());
@@ -480,7 +480,7 @@ void gui::ProgressPopup::layout(void)
             button_size.x = content_width;
             button_size.y = BUTTON_HEIGHT * static_cast<float>(globals::gui_scale);
 
-            if(gui::detail::stone_button(m_cancel_label.c_str(), m_cancel_label, button_size)) {
+            if(detail::stone_button(m_cancel_label.c_str(), m_cancel_label, button_size)) {
                 m_cancel();
 
                 ImGui::CloseCurrentPopup();

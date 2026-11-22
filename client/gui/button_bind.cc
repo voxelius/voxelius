@@ -65,9 +65,9 @@ void gui::ButtonBind::init(void)
     auto mouse_button_sink = globals::dispatcher.sink<SDL_MouseButtonEvent>();
     auto mouse_wheel_sink = globals::dispatcher.sink<SDL_MouseWheelEvent>();
 
-    keyboard_sink.connect<&gui::ButtonBind::on_keyboard_event>();
-    mouse_button_sink.connect<&gui::ButtonBind::on_mouse_button_event>();
-    mouse_wheel_sink.connect<&gui::ButtonBind::on_mouse_wheel_event>();
+    keyboard_sink.connect<&ButtonBind::on_keyboard_event>();
+    mouse_button_sink.connect<&ButtonBind::on_mouse_button_event>();
+    mouse_wheel_sink.connect<&ButtonBind::on_mouse_wheel_event>();
 }
 
 void gui::ButtonBind::shutdown(void)
@@ -175,7 +175,7 @@ void gui::ButtonBind::layout_control(void)
     ImGui::SameLine();
     ImGui::SetCursorPosY(cursor.y);
 
-    if(gui::detail::stone_button(label, label, ImVec2(control_width - icon_stride, ImGui::GetFrameHeight()))) {
+    if(detail::stone_button(label, label, ImVec2(control_width - icon_stride, ImGui::GetFrameHeight()))) {
         ImGui::GetIO().ConfigFlags &= ~ImGuiConfigFlags_NavEnableKeyboard;
 
         buttons::is_capturing = true;

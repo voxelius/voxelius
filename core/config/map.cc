@@ -92,7 +92,7 @@ config::map_slot_type config::Map::find_slot(std::string_view key) const
     auto it = m_index.find(key);
 
     if(it == m_index.cend()) {
-        return config::NULL_SLOT;
+        return NULL_SLOT;
     }
 
     return it->second;

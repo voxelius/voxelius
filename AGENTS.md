@@ -139,6 +139,8 @@ differently.
   last one so clang-format keeps them apart, or start from `{}` and assign the fields after it. File-scope tables keep their
   initializers.
 - Give a non-trivial size or index expression a name instead of writing it inline.
+- Do not qualify a name with the namespace that the enclosing function already lives in. A `gui::Button` method writes
+  `detail::draw_icon()`, not `gui::detail::draw_icon()`. An out-of-line definition keeps its qualified name in the declarator.
 - Close a namespace with `} // namespace name`. clang-format enforces the comment.
 - An intentionally empty body holds `// empty`.
 

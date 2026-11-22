@@ -135,7 +135,7 @@ void gui::LoadingPanel::layout(void)
 
         ImGui::SetCursorScreenPos(button_position);
 
-        if(gui::detail::stone_button(imgui_id().c_str(), m_cancel_label, button_size)) {
+        if(detail::stone_button(imgui_id().c_str(), m_cancel_label, button_size)) {
             if(m_cancel) {
                 m_cancel();
             }

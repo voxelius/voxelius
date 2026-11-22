@@ -113,15 +113,15 @@ void gui::Button::layout(void)
 
     auto draw_list = ImGui::GetWindowDrawList();
 
-    gui::detail::draw_stone_face(draw_list, item_min, item_max, base);
+    detail::draw_stone_face(draw_list, item_min, item_max, base);
 
     if(m_icon_enabled) {
         auto icon_color = ImGui::GetColorU32(m_enabled ? palette.text : palette.text_disabled);
 
-        gui::detail::draw_icon(draw_list, m_icon, item_min, item_max, icon_color);
+        detail::draw_icon(draw_list, m_icon, item_min, item_max, icon_color);
     }
     else {
-        gui::detail::draw_stone_label(draw_list, item_min, item_max, m_label, held, m_enabled);
+        detail::draw_stone_label(draw_list, item_min, item_max, m_label, held, m_enabled);
     }
 
     ImGui::EndDisabled();

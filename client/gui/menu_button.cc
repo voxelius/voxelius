@@ -54,14 +54,14 @@ void gui::MenuButton::layout(void)
 
     auto draw_list = ImGui::GetWindowDrawList();
 
-    gui::detail::draw_stone_face(draw_list, item_min, item_max, base);
-    gui::detail::draw_icon(draw_list, m_icon, item_min, item_max, ImGui::GetColorU32(palette.text));
+    detail::draw_stone_face(draw_list, item_min, item_max, base);
+    detail::draw_icon(draw_list, m_icon, item_min, item_max, ImGui::GetColorU32(palette.text));
 
     if(clicked) {
         ImGui::OpenPopup(control_id.c_str());
     }
 
-    auto open = gui::detail::stone_popup_begin(control_id.c_str(), item_min, item_max);
+    auto open = detail::stone_popup_begin(control_id.c_str(), item_min, item_max);
 
     if(open) {
         for(auto& item : m_items) {
@@ -75,7 +75,7 @@ void gui::MenuButton::layout(void)
         }
     }
 
-    gui::detail::stone_popup_end(open);
+    detail::stone_popup_end(open);
 }
 
 void gui::MenuButton::translate(void)
