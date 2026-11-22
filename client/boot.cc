@@ -39,6 +39,8 @@ constexpr static float BAR_HEIGHT = 8.0f;
 constexpr static float EDGE_PADDING = 4.0f;
 constexpr static float LINE_GAP = 4.0f;
 
+constexpr static std::string_view SPINNER_FRAMES[] = { "|", "/", "-", "\\" };
+
 constexpr static std::string_view READY_KEY = "gui.boot.stage.ready";
 constexpr static std::string_view HINT_KEY = "gui.boot.hint";
 
@@ -521,6 +523,31 @@ static void draw_hint(ImVec2 display, float alpha)
     ImGui::PopFont();
 }
 
+static void draw_spinner(ImVec2 display, float alpha)
+{
+    if(s_state == boot_state::LOADING) {
+        auto scale = static_cast<float>(globals::gui_scale);
+        auto index = static_cast<std::size_t>(ImGui::GetTime() * 8.0) % std::size(SPINNER_FRAMES);
+        auto frame = SPINNER_FRAMES[index];
+
+        ImGui::PushFont(fonts::unscii8, fonts::unscii8->LegacySize);
+
+        auto size = ImGui::CalcTextSize(frame.data(), frame.data() + frame.size());
+        auto bar_left = 0.5f * (display.x - BAR_WIDTH_RATIO * display.x);
+        auto bar_top = STATUS_TOP_RATIO * display.y + LINE_GAP * scale;
+        auto bar_height = BAR_HEIGHT * scale;
+
+        auto position = ImVec2(bar_left - LINE_GAP * scale - size.x, bar_top + 0.5f * (bar_height - size.y));
+
+        ImGui::SetCursorScreenPos(position);
+        ImGui::PushStyleColor(ImGuiCol_Text, with_alpha(style::palette().text, alpha));
+        ImGui::TextUnformatted(frame.data(), frame.data() + frame.size());
+        ImGui::PopStyleColor();
+
+        ImGui::PopFont();
+    }
+}
+
 static void draw_overlay(void)
 {
     auto& io = ImGui::GetIO();
@@ -538,6 +565,7 @@ static void draw_overlay(void)
         draw_card(display, alpha);
         draw_status(display, alpha);
         draw_bar(display, alpha);
+        draw_spinner(display, alpha);
         draw_log(display, alpha);
         draw_hint(display, alpha);
     }
