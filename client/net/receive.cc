@@ -26,6 +26,7 @@
 #include "client/game.hh"
 #include "client/globals.hh"
 #include "client/net/session.hh"
+#include "client/system/interpolation.hh"
 #include "client/world/cloud_renderer.hh"
 #include "client/world/skybox.hh"
 
@@ -66,6 +67,12 @@ static void on_entity_patch(const packet::Entity_Patch& packet)
         component_map::decode_net(registry, it.id, packet.entity, buffer);
     }
 
+    // The server only patches the local player's components to correct them:
+    // a rubberband or a fresh snapshot has to snap the camera, not drag it
+    if(packet.entity == globals::player) {
+        interpolation::snap(packet.entity);
+    }
+
     msg::log_info("entity patch: id={} components={}", static_cast<std::uint64_t>(packet.entity), packet.components.size());
 }
 
@@ -89,6 +96,10 @@ static void on_entity_client(const packet::Entity_Client& packet)
     msg::log_info("assign entity {} as a local player", static_cast<std::uint64_t>(packet.entity));
 
     globals::player = packet.entity;
+
+    // The entity may already hold its spawn snapshot; start the camera
+    // from it instead of interpolating from the defaults set on construction
+    interpolation::snap(packet.entity);
 
     session::notify_spawned();
 }

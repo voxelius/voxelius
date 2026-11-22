@@ -89,9 +89,9 @@ void pmove_validator::fixed_update_late(void)
                 send_full_update(registry, entity);
             }
             else {
+                // The view angles live in Head; the body yaw follows them
                 registry.patch<Head>(entity, [&](Head& phead) {
-                    phead.angles.x() = sim_data.angles.x();
-                    phead.angles.z() = sim_data.angles.z();
+                    phead.angles = sim_data.angles;
                 });
 
                 registry.patch<Transform>(entity, [&](Transform& ptransform) {

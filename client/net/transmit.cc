@@ -25,7 +25,7 @@ void transmit::fixed_update_late(void)
         packet.simulated_lpos = transform.local;
         packet.simulated_cpos = transform.chunk;
         packet.camera_angles.x() = head.angles.x();
-        packet.camera_angles.y() = transform.angles.y();
+        packet.camera_angles.y() = head.angles.y();
         packet.camera_angles.z() = head.angles.z();
         packet.velocity = velocity.value;
 

@@ -402,6 +402,7 @@ static void on_player_move_data(const packet::Player_MoveData& packet)
     sim_data.chunk = packet.simulated_cpos;
     sim_data.local = packet.simulated_lpos;
     sim_data.velocity = packet.velocity;
+    sim_data.angles = packet.camera_angles;
 
     registry.emplace_or_replace<SimulatedMoveData>(session->player, std::move(sim_data));
 }

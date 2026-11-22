@@ -53,5 +53,26 @@ void interpolation::init(void)
 void interpolation::update(void)
 {
     auto alpha = static_cast<float>(globals::fixed_accumulator_us) / static_cast<float>(globals::fixed_frametime_us);
+
     interpolate_components(alpha);
+}
+
+void interpolation::snap(entt::entity entity)
+{
+    auto& registry = globals::world->registry();
+
+    if(auto transform = registry.try_get<Transform>(entity)) {
+        registry.emplace_or_replace<Transform_Prev>(entity, *transform);
+        registry.emplace_or_replace<Transform_Intr>(entity, *transform);
+    }
+
+    if(auto head = registry.try_get<Head>(entity)) {
+        registry.emplace_or_replace<Head_Prev>(entity, *head);
+        registry.emplace_or_replace<Head_Intr>(entity, *head);
+    }
+
+    if(auto velocity = registry.try_get<Velocity>(entity)) {
+        registry.emplace_or_replace<Velocity_Prev>(entity, *velocity);
+        registry.emplace_or_replace<Velocity_Intr>(entity, *velocity);
+    }
 }
