@@ -10,7 +10,8 @@
 
 constexpr static float HANDLE_WIDTH = 7.0f;
 
-static bool layout_slider(const std::string& id, std::string_view text, float& fraction, float snap_steps)
+template<typename Snap>
+static bool layout_slider(const std::string& id, std::string_view text, float& fraction, float min, float max, Snap snap)
 {
     auto& palette = style::palette();
 
@@ -33,10 +34,14 @@ static bool layout_slider(const std::string& id, std::string_view text, float& f
         auto mouse_x = ImGui::GetIO().MousePos.x;
         fraction = std::clamp((mouse_x - item_min.x - 0.5f * handle_width) / travel, 0.0f, 1.0f);
 
-        // The handle shows the value that the slider will actually hold, so it
-        // snaps to the steps of an integer range instead of gliding
-        if(snap_steps > 0.0f) {
-            fraction = std::round(fraction * snap_steps) / snap_steps;
+        // The handle shows the value that the slider will hold, so the value
+        // is snapped first and the handle follows it instead of the cursor
+        auto range = max - min;
+
+        if(range > 0.0f) {
+            auto value = snap(min + fraction * range);
+
+            fraction = std::clamp((value - min) / range, 0.0f, 1.0f);
         }
     }
 
@@ -87,6 +92,41 @@ static bool layout_slider(const std::string& id, std::string_view text, float& f
     return active;
 }
 
+static float snap_to_whole(float value)
+{
+    return std::round(value);
+}
+
+// The value that the label prints, so the handle and the stored number
+// follow the text that the user reads instead of the raw position
+static float round_to_format(const char* format, float value)
+{
+    char buffer[64];
+    std::snprintf(buffer, sizeof(buffer), format, static_cast<double>(value));
+
+    auto text = std::string_view(buffer);
+    auto offset = text.find_first_not_of(' ');
+
+    if(offset == std::string_view::npos) {
+        return value;
+    }
+
+    text.remove_prefix(offset);
+
+    if(text.front() == '+') {
+        text.remove_prefix(1);
+    }
+
+    auto result = 0.0f;
+    auto check = std::from_chars(text.data(), text.data() + text.size(), result);
+
+    if(check.ec != std::errc {}) {
+        return value;
+    }
+
+    return result;
+}
+
 template<typename T>
 gui::Slider<T>& gui::Slider<T>::bind(std::string_view name)
 {
@@ -110,6 +150,14 @@ template<typename T>
 gui::Slider<T>& gui::Slider<T>::set_format(std::string_view format)
 {
     m_format = format;
+
+    return this->self();
+}
+
+template<typename T>
+gui::Slider<T>& gui::Slider<T>::set_step(T step)
+{
+    m_step = step;
 
     return this->self();
 }
@@ -147,8 +195,12 @@ void gui::Slider<int>::layout_control(void)
 
     std::snprintf(buffer, sizeof(buffer), format, current);
 
-    if(layout_slider(this->imgui_id(), buffer, fraction, static_cast<float>(range))) {
+    auto min = static_cast<float>(m_min);
+    auto max = static_cast<float>(m_max);
+
+    if(layout_slider(this->imgui_id(), buffer, fraction, min, max, &snap_to_whole)) {
         auto next = m_min + static_cast<int>(std::lround(fraction * static_cast<float>(range)));
+
         m_value.set_value(std::clamp(next, m_min, m_max));
     }
 }
@@ -158,10 +210,11 @@ void gui::Slider<float>::layout_control(void)
 {
     auto current = m_value.value();
 
+    auto range = m_max - m_min;
     auto fraction = 0.0f;
 
-    if(m_max > m_min) {
-        fraction = (current - m_min) / (m_max - m_min);
+    if(range > 0.0f) {
+        fraction = (current - m_min) / range;
     }
 
     char buffer[64];
@@ -173,8 +226,18 @@ void gui::Slider<float>::layout_control(void)
 
     std::snprintf(buffer, sizeof(buffer), format, static_cast<double>(current));
 
-    if(layout_slider(this->imgui_id(), buffer, fraction, 0.0f)) {
-        m_value.set_value(std::clamp(m_min + fraction * (m_max - m_min), m_min, m_max));
+    auto snap = [this, format](float value) {
+        if(m_step > 0.0f) {
+            return m_min + m_step * std::round((value - m_min) / m_step);
+        }
+
+        return round_to_format(format, value);
+    };
+
+    if(layout_slider(this->imgui_id(), buffer, fraction, m_min, m_max, snap)) {
+        auto next = snap(m_min + fraction * range);
+
+        m_value.set_value(std::clamp(next, m_min, m_max));
     }
 }
 
@@ -199,8 +262,12 @@ void gui::Slider<unsigned>::layout_control(void)
 
     std::snprintf(buffer, sizeof(buffer), format, current);
 
-    if(layout_slider(this->imgui_id(), buffer, fraction, static_cast<float>(range))) {
+    auto min = static_cast<float>(m_min);
+    auto max = static_cast<float>(m_max);
+
+    if(layout_slider(this->imgui_id(), buffer, fraction, min, max, &snap_to_whole)) {
         auto next = static_cast<std::uint32_t>(m_min) + static_cast<std::uint32_t>(std::lround(fraction * static_cast<float>(range)));
+
         m_value.set_value(std::min(next, static_cast<std::uint32_t>(m_max)));
     }
 }

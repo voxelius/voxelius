@@ -13,6 +13,7 @@ public:
     Slider<T>& bind(std::string_view name);
     Slider<T>& set_range(T min, T max);
     Slider<T>& set_format(std::string_view format);
+    Slider<T>& set_step(T step);
 
     T value(void) const;
     void set_value(T value);
@@ -25,6 +26,7 @@ private:
     cvar::Number<T> m_value {};
     T m_min {};
     T m_max {};
+    T m_step {};
     std::string m_format {};
 };
 } // namespace gui
