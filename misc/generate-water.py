@@ -8,13 +8,13 @@ Generate still/flowing water PNGs via the Minecraft Classic water CA.
 https://github.com/ClassiCube/ClassiCube/wiki/MInecraft-Classic-lava-animation-algorithm#water
 
 Still:
-  localSoup = sum of horizontal 3-neighborhood (wrap)
+  localSoup = sum of horizontal 3-neighbourhood (wrap)
   soup'     = localSoup / 3.3 + pot * 0.8
   pot'      = max(0, pot + flame * 0.05)
   flame'    = flame - 0.1 ; with probability 0.05 set to 0.5
 
 Flowing (TextureWaterFlowFX):
-  localSoup = sum of vertical neighborhood y-2..y (wrap)
+  localSoup = sum of vertical neighbourhood y-2..y (wrap)
   soup'     = localSoup / 3.2 + pot * 0.8
   pot'      = max(0, pot + flame * 0.05)
   flame'    = flame - 0.3 ; with probability 0.2 set to 0.5

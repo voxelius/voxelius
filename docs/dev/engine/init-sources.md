@@ -17,7 +17,7 @@
 
 ## Ignored directories
 
-These appear when you run or build the game with the scripts. They are listed in `.gitignore` and are not tracked.
+These appear when you run or build the game with the scripts. `.gitignore` lists them, and git does not track them.
 
 |Directory|Description|
 |----|----|

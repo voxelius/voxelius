@@ -1121,7 +1121,7 @@ static void mark_dirty(const ChunkPos& cpos)
     }
 }
 
-static bool touches_neighbor_chunk(const LocalPos& lpos, ChunkPos::value_type dx, ChunkPos::value_type dy, ChunkPos::value_type dz)
+static bool touches_neighbour_chunk(const LocalPos& lpos, ChunkPos::value_type dx, ChunkPos::value_type dy, ChunkPos::value_type dz)
 {
     constexpr auto size = static_cast<LocalPos::value_type>(constant::CHUNK_SIZE);
 
@@ -1152,7 +1152,7 @@ static bool touches_neighbor_chunk(const LocalPos& lpos, ChunkPos::value_type dx
     return true;
 }
 
-static void mark_neighbors_dirty(const ChunkPos& cpos)
+static void mark_neighbours_dirty(const ChunkPos& cpos)
 {
     for(ChunkPos::value_type dz = -1; dz <= 1; dz += 1) {
         for(ChunkPos::value_type dy = -1; dy <= 1; dy += 1) {
@@ -1167,7 +1167,7 @@ static void mark_neighbors_dirty(const ChunkPos& cpos)
     }
 }
 
-static void mark_border_neighbors_dirty(const ChunkPos& cpos, const LocalPos& lpos)
+static void mark_border_neighbours_dirty(const ChunkPos& cpos, const LocalPos& lpos)
 {
     for(ChunkPos::value_type dz = -1; dz <= 1; dz += 1) {
         for(ChunkPos::value_type dy = -1; dy <= 1; dy += 1) {
@@ -1176,7 +1176,7 @@ static void mark_border_neighbors_dirty(const ChunkPos& cpos, const LocalPos& lp
                     continue;
                 }
 
-                if(!touches_neighbor_chunk(lpos, dx, dy, dz)) {
+                if(!touches_neighbour_chunk(lpos, dx, dy, dz)) {
                     continue;
                 }
 
@@ -1190,14 +1190,14 @@ static void on_chunk_create(const ChunkCreateEvent& event)
 {
     auto chunk = event.chunk();
     mark_dirty(chunk->entity());
-    mark_neighbors_dirty(event.pos());
+    mark_neighbours_dirty(event.pos());
 }
 
 static void on_chunk_update(const ChunkUpdateEvent& event)
 {
     auto chunk = event.chunk();
     mark_dirty(chunk->entity());
-    mark_neighbors_dirty(event.pos());
+    mark_neighbours_dirty(event.pos());
 }
 
 static void on_chunk_remove(const ChunkRemoveEvent& event)
@@ -1217,7 +1217,7 @@ static void on_block_update(const BlockUpdateEvent& event)
 {
     auto chunk = event.chunk();
     mark_dirty(chunk->entity());
-    mark_border_neighbors_dirty(event.cpos(), event.lpos());
+    mark_border_neighbours_dirty(event.cpos(), event.lpos());
 }
 
 static void on_chunk_light(const ChunkLightUpdateEvent& event)
@@ -1225,7 +1225,7 @@ static void on_chunk_light(const ChunkLightUpdateEvent& event)
     // A vertex samples the light of every cell around it, diagonals
     // included, so any of the 26 neighbours can need its mesh rebuilt.
     mark_dirty(event.pos());
-    mark_neighbors_dirty(event.pos());
+    mark_neighbours_dirty(event.pos());
 }
 
 void chunk_mesher::init(void)

@@ -15,11 +15,11 @@ The project uses the BSD 3-Clause license. See `LICENSE`. A change that you send
 
 ## Making a change
 
-- Make one logical change per commit. Do not mix a refactor with a change of behavior.
+- Make one logical change per commit. Do not mix a refactor with a change of behaviour.
 - Keep the change inside one area when you can. A commit that touches unrelated areas is hard to review.
 - Format every changed C++ file with `clang-format` and the repository `.clang-format`. The [Code Style](dev-code-style.md) page lists the settings.
 - Build the target that you change. Run the client or the server when the change can affect them.
-- Change the documentation in the same commit when the change modifies a documented behavior. `properdocs.yml` lists the pages.
+- Change the documentation in the same commit when the change modifies a documented behaviour. `properdocs.yml` lists the pages.
 
 ## Testing
 
@@ -38,14 +38,14 @@ Describe the test in the pull request. A reviewer cannot see your machine.
 - Write the subject as one sentence that says what the change does.
 - Start it with a capital letter. Do not end it with a period.
 - Do not add a type or area prefix. A `core:` or a `feat:` prefix is not the style of this repository.
-- Use the imperative mood when the sentence allows it: `Move worldgen code to server`, `Fix crashing`. A noun phrase is also correct: `Client connections`, `Checkpoint`.
+- Use the imperative mood when the sentence allows it: `Move worldgen code to server`, `Fix crashing`. A noun phrase also works: `Client connections`, `Checkpoint`.
 - Keep the subject on one line. Put the details in the body.
 
 > **NOTE:** Older commits use a `<area>: <summary>` prefix, for example `shared: test identifiers`. Do not copy that form.
 
 ### Body
 
-Most commits need no body. Write one when the change has several parts, or when the subject does not show why the change is done.
+Most commits need no body. Write one when the change has several parts, or when the subject does not show why you make the change.
 
 - Write the body as a list of `- ` bullets, one per part of the change.
 - Do not list the changed files. Do not repeat the subject.
@@ -87,9 +87,9 @@ You can use AI tools, but a human drives the work:
 
 Open an issue and add:
 
-- the steps that lead to the problem;
-- what you expected and what happened;
-- the build (debug or release), the platform and the version;
+- the steps that lead to the problem.
+- what you expected and what happened.
+- the build (debug or release), the platform and the version.
 - the log output, when the engine wrote one.
 
 Try to find the smallest series of steps that shows the problem. A report without a reproduction is hard to use.

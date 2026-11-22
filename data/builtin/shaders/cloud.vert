@@ -72,12 +72,12 @@ void main(void)
     lit += u_SunColor * (0.80 * pow(sun, 0.9) + 0.20 * wrap * wrap);
     lit += u_SunColor * backlit * 0.85 + vec3(0.05);
 
-    // Distant clouds take the colour of the air in front of them, so a deck
+    // Distant clouds take the color of the air in front of them, so a deck
     // seen through a storm reads lighter than the same deck overhead
     float haze = smoothstep(u_HazeRange.x, u_HazeRange.y, horizontal);
     vec3 color = mix(vert_Color.rgb * lit, u_HazeColor, haze);
 
-    // The compose step expects premultiplied colour
+    // The compose step expects premultiplied color
     vs_Color = vec4(color * alpha, alpha);
 
     gl_Position = u_CloudViewProjection * vec4(local, 1.0);

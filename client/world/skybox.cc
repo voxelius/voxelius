@@ -112,7 +112,7 @@ static Eigen::Vector3f tilt_about_x(const Eigen::Vector3f& direction, float tilt
 void skybox::init(void)
 {
     auto& r_sun_angle_binding = cvar::bind_var(s_sun_angle, "r_sun_angle");
-    r_sun_angle_binding.set_help("Tilt of the sun's path in degrees; 0 rises due east and sets due west");
+    r_sun_angle_binding.set_help("Tilt of the sun's path in degrees. At 0 the sun rises due east and sets due west");
     r_sun_angle_binding.set_flags(FCVAR_ARCHIVE);
 
     s_sun_angle_gui.set_range(-90.0f, 90.0f);
@@ -218,7 +218,7 @@ void skybox::update(void)
     auto visibility = std::clamp(blend.sky_visibility, 0.0f, 1.0f);
 
     // The sunlight crosses more air as the sun sinks, losing blue
-    // first; the normalised result is the colour of the setting sun
+    // first; the normalized result is the color of the setting sun
     auto airmass = 1.0f / (std::max(height, 0.0f) + AIRMASS_FLOOR);
 
     Eigen::Vector3f transmittance;
@@ -242,7 +242,7 @@ void skybox::update(void)
     Eigen::Vector3f weather_zenith = blend.sky_tint * (0.55f * light);
 
     // A type with sky_visibility 0 replaces the sky with its own
-    // colour; 1 leaves the Rayleigh gradient fully in charge
+    // color; 1 leaves the Rayleigh gradient fully in charge
     Eigen::Vector3f target_horizon = weather_horizon * (1.0f - visibility) + clear_horizon * visibility;
     Eigen::Vector3f target_warm = weather_horizon * (1.0f - visibility) + warm_horizon * visibility;
     Eigen::Vector3f target_zenith = weather_zenith * (1.0f - visibility) + clear_zenith * visibility;
@@ -264,7 +264,7 @@ void skybox::update(void)
 
     s_primed = true;
 
-    // The fog takes the horizon colour in the direction the camera
+    // The fog takes the horizon color in the direction the camera
     // faces, so turning towards the sunset warms the haze as well
     auto camera_flat = Eigen::Vector2f(camera::forward.x(), camera::forward.z());
     auto sun_flat = Eigen::Vector2f(sun_vector.x(), sun_vector.z());

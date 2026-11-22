@@ -1,10 +1,10 @@
 # Features
 
-A feature is a single world-generation template. It contains a block palette and relative part offsets. The engine places features as scatter decorators through `biome.scatter`. Structure pieces are planned for the future. Script-based placement is planned.
+A feature is a single world-generation template. It contains a block palette and relative part offsets. The engine places features as scatter decorators through `biome.scatter`. Structure pieces and script-based placement arrive in a later change.
 
 Stored features live under: `namespace:features`
 
-Features are authored facing **north** (`blocks.FACE_NORTH`). Placement rules supply world origin and facing at runtime.
+A mod authors features facing **north** (`blocks.FACE_NORTH`). Placement rules supply world origin and facing at runtime.
 
 ## Top-level fields
 

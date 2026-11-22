@@ -15,7 +15,7 @@ constexpr static float WEATHER_SATURATION = 0.98f; // Humidity under full precip
 
 // A precipitating front cools the air and raises the humidity under it.
 // The result scales with the local coverage, so a fringe of the front
-// moves the climate less than its centre does
+// moves the climate less than its center does
 static float weather_coverage_at(const World& world, float x, float z)
 {
     auto& definition = world.definition();

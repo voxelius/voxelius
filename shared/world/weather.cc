@@ -199,12 +199,12 @@ WeatherBlend WeatherState::blend(std::span<const weather_type_id> allowed, float
         coverage += amount * std::clamp(def.intensity, 0.0f, 1.0f);
     }
 
-    // The shares add up to one, so the colour is already an average;
+    // The shares add up to one, so the color is already an average;
     // only the coverage still has to be clamped to a single layer
     coverage = std::min(coverage, 1.0f);
 
-    // sky_tint is a target colour, not a multiplier: mixing towards
-    // grey is what turns a blue sky into overcast grey instead of dark blue.
+    // sky_tint is a target color, not a multiplier: mixing towards
+    // gray is what turns a blue sky into overcast gray instead of dark blue.
     // sky_visibility says how much of the real sky survives that mix
     result.coverage = coverage;
     result.sky_tint = tint;

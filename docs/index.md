@@ -8,7 +8,7 @@ hide:
 description: Voxel game and engine
 ---
 
-> **WARNING:** This documentation is generated on each release or by hand. That avoids burning GitHub CI on typo-only fixes. If you need docs that match the latest sources, generate them from the repository yourself.
+> **WARNING:** The project generates this documentation on each release, or writes it by hand. That avoids burning GitHub CI on typo-only fixes. If you need docs that match the latest sources, generate them from the repository yourself.
 
 ## What is this?
 

@@ -70,7 +70,7 @@ I got interested in SDL3's GPU API. It abstracts Vulkan, Metal, and D3D12 and ac
 ![history.img-16.jpg](history.img-16.jpg)
 ![history.img-17.jpg](history.img-17.jpg)
 
-While doing that I figured out practices that made the source tree much better organised. Bringing those into Voxelius was an obvious next step. However...
+While doing that I figured out practices that made the source tree much better organized. Bringing those into Voxelius was an obvious next step. However...
 
 ## 2026: the third rewrite
 

@@ -27,8 +27,8 @@ Block models live under: `namespace:models/block`
 |----|----|----|----|----|
 |`min`|`number[3]`|yes|N/D|Cuboid start in 1/16ths of a block|
 |`max`|`number[3]`|yes|N/D|Cuboid end in 1/16ths of a block|
-|`origin`|`number[3]`|no|`[0, 0, 0]`|If `rotation` is set, pivot point in 1/16ths of a block|
-|`rotation`|`number[3]`|no|`[0, 0, 0]`|Euler rotation in degrees about X, Y and Z. Each axis is clamped to `[-180, 180]` and snapped to the nearest multiple of 15 degrees|
+|`origin`|`number[3]`|no|`[0, 0, 0]`|Pivot point in 1/16ths of a block, used when `rotation` is present|
+|`rotation`|`number[3]`|no|`[0, 0, 0]`|Euler rotation in degrees about X, Y and Z. The engine clamps each axis to `[-180, 180]` and snaps it to the nearest multiple of 15 degrees|
 |`rescale`|`bool`|no|`true`|If true, the engine forces the model into block bounds|
 |`shade`|`bool`|no|`true`|If true, the engine applies basic fake-light shading to the cuboid|
 |`faces`|`object`|yes|N/D|Per-direction face definitions|

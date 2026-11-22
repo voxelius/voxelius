@@ -3,7 +3,7 @@
 
 constexpr static std::uint32_t RESFLAG_TEX_FLIP = 1 << 8;     ///< Flip image vertically on load
 constexpr static std::uint32_t RESFLAG_TEX_GRAY = 1 << 9;     ///< If set, the pixel data is 8-bit grayscale, otherwise it's RGBA8888
-constexpr static std::uint32_t RESFLAG_TEX_NEAREST = 1 << 10; ///< Use nearest-neighbor filtering and skip mipmaps
+constexpr static std::uint32_t RESFLAG_TEX_NEAREST = 1 << 10; ///< Use nearest-neighbour filtering and skip mipmaps
 
 struct Texture2D final {
     static void register_resource(void);

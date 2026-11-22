@@ -88,7 +88,7 @@ void replication::init(void)
     net_cmd_burst_binding.set_flags(FCVAR_ARCHIVE);
 
     auto& net_cmd_rate_binding = cvar::bind_var(s_cmd_rate, "net_cmd_rate");
-    net_cmd_rate_binding.set_help("Console commands per second a client is allowed to sustain");
+    net_cmd_rate_binding.set_help("Console commands per second that a client may sustain");
     net_cmd_rate_binding.set_flags(FCVAR_ARCHIVE);
 
     auto& dbg_echo_binding = cvar::bind_cmd("dbg_echo");

@@ -29,7 +29,7 @@ static void update_checksum(void)
 
     // Everything that changes what either side draws
     // or simulates goes in here. Hashing only the names
-    // would let a client with different cloud colours
+    // would let a client with different cloud colors
     // or a different front speed through the login check
     for(std::size_t i = 1; i < s_definitions.size(); ++i) {
         auto& def = s_definitions[i];

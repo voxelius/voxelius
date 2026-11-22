@@ -476,7 +476,7 @@ void sessions::init(void)
     net_strict_version_binding.set_flags(FCVAR_ARCHIVE);
 
     auto& sv_spawn_world_binding = cvar::bind_var(s_spawn_world, "sv_spawn_world");
-    sv_spawn_world_binding.set_help("World a new player spawns in; empty uses the default world");
+    sv_spawn_world_binding.set_help("World that a new player spawns in. Empty selects the default world");
     sv_spawn_world_binding.set_flags(FCVAR_ARCHIVE | FCVAR_ADMIN);
 
     auto& who_binding = cvar::bind_cmd("who");

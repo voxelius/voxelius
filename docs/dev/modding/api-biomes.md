@@ -97,6 +97,6 @@ biomes.add("plains", {
 
 A biome no longer carries climate coordinates. Instead, a world defines how the engine picks a biome through the `biome_selector` field of [`worlds.add`](api-worlds.md#biome-selector).
 
-The `vox17` generator uses the `nearest` strategy: the engine samples five climate noises (temperature, humidity, continentalness, erosion, and weirdness), then picks the biome whose target point in that space is nearest, weighted per axis. The selector's `entries` list the participating biomes and their target coordinates (0 to 99 per axis); `priority` and `offset` break ties and bias the distance. During world load the engine nudges colliding targets until each is unique.
+The `vox17` generator uses the `nearest` strategy. The engine samples five climate noises (temperature, humidity, continentalness, erosion, and weirdness). It then picks the biome whose target point in that space is nearest, weighted per axis. The selector's `entries` list the participating biomes and their target coordinates (0 to 99 per axis). `priority` and `offset` break ties and bias the distance. During world load the engine nudges colliding targets until each is unique.
 
 The `vox17` generator also accepts the `grid` strategy: two axes, `grid_size`, and a `lookup` table of biome names. See [Worlds](api-worlds.md#grid).

@@ -4,7 +4,7 @@
 
 Format all C++ code with `clang-format`. The config file is in the repository root. If your editor supports format-on-save, enable it. Otherwise format before you commit.
 
-Dependencies are excluded from automatic formatting. They rarely match Voxelius style.
+Dependencies stay out of automatic formatting. They rarely match Voxelius style.
 
 Notable settings:
 
@@ -80,12 +80,12 @@ void vx::teardown(void)
 - Do not repeat a `const` the initializer already carries. When a function returns a const reference, `auto&` is enough and
   `const auto&` is noise.
 - Write `auto` even when the deduction yields a pointer (`auto world = WorldScope::active();`), not `auto*`.
-- When a block of locals comes from deduction, keep them all on `auto`. Do not spell the type between them; put it in the
+- When a block of locals comes from deduction, keep them all on `auto`. Do not spell the type between them. Put it in the
   initializer instead: `auto elapsed = std::chrono::system_clock::duration(now.time_since_epoch());`.
 - C++ headers use `.hh`. C++ sources use `.cc`.
-- Profanity in source code is allowed. I own the code and can comment as I choose.
+- You may use profanity in source code. I own the code and can comment as I choose.
 - Use standard `assert` for debug-time checks. Use `vx::throw_if_xxxx` when the game should crash on failure.
-- Test a pointer or a handle by itself when it must be present, and compare it with the null value when it must be absent: `if(ptr)` and
+- Test a pointer or a handle by itself when it must be present. Compare it with the null value when it must be absent: `if(ptr)` and
   `if(ptr == nullptr)`, `if(handle)` and `if(handle == BIOME_ID_NULL)`. A count follows the same split. Never write the absent case as a
   negation or an inequality (`if(!ptr)`, `if(!handle)`, `!= 0`, `!= nullptr`), and keep negating a call that only reports a condition:
   `if(!load(path))`, `if(!value.has_value())`.
@@ -94,11 +94,11 @@ void vx::teardown(void)
   dereference or another non-trivial operand on either side means `if`/`else`.
 - No standalone `++x` or `x--` statement: write `x += 1` or `x -= 1`. An iterator advances with `std::next(it)`.
 - A `for` header has all three parts or none. A loop that fills two of them is a `while` with the step at the end of its body.
-- A `switch` case does not open a scope; move a body that needs locals into a function.
-- Do not chain on a call result through a pointer (`registry().find(id)->name`, `map.find(key)->second`); put it in a named local
+- A `switch` case does not open a scope. Move a body that needs locals into a function.
+- Do not chain on a call result through a pointer (`registry().find(id)->name`, `map.find(key)->second`). Put it in a named local
   first. A short dot chain reads as one operation and may stay in place: `dispatcher.sink<Event>().connect<&handler>()`. A chain of three
-  or more calls goes into named locals. Do not nest calls deeper than one level or put a call in the middle of another call's
-  arguments; a call as the only or the last argument is fine.
+  or more calls goes into named locals. Do not nest calls deeper than one level. Do not put a call in the middle of another call's
+  arguments. A call as the only or the last argument is fine.
 - Keep the registration calls together: a run of `dispatcher.sink<Event>().connect<&handler>()` lines has no blank lines inside it,
   and one blank line separates a different group of events.
 - Keep a condition to three operands joined by `&&` or `||`, on one line. Name the parts in `bool` locals or split the test.
@@ -180,13 +180,13 @@ Example:
 
 Every translation unit keeps the same top-level order:
 
-1. includes;
-2. forward declarations;
-3. compile-time constants: `constexpr`, `static constexpr` and object-like `#define`s;
-4. type definitions: `using`, `enum`, `struct` and `class`;
-5. read-only data such as `static const char* const names[] = { ... }`;
-6. static and global variables, in any order among themselves;
-7. static functions and other functions with internal linkage;
+1. includes.
+2. forward declarations.
+3. compile-time constants: `constexpr`, `static constexpr` and object-like `#define`s.
+4. type definitions: `using`, `enum`, `struct` and `class`.
+5. read-only data such as `static const char* const names[] = { ... }`.
+6. static and global variables, in any order among themselves.
+7. static functions and other functions with internal linkage.
 8. public functions, including out-of-line member definitions.
 
 - A constant belongs in the constant block and a helper belongs in the static function block. Do not put either next to its first use

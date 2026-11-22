@@ -33,7 +33,7 @@ constexpr static float SUN_HALF_SIZE = 1.50f;
 constexpr static float MOON_HALF_SIZE = 0.60f;
 
 // The quads lie in the tangent plane of the sphere, so a
-// star or a celestial body turns its face to the centre of the
+// star or a celestial body turns its face to the center of the
 // sky rather than shrinking to a line when the camera looks sideways
 struct StarVertex final {
     Eigen::Vector3f position;
@@ -350,7 +350,7 @@ void sky_renderer::render(void)
     ZoneScoped;
 
     // The camera has no valid matrices until a player exists; the
-    // flat clear colour is the right sky for the menu that follows
+    // flat clear color is the right sky for the menu that follows
     auto view = camera::instance.view();
     auto projection = camera::instance.projection();
 

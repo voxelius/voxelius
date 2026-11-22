@@ -8,9 +8,9 @@ Defines a block rendering step.
 
 |Name|Description|
 |----|----|
-|`blocks.RENDER_NONE`|Block is not rendered (eg. air)|
-|`blocks.RENDER_SOLID`|Block is rendered as opaque, cullable geometry|
-|`blocks.RENDER_ALPHA`|Block is rendered as translucent geometry|
+|`blocks.RENDER_NONE`|The engine draws no geometry (e.g. air)|
+|`blocks.RENDER_SOLID`|The engine draws the block as opaque, cullable geometry|
+|`blocks.RENDER_ALPHA`|The engine draws the block as translucent geometry|
 
 ## Constants: block face
 
@@ -50,8 +50,8 @@ Defines a touch response for a block.
 |----|----|
 |`blocks.TOUCH_NONE`|Block is not collidable|
 |`blocks.TOUCH_SOLID`|Movement stops in the touch direction|
-|`blocks.TOUCH_BOUNCE`|The block reflects movement with some attenuation. This is reserved for future use (e.g. slime-like blocks). No builtin block uses it yet|
-|`blocks.TOUCH_THROUGH`|The block attenuates movement but does not change its direction. This is reserved for future use (e.g. cobweb, liquids). No builtin block uses it yet|
+|`blocks.TOUCH_BOUNCE`|The block reflects movement with some attenuation. The engine reserves it for future use (e.g. slime-like blocks). No builtin block uses it yet|
+|`blocks.TOUCH_THROUGH`|The block attenuates movement but does not change its direction. The engine reserves it for future use (e.g. cobweb, liquids). No builtin block uses it yet|
 
 ## Constants: category bits
 
@@ -69,7 +69,7 @@ Freeform grouping tags checked at runtime with `blocks.has_tag`. Any block can c
 
 ## Constants: schedule source
 
-A scheduled tick is issued non-randomly with a specific timeout. Scheduled ticks can come from different sources.
+The engine issues a scheduled tick after a specific timeout, not at random. Scheduled ticks can come from different sources.
 
 |Name|Description|
 |----|----|
@@ -94,7 +94,7 @@ Retrieves a numeric block stem ID from a namespaced block ID.
 #### Return value
 
 - Numeric block ID on success
-- `blocks.NULL_BLOCK` if the block is missing or the namespace ID is malformed
+- `blocks.NULL_BLOCK` if the block is missing or the namespace ID has an invalid form
 
 #### Notes
 
@@ -159,12 +159,12 @@ Returns the numeric block ID.
 |`bcoll_offset`|`number[3]`|depends|`{0, 0, 0}`|Block collision offset|
 |`bcoll_facing`|`integer`|no|`blocks.FACE_NORTH`|One of `blocks.FACE_XXXX`. Rotates the resolved collision shape the same way `model_facing` rotates the model. You can set it independently of `model_facing`. The collision shape does not need to match the visual, though it usually should|
 |`fluid_name`|`string`|no|N/D|[Fluid](api-fluids.md) name that shares the grid cell with the block|
-|`fluid_level`|`integer`|no|fluid `full_level`|Fluid level if `fluid_name` is set, in 1/16ths of a block. When omitted, the engine uses the fluid's `full_level`|
+|`fluid_level`|`integer`|no|fluid `full_level`|Fluid level when `fluid_name` is present, in 1/16ths of a block. When omitted, the engine uses the fluid's `full_level`|
 |`fluid_faces`|`integer`|no|`0`|Bitmask of faces a fluid may enter or leave this variant through, made of `blocks.FACE_*` bits. `0` means the variant cannot be filled|
 |`health`|`integer`|no|`0`|Base hit points needed to break the block. Tool effects can change this|
 |`sound`|`string`|no|N/D|Sound set for this block|
-|`emission`|`integer`|no|`0`|Emission light value, from `0` to `15`. Values outside the range are clamped|
-|`dissipation`|`integer`|no|`0`|Opacity of the block, from `0` to `15`. Light loses this many levels when it passes through. Values outside the range are clamped. A `RENDER_SOLID` block with `0` dissipation is treated as fully opaque. The block only absorbs light across the cell faces its collision shape covers, so a block that fills half a cell lets light through its open half|
+|`emission`|`integer`|no|`0`|Emission light value, from `0` to `15`. The engine clamps values outside the range|
+|`dissipation`|`integer`|no|`0`|Opacity of the block, from `0` to `15`. Light loses this many levels when it passes through. The engine clamps values outside the range. The engine treats a `RENDER_SOLID` block with `0` dissipation as fully opaque. The block only absorbs light across the cell faces that its collision shape covers. A block that fills half a cell lets light through its open half|
 |`touch`|`integer`|no|`blocks.TOUCH_SOLID`|Block touch response|
 |`touch_coeffs`|`number[3]`|no|`{1, 1, 1}`|Block touch response coefficients|
 |`tags`|`integer[]`|no|`{}`|Block tags|
@@ -180,9 +180,9 @@ Returns the numeric block ID.
 
 |Callback|Runs on|
 |----|----|
-|`on_place`, `on_break`|Both sides; the client predicts, the server decides|
+|`on_place`, `on_break`|Both sides. The client predicts, the server decides|
 |`on_tick`|Server only|
-|`on_interact`|Server only; the engine does not call it yet|
+|`on_interact`|Server only. The engine does not call it yet|
 
 ### Textures
 
@@ -197,7 +197,7 @@ Each texture slot can have a mask texture that the engine uses for certain purpo
 
 |Channel|Designation|Description|
 |----|----|----|
-|Red|Tint mask|Actual tint color is multiplied with this value in shaders|
+|Red|Tint mask|The shader multiplies the tint color with this value|
 |Green|Unused|N/A|
 |Blue|Unused|N/A|
 |Alpha|Unused|N/A|
@@ -248,7 +248,7 @@ states = {
 }
 ```
 
-Blockstate values are hashed strings. You can write any value via `world.sset`. `hint` does not restrict this at runtime; `hint` is only a registration-time cross-check. The engine checks every `when` clause across the `variants` of this block against the union of `hint` lists for the states it references. A value missing from `hint` produces a console warning at load time (typo protection, e.g. `orientation = "bottum"`). Blocks that omit `hint` for a state skip validation for that state.
+The engine stores blockstate values as hashed strings. You can write any value via `world.sset`. `hint` does not restrict this at runtime. `hint` is only a cross-check at registration time. The engine checks every `when` clause across the `variants` of this block against the union of `hint` lists for the states it references. A value missing from `hint` produces a console warning at load time (typo protection, e.g. `orientation = "bottum"`). Blocks that omit `hint` for a state skip validation for that state.
 
 ### State object
 
@@ -304,7 +304,7 @@ The `on_place` handler receives an `occupant` table for the block currently in t
 |Field|Type|Description|
 |----|----|----|
 |`id`|`integer`|Numeric block ID in the placement cell. `blocks.NULL_BLOCK` when empty|
-|`replaceable`|`boolean`|Whether the placement cell can be occupied: `true` when empty or when the existing block was registered with `replaceable`. `false` otherwise|
+|`replaceable`|`boolean`|Whether the placement cell can be occupied: `true` when empty or when the mod registered the existing block with `replaceable`. `false` otherwise|
 
 ### `on_place` handler
 
@@ -321,7 +321,7 @@ end
 
 Returning `nil` blocks placement. Returning a table (empty or not) permits it. Table entries become initial blockstate values for states not covered by their `default`.
 
-When placement is permitted, the new block overwrites whatever was in the cell. The engine does not break replaceable occupants, and they do not drop items.
+When the callback permits placement, the new block overwrites whatever was in the cell. The engine does not break replaceable occupants, and they do not drop items.
 
 ### `on_break` handler
 
@@ -331,7 +331,7 @@ on_break = function(bx, by, bz, actor)
 end
 ```
 
-Returning `true` keeps the placement cell as the callback left it; otherwise the engine clears it to `blocks.NULL_BLOCK` after the callback returns. Callbacks that return `nil` or any other value keep the default behaviour.
+Returning `true` keeps the placement cell as the callback left it. Otherwise the engine clears it to `blocks.NULL_BLOCK` after the callback returns. Callbacks that return `nil` or any other value keep the default behaviour.
 
 ### `on_interact` handler
 

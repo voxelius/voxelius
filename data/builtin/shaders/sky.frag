@@ -29,7 +29,7 @@ void main(void)
     float up = clamp(direction.y, 0.0, 1.0);
 
     // The warm horizon only builds up on the sun's side; the
-    // opposite horizon keeps the neutral colour
+    // opposite horizon keeps the neutral color
     vec2 view_flat = direction.xz;
     vec2 sun_flat = u_SunDirection.xz;
     float view_length = length(view_flat);
@@ -43,7 +43,7 @@ void main(void)
     vec3 horizon = mix(u_HorizonColor, u_SunHorizonColor, pow(side, 2.0) * u_Twilight);
     vec3 color = mix(horizon, u_ZenithColor, pow(up, 0.50));
 
-    // Below the horizon the same colour turns into a dark
+    // Below the horizon the same color turns into a dark
     // ground, so a hole in the terrain does not show sky
     if(direction.y < 0.0) {
         color = mix(horizon, u_GroundColor, clamp(-direction.y * 4.0, 0.0, 1.0));

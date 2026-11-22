@@ -16,8 +16,8 @@ Registers a world definition.
 |Field|Type|Required|Default|Description|
 |----|----|----|----|----|
 |`generator`|`string`|yes|N/D|Generator name, such as `vox17` or `superflat`|
-|`generator_settings`|`table`|no|`{}`|Generator-specific settings; validated when the world is registered|
-|`directory`|`string`|no|derived from the ID|Directory under `save/`; the ID is not a path|
+|`generator_settings`|`table`|no|`{}`|Generator-specific settings. The engine checks them at registration|
+|`directory`|`string`|no|derived from the ID|Directory under `save/`. The ID is not a path|
 |`min_y`|`integer`|no|`-64`|Lowest world block Y|
 |`max_y`|`integer`|no|`255`|Highest world block Y|
 |`spawn`|`integer[3]`|no|`{0, 32, 0}`|Spawn block position|
@@ -25,13 +25,13 @@ Registers a world definition.
 |`weather`|`string[]`|no|`{}`|Weather types this world may use|
 |`visuals`|`table`|no|`{}`|Optional sky, sun, moon, stars and clouds|
 
-`weather` names and biome names are resolved after all mods load, because a world may refer to content from another mod.
+The engine resolves `weather` names and biome names after all mods load, because a world may refer to content from another mod.
 
-The weather seed and both world clocks are engine-owned and are not fields of `worlds.add`. The engine rolls a weather seed for a world when the world is first saved and keeps it in that world's `world.conf`; the seed is independent of the world seed, so the weather says nothing about the terrain. See the [weather API](api-weather.md).
+The engine owns the weather seed and both world clocks, and they are not fields of `worlds.add`. The engine rolls a weather seed when it first saves a world and keeps the seed in that world's `world.conf`. The seed is independent of the world seed, so the weather says nothing about the terrain. See the [weather API](api-weather.md).
 
 ## Generator settings
 
-`generator_settings` is validated in `worlds.add`. An unknown key, a wrong type, a value outside its range or a selector that the generator cannot use fails the mod; other mods and worlds keep loading.
+`worlds.add` checks `generator_settings`. An unknown key, a wrong type, a value outside its range or a selector that the generator cannot use fails the mod. Other mods and worlds keep loading.
 
 ### `vox17`
 
@@ -66,7 +66,7 @@ The defaults match the built-in `overworld` world. The selector must be `nearest
 |Key|Default|Range|
 |----|----|----|
 |`surface_y`|`0`|`min_y` to `max_y`|
-|`filler_depth`|`3`|0 or greater; the filler must not reach below `min_y`|
+|`filler_depth`|`3`|0 or greater. The filler must not reach below `min_y`|
 
 The selector must be `constant`.
 
@@ -121,11 +121,11 @@ biome_selector = {
 - `lookup` is a `grid_size` by `grid_size` table of biome names. The row is the second axis and the column is the first axis.
 - `weights` and `entries` are not used by the grid and must be absent.
 
-The generator passes its normalized sample to the selector; the grid uses the first two values. A custom generator must put the two grid axes first.
+The generator passes its normalized sample to the selector. The grid uses the first two values. A custom generator must put the two grid axes first.
 
 ## Visuals
 
-`visuals` holds optional groups. A missing group disables that part of the sky; an enabled group must contain every field.
+`visuals` holds optional groups. A missing group disables that part of the sky. An enabled group must contain every field.
 
 |Group|Fields|
 |----|----|
@@ -135,10 +135,10 @@ The generator passes its normalized sample to the selector; the grid uses the fi
 |`stars`|`count`|
 |`clouds`|empty table|
 
-The `sky` group draws the sky sphere, the day/night gradient and the sunset glow. If `visuals.sky` is absent, the client does not draw the sky sphere; the background is the world clear/fog color. `sun`, `moon`, `stars` and `clouds` remain independent groups and draw only when their own group is present.
+The `sky` group draws the sky sphere, the day/night gradient and the sunset glow. If `visuals.sky` is absent, the client does not draw the sky sphere. The background is then the world clear or fog color. `sun`, `moon`, `stars` and `clouds` stay independent groups and draw only when their own group is present.
 
 ## Validation
 
-`worlds.add` validates the generator name, `generator_settings`, `min_y`/`max_y`, the spawn vector and the selector shape. A failure returns a Lua error, removes the definition and fails the mod.
+`worlds.add` checks the generator name, `generator_settings`, `min_y`/`max_y`, the spawn vector and the selector shape. A failure returns a Lua error, removes the definition and fails the mod.
 
-Biome and weather names, the `directory` uniqueness and `min_y <= max_y` are checked when the universe loads all registered worlds. A failure there stops the server before the first frame.
+The engine checks biome and weather names, the `directory` uniqueness and `min_y <= max_y` when the universe loads all registered worlds. A failure there stops the server before the first frame.

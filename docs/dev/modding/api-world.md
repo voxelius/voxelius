@@ -81,7 +81,7 @@ Assigns a block ID in the world.
 
 #### Return value
 
-- `true` if the block was set
+- `true` if the engine set the block
 - `false` otherwise (eg. the chunk is not present)
 
 ### Function: `world.get_light(bx, by, bz) -> integer`
@@ -130,7 +130,7 @@ Assigns a blockstate at a given position.
 
 #### Return value
 
-- `true` if the blockstate was set
+- `true` if the engine set the blockstate
 - `false` otherwise (eg. the block is void or has no such blockstate)
 
 ### Function: `world.get_temperature_base(bx, by, bz) -> number`
@@ -203,7 +203,7 @@ Rain and snow push the effective humidity towards 0.98, scaled by the type's cov
 
 ### Function: `world.id() -> string`
 
-Retrieves the identifier of the world the callback runs in. Callbacks from every world share one Lua state, so a mod that serves more than one world keeps its state per world keyed by this value.
+Retrieves the identifier of the world the callback runs in. Callbacks from every world share one Lua state. A mod that serves more than one world keeps its state per world, keyed by this value.
 
 #### Return value
 
@@ -213,7 +213,7 @@ Retrieves the identifier of the world the callback runs in. Callbacks from every
 
 Retrieves the world seed.
 
-This function exists on the server only. The `world.seed` field is absent on the client, because the world seed never leaves the server: a client that knew it could predict the terrain it is streaming.
+This function exists on the server only. The `world.seed` field is absent on the client, because the world seed never leaves the server. A client that knew the seed could predict the terrain that it is streaming.
 
 #### Return value
 

@@ -19,7 +19,7 @@ uniform sampler2D u_CloudDepth;
 uniform vec2 u_CloudRange;
 uniform vec2 u_CameraRange;
 
-// Layers whose colour and depth both matter: the opaque world,
+// Layers whose color and depth both matter: the opaque world,
 // translucent blocks, fluids and the cloud deck. Whichever ones
 // touched a pixel are sorted by depth and blended from the farthest to the nearest
 const int MAX_LAYERS = 4;

@@ -62,6 +62,6 @@ Looks up a registered fluid by name.
 
 ## Fluid textures
 
-- The engine assumes fluids are animated. It does not randomize texture frames by world position.
+- The engine assumes that every fluid animates. It does not randomize texture frames by world position.
 - Fluids define only two hard-coded texture slots: `still` and `flowing`.
 - Texture syntax otherwise matches [block definitions](api-blocks.md), both for albedo and for mask textures.

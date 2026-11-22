@@ -15,7 +15,7 @@ chunks in the opening and a few columns that split it. Every block takes one of
 the stone textures of the game, so the wall is made of the same stone units as
 the interface buttons. The light comes from the openings: the rock near a gap
 is lit by the sky behind it, the mass falls off into shadow, and the far walls
-mix in more of the sky colour.
+mix in more of the sky color.
 
 Only the front wall is baked with a small blur, because the camera looks into
 the cave through it and it is out of focus.
@@ -144,7 +144,7 @@ WALLS = (
 
 
 def sky_rows(rows: int) -> np.ndarray:
-    """The sky gradient colour of each texture row."""
+    """The sky gradient color of each texture row."""
 
     k = np.linspace(0.0, 1.0, rows, dtype=np.float32)[:, None]
     return SKY_TOP[None, :] + (SKY_BOTTOM - SKY_TOP)[None, :] * k
@@ -410,7 +410,7 @@ def shade_wall(mask: np.ndarray, wall: Wall, variants: list[np.ndarray], rng: np
 
     rgb = grain * (shade * weight)[:, :, None] * wall.tint
 
-    # Rock close to an opening picks up the colour of the sky behind it, and
+    # Rock close to an opening picks up the color of the sky behind it, and
     # the haze fakes the air between the walls
     fog = sky_rows(height)[:, None, :]
     light = np.clip(wall.haze + 0.20 * rim, 0.0, 0.85)

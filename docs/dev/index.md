@@ -20,7 +20,7 @@ It covers setup, building, patches, and pull requests.
 Use the **MODDING SECTION** if you want to:
 
 - add content in Lua without changing the engine
-- learn how mods are structured
+- learn what a mod contains
 - look up runtime functions
 
 It covers mod layout and the Lua API reference.

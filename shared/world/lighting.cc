@@ -282,7 +282,7 @@ static void mark_full_light_change(LightState& state, const ChunkPos& pos)
     change.indices.clear();
 }
 
-static void mark_face_neighbors_dirty(LightState& state, const ChunkPos& pos)
+static void mark_face_neighbours_dirty(LightState& state, const ChunkPos& pos)
 {
     for(const auto& offset : NEIGHBOURS) {
         mark_dirty(state, pos + ChunkPos(offset[0], offset[1], offset[2]));
@@ -584,7 +584,7 @@ void ChunkLightTask::finalize(void)
 
         // A changed border is a seed for the six chunks that share a face
         // with this one; the diagonal chunks are reached through them.
-        mark_face_neighbors_dirty(*state, m_cpos);
+        mark_face_neighbours_dirty(*state, m_cpos);
     }
 }
 
@@ -843,7 +843,7 @@ static void on_chunk_ready(const ChunkReadyEvent& event)
     auto& state = state_of(event.world());
 
     mark_dirty(state, event.pos());
-    mark_face_neighbors_dirty(state, event.pos());
+    mark_face_neighbours_dirty(state, event.pos());
 }
 
 static void on_chunk_update(const ChunkUpdateEvent& event)
@@ -851,7 +851,7 @@ static void on_chunk_update(const ChunkUpdateEvent& event)
     auto& state = state_of(event.world());
 
     mark_dirty(state, event.pos());
-    mark_face_neighbors_dirty(state, event.pos());
+    mark_face_neighbours_dirty(state, event.pos());
 }
 
 static void on_chunk_remove(const ChunkRemoveEvent& event)

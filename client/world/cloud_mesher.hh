@@ -3,7 +3,7 @@
 
 #include "client/world/cloud_field.hh"
 
-// Colour plus the alpha the layer asks for, kept as three
+// Color plus the alpha the layer asks for, kept as three
 // floats and a scalar: Eigen over-aligns a Vector4f to
 // sixteen bytes, and that padding would break the vertex layout
 struct CloudColor final {

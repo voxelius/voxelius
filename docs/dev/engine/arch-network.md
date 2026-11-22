@@ -2,7 +2,7 @@
 
 The client and the server talk over ENet, a thin reliability layer on top of UDP. Each side reads and writes [buffers](arch-core.md#buffers). Every packet starts with a 16-bit unsigned integer that names its ID.
 
-Every packet is sent reliably. ENet sequences each channel on its own, so the world stream has a channel of its own: a burst of chunk packets does not hold back login, entity or timing packets, and the other way around. Blocks, biomes and light share that channel because a light packet is only meaningful after the chunk it belongs to, and a single sequence is what guarantees that order.
+Every packet goes out reliably. ENet sequences each channel on its own, so the world stream has a channel of its own. A burst of chunk packets does not hold back login, entity or timing packets, and the other way around. Blocks, biomes and light share that channel, because a light packet is only meaningful after the chunk that it belongs to. A single sequence is what guarantees that order.
 
 A client goes through one of two exchanges after it connects: a status ping, or a full login. Both exchanges start the same way. Both end with the server closing the connection or keeping it open.
 
@@ -36,7 +36,7 @@ If the client sends a login request instead of a status request, the server star
 
 ##### Spawn world
 
-The server admits the client into the world named by `sv_spawn_world`. An empty value selects the default world. The server sends the world shape, the weather seed and the clocks in the admission packets, so the client needs no world name of its own. The world seed never leaves the server.
+The server admits the client into the world named by `sv_spawn_world`. An empty value selects the default world. The server sends the world shape, the weather seed and the clocks in the admission packets. The client therefore needs no world name of its own. The world seed never leaves the server.
 
 ##### Identity
 
@@ -59,11 +59,11 @@ This check protects both sides:
 
 A server can mark an Ed25519 public key as an operator. The server keeps these keys in `operators.txt` next to `whitelist.txt` in the user directory. The file holds one exported public key per line, the same format as `whitelist.txt`.
 
-The status is tracked per session. An operator bypasses the whitelist, so the same key does not have to appear in both files.
+The server tracks the status per session. An operator bypasses the whitelist, so the same key does not have to appear in both files.
 
 ### Enrolling an operator
 
-The player runs the `whoami` command in the console. The client prints its public key and its identity. The identity is the `crc64` of the key and is the value that shows up in server logs; the public key is the value the files expect.
+The player runs the `whoami` command in the console. The client prints its public key and its identity. The identity is the `crc64` of the key, and server logs show the identity. The public key is the value that the files expect.
 
 The first operator enrolls by hand:
 
@@ -87,23 +87,23 @@ An operator connects like everyone else. The server sends the command list of an
 |`kick`|Disconnect a player by client ID or username|
 |`invite`|Issue a one-time invite code|
 
-The commands carry the `admin` and `recall` flags. `recall` lets the client forward the command to the server. `admin` makes `cvar::exec` refuse it unless the context holds a client that is an operator. A context without a client, such as `server.conf` or the client's own console, is trusted.
+The commands carry the `admin` and `recall` flags. `recall` lets the client forward the command to the server. `admin` makes `cvar::exec` refuse it unless the context holds a client that is an operator. The engine trusts a context without a client, such as `server.conf` or the client's own console.
 
 A demoted operator keeps the commands it already learned, but the server rejects them.
 
 ### Kicking
 
-`kick` sends a disconnect packet with the kicked reason and then closes the connection. The key is not banned; a kicked client can reconnect unless something else, such as the whitelist or a full server, stops it.
+`kick` sends a disconnect packet with the kicked reason and then closes the connection. The key is not banned. A kicked client can reconnect unless something else stops it, such as the whitelist or a full server.
 
 ## Cvar replication
 
 The server owns every variable flagged with `FCVAR_REPLICATED`. After admission it sends a full snapshot of them. On every fixed tick it sends the variables that changed since the previous tick.
 
-The client keeps the server value in a shadow. A local variable with the same name must also be flagged `FCVAR_REPLICATED`; otherwise the server value is ignored and a warning is logged. A full snapshot drops stale remote variables and clears the old shadows.
+The client keeps the server value in a shadow. A local variable with the same name must also carry the `FCVAR_REPLICATED` flag. Otherwise the client ignores the server value and logs a warning. A full snapshot drops stale remote variables and clears the old shadows.
 
-The server accepts a cvar value from a client only when the variable is flagged `FCVAR_ADMIN` and the caller is an operator. A write to a shadowed variable is forwarded from the client console through the same `Cvar_Command` path as a command; the server applies the operator check and ignores every other remote value. Gamerules use the `gr_` prefix; match rules will use `mp_`. The full list is in [Variables](../../manual/console/variables.md) and [Commands](../../manual/console/commands.md).
+The server accepts a cvar value from a client only when the variable carries the `FCVAR_ADMIN` flag and the caller is an operator. The client console forwards a write to a shadowed variable through the same `Cvar_Command` path as a command. The server applies the operator check and ignores every other remote value. Gamerules use the `gr_` prefix. Match rules will use `mp_`. The full list is in [Variables](../../manual/console/variables.md) and [Commands](../../manual/console/commands.md).
 
-The command snapshot follows the same exchange. The server sends one full list to each admitted client, and the list leaves out the commands flagged `FCVAR_ADMIN` unless that client is an operator. When a live session is promoted or demoted, the server sends the list again. A dirty variable update carries every replicated variable, including the admin-flagged ones.
+The command snapshot follows the same exchange. The server sends one full list to each admitted client. The list leaves out the commands that carry the `FCVAR_ADMIN` flag unless that client is an operator. When a live session gains or loses the operator status, the server sends the list again. A dirty variable update carries every replicated variable, including the admin-flagged ones.
 
 The snapshot packet carries a `uint8 full` flag and a `uint32 count`, then for each variable a `string name` and a `string value`. A full snapshot adds a `uint16 flags` and a `string help` for each entry.
 
@@ -125,11 +125,11 @@ A session moves to another world only through `tpe`, which runs on the server. T
 
 ##### Time
 
-The server owns a world clock per world. `World_Timings` carries the universe-wide `current_tick`, the world's `daylight_tick`, the whole `day` count (`daylight_tick / sv_day_length`), the world's `weather_tick` and a reserved `season_tick` that is zero until the season cycle lands. `current_tick` is shared by every world, so block ticks and chunk saves stay comparable across the server; `daylight_tick` advances per world at the same fixed rate, which is what lets two worlds run different days. The `gr_daylight_cycle` gamerule stops only the daylight clock. The client runs its own smooth phase between packets and corrects towards the server; when a packet moves the clock by a second or more, which is what `time_set` does, it snaps instead of easing. There is no flag for this in the packet: the client sees the jump in the tick values it already keeps. The server writes each world's daylight tick into that world's `world.conf` on shutdown, so a restart continues the day where it was. Operators set the clock with `time_set <daylight tick>`, which targets the caller's world; clients read what they see with `time_query`.
+The server owns a world clock per world. `World_Timings` carries the universe-wide `current_tick`, the world's `daylight_tick`, the whole `day` count (`daylight_tick / sv_day_length`), the world's `weather_tick` and a reserved `season_tick`. The `season_tick` stays zero until the season cycle lands. Every world shares `current_tick`, so block ticks and chunk saves stay comparable across the server. `daylight_tick` advances per world at the same fixed rate, and that is what lets two worlds run different days. The `gr_daylight_cycle` gamerule stops only the daylight clock. The client runs its own smooth phase between packets and aligns it with the server. When a packet moves the clock by a second or more, which is what `time_set` does, the client snaps instead of easing. The packet carries no flag for this: the client sees the jump in the tick values that it already keeps. The server writes each world's daylight tick into that world's `world.conf` on shutdown, so a restart continues the day where it was. Operators set the clock with `time_set <daylight tick>`, which targets the caller's world. Clients read what they see with `time_query`.
 
 ##### Weather
 
-Weather is derived, not streamed. The server rolls one weather seed per world and keeps it in that world's `world.conf`, independent of the world seed, and sends it once in `World_Info`. Every tick it advances a per-world `weather_tick` and sends it in `World_Timings`; that is the only weather value on the wire after admission. Both sides turn the pair `(weather_seed, weather_tick)` plus a world position into the same field: two drifting noise grids form the two axes of a climate square, and every weather type owns a target point in that square, so the nearest target and its soft share decide the type and the local strength. There is no drift or baseline packet any more, and no accumulated drift to diverge: the same seed and the same tick always give the same field. A client advances its copy of the tick between packets and snaps when a packet jumps the clock by more than a second, which is what `weather_force` and a world switch look like. The replicated `gr_weather_cycle` gamerule stops the weather clock on the server and the client's local advance together. The type definitions themselves travel as part of the mod content and are covered by the login checksum.
+The engine derives the weather, and it does not stream it. The server rolls one weather seed per world and keeps it in that world's `world.conf`, independent of the world seed. It sends the seed once in `World_Info`. Every tick the server advances a per-world `weather_tick` and sends it in `World_Timings`. That is the only weather value on the wire after admission. Both sides turn the pair `(weather_seed, weather_tick)` and a world position into the same field. Two drifting noise grids form the two axes of a climate square, and every weather type owns a target point in that square. The nearest target and its soft share decide the type and the local strength. There is no drift or baseline packet any more, and no accumulated drift to diverge. The same seed and the same tick always give the same field. A client advances its copy of the tick between packets, and it snaps when a packet jumps the clock by more than a second. That jump is what `weather_force` and a world switch look like. The replicated `gr_weather_cycle` gamerule stops the weather clock on the server and the client's local advance together. The login checksum covers the type definitions, which travel as part of the mod content.
 
 ##### Block and entity actions
 
@@ -139,7 +139,7 @@ The entity variants carry only the targeted entity. The block variants carry the
 
 ## Packet reference
 
-Each packet starts with a 16-bit unsigned integer that names its ID. The packets are named and structured as follows:
+Each packet starts with a 16-bit unsigned integer that names its ID. The packets use these names and structures:
 
 ### `0x0000` `StatusRequestPacket`
 
@@ -219,7 +219,7 @@ On successful auth, server's response to `AuthResponsePacket`
 
 ### `0x0006` `Disconnect`
 
-Disconnection notification. Each network side should but may not terminate the connection immediately afterwards this packet is sent
+Disconnection notification. Each side should close the connection right after this packet, although it may keep the connection open
 
 |Type|Name|Description|
 |----|----|----|
@@ -244,10 +244,7 @@ Disconnection notification. Each network side should but may not terminate the c
 
 ### `0x0007` `RequestChunk`
 
-Sent by the client every fixed tick to describe what world data it wants. The
-packet carries a chunk-aligned box and a budget; the server intersects the box
-with its view limit, stores what the peer already has, and sends only the
-difference. A box with `min > max` is empty.
+The client sends this packet every fixed tick to describe what world data it wants. The packet carries a chunk-aligned box and a budget. The server intersects the box with its view limit, stores what the peer already has, and sends only the difference. A box with `min > max` is empty.
 
 |Type|Name|Description|
 |----|----|----|
@@ -255,42 +252,33 @@ difference. A box with `min > max` is empty.
 |`vector3<int32>`|`view_max`|Maximum chunk of the view|
 |`uint16`|`chunk_budget`|How many chunks the server may queue now|
 
-The budget carries the client's backpressure: it lowers the budget while its
-mesher queues more work than it can take. The sent sets live on the server and
-are filled only when a packet is handed to ENet, so a request that fails to
-produce data is retried instead of being treated as delivered.
+The budget carries the client's backpressure. The client lowers the budget while its mesher queues more work than it can take. The sent sets live on the server, and the server fills them only when it hands a packet to ENet. The server therefore retries a request that produces no data instead of counting it as delivered.
 
 ### `0x0008` `ChunkBlocks`
 
-Sent by server as a response to `RequestChunk` or at arbitrary moments to synchronize chunk contents with clients
+The server sends this packet as a response to `RequestChunk`, or at arbitrary moments to synchronize chunk contents with clients
 
 |Type|Name|Description|
 |----|----|----|
 |`vector3<int32>`|`cpos`|Chunk position|
 |`data`|`blocks`|Serialized and compressed block storage contents|
 |`data`|`light`|Compressed packed light, one byte per block: skylight in the high nibble, block light in the low nibble|
-|`uint8`|`light_valid`|`1` when `light` holds computed light; `0` makes the client fall back to its own estimate until a `ChunkLight` arrives|
+|`uint8`|`light_valid`|`1` when `light` holds computed light. `0` makes the client fall back to its own estimate until a `ChunkLight` arrives|
 
 ### `0x0009` `ChunkBiomes`
 
-Sent by server as a response to `RequestChunk` to synchronize biome caches used for client rendering
+The server sends this packet as a response to `RequestChunk` to synchronize the biome caches that client rendering uses
 
 |Type|Name|Description|
 |----|----|----|
 |`vector2<int32>`|`cpos`|XZ-position|
 |`data`|`biomes`|Compressed list of 256 biome IDs|
 
-Every compressed field is written by `WriteBuffer::write_compressed` and read
-back by `ReadBuffer::read_compressed`: a mode byte, the size the data had
-before compression, the size it takes in the buffer, then the bytes either raw
-or as their zlib stream. The whole array is compressed at once, so the ratio is
-the one the codec gets over a chunk rather than the one a transport can get out
-of a single datagram.
+`WriteBuffer::write_compressed` writes every compressed field, and `ReadBuffer::read_compressed` reads it back. Such a field holds four parts. The parts are a mode byte, the size that the data had before compression, the size that it takes in the buffer, and the bytes. The bytes are either raw or a zlib stream. The engine compresses the whole array at once, so the ratio is the one that the codec gets over a chunk. A transport would get a different ratio out of a single datagram.
 
 ### `0x000A` `ChunkLight`
 
-Sent by server when the light of chunks it has already synchronized changes.
-One packet carries every chunk whose light changed in a tick. Each entry is
+The server sends this packet when the light of chunks that it has already synchronized changes. One packet carries every chunk whose light changed in a tick. Each entry is
 either a delta over the cells that changed or, when most of the chunk changed,
 the whole array.
 
@@ -310,17 +298,13 @@ Each entry:
 |`uint16[cells]`|`indices`|Only with `full = 0`. Cell index, the same order as the `light` array|
 |`uint8[cells]`|`values`|Only with `full = 0`. New packed light of the matching cell|
 
-A delta is only applied to a chunk the client already holds light for. When
-the server replaces a whole array it always sends it whole; when the changed
-cells outnumber a quarter of the chunk it does the same instead of sending a
-delta that would be larger.
+The server applies a delta only to a chunk that the client already holds light for. When the server replaces a whole array, it always sends it whole. It does the same when the changed cells outnumber a quarter of the chunk, instead of sending a delta that would be larger.
 
-A batch is split when it would exceed 32 KiB, so a tick that relights a large
-part of the view distance turns into several packets instead of one huge one.
+The server splits a batch when it would exceed 32 KiB. A tick that relights a large part of the view distance therefore turns into several packets instead of one huge one.
 
 ### `0x000B` `SetBlock`
 
-Sent by server as a sub-chunk block update
+The server sends this packet as a sub-chunk block update
 
 |Type|Name|Description|
 |----|----|----|
@@ -368,7 +352,7 @@ Sent by client to specify an interact action against a block
 
 ### `0x0016` `EntitySpawn`
 
-Sent by server when an entity is spawned
+The server sends this packet when it spawns an entity
 
 |Type|Name|Description|
 |----|----|----|
@@ -377,7 +361,7 @@ Sent by server when an entity is spawned
 
 ### `0x0017` `EntityPatch`
 
-Sent by server when an entity's component is updated
+The server sends this packet when it updates a component of an entity
 
 |Type|Name|Description|
 |----|----|----|
@@ -387,7 +371,7 @@ Sent by server when an entity's component is updated
 
 ### `0x0018` `EntityRemove`
 
-Sent by server when an entity is removed
+The server sends this packet when it removes an entity
 
 |Type|Name|Description|
 |----|----|----|

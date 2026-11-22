@@ -22,7 +22,7 @@ Valid characters in both namespace and identifier:
 - Underscore: `_`
 - Tilde: `~` (not recommended for general use, see below)
 
-On init, if the engine finds a duplicate registry entry (for example `mymod:myblock` registered twice), it appends `~N` and retries. After 10000 renames, behaviour is undefined.
+On init, if the engine finds a duplicate registry entry (for example `mymod:myblock` registered twice), it appends `~N` and retries. The engine does not define the behaviour after 10000 renames.
 
 ## Sides
 
@@ -43,9 +43,9 @@ end
 
 |Callback|Runs on|
 |----|----|
-|`blocks.on_place`, `blocks.on_break`|Both sides; the client predicts, the server decides|
+|`blocks.on_place`, `blocks.on_break`|Both sides. The client predicts, the server decides|
 |`blocks.on_tick`|Server only|
-|`blocks.on_interact`|Server only; the engine does not call it yet|
+|`blocks.on_interact`|Server only. The engine does not call it yet|
 |`weather.on_tick`, `weather.on_strike`|Server only|
 
 Register content such as blocks, biomes and weather types unconditionally. A definition registered on one side only changes the numeric IDs on that side and desynchronizes the two sides.

@@ -45,14 +45,14 @@ void fog::update(void)
 {
     distance = static_cast<float>(constant::CHUNK_SIZE * camera::view_distance.value());
 
-    // The atmosphere owns the sky colour and the weather tint; the fog
+    // The atmosphere owns the sky color and the weather tint; the fog
     // only copies them so the terrain dissolves into the same horizon
     auto target_color = skybox::fog_color;
 
     daylight = skybox::daylight;
     light_scale = skybox::light_scale;
 
-    // Under a fluid the colour comes from the fluid itself
+    // Under a fluid the color comes from the fluid itself
     if(auto def = fluid_registry::find_definition(camera::inside_fluid)) {
         distance /= def->fog_density;
         target_color = def->fog_color;
