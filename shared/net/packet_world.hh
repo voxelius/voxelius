@@ -72,6 +72,8 @@ struct packet::World_Timings final : public packet::Base<packet::WORLD_TIMINGS> 
     std::uint64_t current_tick;
     std::uint64_t daylight_tick;
     std::uint64_t day;
+    std::uint64_t weather_tick;
+    std::uint64_t season_tick { 0 }; // Reserved for the season cycle; zero until seasons land
 };
 
 struct packet::World_Info final : public packet::Base<packet::WORLD_INFO> {
@@ -82,28 +84,16 @@ struct packet::World_Info final : public packet::Base<packet::WORLD_INFO> {
     void to_definition(WorldDefinition& definition) const;
 
     std::string id;
-    std::uint64_t seed;
-    std::uint32_t star_seed;
 
-    std::uint32_t types_seed;
-    float types_scale;
-    std::uint32_t detail_seed;
-    float detail_scale;
+    // The weather seed, so the client can derive the same field. The world
+    // seed itself never leaves the server: knowing it would reveal terrain
+    std::uint64_t weather_seed;
 
     BlockPos::value_type min_y { -64 };
     BlockPos::value_type max_y { 255 };
     BlockPos spawn { BlockPos::Zero() };
     std::vector<weather_type_id> weather;
     WorldVisuals visuals;
-};
-
-struct packet::World_Weather final : public packet::Base<packet::WORLD_WEATHER> {
-    static void encode(const World_Weather& packet, WriteBuffer& buffer);
-    static void decode(World_Weather& packet, ReadBuffer& buffer);
-
-    Eigen::Vector2f types_drift;
-    Eigen::Vector2f detail_drift;
-    Eigen::Vector2f wind;
 };
 
 #endif /* BD2D77E8_727E_4B4C_83D6_92E1569F5B4D */

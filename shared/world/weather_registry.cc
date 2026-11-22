@@ -42,7 +42,7 @@ static void update_checksum(void)
         hash_value(hash, def.intensity);
         hash_value(hash, def.sky_tint);
         hash_value(hash, def.light_scale);
-        hash_value(hash, def.wind_speed);
+        hash_value(hash, def.target);
         hash_value(hash, def.strikes_per_minute);
         hash_value(hash, def.strike_radius);
 
@@ -117,6 +117,19 @@ void weather_registry::commit(ModContext& ctx)
         // registry id is the index in the combined list
         for(auto index = first; index < s_definitions.size(); index += 1) {
             s_definitions[index].id = static_cast<weather_type_id>(index);
+        }
+
+        // Two types with the same target would make one of them
+        // unreachable: every point would break the tie the same way
+        for(auto index = first; index < s_definitions.size(); index += 1) {
+            for(std::size_t other = 1; other < index; other += 1) {
+                if(s_definitions[index].target != s_definitions[other].target) {
+                    continue;
+                }
+
+                msg::log_warning("weather {} and {} share a target; one of them will never win", s_definitions[index].name.full_string(),
+                    s_definitions[other].name.full_string());
+            }
         }
     }
 
@@ -197,48 +210,4 @@ weather_type_id weather_registry::resolve(std::string_view name)
     }
 
     return WEATHER_ID_NULL;
-}
-
-std::optional<std::pair<float, float>> weather_registry::type_interval(std::span<const weather_type_id> allowed, weather_type_id type)
-{
-    auto is_allowed = [&allowed](const WeatherTypeDefinition& def) {
-        if(allowed.empty()) {
-            return true;
-        }
-        else {
-            return std::ranges::contains(allowed, def.id);
-        }
-    };
-
-    std::uint32_t total = 0;
-
-    for(const auto& def : s_definitions) {
-        if(def.id && is_allowed(def)) {
-            total += std::max<std::uint32_t>(def.weight, 1);
-        }
-    }
-
-    if(total == 0) {
-        return std::nullopt;
-    }
-
-    std::uint32_t offset = 0;
-
-    for(const auto& def : s_definitions) {
-        if(def.id == WEATHER_ID_NULL || !is_allowed(def)) {
-            continue;
-        }
-
-        auto weight = std::max<std::uint32_t>(def.weight, 1);
-
-        if(def.id == type) {
-            auto start = static_cast<float>(offset) / static_cast<float>(total);
-            auto end = static_cast<float>(offset + weight) / static_cast<float>(total);
-            return std::make_pair(start, end);
-        }
-
-        offset += weight;
-    }
-
-    return std::nullopt;
 }

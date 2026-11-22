@@ -160,6 +160,7 @@ template void interest::broadcast<packet::Entity_Remove>(const World* world, con
 template void interest::broadcast<packet::Entity_Spawn>(const World* world, const packet::Entity_Spawn& packet, ENetPeer* except);
 template void interest::broadcast<packet::Entity_Patch>(const World* world, const packet::Entity_Patch& packet, ENetPeer* except);
 template void interest::broadcast<packet::Entity_Remove>(const World* world, const packet::Entity_Remove& packet, ENetPeer* except);
+template void interest::broadcast<packet::World_Timings>(const World* world, const packet::World_Timings& packet, ENetPeer* except);
 
 void interest::mark_known(const World* world, entt::entity entity, const ChunkPos& chunk)
 {

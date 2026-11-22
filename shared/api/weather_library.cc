@@ -232,11 +232,12 @@ static bool parse_precipitation(lua_State* L, int def_idx, WeatherTypeDefinition
 
 static bool parse_definition(lua_State* L, int def_idx, WeatherTypeDefinition& def, ModContext* ctx)
 {
+    auto base = lua_gettop(L);
+
     const std::array numbers = {
         std::make_pair("intensity", &def.intensity),
         std::make_pair("sky_visibility", &def.sky_visibility),
         std::make_pair("light", &def.light_scale),
-        std::make_pair("wind", &def.wind_speed),
         std::make_pair("strikes_per_minute", &def.strikes_per_minute),
         std::make_pair("strike_radius", &def.strike_radius),
     };
@@ -253,20 +254,33 @@ static bool parse_definition(lua_State* L, int def_idx, WeatherTypeDefinition& d
 
     def.sky_visibility = std::clamp(def.sky_visibility, 0.0f, 1.0f);
 
-    // The weight decides how big a slice of the type grid the type owns,
+    // The weight stretches the type's cell around its target,
     // which is the only thing that makes one weather more common than another
-    auto weight = utils::opt_integer(L, def_idx, "weight", static_cast<lua_Integer>(def.weight));
+    auto weight = utils::opt_number(L, def_idx, "weight", static_cast<lua_Number>(def.weight));
 
     if(!weight.has_value()) {
-        return false;
+        return fail(L, base, "weight must be a number");
     }
 
-    if(weight.value() < 0) {
-        lua_pushliteral(L, "weight must be non-negative");
-        return false;
+    if(weight.value() <= 0.0) {
+        return fail(L, base, "weight must be positive");
     }
 
-    def.weight = static_cast<std::uint32_t>(weight.value());
+    def.weight = static_cast<float>(weight.value());
+
+    // The target places the type in the two-axis climate square that
+    // the two noise grids span; the nearest target wins at a point
+    auto target = utils::opt_fvec<2>(L, def_idx, "target", Eigen::Vector<lua_Number, 2>(def.target.x(), def.target.y()));
+
+    if(!target.has_value()) {
+        return fail(L, base, "target must hold two numbers");
+    }
+
+    if(target->x() < 0.0 || target->x() > 1.0 || target->y() < 0.0 || target->y() > 1.0) {
+        return fail(L, base, "target must be in 0 to 1 on both axes");
+    }
+
+    def.target = target->cast<float>();
 
     def.on_tick = parse_callback(L, def_idx, "on_tick", ctx);
     def.on_strike = parse_callback(L, def_idx, "on_strike", ctx);
@@ -325,23 +339,22 @@ static bool state(lua_State* L)
 
     lua_newtable(L);
 
-    lua_pushnumber(L, static_cast<lua_Number>(weather_state.types.scale));
-    lua_setfield(L, -2, "types_scale");
+    lua_pushinteger(L, static_cast<lua_Integer>(weather_state.seed()));
+    lua_setfield(L, -2, "seed");
 
-    lua_pushinteger(L, static_cast<lua_Integer>(weather_state.types.seed));
-    lua_setfield(L, -2, "types_seed");
+    lua_pushinteger(L, static_cast<lua_Integer>(world->weather_tick));
+    lua_setfield(L, -2, "tick");
 
-    lua_pushnumber(L, static_cast<lua_Number>(weather_state.detail.scale));
-    lua_setfield(L, -2, "detail_scale");
+    auto wind = weather_state.wind_direction() * weather_state.wind_speed();
 
-    lua_pushinteger(L, static_cast<lua_Integer>(weather_state.detail.seed));
-    lua_setfield(L, -2, "detail_seed");
-
-    lua_pushnumber(L, static_cast<lua_Number>(weather_state.wind.x()));
+    lua_pushnumber(L, static_cast<lua_Number>(wind.x()));
     lua_setfield(L, -2, "wind_x");
 
-    lua_pushnumber(L, static_cast<lua_Number>(weather_state.wind.y()));
+    lua_pushnumber(L, static_cast<lua_Number>(wind.y()));
     lua_setfield(L, -2, "wind_z");
+
+    lua_pushnumber(L, static_cast<lua_Number>(weather_state.wind_speed()));
+    lua_setfield(L, -2, "wind_speed");
 
     return true;
 }
@@ -371,8 +384,8 @@ static bool sample(lua_State* L)
     auto& weather_state = world->weather();
     auto& allowed = definition.weather;
 
-    auto coverage = weather_state.coverage(allowed, static_cast<float>(x), static_cast<float>(z));
-    auto type = weather_state.type_at(allowed, static_cast<float>(x), static_cast<float>(z));
+    auto coverage = weather_state.coverage(allowed, static_cast<float>(x), static_cast<float>(z), world->weather_tick);
+    auto type = weather_state.type_at(allowed, static_cast<float>(x), static_cast<float>(z), world->weather_tick);
 
     lua_newtable(L);
 

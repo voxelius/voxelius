@@ -8,6 +8,28 @@
 #include "shared/world/biome_map.hh"
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
+#include "shared/world/weather_registry.hh"
+
+constexpr static float WEATHER_COOLING = 2.0f;     // Celsius lost under full precipitation
+constexpr static float WEATHER_SATURATION = 0.98f; // Humidity under full precipitation
+
+// A precipitating front cools the air and raises the humidity under it.
+// The result scales with the local coverage, so a fringe of the front
+// moves the climate less than its centre does
+static float weather_coverage_at(const World& world, float x, float z)
+{
+    auto& definition = world.definition();
+    auto& state = world.weather();
+
+    auto type = state.type_at(definition.weather, x, z, world.weather_tick);
+    auto def = weather_registry::find_definition(type);
+
+    if(def == nullptr || def->precipitation.kind == precipitation_kind::NONE) {
+        return 0.0f;
+    }
+
+    return state.coverage(definition.weather, x, z, world.weather_tick);
+}
 
 ChunkCreateEvent::ChunkCreateEvent(World* world, const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk)
     : m_world(world), m_chunk(chunk), m_pos(pos)
@@ -87,6 +109,12 @@ void World::save_config(void)
     if(out.is_open()) {
         m_config.save(out);
     }
+}
+
+void World::set_weather_seed(std::uint64_t value)
+{
+    weather_seed = value;
+    m_weather.reseed(value);
 }
 
 std::shared_ptr<Chunk> World::create_chunk(const ChunkPos& pos)
@@ -406,7 +434,10 @@ float World::get_temperature_base(const BlockPos& pos) const
 
 float World::get_temperature(const ChunkPos& cpos, const LocalPos& lpos) const
 {
-    return get_temperature_base(cpos, lpos); // TODO: add the season bias
+    auto bpos = utils::to_block(cpos, lpos);
+    auto coverage = weather_coverage_at(*this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
+
+    return get_temperature_base(cpos, lpos) - WEATHER_COOLING * coverage; // TODO: add the season bias
 }
 
 float World::get_temperature(const BlockPos& pos) const
@@ -436,7 +467,11 @@ float World::get_humidity_base(const BlockPos& pos) const
 
 float World::get_humidity(const ChunkPos& cpos, const LocalPos& lpos) const
 {
-    return get_humidity_base(cpos, lpos); // TODO: add the weather bias
+    auto bpos = utils::to_block(cpos, lpos);
+    auto base = get_humidity_base(cpos, lpos);
+    auto coverage = weather_coverage_at(*this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
+
+    return std::clamp(base + (WEATHER_SATURATION - base) * coverage, 0.0f, 1.0f); // TODO: add the season bias
 }
 
 float World::get_humidity(const BlockPos& pos) const

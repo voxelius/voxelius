@@ -46,6 +46,30 @@ static int api_schedule(lua_State* L)
     return 0;
 }
 
+static std::optional<std::uint64_t> get_seed(lua_State* L)
+{
+    auto world = WorldScope::active();
+
+    if(world == nullptr) {
+        lua_pushliteral(L, "no active world");
+        return std::nullopt;
+    }
+
+    return world->seed;
+}
+
+static int api_get_seed(lua_State* L)
+{
+    auto value = get_seed(L);
+
+    if(!value.has_value()) {
+        return lua_error(L);
+    }
+
+    lua_pushinteger(L, static_cast<lua_Integer>(value.value()));
+    return 1;
+}
+
 void api_server::open_world(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 {
     api_shared::open_world(lua, ctx);
@@ -56,6 +80,9 @@ void api_server::open_world(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     lua_pushcfunction(L, api_schedule);
     lua_setfield(L, -2, "schedule");
+
+    lua_pushcfunction(L, api_get_seed);
+    lua_setfield(L, -2, "seed");
 
     lua_pop(L, 1);
 }

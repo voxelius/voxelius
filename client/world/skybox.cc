@@ -24,7 +24,6 @@
 
 constexpr static float SMOOTH_RATE = 3.0f;
 constexpr static float MAX_STEP_TIME = 0.1f;
-constexpr static float WEATHER_RADIUS = 256.0f;
 
 // The phase runs on the client's own clock and only corrects
 // towards the server, so a packet that arrives late or in a
@@ -143,7 +142,7 @@ void skybox::init(void)
 void skybox::update(void)
 {
     auto day_length = server_vars::day_length_ticks();
-    auto target_phase = world_clock::phase(globals::daylight_tick, day_length);
+    auto target_phase = world_clock::phase(globals::world->daylight_tick, day_length);
     auto snap_state = !s_primed || s_snap;
 
     if(snap_state) {
@@ -211,11 +210,11 @@ void skybox::update(void)
     auto sun_vector = tilt_about_x(world_clock::sun_direction(s_phase), tilt);
     auto moon_vector = tilt_about_x(world_clock::sun_direction(s_phase + 0.5f), tilt);
 
-    Eigen::Vector3f world = utils::to_fvec(camera::chunk) + camera::local;
+    Eigen::Vector3f world_position = utils::to_fvec(camera::chunk) + camera::local;
     auto& definition = globals::world->definition();
     auto& state = globals::world->weather();
     auto& allowed = definition.weather;
-    auto blend = state.blend_region(allowed, world.x(), world.y(), world.z(), WEATHER_RADIUS);
+    auto blend = state.blend(allowed, world_position.x(), world_position.z(), globals::world->weather_tick);
     auto visibility = std::clamp(blend.sky_visibility, 0.0f, 1.0f);
 
     // The sunlight crosses more air as the sun sinks, losing blue
@@ -295,7 +294,7 @@ void skybox::update(void)
     skybox::moon_direction = moon_vector;
     skybox::moon_tint = moon_color + (tint - moon_color) * (twilight * 0.85f);
     skybox::moon_strength = utils::smoothstep(-0.05f, 0.05f, -height) * visibility * 0.85f * moon_factor;
-    skybox::moon_phase = static_cast<std::uint32_t>(globals::day % MOON_PHASE_COUNT);
+    skybox::moon_phase = static_cast<std::uint32_t>(world_clock::day(globals::world->daylight_tick, day_length) % MOON_PHASE_COUNT);
 
     skybox::cloud_tint = Eigen::Vector3f::Ones() + (tint - Eigen::Vector3f::Ones()) * (twilight * visibility * 0.85f);
     skybox::twilight = twilight * visibility;

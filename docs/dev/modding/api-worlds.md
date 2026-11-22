@@ -27,6 +27,8 @@ Registers a world definition.
 
 `weather` names and biome names are resolved after all mods load, because a world may refer to content from another mod.
 
+The weather seed and both world clocks are engine-owned and are not fields of `worlds.add`. The engine rolls a weather seed for a world when the world is first saved and keeps it in that world's `world.conf`; the seed is independent of the world seed, so the weather says nothing about the terrain. See the [weather API](api-weather.md).
+
 ## Generator settings
 
 `generator_settings` is validated in `worlds.add`. An unknown key, a wrong type, a value outside its range or a selector that the generator cannot use fails the mod; other mods and worlds keep loading.

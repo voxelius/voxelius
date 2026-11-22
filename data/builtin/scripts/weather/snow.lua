@@ -3,7 +3,6 @@ weather.add("snow", {
   sky_tint = { 0.60, 0.65, 0.75 },
   sky_visibility = 0.55,
   light = 0.80,
-  wind = 0.8,
 
   cloud = {
     height = 430,
@@ -25,5 +24,6 @@ weather.add("snow", {
     color = { 0.92, 0.95, 1.00 },
   },
 
-  weight = 2,
+  target = { 0.42, 0.72 },
+  weight = 2.0,
 })

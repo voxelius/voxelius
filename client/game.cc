@@ -56,7 +56,9 @@ void client_game::open_world(const packet::World_Info& packet)
     lighting::reset(s_world.get());
 
     s_world->set_definition(std::make_shared<WorldDefinition>(std::move(definition)));
-    s_world->seed = packet.seed;
+    s_world->set_weather_seed(packet.weather_seed);
+    s_world->weather_tick = 0;
+    s_world->daylight_tick = constant::DAY_LENGTH_TICKS / 4;
 }
 
 void client_game::init_world(void)
@@ -106,6 +108,10 @@ void client_game::fixed_update(World* world)
     player_move::fixed_update();
 
     if(world) {
+        if(gamerules::weather.value()) {
+            world->weather_tick += 1;
+        }
+
         auto& registry = world->registry();
 
         Transform::fixed_update(registry);

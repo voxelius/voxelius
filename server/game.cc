@@ -214,13 +214,14 @@ void server_game::init_late(void)
 
     block_ticks::init();
 
-    // Mods and the universe seed are both ready by this point
+    time_sim::init_late();
     weather_sim::init();
 }
 
 void server_game::shutdown(void)
 {
     weather_sim::shutdown();
+    time_sim::shutdown();
 }
 
 void server_game::fixed_update(ServerWorld* world)
@@ -228,6 +229,10 @@ void server_game::fixed_update(ServerWorld* world)
     ZoneScoped;
 
     if(world) {
+        if(gamerules::daylight_cycle.value()) {
+            world->daylight_tick += 1;
+        }
+
         auto& registry = world->registry();
 
         Transform::fixed_update(registry);

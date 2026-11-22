@@ -3,7 +3,6 @@ weather.add("thunderstorm", {
   sky_tint = { 0.14, 0.16, 0.19 },
   sky_visibility = 0.05,
   light = 0.35,
-  wind = 3.0,
 
   -- The storm gets its darkness from the sky tint and the hidden sun,
   -- not from the albedo: the cloud stays white and the light goes away
@@ -30,5 +29,6 @@ weather.add("thunderstorm", {
   strikes_per_minute = 6.0,
   strike_radius = 96.0,
 
-  weight = 2,
+  target = { 0.82, 0.55 },
+  weight = 2.0,
 })

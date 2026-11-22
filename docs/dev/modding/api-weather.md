@@ -1,6 +1,6 @@
 # Weather
 
-Weather in Voxelius belongs to a world, not to an entity. The server owns one state per world; the allowed types, the seeds and scales travel once with `World_Info`, and the drift and wind follow once a second in `World_Weather`. Clients reconstruct the same field from it and draw it.
+Weather in Voxelius belongs to a world, not to an entity. The server owns a weather seed and a weather clock per world. The seed travels once in `World_Info`; the clock travels in `World_Timings` every tick. Both sides derive the same field from that pair and a world position, so no weather state is sent beyond those values.
 
 ## Registering a type
 
@@ -10,7 +10,6 @@ weather.add("thunderstorm", {
   sky_tint = { 0.14, 0.16, 0.19 },
   sky_visibility = 0.05,
   light = 0.35,
-  wind = 3.0,
 
   cloud = {
     height = 160,
@@ -35,7 +34,8 @@ weather.add("thunderstorm", {
   strikes_per_minute = 6.0,
   strike_radius = 96.0,
 
-  weight = 2,
+  target = { 0.82, 0.55 },
+  weight = 1.0,
 })
 ```
 
@@ -43,47 +43,56 @@ weather.add("thunderstorm", {
 
 ## Where the weather is
 
-Two drifting noise grids decide what the weather is and how strong it is at a point:
+Two drifting noise grids form the two axes of a climate square:
 
-- the **type grid** (1024 blocks per cell) turns a continuous noise value into a weighted mix of the registered types; every type owns a slice of the `[0, 1)` range and the slices cross-fade over a narrow band, so a type change is a gradient, not a step;
-- the **detail grid** (512 blocks per cell) decides how much of that mix is present, so the world can hold several storms with clear sky between them.
+- the **first axis** (1536 blocks per noise cell) and the **second axis** (1024 blocks per noise cell) are sampled at the point, both drifting with the world's wind;
+- every type owns a **target point** in that square (`target = { a, b }`, each from 0 to 1);
+- at a point, each type's score is the squared distance from the sample to its target, divided by its `weight`. The type with the lowest score is the type at that point;
+- the types share the point with a soft blend that drops off quickly away from the nearest target: a type owns its cell almost entirely, and only a narrow band mixes two types, so a change of type is a gradient without a world-wide haze;
+- the share also picks the sky tint, the visibility and the light; `intensity` does not dilute that mix, it only scales the cloud coverage.
 
-Both grids drift with the wind. The seeds, the scales and the allowed type list travel once in `World_Info`; only the drift and the wind follow over the network, once a second. Both sides advance the drift on their own every frame, and the client only snaps to a packet when the two differ by more than a chunk, so a forced front lands where it was forced and ordinary drift never steps. The server gamerule `gr_weather_cycle` stops that advance on both sides. After a connection the client takes the first weather packet whole and rebuilds the cloud deck instead of sliding the old one towards it; it tracks that locally, so the packet carries no flag for it.
+Because targets are points rather than positions on one ordered line, a storm can border a clear sky directly. Where the types sit relative to each other is a data decision, not an engine one: in the shipped content the storm is placed next to the clear and the rain targets so a front can bring it in without an overcast or rainy day in between.
+
+The square drifts with the world's wind. The wind direction and speed come from the weather seed; a type does not set them. The field is two-dimensional and does not depend on height.
+
+## The weather clock
+
+The server advances `weather_tick` once per fixed tick while the replicated gamerule `gr_weather_cycle` is on. `World_Timings` carries that value to each client of the world. A client advances its own copy of the tick between packets, so a late packet does not freeze the sky, and takes the packet as the correction. A jump of more than a second is a forced front, a rewound clock or a world switch: the client snaps to it and rebuilds the cloud deck instead of sliding the old one across the sky.
+
+Nothing else about the weather is sent. The type definitions travel as part of the mod content and are covered by the login checksum; the weather seed travels in `World_Info`; the clock travels in `World_Timings`.
 
 ## Where the weather is kept
 
-The field belongs to the world, not to the session. The server writes the world's state into `world.conf` when it shuts down and reads it back when it starts, so a restart continues the same fronts instead of rolling a new sky:
+The field belongs to the world, not to the session. Each world keeps its weather seed and weather clock in its own `world.conf`, next to its daylight clock:
 
 ```ini
-weather.types_drift=[12 -310]
-weather.types_scale=1024
-weather.types_seed=123456789
-weather.detail_drift=[12 -310]
-weather.detail_scale=512
-weather.detail_seed=987654321
-weather.wind_direction=[0.707 0.707]
+weather.seed=12345678901234567890
+weather.tick=0
+daylight_tick=7200
 ```
 
-A world that has never been saved has no such keys, and the server draws its seeds and its wind from the universe seed instead. Deleting the keys, or the file, gives that world a fresh sky on the next start.
+The seed is rolled once when the world is first saved. It is not derived from the world seed and it says nothing about the terrain, so a client can receive it without learning how the world was generated. A world that has never been saved rolls its seed on the next start. Deleting the keys, or the file, gives that world a fresh sky.
 
-The same file carries `tick` and `daylight_tick` next to `seed`. The server owns them: `daylight_tick` is the day cycle the sky follows, and both are written on shutdown so a restart continues the same day.
-
-`weather_force <type>` slides the type grid until the cell under the players resolves to the requested type and puts a strong detail value on them; somewhere else the type may be different or the sky clear.
+`weather_force <type>` advances the world's weather clock to the next tick at which the requested type covers the players, up to seven in-game days ahead. The client sees the jump and rebuilds its deck. The old definition's `wind` field no longer exists; a script that still passes it loads and the value is ignored.
 
 ## Fields
 
 | Field | Type | Default | Meaning |
 |---|---|---|---|
-| `intensity` | number | `1.0` | Overall strength, used by the front and the tint |
+| `intensity` | number | `1.0` | Overall strength; scales the cloud coverage and the climate bias |
 | `sky_tint` | RGB | white | Colour that replaces the sky where `sky_visibility` is low; the fog takes the horizon colour of the resulting gradient |
 | `sky_visibility` | number | `1.0` | How much of the clear sky shows through, from `0` (only `sky_tint`) to `1` (the Rayleigh gradient); the sun, moon and stars fade with it |
 | `light` | number | `1.0` | Multiplies the sky light the world receives |
-| `wind` | number | `0.0` | How fast the front travels, in blocks per second |
 | `cloud` | table | none | The cloud body of the type; a zero coverage leaves the sky clear |
 | `precipitation` | table | none | Local precipitation; declared and synced, not drawn yet |
-| `weight` | number | `1` | Relative size of this type's slice of the type grid, so a bigger weight means the type covers more of the world |
+| `target` | two numbers | `{0.5, 0.5}` | Point this type owns in the climate square, each axis from 0 to 1 |
+| `weight` | number | `1.0` | How far this type's cell reaches from its target; a bigger weight means the type covers more of the world |
 | `strikes_per_minute` | number | `0.0` | How often the type strikes |
 | `strike_radius` | blocks | `96.0` | Strike scatter around a player |
+
+### Climate
+
+The sampled type and its coverage also move the local climate. A precipitating type at a point lowers `world.get_temperature` by up to two degrees Celsius and pushes `world.get_humidity` towards 0.98, both scaled by the type's coverage there. Clear, overcast and other types without precipitation leave both values at their biome base.
 
 ### Cloud body
 
@@ -126,7 +135,8 @@ precipitation = { kind = "rain" } -- or "snow", or omit for none
 
 The fields below are parsed, stored and covered by the login checksum, but
 nothing draws them yet: a type can carry its precipitation settings from now on
-and the rendering pass lands with the next change to weather.
+and the rendering pass lands with the next change to weather. Precipitation is
+also what biases the local temperature and humidity.
 
 | Field | Default | Meaning |
 |---|---|---|
@@ -148,13 +158,13 @@ All callbacks run on the server, in the mod's Lua state.
 
 A strike is logged by the engine before `on_strike` runs. There is no bolt yet: the callback is the hook for a mod that wants one.
 
-There is no per-type duration or transition schedule: a type covers whatever part of the type grid its `weight` earns it, and the weather under a player changes when the drifting grid brings a different slice over them. A bigger weight for `clear` therefore means clear weather is more common than a storm.
+There is no per-type duration or transition schedule: a type owns the climate space nearest its target, and the weather under a player changes when the drifting field brings another cell over them. A bigger `weight` therefore means the type covers more of the world.
 
 ## Querying
 
 ```lua
 local state = weather.state()
--- state.types_scale, state.types_seed, state.detail_scale, state.detail_seed, state.wind_x, state.wind_z
+-- state.seed, state.tick, state.wind_x, state.wind_z, state.wind_speed
 
 local sample = weather.sample(x, z)
 -- sample.coverage, sample.type, sample.precipitation
@@ -164,4 +174,4 @@ local sample = weather.sample(x, z)
 
 `weather.force` exists on the server only. The field is absent on the client.
 
-`weather.force("builtin:rain", x, z)` slides both grids so that the point gets the requested type and a strong detail value; on the server the `weather_force` command does the same around the players.
+`weather.force("builtin:rain", x, z)` advances the weather clock until the requested type covers the point; on the server the `weather_force` command does the same around the players.

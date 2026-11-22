@@ -165,7 +165,7 @@ Retrieves the effective temperature of the biome at a block.
 
 #### Notes
 
-Seasons, weather, and other world-wide effects can add a bias on top of the base temperature. Relatively low values (below 0 C) turn planned rain into snow at that location.
+Rain and snow lower the effective temperature by up to two degrees Celsius, scaled by the type's coverage at the block. Seasons and other world-wide effects will add their own bias later. Relatively low values (below 0 C) turn planned rain into snow at that location.
 
 ### Function: `world.get_humidity_base(bx, by, bz) -> number`
 
@@ -199,7 +199,7 @@ Retrieves the effective relative humidity of the biome at a block.
 
 #### Notes
 
-Weather and other world-wide effects can add a bias on top of the base humidity.
+Rain and snow push the effective humidity towards 0.98, scaled by the type's coverage at the block. Other world-wide effects will add their own bias later.
 
 ### Function: `world.id() -> string`
 
@@ -212,6 +212,8 @@ Retrieves the identifier of the world the callback runs in. Callbacks from every
 ### Function: `world.seed() -> integer`
 
 Retrieves the world seed.
+
+This function exists on the server only. The `world.seed` field is absent on the client, because the world seed never leaves the server: a client that knew it could predict the terrain it is streaming.
 
 #### Return value
 

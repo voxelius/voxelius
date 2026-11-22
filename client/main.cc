@@ -147,11 +147,6 @@ static void zoned_update(void)
 
     camera::update();
 
-    // The snapshot only says where the field started; the
-    // drift is advanced here, every frame, so it never steps
-    auto& state = globals::world->weather();
-    state.advance(globals::window_frametime);
-
     skybox::update();
     fog::update();
 

@@ -4,6 +4,8 @@
 namespace time_sim
 {
 void init(void);
+void init_late(void);
+void shutdown(void);
 } // namespace time_sim
 
 #endif /* A3C31A15_995C_4641_B254_FF8AE43FDC3D */

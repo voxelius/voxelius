@@ -2,134 +2,130 @@
 
 #include "shared/world/weather.hh"
 
-#include "core/utils/interpolation.hh"
-
-#include "shared/cvar/gamerules.hh"
-#include "shared/net/packet_world.hh"
+#include "shared/constant.hh"
 #include "shared/utils/weather.hh"
 #include "shared/world/weather_registry.hh"
 
-static float interval_weight(std::span<const weather_type_id> allowed, weather_type_id type, float roll)
+constexpr static float CLIMATE_A_SCALE = 1536.0f; // Blocks per noise cell of the first climate axis
+constexpr static float CLIMATE_B_SCALE = 1024.0f; // Blocks per noise cell of the second climate axis
+constexpr static float SCORE_FLOOR = 1.0e-4f;     // Keeps a sample that lands on a target finite
+constexpr static float WIND_SPEED_MIN = 0.8f;     // Blocks per second the field drifts, at the slow end
+constexpr static float WIND_SPEED_MAX = 2.4f;     // Blocks per second the field drifts, at the fast end
+constexpr static float FORCE_MIN_SHARE = 0.5f;    // A forced type has to own at least this much of the point
+
+constexpr static std::uint64_t FORCE_HORIZON_TICKS = 7 * 24 * 60 * 60 * constant::FIXED_TICKRATE;
+
+constexpr static std::uint64_t SALT_A = UINT64_C(0xA1B2C3D4E5F60718);
+constexpr static std::uint64_t SALT_B = UINT64_C(0x1122334455667788);
+constexpr static std::uint64_t SALT_ANGLE = UINT64_C(0x0F1E2D3C4B5A6978);
+constexpr static std::uint64_t SALT_SPEED = UINT64_C(0x8877665544332211);
+constexpr static std::uint64_t SALT_STAR = UINT64_C(0x5EED5EED5EED5EED);
+
+static std::uint64_t splitmix64(std::uint64_t value)
 {
-    // The band is what turns a hard slice boundary into a gradual fade
-    constexpr static float BAND = 0.05f;
+    value += UINT64_C(0x9E3779B97F4A7C15);
+    value = (value ^ (value >> 30U)) * UINT64_C(0xBF58476D1CE4E5B9);
+    value = (value ^ (value >> 27U)) * UINT64_C(0x94D049BB133111EB);
 
-    if(auto interval = weather_registry::type_interval(allowed, type)) {
-        auto [start, end] = interval.value();
-
-        auto fade_in = utils::smoothstep(start - BAND, start + BAND, roll);
-        auto fade_out = 1.0f - utils::smoothstep(end - BAND, end + BAND, roll);
-
-        return fade_in * fade_out;
-    }
-
-    return 0.0f;
+    return value ^ (value >> 31U);
 }
 
-void WeatherState::reset(void)
+// The high 24 bits are enough for a float and keep the result in [0, 1)
+static float unit_float(std::uint64_t value)
 {
-    types = {};
-    detail = {};
-    wind = Eigen::Vector2f::Zero();
-    wind_direction = Eigen::Vector2f::Zero();
-    strike_budget = 0.0f;
+    return static_cast<float>(value >> 40U) / static_cast<float>(UINT32_C(1) << 24U);
 }
 
-void WeatherState::advance(float delta_time)
+static bool is_allowed(const WeatherTypeDefinition& def, std::span<const weather_type_id> allowed)
 {
-    if(!gamerules::weather.value()) {
-        return;
-    }
-
-    types.drift += wind * delta_time;
-    detail.drift += wind * delta_time;
-}
-
-bool WeatherState::force_at(std::span<const weather_type_id> allowed, weather_type_id type, float x, float z)
-{
-    auto type_scale = std::max(types.scale, 1.0f);
-
-    auto interval = weather_registry::type_interval(allowed, type);
-
-    if(!interval.has_value()) {
+    if(def.id == WEATHER_ID_NULL) {
         return false;
     }
 
-    auto [interval_start, interval_end] = interval.value();
-
-    // Put the roll at the middle of the type's slice,
-    // then slide the field so that point lands on the players
-    auto target = (interval_start + interval_end) * 0.5f;
-    auto base_x = (x - types.drift.x()) / type_scale;
-    auto base_z = (z - types.drift.y()) / type_scale;
-    auto cell_x = static_cast<std::int32_t>(std::floor(base_x));
-    auto cell_z = static_cast<std::int32_t>(std::floor(base_z));
-
-    auto best_distance = std::numeric_limits<float>::max();
-    auto best_x = static_cast<float>(cell_x) + 0.5f;
-    auto best_z = static_cast<float>(cell_z) + 0.5f;
-
-    for(std::int32_t dz = -8; dz <= 8; dz += 1) {
-        for(std::int32_t dx = -8; dx <= 8; dx += 1) {
-            auto sample_x = static_cast<float>(cell_x + dx) + 0.5f;
-            auto sample_z = static_cast<float>(cell_z + dz) + 0.5f;
-            auto distance = std::abs(utils::weather_noise(sample_x, sample_z, types.seed) - target);
-
-            if(distance < best_distance) {
-                best_distance = distance;
-                best_x = sample_x;
-                best_z = sample_z;
-            }
-        }
+    if(allowed.empty()) {
+        return true;
     }
 
-    types.drift = Eigen::Vector2f(x - best_x * type_scale, z - best_z * type_scale);
-
-    auto detail_scale = std::max(detail.scale, 1.0f);
-    auto detail_base_x = (x - detail.drift.x()) / detail_scale;
-    auto detail_base_z = (z - detail.drift.y()) / detail_scale;
-    auto detail_cell_x = static_cast<std::int32_t>(std::floor(detail_base_x));
-    auto detail_cell_z = static_cast<std::int32_t>(std::floor(detail_base_z));
-
-    auto best_value = -1.0f;
-    auto detail_best_x = detail_cell_x;
-    auto detail_best_z = detail_cell_z;
-
-    for(std::int32_t dz = -4; dz <= 4; dz += 1) {
-        for(std::int32_t dx = -4; dx <= 4; dx += 1) {
-            auto sample_x = static_cast<float>(detail_cell_x + dx) + 0.5f;
-            auto sample_z = static_cast<float>(detail_cell_z + dz) + 0.5f;
-            auto value = utils::weather_noise(sample_x, sample_z, detail.seed);
-
-            if(value > best_value) {
-                best_value = value;
-                detail_best_x = detail_cell_x + dx;
-                detail_best_z = detail_cell_z + dz;
-            }
-        }
-    }
-
-    detail.drift.x() = x - (static_cast<float>(detail_best_x) + 0.5f) * detail_scale;
-    detail.drift.y() = z - (static_cast<float>(detail_best_z) + 0.5f) * detail_scale;
-
-    return true;
+    return std::ranges::contains(allowed, def.id);
 }
 
-weather_type_id WeatherState::type_at(std::span<const weather_type_id> allowed, float x, float z) const
+// Inverse of the weighted distance from the sample to the type's target:
+// a type with a bigger weight reaches further, so it covers more of the world
+static float score_of(const WeatherTypeDefinition& def, float a, float b)
 {
-    auto roll = type_noise(x, z);
+    auto da = a - def.target.x();
+    auto db = b - def.target.y();
+    auto weight = std::max(def.weight, 1.0f);
+
+    return std::max((da * da + db * db) / weight, SCORE_FLOOR);
+}
+
+// Share falls with the cube of the score, so a type that is even a little
+// farther in climate space loses most of its presence: the blend is a narrow
+// cross-fade around the nearest-target boundary, not a world-wide haze
+static float share_of(const WeatherTypeDefinition& def, float a, float b)
+{
+    auto score = score_of(def, a, b);
+
+    return 1.0f / (score * score * score);
+}
+
+std::uint32_t weather::star_seed(std::uint64_t weather_seed)
+{
+    return static_cast<std::uint32_t>(splitmix64(weather_seed ^ SALT_STAR) >> 32U);
+}
+
+void WeatherState::reseed(std::uint64_t weather_seed)
+{
+    m_seed = weather_seed;
+    m_seed_a = static_cast<std::uint32_t>(splitmix64(weather_seed ^ SALT_A));
+    m_seed_b = static_cast<std::uint32_t>(splitmix64(weather_seed ^ SALT_B));
+
+    auto angle = unit_float(splitmix64(weather_seed ^ SALT_ANGLE)) * std::numbers::pi_v<float> * 2.0f;
+    auto speed = WIND_SPEED_MIN + (WIND_SPEED_MAX - WIND_SPEED_MIN) * unit_float(splitmix64(weather_seed ^ SALT_SPEED));
+
+    m_wind_direction = Eigen::Vector2f(std::cos(angle), std::sin(angle));
+    m_wind_speed = speed;
+}
+
+Eigen::Vector2f WeatherState::drift(std::uint64_t weather_tick) const
+{
+    auto offset = drift_double(weather_tick);
+
+    return Eigen::Vector2f(static_cast<float>(offset.x()), static_cast<float>(offset.y()));
+}
+
+Eigen::Vector2f WeatherState::wind_direction(void) const
+{
+    return m_wind_direction;
+}
+
+float WeatherState::wind_speed(void) const
+{
+    return m_wind_speed;
+}
+
+weather_type_id WeatherState::type_at(std::span<const weather_type_id> allowed, float x, float z, std::uint64_t weather_tick) const
+{
+    auto offset = drift_double(weather_tick);
+    auto fx = static_cast<float>(static_cast<double>(x) - offset.x());
+    auto fz = static_cast<float>(static_cast<double>(z) - offset.y());
+
+    auto a = climate_a_in_field(fx, fz);
+    auto b = climate_b_in_field(fx, fz);
+
     auto best = WEATHER_ID_NULL;
-    auto best_weight = 0.0f;
+    auto best_score = std::numeric_limits<float>::max();
 
     for(const auto& def : weather_registry::all_definitions()) {
-        if(def.id == WEATHER_ID_NULL) {
+        if(!is_allowed(def, allowed)) {
             continue;
         }
 
-        auto weight = interval_weight(allowed, def.id, roll);
+        auto score = score_of(def, a, b);
 
-        if(weight > best_weight) {
-            best_weight = weight;
+        if(score < best_score) {
+            best_score = score;
             best = def.id;
         }
     }
@@ -137,17 +133,8 @@ weather_type_id WeatherState::type_at(std::span<const weather_type_id> allowed, 
     return best;
 }
 
-float WeatherState::type_weight(std::span<const weather_type_id> allowed, weather_type_id type, float x, float z) const
-{
-    return interval_weight(allowed, type, type_noise(x, z));
-}
-
-float WeatherState::type_weight_in_field(std::span<const weather_type_id> allowed, weather_type_id type, float fx, float fz) const
-{
-    return interval_weight(allowed, type, type_noise_in_field(fx, fz));
-}
-
-float WeatherState::coverage_of(std::span<const weather_type_id> allowed, weather_type_id type, float x, float z) const
+float WeatherState::coverage_of(std::span<const weather_type_id> allowed, weather_type_id type, float x, float z,
+    std::uint64_t weather_tick) const
 {
     auto def = weather_registry::find_definition(type);
 
@@ -155,45 +142,42 @@ float WeatherState::coverage_of(std::span<const weather_type_id> allowed, weathe
         return 0.0f;
     }
 
-    auto weight = type_weight(allowed, type, x, z);
+    auto share = share_at(allowed, type, x, z, weather_tick);
+    auto intensity = std::clamp(def->intensity, 0.0f, 1.0f);
 
-    if(weight <= 0.0f) {
-        return 0.0f;
-    }
-
-    return weight * detail_coverage(def->intensity, x, z);
+    return std::clamp(share * intensity, 0.0f, 1.0f);
 }
 
-float WeatherState::coverage_in_field(std::span<const weather_type_id> allowed, weather_type_id type, float fx, float fz) const
+float WeatherState::coverage(std::span<const weather_type_id> allowed, float x, float z, std::uint64_t weather_tick) const
 {
-    auto def = weather_registry::find_definition(type);
-
-    if(def == nullptr) {
-        return 0.0f;
-    }
-
-    auto weight = type_weight_in_field(allowed, type, fx, fz);
-
-    if(weight <= 0.0f) {
-        return 0.0f;
-    }
-
-    return weight * detail_coverage_in_field(def->intensity, fx, fz);
+    return coverage_of(allowed, type_at(allowed, x, z, weather_tick), x, z, weather_tick);
 }
 
-float WeatherState::coverage(std::span<const weather_type_id> allowed, float x, float z) const
-{
-    return coverage_of(allowed, type_at(allowed, x, z), x, z);
-}
-
-WeatherBlend WeatherState::blend(std::span<const weather_type_id> allowed, float x, float z) const
+WeatherBlend WeatherState::blend(std::span<const weather_type_id> allowed, float x, float z, std::uint64_t weather_tick) const
 {
     WeatherBlend result {};
     result.sky_tint = Eigen::Vector3f::Ones();
     result.sky_visibility = 1.0f;
     result.light_scale = 1.0f;
 
-    auto roll = type_noise(x, z);
+    auto offset = drift_double(weather_tick);
+    auto fx = static_cast<float>(static_cast<double>(x) - offset.x());
+    auto fz = static_cast<float>(static_cast<double>(z) - offset.y());
+
+    auto a = climate_a_in_field(fx, fz);
+    auto b = climate_b_in_field(fx, fz);
+
+    auto total = 0.0f;
+
+    for(const auto& def : weather_registry::all_definitions()) {
+        if(is_allowed(def, allowed)) {
+            total += share_of(def, a, b);
+        }
+    }
+
+    if(total <= 0.0f) {
+        return result;
+    }
 
     Eigen::Vector3f tint = Eigen::Vector3f::Zero();
     auto visibility = 0.0f;
@@ -201,31 +185,22 @@ WeatherBlend WeatherState::blend(std::span<const weather_type_id> allowed, float
     auto coverage = 0.0f;
 
     for(const auto& def : weather_registry::all_definitions()) {
-        if(def.id == WEATHER_ID_NULL) {
+        if(!is_allowed(def, allowed)) {
             continue;
         }
 
-        auto weight = interval_weight(allowed, def.id, roll);
-
-        if(weight <= 0.0f) {
-            continue;
-        }
-
-        auto amount = weight * detail_coverage(def.intensity, x, z);
+        // The sky follows how much of the point the type owns; intensity
+        // only says how strong the type is where it does cover the point
+        auto amount = share_of(def, a, b) / total;
 
         tint += def.sky_tint * amount;
         visibility += def.sky_visibility * amount;
         light += def.light_scale * amount;
-        coverage += amount;
+        coverage += amount * std::clamp(def.intensity, 0.0f, 1.0f);
     }
 
-    if(coverage <= 0.0f) {
-        return result;
-    }
-
-    tint /= coverage;
-    visibility /= coverage;
-    light /= coverage;
+    // The shares add up to one, so the colour is already an average;
+    // only the coverage still has to be clamped to a single layer
     coverage = std::min(coverage, 1.0f);
 
     // sky_tint is a target colour, not a multiplier: mixing towards
@@ -239,88 +214,96 @@ WeatherBlend WeatherState::blend(std::span<const weather_type_id> allowed, float
     return result;
 }
 
-WeatherBlend WeatherState::blend_overhead(std::span<const weather_type_id> allowed, float x, float, float z) const
+float WeatherState::coverage_in_field(std::span<const weather_type_id> allowed, weather_type_id type, float fx, float fz) const
 {
-    return blend(allowed, x, z);
-}
+    auto def = weather_registry::find_definition(type);
 
-WeatherBlend WeatherState::blend_region(std::span<const weather_type_id> allowed, float x, float, float z, float) const
-{
-    return blend(allowed, x, z);
-}
-
-void WeatherState::fill_info(packet::World_Info& packet) const
-{
-    packet.types_seed = types.seed;
-    packet.types_scale = types.scale;
-    packet.detail_seed = detail.seed;
-    packet.detail_scale = detail.scale;
-}
-
-void WeatherState::apply_info(const packet::World_Info& packet)
-{
-    types.seed = packet.types_seed;
-    types.scale = packet.types_scale;
-    detail.seed = packet.detail_seed;
-    detail.scale = packet.detail_scale;
-}
-
-void WeatherState::fill_packet(packet::World_Weather& packet) const
-{
-    packet.types_drift = types.drift;
-    packet.detail_drift = detail.drift;
-    packet.wind = wind;
-}
-
-void WeatherState::apply_packet(const packet::World_Weather& packet, bool baseline)
-{
-    // Both sides advance the drift between snapshots, so a snapshot
-    // that lands a little behind the prediction is just latency. Taking
-    // it as it is would twitch the whole field once a second; only
-    // a real jump, a forced storm for example, is worth snapping to.
-    // The first snapshot of a session is always taken whole
-    constexpr static float DRIFT_SNAP = 64.0f;
-
-    if(baseline || (packet.types_drift - types.drift).norm() > DRIFT_SNAP) {
-        types.drift = packet.types_drift;
+    if(def == nullptr) {
+        return 0.0f;
     }
 
-    if(baseline || (packet.detail_drift - detail.drift).norm() > DRIFT_SNAP) {
-        detail.drift = packet.detail_drift;
+    auto share = share_in_field(allowed, type, fx, fz);
+    auto intensity = std::clamp(def->intensity, 0.0f, 1.0f);
+
+    return std::clamp(share * intensity, 0.0f, 1.0f);
+}
+
+std::optional<std::uint64_t> WeatherState::solve_force(std::span<const weather_type_id> allowed, weather_type_id type, float x, float z,
+    std::uint64_t from_tick) const
+{
+    if(weather_registry::find_definition(type) == nullptr) {
+        return std::nullopt;
     }
 
-    wind = packet.wind;
+    auto last_tick = from_tick + FORCE_HORIZON_TICKS;
+
+    for(auto tick = from_tick; tick < last_tick; tick += constant::FIXED_TICKRATE) {
+        if(type_at(allowed, x, z, tick) != type) {
+            continue;
+        }
+
+        if(share_at(allowed, type, x, z, tick) < FORCE_MIN_SHARE) {
+            continue;
+        }
+
+        return tick;
+    }
+
+    return std::nullopt;
 }
 
-float WeatherState::type_noise(float x, float z) const
+Eigen::Vector2d WeatherState::drift_double(std::uint64_t weather_tick) const
 {
-    return type_noise_in_field(x - types.drift.x(), z - types.drift.y());
+    auto seconds = static_cast<double>(weather_tick) / static_cast<double>(constant::FIXED_TICKRATE);
+    auto distance = static_cast<double>(m_wind_speed) * seconds;
+
+    return Eigen::Vector2d(static_cast<double>(m_wind_direction.x()) * distance, static_cast<double>(m_wind_direction.y()) * distance);
 }
 
-// The field-space helpers take coordinates that already have the drift
-// removed. A caller that walks the field cell by cell (the cloud renderer)
-// uses them so that its sample points do not depend on how far the field has
-// drifted: subtracting two large world-space floats rounds differently
-// every time
-float WeatherState::type_noise_in_field(float fx, float fz) const
+float WeatherState::climate_a_in_field(float fx, float fz) const
 {
-    auto scale = std::max(types.scale, 1.0f);
-
-    return utils::weather_noise(fx / scale, fz / scale, types.seed);
+    return utils::weather_noise(fx / CLIMATE_A_SCALE, fz / CLIMATE_A_SCALE, m_seed_a);
 }
 
-float WeatherState::detail_coverage(float intensity, float x, float z) const
+float WeatherState::climate_b_in_field(float fx, float fz) const
 {
-    return detail_coverage_in_field(intensity, x - detail.drift.x(), z - detail.drift.y());
+    return utils::weather_noise(fx / CLIMATE_B_SCALE, fz / CLIMATE_B_SCALE, m_seed_b);
 }
 
-float WeatherState::detail_coverage_in_field(float intensity, float fx, float fz) const
+float WeatherState::share_in_field(std::span<const weather_type_id> allowed, weather_type_id type, float fx, float fz) const
 {
-    auto scale = std::max(detail.scale, 1.0f);
-    auto value = utils::weather_noise(fx / scale, fz / scale, detail.seed);
+    auto a = climate_a_in_field(fx, fz);
+    auto b = climate_b_in_field(fx, fz);
 
-    auto clamped = std::clamp(intensity, 0.0f, 1.0f);
-    auto threshold = 1.0f - clamped;
+    auto total = 0.0f;
+    auto own = 0.0f;
 
-    return utils::smoothstep(threshold, threshold + 0.2f, value);
+    for(const auto& def : weather_registry::all_definitions()) {
+        if(!is_allowed(def, allowed)) {
+            continue;
+        }
+
+        auto share = share_of(def, a, b);
+        total += share;
+
+        if(def.id == type) {
+            own = share;
+        }
+    }
+
+    if(total <= 0.0f) {
+        return 0.0f;
+    }
+
+    return own / total;
+}
+
+float WeatherState::share_at(std::span<const weather_type_id> allowed, weather_type_id type, float x, float z,
+    std::uint64_t weather_tick) const
+{
+    auto offset = drift_double(weather_tick);
+    auto fx = static_cast<float>(static_cast<double>(x) - offset.x());
+    auto fz = static_cast<float>(static_cast<double>(z) - offset.y());
+
+    return share_in_field(allowed, type, fx, fz);
 }

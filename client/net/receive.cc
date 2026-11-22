@@ -29,10 +29,6 @@
 #include "client/world/cloud_renderer.hh"
 #include "client/world/skybox.hh"
 
-// The first weather packet of a connection sets the whole drift;
-// later packets only correct it, so the deck does not slide on join
-static bool s_weather_synced;
-
 static void on_entity_spawn(const packet::Entity_Spawn& packet)
 {
     auto& registry = globals::world->registry();
@@ -161,74 +157,70 @@ static void on_world_set_block(const packet::World_SetBlock& packet)
 
 static void on_world_timings(const packet::World_Timings& packet)
 {
-    auto previous_tick = globals::daylight_tick;
+    auto previous_tick = globals::world->daylight_tick;
     auto jump = packet.daylight_tick - previous_tick;
 
     if(previous_tick > packet.daylight_tick) {
         jump = previous_tick - packet.daylight_tick;
     }
 
+    auto previous_weather_tick = globals::world->weather_tick;
+    auto weather_jump = packet.weather_tick - previous_weather_tick;
+
+    if(previous_weather_tick > packet.weather_tick) {
+        weather_jump = previous_weather_tick - packet.weather_tick;
+    }
+
     globals::current_tick = packet.current_tick;
-    globals::daylight_tick = packet.daylight_tick;
-    globals::day = packet.day;
+    globals::world->daylight_tick = packet.daylight_tick;
+    globals::world->weather_tick = packet.weather_tick;
 
     // A jump of a second or more is a deliberate time_set; the
     // ordinary one-tick step is left for the sky to interpolate
     if(jump > constant::FIXED_TICKRATE) {
         skybox::snap();
     }
-}
 
-static void on_world_info(const packet::World_Info& packet)
-{
-    // A new world also starts a new weather baseline; the next packet must
-    // replace the drift whole instead of sliding the old deck towards it
-    s_weather_synced = false;
-
-    client_game::open_world(packet);
-
-    auto& state = globals::world->weather();
-    state.apply_info(packet);
-
-    skybox::set_star_seed(packet.star_seed);
-}
-
-static void on_world_weather(const packet::World_Weather& packet)
-{
-    // The first packet after connecting replaces the drift whole, so
-    // the deck that was built from the old field must not slide to it
-    auto baseline = !s_weather_synced;
-    s_weather_synced = true;
-
-    auto& state = globals::world->weather();
-    state.apply_packet(packet, baseline);
-
-    if(baseline) {
+    // The weather clock only jumps at a forced front, a rewind or a world
+    // switch; the deck is rebuilt for those instead of sliding to the field
+    if(weather_jump > constant::FIXED_TICKRATE) {
         cloud_renderer::reset();
     }
 }
 
+static void on_world_info(const packet::World_Info& packet)
+{
+    client_game::open_world(packet);
+
+    cloud_renderer::reset();
+    skybox::set_star_seed(weather::star_seed(packet.weather_seed));
+    skybox::snap();
+}
+
 static cvar::status cmd_time_query(const cvar::Context&, std::span<const std::string_view>)
 {
-    auto phase = world_clock::phase(globals::daylight_tick, server_vars::day_length_ticks());
-    auto daylight = world_clock::daylight(phase);
+    auto day_length = server_vars::day_length_ticks();
 
-    msg::log_info("time: tick={} daylight_tick={} day={} phase={:.3f} daylight={:.2f}", globals::current_tick, globals::daylight_tick,
-        globals::day, phase, daylight);
+    auto phase = world_clock::phase(globals::world->daylight_tick, day_length);
+    auto daylight = world_clock::daylight(phase);
+    auto day = world_clock::day(globals::world->daylight_tick, day_length);
+
+    msg::log_info("time: tick={} daylight_tick={} day={} phase={:.3f} daylight={:.2f}", globals::current_tick,
+        globals::world->daylight_tick, day, phase, daylight);
 
     return cvar::status::OK;
 }
 
 static cvar::status cmd_weather_status(const cvar::Context&, std::span<const std::string_view>)
 {
-    auto world = utils::to_fvec(camera::chunk) + camera::local;
+    auto position = utils::to_fvec(camera::chunk) + camera::local;
 
     auto& definition = globals::world->definition();
     auto& state = globals::world->weather();
     auto& allowed = definition.weather;
 
-    auto type = state.type_at(allowed, world.x(), world.z());
-    auto coverage = state.coverage(allowed, world.x(), world.z());
+    auto type = state.type_at(allowed, position.x(), position.z(), globals::world->weather_tick);
+    auto coverage = state.coverage(allowed, position.x(), position.z(), globals::world->weather_tick);
 
     std::string description = "none";
 
@@ -238,10 +230,14 @@ static cvar::status cmd_weather_status(const cvar::Context&, std::span<const std
         description = name->full_string();
     }
 
-    auto types = std::format("({:.0f}, {:.0f})/{}", state.types.drift.x(), state.types.drift.y(), state.types.scale);
-    auto detail = std::format("({:.0f}, {:.0f})/{}", state.detail.drift.x(), state.detail.drift.y(), state.detail.scale);
+    auto bpos = utils::to_block(camera::chunk, camera::local.cast<LocalPos::value_type>());
+    auto temperature = globals::world->get_temperature(bpos);
+    auto temperature_base = globals::world->get_temperature_base(bpos);
+    auto humidity = globals::world->get_humidity(bpos);
+    auto humidity_base = globals::world->get_humidity_base(bpos);
 
-    msg::log_info("weather: type={} coverage={:.2f} types={} detail={}", description, coverage, types, detail);
+    msg::log_info("weather: type={} coverage={:.2f} temperature={:.1f}C base={:.1f}C humidity={:.2f} base={:.2f} tick={}", description,
+        coverage, temperature, temperature_base, humidity, humidity_base, globals::world->weather_tick);
 
     return cvar::status::OK;
 }
@@ -250,11 +246,6 @@ static void on_session_state(const SessionStateEvent& event)
 {
     if(SESSION_DISCONNECTED == event.state()) {
         globals::player = entt::null;
-        s_weather_synced = false;
-    }
-
-    if(SESSION_AUTHENTICATING == event.state()) {
-        s_weather_synced = false;
     }
 }
 
@@ -271,7 +262,6 @@ void receive::init(void)
     globals::dispatcher.sink<packet::World_SetBlock>().connect<&on_world_set_block>();
     globals::dispatcher.sink<packet::World_Timings>().connect<&on_world_timings>();
     globals::dispatcher.sink<packet::World_Info>().connect<&on_world_info>();
-    globals::dispatcher.sink<packet::World_Weather>().connect<&on_world_weather>();
 
     globals::dispatcher.sink<SessionStateEvent>().connect<&on_session_state>();
 

@@ -3,6 +3,7 @@
 
 #include "core/config/map.hh"
 
+#include "shared/constant.hh"
 #include "shared/world/biome_map.hh"
 #include "shared/world/chunk.hh"
 #include "shared/world/heightmap.hh"
@@ -129,6 +130,8 @@ public:
     constexpr WeatherState& weather(void);
     constexpr const WeatherState& weather(void) const;
 
+    void set_weather_seed(std::uint64_t value);
+
     std::shared_ptr<Chunk> create_chunk(const ChunkPos& pos);
     std::shared_ptr<Chunk> find_chunk(const ChunkPos& pos) const;
     std::shared_ptr<Chunk> find_chunk(entt::entity entity) const;
@@ -184,6 +187,15 @@ public:
     void purge(void);
 
     std::uint64_t seed { 0 };
+
+    // Per-world clocks. The server owns them; a client mirrors the world
+    // it was admitted to, so two worlds can run different days and weather
+    std::uint64_t daylight_tick { constant::DAY_LENGTH_TICKS / 4 };
+    std::uint64_t weather_tick { 0 };
+
+    // Generated once for a world and never derived from seed; it is the only
+    // weather value the client receives, and it says nothing about the terrain
+    std::uint64_t weather_seed { 0 };
 
 private:
     std::shared_ptr<const WorldDefinition> m_definition;

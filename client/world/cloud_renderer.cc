@@ -83,11 +83,12 @@ static std::size_t s_front;
 static std::vector<CloudGroup> s_groups;
 static CloudDrift s_drift;
 static Eigen::Vector2f s_last_build_offset;
-static std::uint64_t s_state_signature;
+static std::uint64_t s_state_signature; // Weather seed the current mesh was built from
 static std::uint64_t s_generation;
 static Eigen::Vector3f s_last_build_center { Eigen::Vector3f::Zero() };
 static unsigned s_last_cloud_range { 0 };
 static bool s_building { false };
+static bool s_rebuild_requested { false };
 static float s_build_cooldown;
 
 float cloud_renderer::z_near = CLOUD_NEAR_PLANE;
@@ -118,25 +119,14 @@ static void upload_mesh(const CloudMesh& mesh, std::size_t slot)
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_bytes, mesh.indices.data(), GL_DYNAMIC_DRAW);
 }
 
-static std::uint64_t state_signature(void)
-{
-    std::uint64_t hash = 0;
-    auto& state = globals::world->weather();
-
-    hash ^= static_cast<std::uint64_t>((state.types.drift.x() + 4096.0f) / 16.0f);
-    hash ^= static_cast<std::uint64_t>((state.types.drift.y() + 4096.0f) / 16.0f) << 1;
-    hash ^= static_cast<std::uint64_t>(state.types.scale) << 2;
-    hash ^= static_cast<std::uint64_t>(state.types.seed) << 3;
-    hash ^= static_cast<std::uint64_t>((state.detail.drift.x() + 4096.0f) / 16.0f) << 4;
-    hash ^= static_cast<std::uint64_t>((state.detail.drift.y() + 4096.0f) / 16.0f) << 5;
-    hash ^= static_cast<std::uint64_t>(state.detail.scale) << 6;
-    hash ^= static_cast<std::uint64_t>(state.detail.seed) << 7;
-
-    return hash;
-}
-
 static bool needs_rebuild(void)
 {
+    // A reset empties the meshes while the latches below still describe
+    // the build that went away, so the first frame after it has to rebuild
+    if(s_rebuild_requested) {
+        return true;
+    }
+
     if(s_last_cloud_range != camera::cloud_range.value()) {
         return true;
     }
@@ -154,7 +144,9 @@ static bool needs_rebuild(void)
         return true;
     }
 
-    return s_state_signature != state_signature();
+    // The deck is sampled in the anchor frame, so its pattern only changes
+    // on a reseed; the drift is covered by the offset above
+    return s_state_signature != globals::world->weather().seed();
 }
 
 // The deck is sampled in the weather field and drawn with that field's
@@ -166,17 +158,19 @@ static void advance_wind_offsets(void)
 {
     auto step = 1.0f - std::exp(-WIND_EASE_PER_SECOND * std::min(globals::window_frametime, 0.1f));
     auto& state = globals::world->weather();
+    auto field_drift = state.drift(globals::world->weather_tick);
     auto& drift = s_drift;
 
     if(!drift.anchored) {
-        drift.anchor = state.types.drift - drift.offset;
+        drift.anchor = field_drift - drift.offset;
         drift.anchored = true;
     }
 
-    // A packet that moves the field somewhere else, such as a forced front, must not
-    // teleport the deck across the sky; a short ease turns it into a slide. Ordinary
-    // drift moves at a couple of blocks per second, so the lag this adds is under a block
-    auto target = state.types.drift - drift.anchor;
+    // A jump of the weather clock, such as a forced front, must not
+    // teleport the deck across the sky; a short ease turns it into a slide.
+    // Ordinary drift moves at a couple of blocks per second, so the lag
+    // this adds is under a block
+    auto target = field_drift - drift.anchor;
 
     drift.offset += (target - drift.offset) * step;
 }
@@ -272,7 +266,8 @@ static void submit_build(void)
 
     s_last_build_center = camera_position;
     s_last_cloud_range = camera::cloud_range.value();
-    s_state_signature = state_signature();
+    s_state_signature = globals::world->weather().seed();
+    s_rebuild_requested = false;
     s_build_cooldown = BUILD_COOLDOWN_SECONDS;
 
     s_generation += 1;
@@ -439,6 +434,7 @@ void cloud_renderer::reset(void)
     s_last_build_offset = Eigen::Vector2f::Zero();
     s_generation += 1;
     s_building = false;
+    s_rebuild_requested = true;
     s_front = 0;
 
     s_meshes[0] = CloudMesh {};

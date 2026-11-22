@@ -11,7 +11,6 @@
 #include "core/identifier.hh"
 #include "core/utils/crc64.hh"
 
-#include "shared/constant.hh"
 #include "shared/globals.hh"
 #include "shared/world/world.hh"
 #include "shared/world/world_registry.hh"
@@ -26,7 +25,6 @@ static std::filesystem::path s_conf_path;
 static config::Map s_universe_config;
 static config::Ref<std::uint64_t> s_seed { 0 };
 static config::Ref<std::uint64_t> s_tick { 0 };
-static config::Ref<std::uint64_t> s_daylight_tick { constant::DAY_LENGTH_TICKS / 4 };
 
 static std::vector<std::shared_ptr<ServerWorld>> s_worlds;
 static std::shared_ptr<ServerWorld> s_default_world;
@@ -78,7 +76,6 @@ void universe::init(void)
 
     s_seed.bind(s_universe_config, "seed");
     s_tick.bind(s_universe_config, "tick");
-    s_daylight_tick.bind(s_universe_config, "daylight_tick");
 
     std::ifstream config_stream(s_conf_path, std::ios::in);
     auto existing_save = config_stream.is_open();
@@ -96,7 +93,6 @@ void universe::init(void)
     // The universe clock continues from the save; a universe
     // that has never been saved starts at noon
     globals::current_tick = s_tick.value();
-    globals::daylight_tick = s_daylight_tick.value();
 
     world_registry::resolve();
 
@@ -168,7 +164,6 @@ void universe::init_late(void)
 void universe::shutdown(void)
 {
     s_tick.set_value(globals::current_tick);
-    s_daylight_tick.set_value(globals::daylight_tick);
 
     std::ofstream out(s_conf_path, std::ios::binary | std::ios::trunc);
 

@@ -3,7 +3,6 @@ weather.add("clear", {
   sky_tint = { 0.42, 0.60, 0.92 },
   sky_visibility = 1.0,
   light = 1.0,
-  wind = 1.0,
 
   cloud = {
     height = 196,
@@ -16,5 +15,6 @@ weather.add("clear", {
     seed = 31,
   },
 
-  weight = 10,
+  target = { 0.35, 0.30 },
+  weight = 10.0,
 })

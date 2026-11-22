@@ -33,7 +33,7 @@ A mod runs on both the client and the server from the same `scripts/init.lua`. T
 |`core.IS_CLIENT`|True on the client|
 |`core.IS_SERVER`|True on the server|
 
-Some APIs exist on the server only: `worlds`, `world.schedule` and `weather.force`. Their table or field is absent on the client, so an unguarded call fails the mod on that side. Guard it with `core.IS_SERVER`:
+Some APIs exist on the server only: `worlds`, `world.schedule`, `world.seed` and `weather.force`. Their table or field is absent on the client, so an unguarded call fails the mod on that side. Guard it with `core.IS_SERVER`:
 
 ```lua
 if core.IS_SERVER then

@@ -23,7 +23,6 @@ enum packet_type : std::uint16_t {
     WORLD_CHUNK_LIGHT,
     WORLD_SET_BLOCK,
     WORLD_TIMINGS,
-    WORLD_WEATHER,
     WORLD_INFO,
 
     // Console
@@ -87,7 +86,6 @@ struct World_Light;
 struct World_SetBlock;
 struct World_Timings;
 struct World_Info;
-struct World_Weather;
 } // namespace packet
 
 namespace packet

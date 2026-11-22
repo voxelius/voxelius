@@ -10,7 +10,6 @@
 
 #include "shared/coord.hh"
 #include "shared/cvar/commands.hh"
-#include "shared/cvar/gamerules.hh"
 #include "shared/game.hh"
 #include "shared/splash.hh"
 
@@ -188,10 +187,6 @@ static void wrapped_main(int argc, char** argv)
         last_curtime_us = globals::curtime_us;
 
         globals::current_tick += 1;
-
-        if(gamerules::daylight_cycle.value()) {
-            globals::daylight_tick += 1;
-        }
 
         zoned_fixed_update();
 

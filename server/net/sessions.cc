@@ -50,16 +50,6 @@ std::uint16_t sessions::num_players = 0;
 static std::mt19937_64 s_randomizer;
 static cvar::String s_spawn_world { "" };
 
-// Stars are cosmetic, but two clients of the same world
-// must get the same field, so the seed comes from the world
-static std::uint32_t star_seed_of(std::uint64_t seed)
-{
-    auto mixed = seed * UINT64_C(0x9E3779B97F4A7C15);
-    mixed ^= mixed >> 29U;
-
-    return static_cast<std::uint32_t>(mixed >> 32U);
-}
-
 static std::shared_ptr<ServerWorld> resolve_spawn_world(void)
 {
     auto name = s_spawn_world.value();
@@ -83,25 +73,18 @@ static std::shared_ptr<ServerWorld> resolve_spawn_world(void)
 static void send_world_state(Session& session)
 {
     auto world = session.world;
-    auto world_seed = world->seed;
-
-    auto& state = world->weather();
 
     packet::World_Info world_info {};
     world_info.fill(world->definition());
-    world_info.seed = world_seed;
-    world_info.star_seed = star_seed_of(world_seed);
-    state.fill_info(world_info);
+    world_info.weather_seed = world->weather_seed;
     protocol::send(world_info, session.peer);
-
-    packet::World_Weather weather_state {};
-    state.fill_packet(weather_state);
-    protocol::send(weather_state, session.peer);
 
     packet::World_Timings timings {};
     timings.current_tick = globals::current_tick;
-    timings.daylight_tick = globals::daylight_tick;
-    timings.day = world_clock::day(globals::daylight_tick, server_vars::day_length_ticks());
+    timings.daylight_tick = world->daylight_tick;
+    timings.day = world_clock::day(world->daylight_tick, server_vars::day_length_ticks());
+    timings.weather_tick = world->weather_tick;
+    timings.season_tick = 0; // Reserved for the season cycle
     protocol::send(timings, session.peer);
 }
 

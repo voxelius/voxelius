@@ -44,8 +44,8 @@ public:
 
     void fixed_update(void);
 
-    // The random source of this world's weather, so one world's strikes do not depend on how many ticks another world has run
     std::mt19937_64 weather_random;
+    float weather_strike_budget { 0.0f };
 
 private:
     struct EntropyEntry final {

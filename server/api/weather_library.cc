@@ -49,7 +49,15 @@ static std::optional<bool> force(lua_State* L)
     auto& definition = world->definition();
     auto& weather_state = world->weather();
 
-    return weather_state.force_at(definition.weather, type, static_cast<float>(x.value()), static_cast<float>(z.value()));
+    auto x_float = static_cast<float>(x.value());
+    auto z_float = static_cast<float>(z.value());
+
+    if(auto tick = weather_state.solve_force(definition.weather, type, x_float, z_float, world->weather_tick)) {
+        world->weather_tick = tick.value();
+        return true;
+    }
+
+    return false;
 }
 
 static int api_force(lua_State* L)

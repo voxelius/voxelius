@@ -36,7 +36,7 @@ If the client sends a login request instead of a status request, the server star
 
 ##### Spawn world
 
-The server admits the client into the world named by `sv_spawn_world`. An empty value selects the default world. The server sends the world shape, seeds and weather in the admission packets, so the client needs no world name of its own.
+The server admits the client into the world named by `sv_spawn_world`. An empty value selects the default world. The server sends the world shape, the weather seed and the clocks in the admission packets, so the client needs no world name of its own. The world seed never leaves the server.
 
 ##### Identity
 
@@ -117,19 +117,19 @@ The client sends `RequestChunk` every fixed tick with the chunk-aligned view it 
 
 ##### World info
 
-The server sends `World_Info` at admission and again when a session moves to another world. It carries the world's id, its vertical bounds and spawn point, its optional visual groups, the weather types it allows, the universe seed, the seed the client builds its star field from and the weather grid seeds and scales. The client builds its one world from this packet instead of a local world definition. These values never change for a world, so the periodic packets do not repeat them. The length of a day is not here: it is the replicated server variable `sv_day_length`, so a change reaches every connected client without another packet.
+The server sends `World_Info` at admission and again when a session moves to another world. It carries the world's id, its vertical bounds and spawn point, its optional visual groups, the weather types it allows and the world's weather seed. The client builds its one world from this packet instead of a local world definition. These values never change for a world, so the periodic packets do not repeat them. The world seed is not in the packet: the client streams terrain without being able to predict it. The client derives its star field seed from the weather seed, which both sides compute the same way. The length of a day is not here either: it is the replicated server variable `sv_day_length`, so a change reaches every connected client without another packet.
 
 ##### World switch
 
-A session moves to another world only through `tpe`, which runs on the server. The server moves the player entity into the target registry, then repeats the admission state: `World_Info`, `World_Weather`, `World_Timings` and `Entity_Client` for the new entity. The client purges its world on `World_Info`, drops the player and clears the weather baseline, then streams the new world from its next `World_Request`. Entity, light and block packets carry the world they belong to and never reach a session in another world.
+A session moves to another world only through `tpe`, which runs on the server. The server moves the player entity into the target registry, then repeats the admission state: `World_Info`, `World_Timings` and `Entity_Client` for the new entity. The client purges its world on `World_Info`, drops the player and resets its weather state, then streams the new world from its next `World_Request`. Entity, light and block packets carry the world they belong to and never reach a session in another world.
 
 ##### Time
 
-The server owns the world clock. It increments `current_tick` and `daylight_tick` every fixed tick and sends both in `World_Timings` every tick, together with the whole `day` count (`daylight_tick / sv_day_length`). `daylight_tick` advances at the same fixed rate, but it is kept apart so the `gr_daylight_cycle` gamerule can stop the sun without stopping the world. The client runs its own smooth phase between packets and corrects towards the server; when a packet moves the clock by a second or more, which is what `time_set` does, it snaps instead of easing. There is no flag for this in the packet: the client sees the jump in the tick values it already keeps. The server writes both counters into `world.conf` on shutdown, so a restart continues the day where it was. Operators set the clock with `time_set <daylight tick>`; clients read what they see with `time_query`.
+The server owns a world clock per world. `World_Timings` carries the universe-wide `current_tick`, the world's `daylight_tick`, the whole `day` count (`daylight_tick / sv_day_length`), the world's `weather_tick` and a reserved `season_tick` that is zero until the season cycle lands. `current_tick` is shared by every world, so block ticks and chunk saves stay comparable across the server; `daylight_tick` advances per world at the same fixed rate, which is what lets two worlds run different days. The `gr_daylight_cycle` gamerule stops only the daylight clock. The client runs its own smooth phase between packets and corrects towards the server; when a packet moves the clock by a second or more, which is what `time_set` does, it snaps instead of easing. There is no flag for this in the packet: the client sees the jump in the tick values it already keeps. The server writes each world's daylight tick into that world's `world.conf` on shutdown, so a restart continues the day where it was. Operators set the clock with `time_set <daylight tick>`, which targets the caller's world; clients read what they see with `time_query`.
 
 ##### Weather
 
-Weather is a world-wide state rather than a stream of entities. The server drifts two noise grids (one picks the type, one the local strength) and sends `World_Weather` to each admitted client once a second, using the weather of that session's world. The packet carries three drift or wind pairs; the seeds and scales arrived once in `World_Info`, so there is nothing constant to repeat. Both sides also advance the drift themselves every frame, so the packet only anchors the field: the client keeps its own continuous drift and snaps to the packet only when the two disagree by more than a chunk, which is what a forced front looks like. The replicated `gr_weather_cycle` gamerule freezes that local advance on both sides. The first weather packet of a connection is special only on the client: the client keeps a local flag and takes that drift whole, then rebuilds the cloud deck instead of sliding the old one towards it. A world switch clears that flag, so the first packet after the switch is a baseline too. The type definitions themselves travel as part of the mod content and are covered by the login checksum.
+Weather is derived, not streamed. The server rolls one weather seed per world and keeps it in that world's `world.conf`, independent of the world seed, and sends it once in `World_Info`. Every tick it advances a per-world `weather_tick` and sends it in `World_Timings`; that is the only weather value on the wire after admission. Both sides turn the pair `(weather_seed, weather_tick)` plus a world position into the same field: two drifting noise grids form the two axes of a climate square, and every weather type owns a target point in that square, so the nearest target and its soft share decide the type and the local strength. There is no drift or baseline packet any more, and no accumulated drift to diverge: the same seed and the same tick always give the same field. A client advances its copy of the tick between packets and snaps when a packet jumps the clock by more than a second, which is what `weather_force` and a world switch look like. The replicated `gr_weather_cycle` gamerule stops the weather clock on the server and the client's local advance together. The type definitions themselves travel as part of the mod content and are covered by the login checksum.
 
 ##### Block and entity actions
 
@@ -327,7 +327,7 @@ Sent by server as a sub-chunk block update
 |`vector3<int64>`|`bpos`|World-scale block position|
 |`uint32`|`block`|Resulting numeric block ID|
 
-### `0x0012` `PlayerAttackE`
+### `0x0011` `PlayerAttackE`
 
 Sent by client to specify an attack action against an entity
 
@@ -335,7 +335,7 @@ Sent by client to specify an attack action against an entity
 |----|----|----|
 |`uint64`|`target`|Targeted entity|
 
-### `0x0013` `PlayerAttackB`
+### `0x0012` `PlayerAttackB`
 
 Sent by client to specify an attach action against a block
 
@@ -344,7 +344,7 @@ Sent by client to specify an attach action against a block
 |`vector3<int64>`|`bpos`|Targeted block position|
 |`uint32`|`expected`|Numeric block ID the client expects at `bpos`|
 
-### `0x0014` `PlayerInteractE`
+### `0x0013` `PlayerInteractE`
 
 Sent by client to specify an interact action against an entity
 
@@ -354,7 +354,7 @@ Sent by client to specify an interact action against an entity
 |----|----|----|
 |`uint64`|`target`|Targeted entity|
 
-### `0x0015` `PlayerInteractB`
+### `0x0014` `PlayerInteractB`
 
 Sent by client to specify an interact action against a block
 
@@ -366,7 +366,7 @@ Sent by client to specify an interact action against a block
 |`vector3<float>`|`normal`|Hit normal|
 |`vector3<float>`|`point`|Hit point local to the block|
 
-### `0x0017` `EntitySpawn`
+### `0x0016` `EntitySpawn`
 
 Sent by server when an entity is spawned
 
@@ -375,7 +375,7 @@ Sent by server when an entity is spawned
 |`uint64`|`id`|Entity ID|
 |`class_id_type`|`class_id`|Numeric class ID|
 
-### `0x0018` `EntityPatch`
+### `0x0017` `EntityPatch`
 
 Sent by server when an entity's component is updated
 
@@ -385,7 +385,7 @@ Sent by server when an entity's component is updated
 |`uint32`|`ncomp`|Component count|
 |`component[ncomp]`|`components`|Serialized components|
 
-### `0x0019` `EntityRemove`
+### `0x0018` `EntityRemove`
 
 Sent by server when an entity is removed
 

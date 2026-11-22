@@ -166,8 +166,10 @@ CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_
     auto clump_weight = 0.45f + 0.30f * std::clamp(coverage, 0.0f, 1.0f);
     auto density = clump * clump_weight + mass * (1.0f - clump_weight);
 
-    // A thin type keeps only its densest lumps, an overcast keeps almost the whole field
-    auto threshold = 0.62f - std::clamp(coverage, 0.0f, 1.0f) * 0.22f;
+    // A thin type keeps only a few of its densest lumps, an overcast keeps
+    // most of the field and a rain or a storm almost all of it: the covered
+    // fraction runs from a few percent to nearly every cell
+    auto threshold = 0.894f - std::clamp(coverage, 0.0f, 1.0f) * 0.714f;
     auto headroom = density - threshold;
 
     // The per-cell crumble breaks a thin deck into scraps and frays the rim
