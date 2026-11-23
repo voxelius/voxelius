@@ -27,10 +27,8 @@ constexpr static float STAR_MAX_SIZE = 0.040f;
 constexpr static float STAR_MIN_BRIGHTNESS = 0.55f;
 constexpr static float STAR_MAX_BRIGHTNESS = 1.0f;
 
-// Half extents of the textured quads; the sun texture puts its disc
-// at about half of this, so the visible sun is roughly six degrees
-constexpr static float SUN_HALF_SIZE = 1.50f;
-constexpr static float MOON_HALF_SIZE = 0.60f;
+constexpr static float SUN_HALF_SIZE = 3.00f;
+constexpr static float MOON_HALF_SIZE = 1.50f;
 
 // The quads lie in the tangent plane of the sphere, so a
 // star or a celestial body turns its face to the center of the
@@ -301,7 +299,7 @@ void sky_renderer::init(void)
         msg::log_warning("{}: texture load failed", sun_id.full_string());
     }
 
-    auto moon_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "moon_phases");
+    auto moon_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "moon");
     s_moon_texture = res::load<Texture2D>(moon_id, "textures/environment", ".png", RESFLAG_TEX_NEAREST);
 
     if(s_moon_texture == nullptr) {
