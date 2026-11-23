@@ -1,0 +1,97 @@
+name: Bug report
+description: Something in the game or the engine does not work.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The [documentation](https://voxelius.github.io/docs/) covers the build, the source tree and the architecture. Check it first
+        when the problem looks like a setup problem.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens
+      description: The actual behaviour. A crash, a wrong number, a missing texture, a freeze.
+      placeholder: The client closes when I break a block next to a water source.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should happen
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The shortest path from a clean run to the problem.
+      placeholder: |
+        1. Build the client with the `windows-x64-release` preset.
+        2. Start a server that runs the `builtin` mod.
+        3. Join it and break a block next to a water source.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "The `engine version: ...` line from the console, the release name, or the output of `git rev-parse --short HEAD`."
+      placeholder: 17.0.0-main-abc12345
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Windows x64
+        - Windows x86
+        - Linux
+        - macOS
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: side
+    attributes:
+      label: Which side
+      options:
+        - Client
+        - Server
+        - Both
+        - The build, the scripts or the tools
+    validations:
+      required: true
+
+  - type: textarea
+    id: content
+    attributes:
+      label: Mods and content
+      description: The mods that the game loaded, and the content path when it is not `data`.
+      placeholder: |
+        Only the builtin mod, content path is the default.
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console output
+      description: The output from the start of the run to the failure. Drag the log file here, or paste it as a code block.
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: I searched the open and the closed issues for the same problem.
+          required: true
+        - label: The report runs against the current `main`, not an old release.
+          required: false

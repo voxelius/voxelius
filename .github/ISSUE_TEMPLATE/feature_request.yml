@@ -1,0 +1,54 @@
+name: Feature request
+description: A new behaviour, a new content type or a new tool.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A large change starts as an issue. Explain what you want to do and why, then wait for an answer before you write much code.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: The situation that is awkward today. Explain the case, not the solution.
+      placeholder: A mod cannot add a block that changes its texture by the time of day.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you want
+      description: The behaviour you expect. A sketch of the API or the data helps.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you tried instead
+      description: A workaround in Lua, another mod, or a change you rejected.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Engine core
+        - Rendering
+        - World generation
+        - Networking
+        - Modding API
+        - Content
+        - Build, scripts and tools
+        - Documentation
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: I searched the open and the closed issues for the same request.
+          required: true

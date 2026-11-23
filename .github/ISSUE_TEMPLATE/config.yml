@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://voxelius.github.io/docs/
+    about: Build instructions, the source hierarchy, the architecture and the mod API.
+  - name: News and releases
+    url: https://voxelius.github.io/
+    about: What changed, and where to download a build.
+  - name: Code style
+    url: https://voxelius.github.io/docs/engine/code-style.html
+    about: Read this before you write a patch.
