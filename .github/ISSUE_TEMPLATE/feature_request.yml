@@ -30,9 +30,11 @@ body:
       description: A workaround in Lua, another mod, or a change you rejected.
 
   - type: dropdown
-    id: area
+    id: areas
     attributes:
-      label: Area
+      label: Areas
+      description: Pick every area that the request touches.
+      multiple: true
       options:
         - Engine core
         - Rendering
