@@ -18,10 +18,6 @@
 /compile_commands.json
 /dist/
 /dist/*
-/docs/manual/console/commands.md
-/docs/manual/console/variables.md
-/site/
-/site/*
 
 ## Ignore generated files and everything else
 ## that would be emitted by running the game

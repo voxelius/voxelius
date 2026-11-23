@@ -25,8 +25,8 @@ Four CMake targets make up the project. `core` is the foundation library: proces
 threading and buffers. `shared` holds the game logic that both sides run: the world, entities, physics, the network protocol and the mod
 loader. `client` and `server` build the `vclient` and `vserver` executables.
 
-`data/` is the content that ships with the game, starting with the `builtin` mod. `docs/` is the documentation site. `scripts/` holds the
-build, packaging and editor helpers. `misc/` holds small generators for data assets.
+`data/` is the content that ships with the game, starting with the `builtin` mod. `scripts/` holds the build, packaging and editor helpers.
+`misc/` holds small generators for data assets. The documentation lives in a separate repository.
 
 ## AI-assisted contributions
 
@@ -62,8 +62,7 @@ cmake --build --preset windows-x64-debug
   cannot read them. Python runs the third-party license collector and the asset generators.
 - The executables land in `build/<preset>/`. A multi-configuration generator such as Visual Studio adds the configuration directory:
   `build/<preset>/Debug/vclient.exe`.
-- No workflow compiles the game. `.github/workflows/documentation.yml` builds the documentation site only, so a compile error is yours to
-  find.
+- No workflow compiles the game, so a compile error is yours to find.
 
 ## Running
 
@@ -85,7 +84,8 @@ needs both sides.
 
 ## Code style
 
-`docs/dev/engine/dev-code-style.md` is the reference. The rules below are the ones that a change most often breaks.
+The [Code Style](https://voxelius.github.io/docs/engine/code-style.html) page is the reference. The rules below are the ones that a change
+most often breaks.
 
 ### Formatting
 
@@ -257,7 +257,6 @@ quirk). Never restate what the code next to it does.
 |`server/`|`vserver`. `entity/`, `net/`, `system/`, `utils/`, `world/`|
 |`data/`|Content that ships with the game: `builtin` mod, shaders, textures, language files|
 |`deps/`|Vendored third-party code and its CMake glue|
-|`docs/`|Documentation site sources|
 |`scripts/`|Build, package and editor helpers|
 |`misc/`|Small image and model generators|
 
@@ -277,7 +276,7 @@ quirk). Never restate what the code next to it does.
 - **Networking.** Every packet starts with a 16-bit ID. A client does either a status ping or a full login. The login uses an Ed25519
   challenge and compares the registry hashes of both sides.
 
-`docs/dev/engine/` describes each of these in full.
+The [documentation](https://voxelius.github.io/docs/) describes each of these in full.
 
 ## Editor and code intelligence
 
@@ -336,10 +335,10 @@ Trailers go in the last paragraph of the message, after a blank line.
 
 ## Documentation
 
-- `docs/` is the documentation site, built with properdocs. `properdocs.yml` holds the navigation.
-- `docs/dev/engine/` describes the engine: requirements, source hierarchy, build guide, editor setup, architecture, code style and
-  contribution process. `docs/dev/modding/` describes the mod API and the file formats.
-- `docs/dev/engine/dev-contributing.md` describes how a change is sent: patches, pull requests, commit messages and trailers. Keep it in
-  step with the rules in this file.
-- Change the page that describes the behavior you change, in the same commit. A new page needs an entry in `properdocs.yml`.
-- Build the site with `pip install -r requirements.txt` once, then `properdocs build --site-dir build/www`.
+- The documentation is a separate repository: https://github.com/voxelius/docs. It builds with mdBook and publishes at
+  https://voxelius.github.io/docs/.
+- `engine/` covers the requirements, the source hierarchy, the build, the editor setup, the architecture, the code style and the
+  contribution process. `modding/` covers the mod API and the file formats.
+- A change to a documented behaviour needs a page change in that repository. The page and the code land in separate pull requests, so the
+  page can follow the change in the next one.
+- Build the book with `mdbook build`, or preview it with `mdbook serve`, in that repository. This repository holds no pages.

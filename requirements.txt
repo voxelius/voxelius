@@ -1,6 +1,0 @@
-properdocs
-mkdocs-material
-mkdocs-minify-plugin
-mkdocs-video
-mkdocs-glightbox
-pymdown-extensions
