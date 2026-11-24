@@ -44,7 +44,6 @@ body:
         - Modding API
         - Content
         - Build, scripts and tools
-        - Documentation
     validations:
       required: true
 
