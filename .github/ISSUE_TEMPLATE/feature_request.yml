@@ -1,5 +1,6 @@
 name: Feature request
 description: A new behaviour, a new content type or a new tool.
+type: Feature
 body:
   - type: markdown
     attributes:
