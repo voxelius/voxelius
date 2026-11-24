@@ -7,6 +7,7 @@
 #include "shared/world/world.hh"
 
 #include "server/constant.hh"
+#include "server/world/columns.hh"
 #include "server/world/placement_rule.hh"
 
 struct GeneratorDefinition;
@@ -43,6 +44,8 @@ public:
     void schedule(const BlockPos& pos, std::uint64_t deadline, block_tick_source source);
 
     void fixed_update(void);
+
+    WorldColumns& columns(void);
 
     std::mt19937_64 weather_random;
     float weather_strike_budget { 0.0f };
@@ -84,6 +87,8 @@ private:
 
     std::vector<std::unique_ptr<PlacementRule>> m_placement_rules;
     std::size_t m_placement_extent { 0 };
+
+    WorldColumns m_columns;
 };
 
 constexpr const GeneratorDefinition* ServerWorld::generator(void) const
@@ -94,6 +99,11 @@ constexpr const GeneratorDefinition* ServerWorld::generator(void) const
 constexpr void* ServerWorld::generator_state(void) const
 {
     return m_generator_state.get();
+}
+
+inline WorldColumns& ServerWorld::columns(void)
+{
+    return m_columns;
 }
 
 #endif /* B7D9F1C3_3E5A_4B2D_9C6F_8A0E2C4D6F71 */

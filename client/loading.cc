@@ -154,11 +154,10 @@ void loading::update(void)
         return;
     }
 
-    auto box = utils::view_box(camera::chunk, VIEW_RADIUS);
-
     auto& definition = globals::world->definition();
     auto min_chunk_y = static_cast<ChunkPos::value_type>(definition.min_y >> constant::CHUNK_SIZE_LOG2);
     auto max_chunk_y = static_cast<ChunkPos::value_type>(definition.max_y >> constant::CHUNK_SIZE_LOG2);
+    auto box = utils::view_box(camera::chunk, VIEW_RADIUS);
 
     box.min().y() = std::max(box.min().y(), min_chunk_y);
     box.max().y() = std::min(box.max().y(), max_chunk_y);

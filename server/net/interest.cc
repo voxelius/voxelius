@@ -130,6 +130,27 @@ void interest::broadcast(const World* world, const T& packet, const ChunkPos& or
     }
 }
 
+// A column has no height, so its packet follows the 2D box instead of the vertical view
+template<typename T>
+void interest::broadcast(const World* world, const T& packet, const ChunkPosXZ& origin, ENetPeer* except)
+{
+    assert(world);
+
+    for(const auto& session : sessions::all()) {
+        if(session.peer == nullptr || session.peer == except) {
+            continue;
+        }
+
+        if(session.world.get() != world) {
+            continue;
+        }
+
+        if(session.interest_box.contains(origin)) {
+            protocol::send(packet, session.peer);
+        }
+    }
+}
+
 template<typename T>
 void interest::broadcast(const World* world, const T& packet, ENetPeer* except)
 {
@@ -155,6 +176,9 @@ template void interest::broadcast<packet::Entity_Spawn>(const World* world, cons
 template void interest::broadcast<packet::Entity_Patch>(const World* world, const packet::Entity_Patch& packet, const ChunkPos& origin,
     ENetPeer* except);
 template void interest::broadcast<packet::Entity_Remove>(const World* world, const packet::Entity_Remove& packet, const ChunkPos& origin,
+    ENetPeer* except);
+
+template void interest::broadcast<packet::World_Column>(const World* world, const packet::World_Column& packet, const ChunkPosXZ& origin,
     ENetPeer* except);
 
 template void interest::broadcast<packet::Entity_Spawn>(const World* world, const packet::Entity_Spawn& packet, ENetPeer* except);

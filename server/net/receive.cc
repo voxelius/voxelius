@@ -24,6 +24,7 @@
 #include "server/net/streaming.hh"
 #include "server/system/pmove_validator.hh"
 #include "server/world/chunk_loader.hh"
+#include "server/world/world.hh"
 
 constexpr static std::size_t CHUNK_SEND_BUDGET = 256;
 
@@ -124,10 +125,26 @@ static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos)
         return;
     }
 
-    packet::World_Biomes biomes_packet;
-    biomes_packet.cpos = ChunkPosXZ(cpos.x(), cpos.z());
-    biomes_packet.biomes = world->biomes(biomes_packet.cpos);
-    protocol::send(biomes_packet, peer);
+    // Biomes and columns are per XZ column
+    // and the client keeps one copy of each
+    auto cpos_xz = ChunkPosXZ(cpos.x(), cpos.z());
+
+    if(session->stream_sent_biomes.insert(cpos_xz).second) {
+        packet::World_Biomes biomes_packet;
+        biomes_packet.cpos = cpos_xz;
+        biomes_packet.biomes = world->biomes(cpos_xz);
+        protocol::send(biomes_packet, peer);
+    }
+
+    if(session->stream_sent_columns.insert(cpos_xz).second) {
+        auto server_world = static_cast<ServerWorld*>(world.get());
+        auto& column_chunk = server_world->columns().get(cpos_xz);
+
+        packet::World_Columns columns_packet;
+        columns_packet.cpos = cpos_xz;
+        columns_packet.columns = column_chunk.columns;
+        protocol::send(columns_packet, peer);
+    }
 
     packet::World_Blocks blocks_packet;
     blocks_packet.cpos = cpos;

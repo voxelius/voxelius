@@ -13,6 +13,7 @@
 
 #include "server/entity/entity_loader.hh"
 #include "server/universe.hh"
+#include "server/utils/heightmap.hh"
 #include "server/utils/region.hh"
 #include "server/world/generator_map.hh"
 #include "server/world/world.hh"
@@ -235,10 +236,8 @@ void LoadTask::process(void)
     auto entry = get_region(m_world.get(), region);
 
     ReadBuffer buffer;
-    auto found = false;
 
-    found = read_region_slot(*entry, slot, buffer);
-    if(found) {
+    if(read_region_slot(*entry, slot, buffer)) {
         Chunk::decode_dat(m_snapshot, buffer);
         m_found = true;
     }
@@ -250,10 +249,13 @@ void LoadTask::process(void)
         // biome storage; this would allow changing biomes for specific slices and
         // even specific 2D block positions and actually preserving them across saves
         auto world = std::static_pointer_cast<ServerWorld>(m_world);
+        auto cpos_xz = ChunkPosXZ(m_pos.x(), m_pos.z());
+
+        // Warm the height map here: the columns travel
+        // with the chunk and must not be probed on send
+        utils::heightmap_probe(world.get(), cpos_xz);
 
         if(auto generator = world->generator()) {
-            auto cpos_xz = ChunkPosXZ(m_pos.x(), m_pos.z());
-
             if(m_world->has_biomes(cpos_xz)) {
                 return;
             }

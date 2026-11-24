@@ -1,4 +1,7 @@
 biomes.add("surface_hills_rocky", {
+  temperature = 0,
+  humidity = 45,
+
   palette = {
     basic = { name = "stone" },
     filler = { name = "stone" },

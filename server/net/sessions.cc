@@ -23,6 +23,7 @@
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
+#include "shared/world/precipitation_registry.hh"
 #include "shared/world/tint_registry.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
@@ -168,6 +169,7 @@ static void on_auth_request(const packet::Auth_Request& packet)
     checksums_match = checksums_match && packet.tints_hash == tint_registry::checksum();
     checksums_match = checksums_match && packet.ents_hash == class_registry::checksum();
     checksums_match = checksums_match && packet.weather_hash == weather_registry::checksum();
+    checksums_match = checksums_match && packet.precip_hash == precipitation_registry::checksum();
 
     if(!checksums_match) {
         packet::Session_Disconnect response {};
@@ -737,9 +739,12 @@ bool sessions::transfer(Session* session, const std::shared_ptr<ServerWorld>& wo
 
     session->view_box = {};
     session->known_entities.clear();
-    session->stream_view_box = ChunkAlignedBox { ChunkPos(1, 1, 1), ChunkPos(0, 0, 0) };
+    session->stream_view_box = {};
+    session->interest_box = ChunkAlignedBoxXZ(ChunkPosXZ::Ones(), ChunkPosXZ::Zero());
     session->stream_player_chunk = ChunkPos::Zero();
     session->stream_sent_chunks.clear();
+    session->stream_sent_biomes.clear();
+    session->stream_sent_columns.clear();
     session->stream_wanted_chunks.clear();
     session->stream_cursor_chunks = 0;
     session->stream_budget_chunks = 0;

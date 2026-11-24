@@ -6,6 +6,7 @@
 #include "shared/api/blocks_library.hh"
 #include "shared/api/entities_library.hh"
 #include "shared/api/fluids_library.hh"
+#include "shared/api/precipitation_library.hh"
 #include "shared/api/tints_library.hh"
 #include "shared/mod_loader.hh"
 
@@ -21,6 +22,7 @@ void api_server::register_libraries(void)
     mod_loader::add_library<&api_shared::open_fluids>();
     mod_loader::add_library<&api_shared::open_blocks>();
     mod_loader::add_library<&api_shared::open_biomes>();
+    mod_loader::add_library<&api_shared::open_precipitation>();
     mod_loader::add_library<&api_server::open_weather>();
     mod_loader::add_library<&api_shared::open_entities>();
     mod_loader::add_library<&api_server::open_world>();

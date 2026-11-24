@@ -7,6 +7,7 @@ namespace constant
 {
 constexpr static std::size_t REGION_SIZE = 8;
 constexpr static std::size_t REGION_SIZE_LOG2 = 3;
+constexpr static std::size_t REGION_AREA = REGION_SIZE * REGION_SIZE;
 constexpr static std::size_t REGION_VOLUME = REGION_SIZE * REGION_SIZE * REGION_SIZE;
 } // namespace constant
 

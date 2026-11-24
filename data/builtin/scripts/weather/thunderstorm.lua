@@ -18,12 +18,8 @@ weather.add("thunderstorm", {
   },
 
   precipitation = {
-    kind = "rain",
+    types = { "rain", "snow", "dry" },
     intensity = 1.0,
-    speed = 34.0,
-    drift = 1.2,
-    size = 0.07,
-    color = { 0.32, 0.38, 0.46 },
   },
 
   strikes_per_minute = 6.0,

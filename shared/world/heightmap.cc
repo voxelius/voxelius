@@ -2,6 +2,10 @@
 
 #include "shared/world/heightmap.hh"
 
+#include "core/buffer.hh"
+
+constexpr static std::int32_t HEIGHT_NULL = INT32_MIN;
+
 std::shared_ptr<Heightmap::Entry> Heightmap::find(const ChunkPosXZ& pos) const
 {
     std::shared_lock lock(m_mutex);
@@ -42,4 +46,38 @@ void Heightmap::purge(void)
     std::unique_lock lock(m_mutex);
 
     m_entries.clear();
+}
+
+void Column::encode(const Column& column, WriteBuffer& buffer)
+{
+    auto surface_y = HEIGHT_NULL;
+    auto liquid_y = HEIGHT_NULL;
+
+    if(column.surface_y != Column::UNSET) {
+        surface_y = static_cast<std::int32_t>(column.surface_y);
+    }
+
+    if(column.liquid_y != Column::UNSET) {
+        liquid_y = static_cast<std::int32_t>(column.liquid_y);
+    }
+
+    buffer.write<std::int32_t>(surface_y);
+    buffer.write<std::int32_t>(liquid_y);
+}
+
+void Column::decode(Column& column, ReadBuffer& buffer)
+{
+    auto surface_y = buffer.read<std::int32_t>();
+    auto liquid_y = buffer.read<std::int32_t>();
+
+    column.surface_y = Column::UNSET;
+    column.liquid_y = Column::UNSET;
+
+    if(surface_y != HEIGHT_NULL) {
+        column.surface_y = static_cast<BlockPos::value_type>(surface_y);
+    }
+
+    if(liquid_y != HEIGHT_NULL) {
+        column.liquid_y = static_cast<BlockPos::value_type>(liquid_y);
+    }
 }

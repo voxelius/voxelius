@@ -10,6 +10,7 @@
 #include "shared/world/chunk.hh"
 #include "shared/world/world.hh"
 
+#include "server/utils/heightmap.hh"
 #include "server/world/generator_map.hh"
 #include "server/world/world.hh"
 
@@ -57,6 +58,10 @@ void WorldgenTask::process(void)
         status.store(task_status::CANCELLED, std::memory_order_release);
         return;
     }
+
+    // The height map is shared by every Y chunk of
+    // a column, so the first one to generate warms it
+    utils::heightmap_probe(world.get(), ChunkPosXZ(m_pos.x(), m_pos.z()));
 
     m_biomes = std::move(biomes);
 }

@@ -343,6 +343,41 @@ vx::hash_map<Identifier, weather_type_id> ModContext::take_weather_names(void)
     return std::move(m_weather_names);
 }
 
+precipitation_type_id ModContext::find_precipitation(const Identifier& name) const
+{
+    auto it = m_precipitation_names.find(name);
+
+    if(it == m_precipitation_names.cend())
+        return PRECIPITATION_ID_NULL;
+    return it->second;
+}
+
+precipitation_type_id ModContext::register_precipitation(const Identifier& name, PrecipitationDefinition def)
+{
+    if(m_precipitations.empty()) {
+        m_precipitations.emplace_back();
+    }
+
+    auto id = static_cast<precipitation_type_id>(m_precipitations.size());
+
+    def.id = id;
+
+    m_precipitations.push_back(std::move(def));
+    m_precipitation_names.try_emplace(name, id);
+
+    return id;
+}
+
+std::vector<PrecipitationDefinition> ModContext::take_precipitations(void)
+{
+    return std::move(m_precipitations);
+}
+
+vx::hash_map<Identifier, precipitation_type_id> ModContext::take_precipitation_names(void)
+{
+    return std::move(m_precipitation_names);
+}
+
 tint_id_type ModContext::find_tint(const Identifier& name) const
 {
     auto it = m_tint_names.find(name);

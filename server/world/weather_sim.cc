@@ -41,11 +41,15 @@ static Eigen::Vector2f player_center(World* world)
     std::size_t count = 0;
 
     for(auto& session : sessions::all()) {
+        if(session.state != session_state::CONNECTED || session.peer == nullptr) {
+            continue;
+        }
+
         if(session.world.get() != world) {
             continue;
         }
 
-        if(session.state != session_state::CONNECTED || !registry.valid(session.player)) {
+        if(!registry.valid(session.player)) {
             continue;
         }
 
@@ -170,11 +174,15 @@ static void strike(ServerWorld* world, const WeatherTypeDefinition* def)
     auto players = 0;
 
     for(auto& session : sessions::all()) {
+        if(session.state != session_state::CONNECTED || session.peer == nullptr) {
+            continue;
+        }
+
         if(session.world.get() != world) {
             continue;
         }
 
-        if(session.state != session_state::CONNECTED || !registry.valid(session.player)) {
+        if(!registry.valid(session.player)) {
             continue;
         }
 

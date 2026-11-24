@@ -5,6 +5,7 @@
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
+#include "shared/world/precipitation.hh"
 #include "shared/world/tint_registry.hh"
 #include "shared/world/weather.hh"
 
@@ -108,6 +109,12 @@ public:
     std::vector<WeatherTypeDefinition> take_weathers(void);
     vx::hash_map<Identifier, weather_type_id> take_weather_names(void);
 
+    precipitation_type_id find_precipitation(const Identifier& name) const;
+    precipitation_type_id register_precipitation(const Identifier& name, PrecipitationDefinition def);
+
+    std::vector<PrecipitationDefinition> take_precipitations(void);
+    vx::hash_map<Identifier, precipitation_type_id> take_precipitation_names(void);
+
     tint_id_type find_tint(const Identifier& name) const;
     tint_id_type register_tint(const Identifier& name, TintDefinition def);
 
@@ -140,6 +147,9 @@ private:
 
     std::vector<WeatherTypeDefinition> m_weathers;
     vx::hash_map<Identifier, weather_type_id> m_weather_names;
+
+    std::vector<PrecipitationDefinition> m_precipitations;
+    vx::hash_map<Identifier, precipitation_type_id> m_precipitation_names;
 
     std::vector<ClassDefinition> m_classes;
     vx::hash_map<Identifier, class_id_type> m_class_names;

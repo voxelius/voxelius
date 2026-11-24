@@ -15,6 +15,8 @@
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/light_storage.hh"
+#include "shared/world/precipitation.hh"
+#include "shared/world/precipitation_registry.hh"
 #include "shared/world/weather_registry.hh"
 #include "shared/world/world.hh"
 #include "shared/world/world_clock.hh"
@@ -26,6 +28,7 @@
 #include "client/video.hh"
 #include "client/world/chunk_mesh.hh"
 #include "client/world/chunk_mesher.hh"
+#include "client/world/columns.hh"
 
 constexpr static float TEXT_XPOS = 8.0f;
 constexpr static float TEXT_YPOS = 8.0f;
@@ -223,6 +226,20 @@ static std::string_view identifier_string(const std::optional<Identifier>& name)
     }
 
     return "unknown";
+}
+
+// Returned by value: the caller keeps the surface text and the liquid text at once
+static std::array<char, 24> height_string(BlockPos::value_type value)
+{
+    auto text = std::array<char, 24> {};
+
+    if(value == HEIGHTMAP_UNSET) {
+        std::snprintf(text.data(), text.size(), "unset");
+        return text;
+    }
+
+    std::snprintf(text.data(), text.size(), "%" PRId64, static_cast<std::int64_t>(value));
+    return text;
 }
 
 static std::string_view world_identifier(void)
@@ -471,6 +488,30 @@ static void compose_player(void)
 
     push_line(s_lines_left, s_left_used, TEXT_COLOR, false, "Weather: %.*s (%.0f%%)", static_cast<int>(weather_text.size()),
         weather_text.data(), 100.0f * coverage);
+
+    auto precip_context = precipitation::context(globals::world, definition.weather, world_pos.x(), world_pos.z());
+    auto precip_selection = precipitation::select(globals::world, precip_context, world_pos.x(), world_pos.y(), world_pos.z());
+    auto precip_name = precipitation_registry::name_of(precip_selection.type);
+    auto precip_text = identifier_string(precip_name);
+
+    auto column_x = static_cast<int>(std::floor(world_pos.x()));
+    auto column_z = static_cast<int>(std::floor(world_pos.z()));
+
+    auto column = columns::find(column_x, column_z);
+    auto column_text = std::array<char, 64> {};
+
+    if(column == nullptr) {
+        std::snprintf(column_text.data(), column_text.size(), "no slice");
+    }
+    else {
+        auto surface_text = height_string(column->surface_y);
+        auto liquid_text = height_string(column->liquid_y);
+
+        std::snprintf(column_text.data(), column_text.size(), "surface=%s liquid=%s", surface_text.data(), liquid_text.data());
+    }
+
+    push_line(s_lines_left, s_left_used, TEXT_COLOR, false, "Precipitation: %.*s (%.0f%%) %s", static_cast<int>(precip_text.size()),
+        precip_text.data(), 100.0f * precip_selection.amount, column_text.data());
 
     auto horizontal = Eigen::Vector2f(velocity.value.x(), velocity.value.z());
     auto speed = horizontal.norm();

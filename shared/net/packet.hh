@@ -20,8 +20,10 @@ enum packet_type : std::uint16_t {
     WORLD_REQUEST_CHUNK,
     WORLD_CHUNK_BLOCKS,
     WORLD_CHUNK_BIOMES,
+    WORLD_CHUNK_COLUMNS,
     WORLD_CHUNK_LIGHT,
     WORLD_SET_BLOCK,
+    WORLD_COLUMN,
     WORLD_TIMINGS,
     WORLD_INFO,
 
@@ -82,8 +84,10 @@ namespace packet
 struct World_Request;
 struct World_Blocks;
 struct World_Biomes;
+struct World_Columns;
 struct World_Light;
 struct World_SetBlock;
+struct World_Column;
 struct World_Timings;
 struct World_Info;
 } // namespace packet

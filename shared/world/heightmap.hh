@@ -4,10 +4,16 @@
 #include "shared/constant.hh"
 #include "shared/coord.hh"
 
+class ReadBuffer;
+class WriteBuffer;
+
 constexpr static BlockPos::value_type HEIGHTMAP_UNSET = std::numeric_limits<BlockPos::value_type>::min();
 
 struct Column final {
     constexpr static BlockPos::value_type UNSET = HEIGHTMAP_UNSET;
+
+    static void encode(const Column& column, WriteBuffer& buffer);
+    static void decode(Column& column, ReadBuffer& buffer);
 
     constexpr bool is_valid(void) const;
 

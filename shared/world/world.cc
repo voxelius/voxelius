@@ -24,7 +24,7 @@ static float weather_coverage_at(const World& world, float x, float z)
     auto type = state.type_at(definition.weather, x, z, world.weather_tick);
     auto def = weather_registry::find_definition(type);
 
-    if(def == nullptr || def->precipitation.kind == precipitation_kind::NONE) {
+    if(def == nullptr || def->precipitation.types.empty()) {
         return 0.0f;
     }
 
@@ -445,6 +445,14 @@ float World::get_temperature(const BlockPos& pos) const
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
     return get_temperature(cpos, lpos);
+}
+
+float World::get_temperature(const BlockPos& pos, float coverage) const
+{
+    auto cpos = utils::to_chunk(pos);
+    auto lpos = utils::to_local(pos);
+
+    return get_temperature_base(cpos, lpos) - WEATHER_COOLING * coverage; // TODO: add the season bias
 }
 
 float World::get_humidity_base(const ChunkPos& cpos, const LocalPos& lpos) const

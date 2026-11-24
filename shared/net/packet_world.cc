@@ -9,11 +9,14 @@
 
 constexpr static std::size_t ENTRY_HEADER_SIZE = 3 * sizeof(std::int32_t) + sizeof(std::uint8_t);
 constexpr static std::size_t CELL_SIZE = sizeof(std::uint16_t) + sizeof(std::uint8_t);
+constexpr static std::size_t COLUMN_BYTES = 2 * sizeof(std::int32_t);
 
 void packet::World_Request::encode(const World_Request& packet, WriteBuffer& buffer)
 {
     buffer.write_vector<std::int32_t, 3>(packet.view.min());
     buffer.write_vector<std::int32_t, 3>(packet.view.max());
+    buffer.write_vector<std::int32_t, 2>(packet.interest.min());
+    buffer.write_vector<std::int32_t, 2>(packet.interest.max());
     buffer.write<std::uint16_t>(packet.chunk_budget);
 }
 
@@ -21,8 +24,11 @@ void packet::World_Request::decode(World_Request& packet, ReadBuffer& buffer)
 {
     auto view_min = buffer.read_vector<std::int32_t, 3>();
     auto view_max = buffer.read_vector<std::int32_t, 3>();
+    auto interest_min = buffer.read_vector<std::int32_t, 2>();
+    auto interest_max = buffer.read_vector<std::int32_t, 2>();
 
     packet.view = ChunkAlignedBox(view_min, view_max);
+    packet.interest = ChunkAlignedBoxXZ(interest_min, interest_max);
     packet.chunk_budget = buffer.read<std::uint16_t>();
 }
 
@@ -54,6 +60,38 @@ void packet::World_Biomes::decode(World_Biomes& packet, ReadBuffer& buffer)
     auto cpos = buffer.read_vector<std::int32_t, 2>();
     packet.cpos = cpos.cast<ChunkPosXZ::value_type>();
     BiomeSlice::decode(packet.biomes, buffer);
+}
+
+void packet::World_Columns::encode(const World_Columns& packet, WriteBuffer& buffer)
+{
+    buffer.write_vector<std::int32_t, 2>(packet.cpos.cast<std::int32_t>());
+
+    WriteBuffer raw;
+
+    for(const auto& column : packet.columns) {
+        Column::encode(column, raw);
+    }
+
+    buffer.write_compressed(std::span(raw.data(), raw.size()));
+}
+
+void packet::World_Columns::decode(World_Columns& packet, ReadBuffer& buffer)
+{
+    auto cpos = buffer.read_vector<std::int32_t, 2>();
+    packet.cpos = cpos.cast<ChunkPosXZ::value_type>();
+    packet.columns.fill({});
+
+    auto raw = buffer.read_compressed();
+    auto raw_span = std::span<const std::byte>(raw);
+    auto source = ReadBuffer(raw_span);
+
+    for(auto& column : packet.columns) {
+        if(!source.has_records(1, COLUMN_BYTES)) {
+            return;
+        }
+
+        Column::decode(column, source);
+    }
 }
 
 void packet::World_Light::encode(const World_Light& packet, WriteBuffer& buffer)
@@ -139,6 +177,19 @@ void packet::World_SetBlock::decode(World_SetBlock& packet, ReadBuffer& buffer)
     auto bpos = buffer.read_vector<std::int64_t, 3>();
     packet.bpos = bpos.cast<BlockPos::value_type>();
     packet.block = buffer.read<std::uint32_t>();
+}
+
+void packet::World_Column::encode(const World_Column& packet, WriteBuffer& buffer)
+{
+    buffer.write_vector<std::int64_t, 2>(packet.bpos.cast<std::int64_t>());
+    Column::encode(packet.column, buffer);
+}
+
+void packet::World_Column::decode(World_Column& packet, ReadBuffer& buffer)
+{
+    auto bpos = buffer.read_vector<std::int64_t, 2>();
+    packet.bpos = bpos.cast<BlockPosXZ::value_type>();
+    Column::decode(packet.column, buffer);
 }
 
 void packet::World_Timings::encode(const World_Timings& packet, WriteBuffer& buffer)

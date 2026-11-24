@@ -19,6 +19,7 @@ struct packet::Auth_Request final : public packet::Base<packet::AUTH_REQUEST> {
     std::uint64_t tints_hash;
     std::uint64_t ents_hash;
     std::uint64_t weather_hash;
+    std::uint64_t precip_hash;
     std::string username;
 };
 

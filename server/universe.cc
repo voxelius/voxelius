@@ -1,7 +1,6 @@
 #include "server/pch.hh"
 
 #include "server/universe.hh"
-#include "server/world/world.hh"
 
 #include "core/cmdline.hh"
 #include "core/config/map.hh"
@@ -15,9 +14,10 @@
 #include "shared/world/world.hh"
 #include "shared/world/world_registry.hh"
 
-#include "server/world/generator_map.hh"
-
 #include "server/globals.hh"
+#include "server/world/columns.hh"
+#include "server/world/generator_map.hh"
+#include "server/world/world.hh"
 
 static std::filesystem::path s_root_dir;
 static std::filesystem::path s_conf_path;
@@ -94,6 +94,8 @@ void universe::init(void)
     // that has never been saved starts at noon
     globals::current_tick = s_tick.value();
 
+    columns::init();
+
     world_registry::resolve();
 
     auto definitions = world_registry::all();
@@ -119,6 +121,7 @@ void universe::init(void)
         std::filesystem::create_directories(world->chunk_dir());
         std::filesystem::create_directories(world->entity_dir());
 
+        world->columns().init(world.get());
         world->load_config();
         world->set_generator(generator);
 
@@ -164,6 +167,12 @@ void universe::init_late(void)
 void universe::shutdown(void)
 {
     s_tick.set_value(globals::current_tick);
+
+    columns::shutdown();
+
+    for(const auto& world : s_worlds) {
+        world->columns().save();
+    }
 
     std::ofstream out(s_conf_path, std::ios::binary | std::ios::trunc);
 

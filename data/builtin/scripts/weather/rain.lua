@@ -16,12 +16,8 @@ weather.add("rain", {
   },
 
   precipitation = {
-    kind = "rain",
+    types = { "rain", "snow", "dry" },
     intensity = 1.0,
-    speed = 28.0,
-    drift = 0.6,
-    size = 0.06,
-    color = { 0.55, 0.66, 0.80 },
   },
 
   target = { 0.62, 0.62 },

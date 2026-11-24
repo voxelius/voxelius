@@ -22,6 +22,7 @@
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
 #include "shared/world/lighting.hh"
+#include "shared/world/precipitation_registry.hh"
 #include "shared/world/tint_registry.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
@@ -36,6 +37,7 @@
 #include "client/settings.hh"
 #include "client/video.hh"
 #include "client/world/cloud_renderer.hh"
+#include "client/world/columns.hh"
 #include "client/world/skybox.hh"
 
 constexpr static std::string_view KEYPAIR_PATH = "keypair.dat";
@@ -90,6 +92,8 @@ static void handle_disconnect(std::uint32_t reason)
         globals::world->set_weather_seed(0);
     }
 
+    columns::clear();
+
     fog::reset();
     skybox::reset();
     cloud_renderer::reset();
@@ -114,6 +118,7 @@ static void on_host_connect(const HostConnectEvent& event)
     request.tints_hash = tint_registry::checksum();
     request.ents_hash = class_registry::checksum();
     request.weather_hash = weather_registry::checksum();
+    request.precip_hash = precipitation_registry::checksum();
 
     auto desired_username = s_desired_username.value();
 

@@ -1,4 +1,7 @@
 biomes.add("surface_plains", {
+  temperature = 12,
+  humidity = 50,
+
   palette = {
     basic = { name = "stone" },
     filler = { name = "dirt" },

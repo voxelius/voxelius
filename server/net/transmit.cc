@@ -5,11 +5,13 @@
 #include "shared/cvar/server.hh"
 #include "shared/net/packet_world.hh"
 #include "shared/net/protocol.hh"
+#include "shared/utils/coord.hh"
 #include "shared/world/world_clock.hh"
 
 #include "server/globals.hh"
 #include "server/net/interest.hh"
 #include "server/universe.hh"
+#include "server/world/columns.hh"
 #include "server/world/world.hh"
 
 static void on_block_update(const BlockUpdateEvent& event)
@@ -20,9 +22,18 @@ static void on_block_update(const BlockUpdateEvent& event)
     interest::broadcast(event.world(), packet, event.cpos());
 }
 
+static void on_column_update(const ColumnUpdateEvent& event)
+{
+    packet::World_Column packet {};
+    packet.bpos = event.pos();
+    packet.column = event.column();
+    interest::broadcast(event.world(), packet, utils::to_chunk_xz(event.pos()));
+}
+
 void transmit::init(void)
 {
     globals::dispatcher.sink<BlockUpdateEvent>().connect<&on_block_update>();
+    globals::dispatcher.sink<ColumnUpdateEvent>().connect<&on_column_update>();
 }
 
 void transmit::fixed_update_late(void)

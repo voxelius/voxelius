@@ -346,4 +346,6 @@ void ServerWorld::fixed_update(void)
             utils::block_sched_tick(component.position, component.ptr, it.first, it.second);
         }
     });
+
+    m_columns.flush();
 }

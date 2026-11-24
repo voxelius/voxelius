@@ -5,6 +5,7 @@
 #include "shared/net/packet.hh"
 #include "shared/world/biome_slice.hh"
 #include "shared/world/block_storage.hh"
+#include "shared/world/heightmap.hh"
 #include "shared/world/light_storage.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/world_visuals.hh"
@@ -16,6 +17,7 @@ struct packet::World_Request final : public packet::Base<packet::WORLD_REQUEST_C
     static void decode(World_Request& packet, ReadBuffer& buffer);
 
     ChunkAlignedBox view;
+    ChunkAlignedBoxXZ interest;
     std::uint16_t chunk_budget { 0 };
 };
 
@@ -35,6 +37,14 @@ struct packet::World_Biomes final : public packet::Base<packet::WORLD_CHUNK_BIOM
 
     ChunkPosXZ cpos;
     BiomeSlice biomes;
+};
+
+struct packet::World_Columns final : public packet::Base<packet::WORLD_CHUNK_COLUMNS> {
+    static void encode(const World_Columns& packet, WriteBuffer& buffer);
+    static void decode(World_Columns& packet, ReadBuffer& buffer);
+
+    ChunkPosXZ cpos;
+    ColumnSlice columns;
 };
 
 struct packet::World_Light final : public packet::Base<packet::WORLD_CHUNK_LIGHT> {
@@ -63,6 +73,14 @@ struct packet::World_SetBlock final : public packet::Base<packet::WORLD_SET_BLOC
 
     BlockPos bpos;
     block_id_type block;
+};
+
+struct packet::World_Column final : public packet::Base<packet::WORLD_COLUMN> {
+    static void encode(const World_Column& packet, WriteBuffer& buffer);
+    static void decode(World_Column& packet, ReadBuffer& buffer);
+
+    BlockPosXZ bpos;
+    Column column;
 };
 
 struct packet::World_Timings final : public packet::Base<packet::WORLD_TIMINGS> {

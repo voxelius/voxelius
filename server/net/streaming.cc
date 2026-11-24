@@ -25,25 +25,6 @@ static bool box_is_valid(const ChunkAlignedBox& box)
     return valid;
 }
 
-static bool box_is_same(const ChunkAlignedBox& a, const ChunkAlignedBox& b)
-{
-    auto same_min = (a.min().array() == b.min().array()).all();
-    auto same_max = (a.max().array() == b.max().array()).all();
-    return same_min && same_max;
-}
-
-static ChunkAlignedBox intersect_boxes(const ChunkAlignedBox& a, const ChunkAlignedBox& b)
-{
-    auto a_min = a.min();
-    auto b_min = b.min();
-    auto min = a_min.cwiseMax(b_min);
-
-    auto a_max = a.max();
-    auto b_max = b.max();
-    auto max = a_max.cwiseMin(b_max);
-    return ChunkAlignedBox(min, max);
-}
-
 static void rebuild(Session& session, const ChunkPos& player)
 {
     session.stream_wanted_chunks.clear();
@@ -172,20 +153,48 @@ void streaming::subscribe(Session& session, const packet::World_Request& packet)
     const auto& transform = registry.get<Transform>(session.player);
     auto& player = transform.chunk;
 
-    auto allowed_view = utils::view_box(player, static_cast<ChunkPos::value_type>(interest::view_distance.value()));
-    auto view = intersect_boxes(packet.view, allowed_view);
+    auto radius = static_cast<ChunkPos::value_type>(interest::view_distance.value());
+    auto allowed = utils::view_box(player, radius);
+    auto view_min = ChunkPos(packet.view.min().cwiseMax(allowed.min()));
+    auto view_max = ChunkPos(packet.view.max().cwiseMin(allowed.max()));
 
+    // A chunk the world does not hold can never
+    // arrive, so the box is clipped to its height
     auto& definition = session.world->definition();
     auto min_y = static_cast<ChunkPos::value_type>(definition.min_y >> constant::CHUNK_SIZE_LOG2);
     auto max_y = static_cast<ChunkPos::value_type>(definition.max_y >> constant::CHUNK_SIZE_LOG2);
 
-    view.min().y() = std::max(view.min().y(), min_y);
-    view.max().y() = std::min(view.max().y(), max_y);
+    view_min.y() = std::max(view_min.y(), min_y);
+    view_max.y() = std::min(view_max.y(), max_y);
 
-    auto changed = !box_is_same(session.stream_view_box, view);
+    auto view = ChunkAlignedBox(view_min, view_max);
+
+    auto allowed_interest = utils::interest_box(player, radius);
+    auto interest_min = ChunkPosXZ(packet.interest.min().cwiseMax(allowed_interest.min()));
+    auto interest_max = ChunkPosXZ(packet.interest.max().cwiseMin(allowed_interest.max()));
+    auto column_interest = ChunkAlignedBoxXZ(interest_min, interest_max);
+
+    auto changed = false;
+    changed = changed || !session.stream_view_box.isApprox(view, 0);
     changed = changed || (session.stream_player_chunk.array() != player.array()).any();
 
+    // A column the client dropped has to travel
+    // again when the player comes back; biomes stay
+    if(!session.interest_box.isApprox(column_interest, 0)) {
+        auto it = session.stream_sent_columns.begin();
+
+        while(it != session.stream_sent_columns.end()) {
+            if(column_interest.contains(*it)) {
+                it = std::next(it);
+            }
+            else {
+                it = session.stream_sent_columns.erase(it);
+            }
+        }
+    }
+
     session.stream_view_box = view;
+    session.interest_box = column_interest;
     session.stream_player_chunk = player;
     session.stream_budget_chunks = std::min(packet.chunk_budget, MAX_CHUNK_BUDGET);
 
