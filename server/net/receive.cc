@@ -382,6 +382,14 @@ static void on_player_interact_b(const packet::Player_InteractB& packet)
     hit.world = world.get();
     hit.block_pos = packet.bpos;
     hit.id = packet.expected;
+
+    if(auto target_family = block_registry::find_family_of(packet.expected)) {
+        hit.stem = target_family->stem_id;
+    }
+    else {
+        hit.stem = packet.expected;
+    }
+
     hit.face = packet.face;
     hit.normal = packet.normal;
     hit.point = packet.point;

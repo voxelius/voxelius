@@ -71,12 +71,22 @@ local function fill_name(bx, by, bz, fillable)
   return EMPTY
 end
 
+local function slab_state(bx, by, bz)
+  local state = world.get_state(bx, by, bz, "orientation")
+
+  if state == "top" or state == "bottom" or state == "double" then
+    return state
+  end
+
+  return nil
+end
+
 function slabdef.on_place(identifier, fillable)
   return function(bx, by, bz, target, occupant, actor)
     local slab_id = blocks.get(identifier)
 
     if target.stem == slab_id then
-      local state = world.get_state(target.bx, target.by, target.bz, "orientation")
+      local state = slab_state(target.bx, target.by, target.bz)
 
       if state == "bottom" and target.face == blocks.FACE_TOP then
         world.set_state(target.bx, target.by, target.bz, "orientation", "double")
@@ -93,18 +103,20 @@ function slabdef.on_place(identifier, fillable)
       end
     end
 
-    if occupant.id == slab_id then
-      local state = world.get_state(bx, by, bz, "orientation")
-      if state ~= "double" then
+    local occupant_state = slab_state(bx, by, bz)
+
+    if occupant_state then
+      if occupant_state ~= "double" then
         world.set_state(bx, by, bz, "orientation", "double")
         if fillable then
           world.set_state(bx, by, bz, flowdef.filled_state, EMPTY)
         end
-        return nil
       end
+
+      return nil
     end
 
-    if occupant.id ~= blocks.NULL_BLOCK and occupant.id ~= slab_id and not occupant.replaceable then
+    if occupant.id ~= blocks.NULL_BLOCK and not occupant.replaceable then
       return nil
     end
 
