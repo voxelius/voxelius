@@ -228,6 +228,10 @@ static bool parse_definition(lua_State* L, int def_idx, PrecipDefinition& def, c
         return false;
     }
 
+    if(!parse_identifier(L, def_idx, "tint", ctx, def.tint)) {
+        return false;
+    }
+
     if(!parse_color(L, def_idx, "color", def.color)) {
         return fail(L, base);
     }

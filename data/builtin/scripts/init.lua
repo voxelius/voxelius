@@ -9,6 +9,7 @@ end
 tints.add("grass", { default_color = { 0.57, 0.75, 0.28 } })
 tints.add("foliage", { default_color = { 0.40, 0.65, 0.25 } })
 tints.add("water", { default_color = { 0.25, 0.45, 0.85 } })
+tints.add("rain", { default_color = { 1.00, 1.00, 1.00 } })
 
 dofile("fluid/water.lua")
 

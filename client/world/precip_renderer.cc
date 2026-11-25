@@ -15,11 +15,13 @@
 #include "shared/globals.hh"
 #include "shared/utils/coord.hh"
 #include "shared/utils/weather.hh"
+#include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/chunk.hh"
 #include "shared/world/fluid.hh"
 #include "shared/world/precip.hh"
 #include "shared/world/precip_registry.hh"
+#include "shared/world/tint_registry.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/world.hh"
 
@@ -66,6 +68,7 @@ struct PrecipColumn final {
     float dist2;
     float sky_light;
     float block_light;
+    Eigen::Vector3f tint { Eigen::Vector3f::Ones() }; // Biome tint, multiplies the type color
     const PrecipDefinition* definition;
     float effective_intensity;
 };
@@ -92,6 +95,7 @@ static std::vector<PrecipVertex> s_vertices;
 static std::vector<PrecipColumn> s_columns;
 static std::vector<DrawRange> s_ranges;
 static vx::hash_map<precip_type_id, res::handle<Texture2D>> s_textures;
+static std::vector<tint_id_type> s_tint_ids;
 
 static cvar::Boolean s_precip { true };
 static cvar::Number<unsigned> s_radius { 8, 3, MAX_RADIUS };
@@ -160,6 +164,35 @@ static double scroll_seconds(void)
     auto ahead = std::min(elapsed_ticks, 1.0);
 
     return (static_cast<double>(s_tick) + ahead) / static_cast<double>(constant::FIXED_TICKRATE);
+}
+
+// The type resolves its tint once per frame; a column only asks its own
+// biome, which is a slice index, so the lookup stays out of the inner loop
+static Eigen::Vector3f resolve_tint(const World* world, const BlockPos& bpos, const PrecipDefinition* definition)
+{
+    auto tint = TINT_ID_NULL;
+
+    if(definition->id < s_tint_ids.size()) {
+        tint = s_tint_ids[definition->id];
+    }
+
+    if(tint == TINT_ID_NULL) {
+        return Eigen::Vector3f::Ones();
+    }
+
+    auto biome_def = biome_registry::find_definition(world->biome(bpos));
+
+    // A biome that names no color for this tint falls back to the default,
+    // which is what the block meshes do for an unnamed face as well
+    if(biome_def && tint < biome_def->tint_colors.size()) {
+        return biome_def->tint_colors[tint];
+    }
+
+    if(auto tint_def = tint_registry::find_definition(tint)) {
+        return tint_def->default_color;
+    }
+
+    return Eigen::Vector3f::Ones();
 }
 
 // The camera sits in the local space of its own chunk, and the render works in
@@ -300,6 +333,7 @@ static void build_columns(const World* world, const PrecipContext& ctx, const Ei
             column.dist2 = delta_x * delta_x + delta_z * delta_z;
             column.sky_light = sky_light;
             column.block_light = block_light;
+            column.tint = resolve_tint(world, bpos, definition);
             column.definition = definition;
             column.effective_intensity = selection.effective_intensity;
             s_columns.push_back(column);
@@ -347,9 +381,7 @@ static void build_vertices(const Eigen::Vector3f& camera)
         auto right_x = column.x + tangent_x * half;
         auto right_z = column.z + tangent_z * half;
 
-        auto red = column.definition->color.x();
-        auto green = column.definition->color.y();
-        auto blue = column.definition->color.z();
+        auto color = column.definition->color.cwiseProduct(column.tint);
 
         // The column fades towards the edge of the volume, so the
         // nearest drops stay dense and the volume has no hard rim
@@ -365,9 +397,9 @@ static void build_vertices(const Eigen::Vector3f& camera)
             vertex.position[2] = z;
             vertex.uv[0] = u;
             vertex.uv[1] = v;
-            vertex.color[0] = red;
-            vertex.color[1] = green;
-            vertex.color[2] = blue;
+            vertex.color[0] = color.x();
+            vertex.color[1] = color.y();
+            vertex.color[2] = color.z();
             vertex.color[3] = alpha;
             vertex.light[0] = column.sky_light;
             vertex.light[1] = column.block_light;
@@ -427,6 +459,23 @@ void precip_renderer::init(void)
     su_BlockColor = s_program.add_uniform("u_BlockColor");
     su_Ambient = s_program.add_uniform("u_Ambient");
 
+    s_tint_ids.assign(precip_registry::all_definitions().size(), TINT_ID_NULL);
+
+    for(const auto& definition : precip_registry::all_definitions()) {
+        if(!definition.tint.is_valid()) {
+            continue;
+        }
+
+        auto tint = tint_registry::find(definition.tint);
+
+        if(tint == TINT_ID_NULL) {
+            msg::log_warning("{}: unknown tint", definition.tint.full_string());
+            continue;
+        }
+
+        s_tint_ids[definition.id] = tint;
+    }
+
     for(const auto& definition : precip_registry::all_definitions()) {
         if(!definition.texture.is_valid()) {
             continue;
@@ -476,6 +525,7 @@ void precip_renderer::init(void)
 void precip_renderer::shutdown(void)
 {
     s_textures.clear();
+    s_tint_ids.clear();
     s_vertices.clear();
     s_columns.clear();
     s_ranges.clear();

@@ -29,6 +29,17 @@ static void hash_text(std::uint64_t& hash, std::string_view text)
     hash_trivial(hash, text.data(), text.size());
 }
 
+static void hash_identifier(std::uint64_t& hash, const Identifier& id)
+{
+    auto text = std::string();
+
+    if(id.is_valid()) {
+        text = id.full_string();
+    }
+
+    hash_text(hash, text);
+}
+
 static void update_checksum(void)
 {
     std::uint64_t hash = 0;
@@ -48,13 +59,8 @@ static void update_checksum(void)
         hash_value(hash, def.humidity_fade);
         hash_value(hash, def.priority);
 
-        auto texture = std::string();
-
-        if(def.texture.is_valid()) {
-            texture = def.texture.full_string();
-        }
-
-        hash_text(hash, texture);
+        hash_identifier(hash, def.texture);
+        hash_identifier(hash, def.tint);
 
         hash_value(hash, def.quad_width);
         hash_value(hash, def.band_half_height);

@@ -22,6 +22,7 @@ struct PrecipDefinition final {
     float priority { 1.0f };
 
     Identifier texture;
+    Identifier tint;
     float quad_width { 1.0f };
     float band_half_height { 12.0f };
     float fall_speed { 4.0f };  // Tiles per second along V
