@@ -52,7 +52,6 @@ static std::size_t su_Aspect;
 static std::size_t su_HorizonColor;
 static std::size_t su_SunHorizonColor;
 static std::size_t su_ZenithColor;
-static std::size_t su_GroundColor;
 static std::size_t su_SunDirection;
 static std::size_t su_SunTint;
 static std::size_t su_SunStrength;
@@ -267,7 +266,6 @@ void sky_renderer::init(void)
     su_HorizonColor = s_sky.add_uniform("u_HorizonColor");
     su_SunHorizonColor = s_sky.add_uniform("u_SunHorizonColor");
     su_ZenithColor = s_sky.add_uniform("u_ZenithColor");
-    su_GroundColor = s_sky.add_uniform("u_GroundColor");
     su_SunDirection = s_sky.add_uniform("u_SunDirection");
     su_SunTint = s_sky.add_uniform("u_SunTint");
     su_SunStrength = s_sky.add_uniform("u_SunStrength");
@@ -394,7 +392,6 @@ void sky_renderer::render(void)
 
         auto half_fov = 0.5f * utils::radians(client_camera::vertical_fov.value());
         auto tan_half_fov = std::tan(half_fov);
-        auto ground_color = Eigen::Vector3f(skybox::horizon_color * 0.35f);
 
         auto forward = client_camera::instance.forward_vector();
         auto right = client_camera::instance.right_vector();
@@ -409,7 +406,6 @@ void sky_renderer::render(void)
         glUniform3fv(s_sky.uniforms[su_HorizonColor].location, 1, skybox::horizon_color.data());
         glUniform3fv(s_sky.uniforms[su_SunHorizonColor].location, 1, skybox::sun_horizon_color.data());
         glUniform3fv(s_sky.uniforms[su_ZenithColor].location, 1, skybox::zenith_color.data());
-        glUniform3fv(s_sky.uniforms[su_GroundColor].location, 1, ground_color.data());
         glUniform3fv(s_sky.uniforms[su_SunDirection].location, 1, skybox::sun_direction.data());
         glUniform3fv(s_sky.uniforms[su_SunTint].location, 1, skybox::sun_tint.data());
         glUniform1f(s_sky.uniforms[su_SunStrength].location, skybox::sun_strength);

@@ -13,7 +13,6 @@ uniform float u_Aspect;
 uniform vec3 u_HorizonColor;
 uniform vec3 u_SunHorizonColor;
 uniform vec3 u_ZenithColor;
-uniform vec3 u_GroundColor;
 uniform vec3 u_SunDirection;
 uniform vec3 u_SunTint;
 uniform float u_SunStrength;
@@ -42,12 +41,6 @@ void main(void)
 
     vec3 horizon = mix(u_HorizonColor, u_SunHorizonColor, pow(side, 2.0) * u_Twilight);
     vec3 color = mix(horizon, u_ZenithColor, pow(up, 0.50));
-
-    // Below the horizon the same color turns into a dark
-    // ground, so a hole in the terrain does not show sky
-    if(direction.y < 0.0) {
-        color = mix(horizon, u_GroundColor, clamp(-direction.y * 4.0, 0.0, 1.0));
-    }
 
     // Rayleigh scattering around the sun, strongest along the horizon
     // where the light crosses the most air and keeps the red end of its
