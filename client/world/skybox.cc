@@ -48,6 +48,7 @@ Eigen::Vector3f skybox::fog_color;
 Eigen::Vector3f skybox::zenith_color;
 
 Eigen::Vector3f skybox::sun_direction;
+Eigen::Vector2f skybox::sun_azimuth;
 Eigen::Vector3f skybox::sun_tint;
 Eigen::Vector3f skybox::cloud_tint { Eigen::Vector3f::Ones() };
 float skybox::sun_strength;
@@ -58,7 +59,7 @@ float skybox::moon_strength;
 std::uint32_t skybox::moon_phase;
 
 float skybox::sun_tilt;
-float skybox::twilight;
+float skybox::scatter;
 
 float skybox::phase;
 float skybox::daylight;
@@ -221,6 +222,10 @@ void skybox::update(void)
     auto blend = state.blend(allowed, world_position.x(), world_position.z(), globals::world->weather_tick);
     auto visibility = std::clamp(blend.sky_visibility, 0.0f, 1.0f);
 
+    // The sun and the moon need a clear sky more than the gradient does:
+    // a half cover already takes three quarters of their strength
+    auto open_sky = visibility * visibility;
+
     // The sunlight crosses more air as the sun sinks, losing blue
     // first; the normalized result is the color of the setting sun
     auto airmass = 1.0f / (std::max(height, 0.0f) + AIRMASS_FLOOR);
@@ -242,8 +247,9 @@ void skybox::update(void)
     Eigen::Vector3f clear_horizon = base_horizon;
     Eigen::Vector3f clear_zenith = base_zenith;
 
+    // A covered sky has one color, so the weather zenith is its horizon
     Eigen::Vector3f weather_horizon = blend.sky_tint * light;
-    Eigen::Vector3f weather_zenith = blend.sky_tint * (0.55f * light);
+    Eigen::Vector3f weather_zenith = weather_horizon;
 
     // A type with sky_visibility 0 replaces the sky with its own
     // color; 1 leaves the Rayleigh gradient fully in charge
@@ -282,6 +288,15 @@ void skybox::update(void)
 
     auto warmth = std::pow(std::max(alignment, 0.0f), 2.0f) * twilight * visibility * sun_factor;
 
+    // The shader only needs the heading of the sun, and a zero
+    // vector when the sun stands right above
+    if(sun_length > 1.0e-4f) {
+        sun_azimuth = sun_flat / sun_length;
+    }
+    else {
+        sun_azimuth.setZero();
+    }
+
     horizon_color = s_horizon;
     sun_horizon_color = s_warm_horizon;
     fog_color = s_horizon + (s_warm_horizon - s_horizon) * warmth;
@@ -293,16 +308,16 @@ void skybox::update(void)
     sun_tilt = tilt + sun_tilt_offset;
     sun_tint = tint;
     sun_direction = sun_vector;
-    sun_strength = utils::smoothstep(-0.05f, 0.05f, height) * visibility * sun_factor;
+    sun_strength = utils::smoothstep(-0.05f, 0.05f, height) * open_sky * sun_factor;
 
     moon_direction = moon_vector;
     moon_tint = moon_color + (tint - moon_color) * (twilight * 0.85f);
-    moon_strength = utils::smoothstep(-0.05f, 0.05f, -height) * visibility * 0.85f * moon_factor;
+    moon_strength = utils::smoothstep(-0.05f, 0.05f, -height) * open_sky * 0.85f * moon_factor;
     moon_phase = static_cast<std::uint32_t>(world_clock::day(globals::world->daylight_tick, day_length) % MOON_PHASE_COUNT);
 
     cloud_tint = Eigen::Vector3f::Ones() + (tint - Eigen::Vector3f::Ones()) * (twilight * visibility * 0.85f);
-    twilight = twilight * visibility;
-    star_visibility = (1.0f - light) * visibility * star_factor;
+    scatter = twilight * visibility;
+    star_visibility = (1.0f - light) * open_sky * star_factor;
 }
 
 void skybox::reset(void)

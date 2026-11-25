@@ -6,7 +6,6 @@
 #include "core/exception.hh"
 #include "core/identifier.hh"
 #include "core/res/resource.hh"
-#include "core/utils/angles.hh"
 
 #include "shared/constant.hh"
 #include "shared/world/world.hh"
@@ -44,18 +43,15 @@ static_assert(sizeof(StarVertex) == 6 * sizeof(float), "StarVertex must stay pac
 static const Eigen::Vector4f SUN_UV_RECT { 0.0f, 0.0f, 1.0f, 1.0f };
 
 static ShaderProgram s_sky;
-static std::size_t su_CameraForward;
-static std::size_t su_CameraRight;
-static std::size_t su_CameraUp;
-static std::size_t su_TanHalfFov;
-static std::size_t su_Aspect;
+static std::size_t su_ViewProjection;
 static std::size_t su_HorizonColor;
 static std::size_t su_SunHorizonColor;
 static std::size_t su_ZenithColor;
 static std::size_t su_SunDirection;
+static std::size_t su_SunAzimuth;
 static std::size_t su_SunTint;
 static std::size_t su_SunStrength;
-static std::size_t su_Twilight;
+static std::size_t su_Scatter;
 
 static ShaderProgram s_stars;
 static std::size_t su_SkyViewProjection;
@@ -78,6 +74,10 @@ static res::handle<Texture2D> s_sun_texture;
 static res::handle<Texture2D> s_moon_texture;
 
 static GLuint s_quad_vao;
+static GLuint s_sky_vao;
+static GLuint s_sky_vbo;
+static GLuint s_sky_ibo;
+static GLsizei s_sky_indices;
 static GLuint s_star_vao;
 static GLuint s_star_vbo;
 static GLsizei s_star_vertices;
@@ -252,24 +252,95 @@ static void draw_celestial(const res::handle<Texture2D>& texture, const Eigen::V
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
+// The dome is a color interpolator rather than a shape: its rings sit at
+// up = (i / n) squared, so a straight blend between two of them follows the
+// square root the sky falls off with
+static void build_sky_dome(void)
+{
+    constexpr static int LONGITUDES = 96;
+    constexpr static int UPPER_RINGS = 32;
+    constexpr static int LOWER_RINGS = 12;
+
+    std::vector<float> latitudes;
+
+    for(auto i = UPPER_RINGS; i >= 0; --i) {
+        auto up = static_cast<float>(i) / static_cast<float>(UPPER_RINGS);
+        latitudes.push_back(up * up);
+    }
+
+    for(auto i = 1; i <= LOWER_RINGS; ++i) {
+        auto angle = 0.5f * std::numbers::pi_v<float> * static_cast<float>(i) / static_cast<float>(LOWER_RINGS);
+        latitudes.push_back(-std::sin(angle));
+    }
+
+    std::vector<Eigen::Vector3f> vertices;
+    std::vector<std::uint32_t> indices;
+
+    for(auto y : latitudes) {
+        auto radius = std::sqrt(std::max(1.0f - y * y, 0.0f));
+
+        for(auto lon = 0; lon <= LONGITUDES; lon += 1) {
+            auto angle = 2.0f * std::numbers::pi_v<float> * static_cast<float>(lon) / static_cast<float>(LONGITUDES);
+
+            vertices.emplace_back(radius * std::cos(angle), y, radius * std::sin(angle));
+        }
+    }
+
+    for(std::size_t ring = 0; ring + 1 < latitudes.size(); ring += 1) {
+        for(auto lon = 0; lon < LONGITUDES; lon += 1) {
+            auto first = static_cast<std::uint32_t>(ring * (LONGITUDES + 1) + static_cast<std::size_t>(lon));
+            auto next = first + LONGITUDES + 1;
+
+            indices.push_back(first);
+            indices.push_back(next);
+            indices.push_back(first + 1);
+
+            indices.push_back(first + 1);
+            indices.push_back(next);
+            indices.push_back(next + 1);
+        }
+    }
+
+    glGenVertexArrays(1, &s_sky_vao);
+    glBindVertexArray(s_sky_vao);
+
+    glGenBuffers(1, &s_sky_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, s_sky_vbo);
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(vertices.size() * sizeof(Eigen::Vector3f)), vertices.data(), GL_STATIC_DRAW);
+
+    glGenBuffers(1, &s_sky_ibo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_sky_ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(indices.size() * sizeof(std::uint32_t)), indices.data(), GL_STATIC_DRAW);
+
+    constexpr auto STRIDE = static_cast<GLsizei>(sizeof(Eigen::Vector3f));
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, STRIDE, reinterpret_cast<const void*>(0));
+    glEnableVertexAttribArray(0);
+
+    glBindVertexArray(0);
+
+    s_sky_indices = static_cast<GLsizei>(indices.size());
+}
+
 void sky_renderer::init(void)
 {
     auto sky_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "sky");
     auto sky_ok = s_sky.setup(sky_id);
     vx::throw_if_not_fmt(sky_ok, "{}: setup failed", sky_id.full_string());
 
-    su_CameraForward = s_sky.add_uniform("u_CameraForward");
-    su_CameraRight = s_sky.add_uniform("u_CameraRight");
-    su_CameraUp = s_sky.add_uniform("u_CameraUp");
-    su_TanHalfFov = s_sky.add_uniform("u_TanHalfFov");
-    su_Aspect = s_sky.add_uniform("u_Aspect");
+    su_ViewProjection = s_sky.add_uniform("u_ViewProjection");
     su_HorizonColor = s_sky.add_uniform("u_HorizonColor");
     su_SunHorizonColor = s_sky.add_uniform("u_SunHorizonColor");
     su_ZenithColor = s_sky.add_uniform("u_ZenithColor");
     su_SunDirection = s_sky.add_uniform("u_SunDirection");
+    su_SunAzimuth = s_sky.add_uniform("u_SunAzimuth");
     su_SunTint = s_sky.add_uniform("u_SunTint");
     su_SunStrength = s_sky.add_uniform("u_SunStrength");
-    su_Twilight = s_sky.add_uniform("u_Twilight");
+    su_Scatter = s_sky.add_uniform("u_Scatter");
+
+    // Compile at boot: a broken shader
+    // must fail loudly before the first world
+    vx::throw_if_not(s_sky.update());
 
     auto stars_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "stars");
     auto stars_ok = s_stars.setup(stars_id);
@@ -310,6 +381,8 @@ void sky_renderer::init(void)
 
     glGenVertexArrays(1, &s_quad_vao);
 
+    build_sky_dome();
+
     glGenVertexArrays(1, &s_star_vao);
     glBindVertexArray(s_star_vao);
 
@@ -336,6 +409,11 @@ void sky_renderer::shutdown(void)
     glDeleteVertexArrays(1, &s_star_vao);
     glDeleteVertexArrays(1, &s_quad_vao);
 
+    glDeleteBuffers(1, &s_sky_ibo);
+    glDeleteBuffers(1, &s_sky_vbo);
+    glDeleteVertexArrays(1, &s_sky_vao);
+
+    s_sky_indices = 0;
     s_star_vertices = 0;
 
     release_textures();
@@ -390,41 +468,31 @@ void sky_renderer::render(void)
     if(draw_sky) {
         vx::throw_if_not(s_sky.update());
 
-        auto half_fov = 0.5f * utils::radians(client_camera::vertical_fov.value());
-        auto tan_half_fov = std::tan(half_fov);
-
-        auto forward = client_camera::instance.forward_vector();
-        auto right = client_camera::instance.right_vector();
-        auto up = client_camera::instance.up_vector();
-
         glUseProgram(s_sky.handle);
-        glUniform3fv(s_sky.uniforms[su_CameraForward].location, 1, forward.data());
-        glUniform3fv(s_sky.uniforms[su_CameraRight].location, 1, right.data());
-        glUniform3fv(s_sky.uniforms[su_CameraUp].location, 1, up.data());
-        glUniform1f(s_sky.uniforms[su_TanHalfFov].location, tan_half_fov);
-        glUniform1f(s_sky.uniforms[su_Aspect].location, globals::aspect);
+        glUniformMatrix4fv(s_sky.uniforms[su_ViewProjection].location, 1, GL_FALSE, sky_view_projection.data());
         glUniform3fv(s_sky.uniforms[su_HorizonColor].location, 1, skybox::horizon_color.data());
         glUniform3fv(s_sky.uniforms[su_SunHorizonColor].location, 1, skybox::sun_horizon_color.data());
         glUniform3fv(s_sky.uniforms[su_ZenithColor].location, 1, skybox::zenith_color.data());
         glUniform3fv(s_sky.uniforms[su_SunDirection].location, 1, skybox::sun_direction.data());
+        glUniform2fv(s_sky.uniforms[su_SunAzimuth].location, 1, skybox::sun_azimuth.data());
         glUniform3fv(s_sky.uniforms[su_SunTint].location, 1, skybox::sun_tint.data());
         glUniform1f(s_sky.uniforms[su_SunStrength].location, skybox::sun_strength);
-        glUniform1f(s_sky.uniforms[su_Twilight].location, skybox::twilight);
+        glUniform1f(s_sky.uniforms[su_Scatter].location, skybox::scatter);
 
-        glBindVertexArray(s_quad_vao);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(s_sky_vao);
+        glDrawElements(GL_TRIANGLES, s_sky_indices, GL_UNSIGNED_INT, nullptr);
 
         globals::num_draw_calls += 1;
-        globals::num_draw_vertices += 3;
+        globals::num_draw_vertices += static_cast<std::size_t>(s_sky_indices);
     }
 
-    auto draw_star_field = skybox::star_visibility > 0.001f;
+    auto draw_star_field = skybox::star_visibility > 0.01f;
 
     if(draw_star_field) {
         draw_stars(sky_view_projection);
     }
 
-    auto draw_moon = skybox::moon_strength > 0.001f;
+    auto draw_moon = skybox::moon_strength > 0.01f;
 
     if(draw_moon) {
         auto uv_rect = moon_uv_rect(skybox::moon_phase);
@@ -433,7 +501,7 @@ void sky_renderer::render(void)
             sky_view_projection);
     }
 
-    auto draw_sun_body = skybox::sun_strength > 0.001f;
+    auto draw_sun_body = skybox::sun_strength > 0.01f;
 
     if(draw_sun_body) {
         draw_celestial(s_sun_texture, skybox::sun_direction, skybox::sun_tint, SUN_UV_RECT, SUN_HALF_SIZE, skybox::sun_strength, true,
