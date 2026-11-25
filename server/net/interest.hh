@@ -24,6 +24,8 @@ namespace interest
 template<typename T>
 void broadcast(const World* world, const T& packet, const ChunkPos& origin, ENetPeer* except = nullptr);
 template<typename T>
+void broadcast(const World* world, const T& packet, const ChunkPosXZ& origin, ENetPeer* except = nullptr);
+template<typename T>
 void broadcast(const World* world, const T& packet, ENetPeer* except = nullptr);
 } // namespace interest
 

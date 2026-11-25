@@ -37,7 +37,7 @@ constexpr static float CLOUD_DEPTH_MARGIN = 1024.0f;
 // rebuild resamples only the cells that slid in at the window's edge
 struct CloudDrift final {
     Eigen::Vector2f anchor { Eigen::Vector2f::Zero() };
-    Eigen::Vector2f offset { Eigen::Vector2f::Zero() };
+    Eigen::Vector2f drift_offset { Eigen::Vector2f::Zero() };
     bool anchored { false };
 };
 
@@ -96,7 +96,7 @@ float cloud_renderer::z_far = CLOUD_NEAR_PLANE + CLOUD_DEPTH_MARGIN;
 
 static Eigen::Vector3f camera_world_position(void)
 {
-    return utils::to_fvec(camera::chunk) + camera::local;
+    return utils::to_fvec(client_camera::chunk) + client_camera::local;
 }
 
 static void upload_mesh(const CloudMesh& mesh, std::size_t slot)
@@ -127,7 +127,7 @@ static bool needs_rebuild(void)
         return true;
     }
 
-    if(s_last_cloud_range != camera::cloud_range.value()) {
+    if(s_last_cloud_range != client_camera::cloud_range.value()) {
         return true;
     }
 
@@ -140,7 +140,7 @@ static bool needs_rebuild(void)
     // enough for its window to slide a cell; the wind offset alone
     // keeps the deck moving in between, and the deck is sampled in
     // the frame of the build, so a rebuild does not reshuffle cubes
-    if((s_drift.offset - s_last_build_offset).norm() > cloud_field::fine_cell_blocks() * 2.0f) {
+    if((s_drift.drift_offset - s_last_build_offset).norm() > cloud_field::fine_cell_blocks() * 2.0f) {
         return true;
     }
 
@@ -149,11 +149,10 @@ static bool needs_rebuild(void)
     return s_state_signature != globals::world->weather().seed();
 }
 
-// The deck is sampled in the weather field and drawn with that field's
-// drift, so the cubes keep the shape the field gave them while the front
-// travels. Driving the offset from the locally integrated wind instead lets
-// the two slowly disagree, and the next rebuild then swaps a whole swath of
-// the deck at once
+// The deck is sampled in the weather field and drawn with that field's drift, so the cubes keep the
+// shape the field gave them while the front travels. Driving the offset from the locally integrated
+// wind instead lets the two slowly disagree, and the
+// next rebuild then swaps a whole swath of the deck at once
 static void advance_wind_offsets(void)
 {
     auto step = 1.0f - std::exp(-WIND_EASE_PER_SECOND * std::min(globals::window_frametime, 0.1f));
@@ -162,17 +161,16 @@ static void advance_wind_offsets(void)
     auto& drift = s_drift;
 
     if(!drift.anchored) {
-        drift.anchor = field_drift - drift.offset;
+        drift.anchor = field_drift - drift.drift_offset;
         drift.anchored = true;
     }
 
-    // A jump of the weather clock, such as a forced front, must not
-    // teleport the deck across the sky; a short ease turns it into a slide.
-    // Ordinary drift moves at a couple of blocks per second, so the lag
-    // this adds is under a block
+    // A jump of the weather clock, such as a forced front, must not teleport the deck across the sky; a
+    // short ease turns it into a slide. Ordinary drift moves at a
+    // couple of blocks per second, so the lag this adds is under a block
     auto target = field_drift - drift.anchor;
 
-    drift.offset += (target - drift.offset) * step;
+    drift.drift_offset += (target - drift.drift_offset) * step;
 }
 
 static void update_depth_range(float radius)
@@ -187,7 +185,7 @@ static Eigen::Matrix4f cloud_view_projection(void)
 {
     auto near_plane = cloud_renderer::z_near;
     auto far_plane = cloud_renderer::z_far;
-    auto inv_tangent = 1.0f / std::tan(0.5f * utils::radians(camera::vertical_fov.value()));
+    auto inv_tangent = 1.0f / std::tan(0.5f * utils::radians(client_camera::vertical_fov.value()));
 
     Eigen::Matrix4f projection = Eigen::Matrix4f::Zero();
     projection(0, 0) = inv_tangent / globals::aspect;
@@ -196,7 +194,47 @@ static Eigen::Matrix4f cloud_view_projection(void)
     projection(3, 2) = -1.0f;
     projection(2, 3) = -far_plane * near_plane / (far_plane - near_plane);
 
-    return projection * camera::instance.view();
+    return projection * client_camera::instance.view();
+}
+
+// Takes the snapshot and hands the build to the pool; the deck keeps drawing the previous mesh until it lands
+static void submit_build(void)
+{
+    auto camera_position = camera_world_position();
+    auto radius = std::min(static_cast<float>(constant::CHUNK_SIZE * client_camera::cloud_range.value()), cloud_field::max_radius_blocks());
+
+    update_depth_range(radius);
+
+    auto& definition = globals::world->definition();
+
+    CloudInput input {};
+    input.state = globals::world->weather();
+    input.allowed = definition.weather;
+    input.anchor = s_drift.anchor;
+    input.drift_offset = s_drift.drift_offset;
+    input.center = camera_position;
+    input.radius = radius;
+
+    s_last_build_offset = s_drift.drift_offset;
+
+    s_groups.clear();
+    cloud_field::collect_groups(camera_position.y(), s_groups);
+
+    // Far decks first: clouds blend, so the order is what makes overlapping layers stack correctly
+    std::sort(s_groups.begin(), s_groups.end(), [](const CloudGroup& a, const CloudGroup& b) {
+        return a.distance > b.distance;
+    });
+
+    s_last_build_center = camera_position;
+    s_last_cloud_range = client_camera::cloud_range.value();
+    s_state_signature = globals::world->weather().seed();
+    s_rebuild_requested = false;
+    s_build_cooldown = BUILD_COOLDOWN_SECONDS;
+
+    s_generation += 1;
+    s_building = true;
+
+    threading::submit<CloudTask>(std::move(input), s_groups, std::move(s_meshes[1 - s_front]), s_generation);
 }
 
 CloudTask::CloudTask(CloudInput input, const std::vector<CloudGroup>& groups, CloudMesh&& scratch, std::uint64_t generation)
@@ -234,46 +272,6 @@ void CloudTask::finalize(void)
     s_meshes[s_front] = std::move(m_mesh);
 
     upload_mesh(s_meshes[s_front], s_front);
-}
-
-// Takes the snapshot and hands the build to the pool; the deck keeps drawing the previous mesh until it lands
-static void submit_build(void)
-{
-    auto camera_position = camera_world_position();
-    auto radius = std::min(static_cast<float>(constant::CHUNK_SIZE * camera::cloud_range.value()), cloud_field::max_radius_blocks());
-
-    update_depth_range(radius);
-
-    auto& definition = globals::world->definition();
-
-    CloudInput input {};
-    input.state = globals::world->weather();
-    input.allowed = definition.weather;
-    input.anchor = s_drift.anchor;
-    input.offset = s_drift.offset;
-    input.center = camera_position;
-    input.radius = radius;
-
-    s_last_build_offset = s_drift.offset;
-
-    s_groups.clear();
-    cloud_field::collect_groups(camera_position.y(), s_groups);
-
-    // Far decks first: clouds blend, so the order is what makes overlapping layers stack correctly
-    std::sort(s_groups.begin(), s_groups.end(), [](const CloudGroup& a, const CloudGroup& b) {
-        return a.distance > b.distance;
-    });
-
-    s_last_build_center = camera_position;
-    s_last_cloud_range = camera::cloud_range.value();
-    s_state_signature = globals::world->weather().seed();
-    s_rebuild_requested = false;
-    s_build_cooldown = BUILD_COOLDOWN_SECONDS;
-
-    s_generation += 1;
-    s_building = true;
-
-    threading::submit<CloudTask>(std::move(input), s_groups, std::move(s_meshes[1 - s_front]), s_generation);
 }
 
 void cloud_renderer::init(void)
@@ -372,7 +370,7 @@ void cloud_renderer::render(void)
     }
 
     auto cloud_projection = cloud_view_projection();
-    auto camera_origin = utils::to_fvec(camera::chunk);
+    auto camera_origin = utils::to_fvec(client_camera::chunk);
     auto camera_position = camera_world_position();
 
     auto sun_direction = skybox::sun_direction;
@@ -380,7 +378,7 @@ void cloud_renderer::render(void)
     auto sky_color = Eigen::Vector3f((skybox::zenith_color + skybox::horizon_color) * 0.5f);
     auto haze_color = Eigen::Vector3f(fog::color * 0.55f + Eigen::Vector3f(0.80f, 0.82f, 0.86f) * (0.45f * fog::daylight));
 
-    auto haze_end = std::max(cloud_renderer::z_far - CLOUD_DEPTH_MARGIN, 1.0f);
+    auto haze_end = std::max(z_far - CLOUD_DEPTH_MARGIN, 1.0f);
     auto haze_start = haze_end * 0.35f;
 
     vx::throw_if_not(s_program.update());
@@ -408,15 +406,15 @@ void cloud_renderer::render(void)
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, s_ibo[s_front]);
 
     for(const auto& batch : mesh.batches) {
-        auto offset = reinterpret_cast<const void*>(batch.offset * sizeof(std::uint32_t));
+        auto offset = reinterpret_cast<const void*>(batch.index_offset * sizeof(std::uint32_t));
 
         // Each ring has its own fade; only the one at the deck's edge dissolves
         glUniform2fv(s_program.uniforms[su_DeckCenter].location, 1, batch.center.data());
-        glUniform3f(s_program.uniforms[su_WindOffset].location, s_drift.offset.x(), 0.0f, s_drift.offset.y());
+        glUniform3f(s_program.uniforms[su_WindOffset].location, s_drift.drift_offset.x(), 0.0f, s_drift.drift_offset.y());
         glUniform1f(s_program.uniforms[su_FadeDistance].location, batch.fade);
         glUniform2f(s_program.uniforms[su_BlendRange].location, batch.blend_start, batch.blend_width);
         glUniform1f(s_program.uniforms[su_DepthBias].location, batch.depth_bias);
-        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(batch.count), GL_UNSIGNED_INT, offset);
+        glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(batch.index_count), GL_UNSIGNED_INT, offset);
     }
 
     glBindVertexArray(0);

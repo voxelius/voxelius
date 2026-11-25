@@ -44,7 +44,7 @@ void style::apply(void)
 
     ImGuiStyle& style = ImGui::GetStyle();
 
-    auto& palette = style::palette();
+    auto& pal = palette();
 
     // Black buttons on a dark background
     // may be harder to read than the text on them
@@ -71,24 +71,24 @@ void style::apply(void)
 
     auto& colors = style.Colors;
 
-    colors[ImGuiCol_Border] = palette.border;
+    colors[ImGuiCol_Border] = pal.border;
     colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-    colors[ImGuiCol_Button] = palette.button;
-    colors[ImGuiCol_ButtonActive] = palette.button_active;
-    colors[ImGuiCol_ButtonHovered] = palette.button_hovered;
-    colors[ImGuiCol_CheckMark] = palette.accent;
+    colors[ImGuiCol_Button] = pal.button;
+    colors[ImGuiCol_ButtonActive] = pal.button_active;
+    colors[ImGuiCol_ButtonHovered] = pal.button_hovered;
+    colors[ImGuiCol_CheckMark] = pal.accent;
     colors[ImGuiCol_ChildBg] = ImVec4(0.000f, 0.000f, 0.000f, 0.420f);
-    colors[ImGuiCol_DragDropTarget] = palette.accent;
-    colors[ImGuiCol_FrameBg] = palette.frame;
-    colors[ImGuiCol_FrameBgActive] = palette.frame_active;
-    colors[ImGuiCol_FrameBgHovered] = palette.frame_hovered;
+    colors[ImGuiCol_DragDropTarget] = pal.accent;
+    colors[ImGuiCol_FrameBg] = pal.frame;
+    colors[ImGuiCol_FrameBgActive] = pal.frame_active;
+    colors[ImGuiCol_FrameBgHovered] = pal.frame_hovered;
 
     // Selected list rows darken instead of lighting up: on a stone panel a
     // light fill swallows the secondary text of the row
     colors[ImGuiCol_Header] = ImVec4(0.000f, 0.000f, 0.000f, 0.620f);
     colors[ImGuiCol_HeaderActive] = ImVec4(0.000f, 0.000f, 0.000f, 0.760f);
     colors[ImGuiCol_HeaderHovered] = ImVec4(1.000f, 1.000f, 1.000f, 0.070f);
-    colors[ImGuiCol_MenuBarBg] = palette.panel;
+    colors[ImGuiCol_MenuBarBg] = pal.panel;
     colors[ImGuiCol_NavCursor] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
     colors[ImGuiCol_NavHighlight] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
     colors[ImGuiCol_NavWindowingDimBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
@@ -97,35 +97,35 @@ void style::apply(void)
     colors[ImGuiCol_PlotHistogramHovered] = ImVec4(1.00f, 0.60f, 0.00f, 1.00f);
     colors[ImGuiCol_PlotLines] = ImVec4(0.61f, 0.61f, 0.61f, 1.00f);
     colors[ImGuiCol_PlotLinesHovered] = ImVec4(0.69f, 0.00f, 0.00f, 1.00f);
-    colors[ImGuiCol_PopupBg] = palette.popup;
-    colors[ImGuiCol_ResizeGrip] = with_alpha(palette.bevel_light, 0.20f);
-    colors[ImGuiCol_ResizeGripActive] = palette.accent;
-    colors[ImGuiCol_ResizeGripHovered] = with_alpha(palette.bevel_light, 0.67f);
-    colors[ImGuiCol_ScrollbarBg] = palette.frame;
-    colors[ImGuiCol_ScrollbarGrab] = palette.button;
-    colors[ImGuiCol_ScrollbarGrabActive] = palette.button_active;
-    colors[ImGuiCol_ScrollbarGrabHovered] = palette.button_hovered;
-    colors[ImGuiCol_Separator] = with_alpha(palette.bevel_light, 0.50f);
-    colors[ImGuiCol_SeparatorActive] = palette.accent;
-    colors[ImGuiCol_SeparatorHovered] = with_alpha(palette.bevel_light, 0.78f);
-    colors[ImGuiCol_SliderGrab] = with_alpha(palette.accent, 0.75f);
-    colors[ImGuiCol_SliderGrabActive] = palette.accent;
-    colors[ImGuiCol_Tab] = palette.button;
-    colors[ImGuiCol_TabActive] = palette.button_active;
-    colors[ImGuiCol_TabHovered] = palette.button_hovered;
-    colors[ImGuiCol_TableBorderLight] = with_alpha(palette.bevel_light, 0.25f);
-    colors[ImGuiCol_TableBorderStrong] = with_alpha(palette.bevel_light, 0.45f);
-    colors[ImGuiCol_TableHeaderBg] = palette.button_active;
+    colors[ImGuiCol_PopupBg] = pal.popup;
+    colors[ImGuiCol_ResizeGrip] = with_alpha(pal.bevel_light, 0.20f);
+    colors[ImGuiCol_ResizeGripActive] = pal.accent;
+    colors[ImGuiCol_ResizeGripHovered] = with_alpha(pal.bevel_light, 0.67f);
+    colors[ImGuiCol_ScrollbarBg] = pal.frame;
+    colors[ImGuiCol_ScrollbarGrab] = pal.button;
+    colors[ImGuiCol_ScrollbarGrabActive] = pal.button_active;
+    colors[ImGuiCol_ScrollbarGrabHovered] = pal.button_hovered;
+    colors[ImGuiCol_Separator] = with_alpha(pal.bevel_light, 0.50f);
+    colors[ImGuiCol_SeparatorActive] = pal.accent;
+    colors[ImGuiCol_SeparatorHovered] = with_alpha(pal.bevel_light, 0.78f);
+    colors[ImGuiCol_SliderGrab] = with_alpha(pal.accent, 0.75f);
+    colors[ImGuiCol_SliderGrabActive] = pal.accent;
+    colors[ImGuiCol_Tab] = pal.button;
+    colors[ImGuiCol_TabActive] = pal.button_active;
+    colors[ImGuiCol_TabHovered] = pal.button_hovered;
+    colors[ImGuiCol_TableBorderLight] = with_alpha(pal.bevel_light, 0.25f);
+    colors[ImGuiCol_TableBorderStrong] = with_alpha(pal.bevel_light, 0.45f);
+    colors[ImGuiCol_TableHeaderBg] = pal.button_active;
     colors[ImGuiCol_TableRowBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
     colors[ImGuiCol_TableRowBgAlt] = ImVec4(1.00f, 1.00f, 1.00f, 0.06f);
-    colors[ImGuiCol_TabUnfocused] = palette.window;
-    colors[ImGuiCol_TabUnfocusedActive] = palette.button_active;
-    colors[ImGuiCol_Text] = palette.text;
-    colors[ImGuiCol_TextDisabled] = palette.text_disabled;
-    colors[ImGuiCol_TextSelectedBg] = with_alpha(palette.accent, 0.35f);
-    colors[ImGuiCol_TitleBg] = palette.window;
-    colors[ImGuiCol_TitleBgActive] = palette.panel;
-    colors[ImGuiCol_TitleBgCollapsed] = with_alpha(palette.window, 0.51f);
-    colors[ImGuiCol_WindowBg] = palette.window;
+    colors[ImGuiCol_TabUnfocused] = pal.window;
+    colors[ImGuiCol_TabUnfocusedActive] = pal.button_active;
+    colors[ImGuiCol_Text] = pal.text;
+    colors[ImGuiCol_TextDisabled] = pal.text_disabled;
+    colors[ImGuiCol_TextSelectedBg] = with_alpha(pal.accent, 0.35f);
+    colors[ImGuiCol_TitleBg] = pal.window;
+    colors[ImGuiCol_TitleBgActive] = pal.panel;
+    colors[ImGuiCol_TitleBgCollapsed] = with_alpha(pal.window, 0.51f);
+    colors[ImGuiCol_WindowBg] = pal.window;
     colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.00f, 0.00f, 0.00f, 0.75f);
 }

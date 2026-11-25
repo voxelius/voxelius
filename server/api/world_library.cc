@@ -28,8 +28,7 @@ static bool schedule(lua_State* L)
     auto dt = static_cast<std::uint64_t>(luaL_checkinteger(L, 4));
     auto deadline = globals::current_tick + dt;
 
-    // The server is the only side that opens this library, and every
-    // server world is a ServerWorld
+    // The server is the only side that opens this library, and every server world is a ServerWorld
     auto server_world = static_cast<ServerWorld*>(world);
 
     server_world->schedule(pos, deadline, BLOCK_TICK_SCRIPTED);

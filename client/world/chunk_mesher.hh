@@ -5,17 +5,14 @@
 
 namespace chunk_mesher
 {
-void init(void);
-void reset(void);
-void update(void);
+extern std::size_t backlog;
 } // namespace chunk_mesher
 
 namespace chunk_mesher
 {
-// Chunks that still wait for a mesh: queued and in flight together. The world
-// loader asks for as many chunks as this stays low, so a client that cannot
-// keep up does not pull the whole world into memory at once.
-std::size_t backlog(void);
+void init(void);
+void update(void);
+void reset(void);
 } // namespace chunk_mesher
 
 namespace chunk_mesher

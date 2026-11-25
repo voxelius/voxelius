@@ -5,6 +5,7 @@
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
+#include "shared/world/precip.hh"
 #include "shared/world/tint_registry.hh"
 #include "shared/world/weather.hh"
 
@@ -18,22 +19,22 @@ class ModContext;
 using library_opener = entt::delegate<void(std::shared_ptr<lua_State>&, ModContext*)>;
 
 enum class mod_status {
-    PENDING, ///< The mod is pending to be loaded
-    LOADING, ///< The mod is currently being loaded
-    LOADED,  ///< The mod has been successfully loaded
-    FAILED,  ///< The mod has failed to load
-    SKIPPED, ///< One of the mod's dependencies has failed to load and the mod will be skipped
+    PENDING,
+    LOADING,
+    LOADED,
+    FAILED,
+    SKIPPED, // One of the mod's dependencies has failed to load and the mod will be skipped
 };
 
 struct ModVersion final {
     static ModVersion parse(std::string_view string);
     static std::string to_string(const ModVersion& version);
 
+    constexpr auto operator<=>(const ModVersion& other) const = default;
+
     unsigned major { 0 };
     unsigned minor { 0 };
     unsigned patch { 0 };
-
-    constexpr auto operator<=>(const ModVersion& other) const = default;
 };
 
 struct ModInfo final {
@@ -46,13 +47,13 @@ struct ModInfo final {
     std::vector<std::pair<std::string, ModVersion>> soft_depends;
     std::vector<std::pair<std::string, ModVersion>> conflicts;
 
-    std::string meta_author;   ///< Author or authors of the mod
-    std::string meta_homepage; ///< Homepage or website of the mod
-    std::string meta_tracker;  ///< Tracker or issue tracker of the mod
-    std::string meta_license;  ///< Short SPDX-identifier of the mod's license
+    std::string meta_author;
+    std::string meta_homepage;
+    std::string meta_tracker;
+    std::string meta_license; // Short SPDX-identifier of the mod's license
 
-    std::string display_name; ///< Printable name of the mod
-    std::string display_desc; ///< Printable description of the mod
+    std::string display_name;
+    std::string display_desc;
 };
 
 class ModContext final {
@@ -108,6 +109,12 @@ public:
     std::vector<WeatherTypeDefinition> take_weathers(void);
     vx::hash_map<Identifier, weather_type_id> take_weather_names(void);
 
+    precip_type_id find_precip(const Identifier& name) const;
+    precip_type_id register_precip(const Identifier& name, PrecipDefinition def);
+
+    std::vector<PrecipDefinition> take_precips(void);
+    vx::hash_map<Identifier, precip_type_id> take_precip_names(void);
+
     tint_id_type find_tint(const Identifier& name) const;
     tint_id_type register_tint(const Identifier& name, TintDefinition def);
 
@@ -140,6 +147,9 @@ private:
 
     std::vector<WeatherTypeDefinition> m_weathers;
     vx::hash_map<Identifier, weather_type_id> m_weather_names;
+
+    std::vector<PrecipDefinition> m_precips;
+    vx::hash_map<Identifier, precip_type_id> m_precip_names;
 
     std::vector<ClassDefinition> m_classes;
     vx::hash_map<Identifier, class_id_type> m_class_names;

@@ -24,8 +24,8 @@ static void grow(std::size_t required)
         new_capacity <<= 1;
     }
 
-    auto old_bytes = chunk_vbo::capacity * sizeof(ChunkMesh_Vertex);
-    auto new_bytes = new_capacity * sizeof(ChunkMesh_Vertex);
+    auto old_bytes = chunk_vbo::capacity * sizeof(ChunkMeshVertex);
+    auto new_bytes = new_capacity * sizeof(ChunkMeshVertex);
 
     scratch.resize(new_bytes);
 
@@ -76,7 +76,7 @@ void chunk_vbo::init(void)
 
     glGenBuffers(1, &handle);
     glBindBuffer(GL_ARRAY_BUFFER, handle);
-    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(capacity * sizeof(ChunkMesh_Vertex)), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(capacity * sizeof(ChunkMeshVertex)), nullptr, GL_DYNAMIC_DRAW);
 }
 
 void chunk_vbo::shutdown(void)
@@ -134,10 +134,10 @@ void chunk_vbo::free(std::uint32_t base, std::size_t vertex_count)
     }
 }
 
-void chunk_vbo::upload(std::uint32_t base, std::span<const ChunkMesh_Vertex> data)
+void chunk_vbo::upload(std::uint32_t base, std::span<const ChunkMeshVertex> data)
 {
     if(data.size()) {
-        auto offset = static_cast<GLintptr>(base * sizeof(ChunkMesh_Vertex));
+        auto offset = static_cast<GLintptr>(base * sizeof(ChunkMeshVertex));
         auto length = static_cast<GLsizeiptr>(data.size_bytes());
 
         glBindBuffer(GL_ARRAY_BUFFER, handle);

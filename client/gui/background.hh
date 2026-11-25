@@ -19,8 +19,8 @@ public:
 private:
     void layout_dim(ImVec2 window_pos, ImVec2 window_size);
 
-    ImVec4 m_left { 0.0f, 0.0f, 0.0f, 0.95f };
-    ImVec4 m_right { 0.0f, 0.0f, 0.0f, 0.95f };
+    ImVec4 m_left = ImVec4(0.0f, 0.0f, 0.0f, 0.95f);
+    ImVec4 m_right = ImVec4(0.0f, 0.0f, 0.0f, 0.95f);
     bool m_force_scene { false };
 };
 } // namespace gui

@@ -65,9 +65,9 @@ void gui::ButtonBind::init(void)
     auto mouse_button_sink = globals::dispatcher.sink<SDL_MouseButtonEvent>();
     auto mouse_wheel_sink = globals::dispatcher.sink<SDL_MouseWheelEvent>();
 
-    keyboard_sink.connect<&ButtonBind::on_keyboard_event>();
-    mouse_button_sink.connect<&ButtonBind::on_mouse_button_event>();
-    mouse_wheel_sink.connect<&ButtonBind::on_mouse_wheel_event>();
+    keyboard_sink.connect<&on_keyboard_event>();
+    mouse_button_sink.connect<&on_mouse_button_event>();
+    mouse_wheel_sink.connect<&on_mouse_wheel_event>();
 }
 
 void gui::ButtonBind::shutdown(void)
@@ -83,7 +83,6 @@ gui::ButtonBind& gui::ButtonBind::bind_action(std::string_view action, unsigned 
 {
     set_key(std::format("action.{}", action));
 
-    m_action = action;
     m_press = std::format("+{}", action);
     m_release = std::format("-{}", action);
     m_slot = slot;

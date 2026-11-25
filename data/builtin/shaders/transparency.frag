@@ -16,6 +16,8 @@ uniform sampler2D u_FluidDepth;
 uniform sampler2D u_CloudColor;
 uniform sampler2D u_CloudDepth;
 
+uniform sampler2D u_PrecipColor;
+
 uniform vec2 u_CloudRange;
 uniform vec2 u_CameraRange;
 
@@ -28,7 +30,7 @@ const int MAX_LAYERS = 4;
 // gradient becomes bands, and where each channel rounds at its own
 // step. In a dark deck over a fog that reads as green and
 // magenta stripes instead of a brightness ramp. Half a level
-// of noise scatters the steps before the store quantises them
+// of noise scatters the steps before the store quantizes them
 float hash12(vec2 p)
 {
     vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -114,6 +116,11 @@ void main(void)
     for(int i = 0; i < count; ++i) {
         accum = accum * (1.0 - colors[i].a) + colors[i].rgb;
     }
+
+    // The pass dropped what the ground hides, so this layer goes over the sorted ones
+    vec4 precip = texture(u_PrecipColor, vs_TexCoord);
+
+    accum = accum * (1.0 - precip.a) + precip.rgb;
 
     float dither = (hash12(gl_FragCoord.xy) - 0.5) / 255.0;
 

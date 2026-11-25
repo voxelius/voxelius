@@ -31,10 +31,10 @@ const Column& utils::heightmap_probe_slow(ServerWorld* world, const BlockPosXZ& 
     cpos[1] = static_cast<ChunkPosXZ::value_type>(pos[1] >> constant::CHUNK_SIZE_LOG2);
 
     LocalPosXZ lpos;
-    lpos[0] = static_cast<LocalPosXZ::value_type>(utils::mod_signed<BlockPosXZ::value_type>(pos[0], constant::CHUNK_SIZE));
-    lpos[1] = static_cast<LocalPosXZ::value_type>(utils::mod_signed<BlockPosXZ::value_type>(pos[1], constant::CHUNK_SIZE));
+    lpos[0] = static_cast<LocalPosXZ::value_type>(mod_signed<BlockPosXZ::value_type>(pos[0], constant::CHUNK_SIZE));
+    lpos[1] = static_cast<LocalPosXZ::value_type>(mod_signed<BlockPosXZ::value_type>(pos[1], constant::CHUNK_SIZE));
 
     auto index = static_cast<std::size_t>(lpos[0] + lpos[1] * constant::CHUNK_SIZE);
-    auto& slice = utils::heightmap_probe(world, cpos);
+    auto& slice = heightmap_probe(world, cpos);
     return slice[index];
 }

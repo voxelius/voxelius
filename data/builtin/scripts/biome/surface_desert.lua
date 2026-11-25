@@ -1,4 +1,7 @@
 biomes.add("surface_desert", {
+  temperature = 30,
+  humidity = 15,
+
   palette = {
     basic = { name = "stone" },
     filler = { name = "sandstone" },

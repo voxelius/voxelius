@@ -19,11 +19,11 @@ private:
     void layout_header(ImVec2 window_size, ImDrawList* draw_list, float shadow_offset);
 
     ImTextureID m_texture { 0 };
-    ImVec2 m_texture_size { 0.0f, 0.0f };
+    ImVec2 m_texture_size {};
     std::string m_splash {};
     std::string m_version {};
     float m_top { 0.06f };
-    float m_width { 0.73f };
+    float m_width_fraction { 0.73f };
 };
 } // namespace gui
 

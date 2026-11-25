@@ -2,7 +2,6 @@
 #define C54F2663_7A25_4729_AEA3_64ED51F441F0
 
 #include "client/globals.hh"
-
 #include "client/gui/container.hh"
 
 namespace gui

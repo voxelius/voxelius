@@ -17,6 +17,7 @@
 #include "client/camera.hh"
 #include "client/fog.hh"
 #include "client/globals.hh"
+#include "client/lighting.hh"
 #include "client/shader_program.hh"
 #include "client/world/block_atlas.hh"
 #include "client/world/chunk_mesh.hh"
@@ -36,11 +37,6 @@ constexpr static unsigned FOG_MODEL = 0;
 //  2048                89.510
 //  4096                77.742
 constexpr static std::size_t BATCH_MAX_PARTS = 1024;
-
-constexpr static float AMBIENT_LIGHT = 0.03f;
-
-static const Eigen::Vector3f SKY_LIGHT_COLOR { 1.0f, 1.0f, 1.0f };
-static const Eigen::Vector3f BLOCK_LIGHT_COLOR { 1.0f, 0.86f, 0.66f };
 
 static ShaderProgram s_program;
 static std::size_t su_ViewProjection;
@@ -185,7 +181,7 @@ static void update_chunk_positions_tbo(void)
     std::uint32_t max_slot = 0;
 
     auto& chunk_registry = globals::world->chunk_registry();
-    auto view = chunk_registry.view<Chunk_Component, ChunkMesh>();
+    auto view = chunk_registry.view<ChunkComponent, ChunkMesh>();
 
     for(const auto [entity, chunk, mesh] : view.each()) {
         if(mesh.slot == std::numeric_limits<std::uint32_t>::max()) {
@@ -206,7 +202,7 @@ static void update_chunk_positions_tbo(void)
             continue; // invalid slot
         }
 
-        s_chunk_positions[mesh.slot] = utils::to_fvec(chunk.position - camera::chunk);
+        s_chunk_positions[mesh.slot] = utils::to_fvec(chunk.position - client_camera::chunk);
     }
 
     glBindBuffer(GL_TEXTURE_BUFFER, s_chunk_positions_buffer);
@@ -229,7 +225,7 @@ static void batch_flush(void)
     s_batch_vertex_count = 0;
 }
 
-static void batch_append(const ChunkMesh_Part& part)
+static void batch_append(const ChunkMeshPart& part)
 {
     if(part.count == 0) {
         return;
@@ -258,16 +254,16 @@ static void batch_append(const ChunkMesh_Part& part)
 static float chunk_distance_sq(entt::entity entity)
 {
     auto& chunk_registry = globals::world->chunk_registry();
-    const auto& chunk = chunk_registry.get<Chunk_Component>(entity);
-    Eigen::Vector3f position = utils::to_fvec(chunk.position - camera::chunk) * static_cast<float>(constant::CHUNK_SIZE);
-    Eigen::Vector3f delta = position - camera::local;
+    const auto& chunk = chunk_registry.get<ChunkComponent>(entity);
+    Eigen::Vector3f position = utils::to_fvec(chunk.position - client_camera::chunk) * static_cast<float>(constant::CHUNK_SIZE);
+    Eigen::Vector3f delta = position - client_camera::local;
     return delta.squaredNorm();
 }
 
 static void update_sorted_chunks(void)
 {
     auto& chunk_registry = globals::world->chunk_registry();
-    auto view = chunk_registry.view<Chunk_Component, ChunkMesh>();
+    auto view = chunk_registry.view<ChunkComponent, ChunkMesh>();
 
     s_sorted_chunks.clear();
     s_sorted_chunks.reserve(view.size_hint());
@@ -313,9 +309,9 @@ static void bind_pipeline_state(unsigned fog_model)
     s_program.set_variant_frag(FOG_MODEL, fog_model);
     vx::throw_if_not(s_program.update());
 
-    auto& vproj = camera::instance.view_projection();
+    auto& vproj = client_camera::instance.view_projection();
     auto animation_timer = static_cast<std::uint32_t>(globals::current_tick >> 1);
-    auto sky_light_color = Eigen::Vector3f(SKY_LIGHT_COLOR * fog::daylight * fog::light_scale);
+    auto sky_light_color = client_lighting::sky_color();
 
     glUseProgram(s_program.handle);
     glUniformMatrix4fv(s_program.uniforms[su_ViewProjection].location, 1, GL_FALSE, vproj.data());
@@ -323,9 +319,9 @@ static void bind_pipeline_state(unsigned fog_model)
     glUniform1f(s_program.uniforms[su_ViewDistance].location, fog::distance);
     glUniform3fv(s_program.uniforms[su_FogColor].location, 1, fog::color.data());
     glUniform3fv(s_program.uniforms[su_SkyColor].location, 1, sky_light_color.data());
-    glUniform3fv(s_program.uniforms[su_BlockColor].location, 1, BLOCK_LIGHT_COLOR.data());
-    glUniform1f(s_program.uniforms[su_Ambient].location, AMBIENT_LIGHT);
-    glUniform3fv(s_program.uniforms[su_CameraLocal].location, 1, camera::local.data());
+    glUniform3fv(s_program.uniforms[su_BlockColor].location, 1, client_lighting::BLOCK_COLOR.data());
+    glUniform1f(s_program.uniforms[su_Ambient].location, client_lighting::AMBIENT);
+    glUniform3fv(s_program.uniforms[su_CameraLocal].location, 1, client_camera::local.data());
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D_ARRAY, block_atlas::texture);
@@ -374,12 +370,12 @@ void chunk_renderer::init(void)
 
     glBindBuffer(GL_ARRAY_BUFFER, chunk_vbo::handle);
 
-    auto stride = static_cast<GLsizei>(sizeof(ChunkMesh_Vertex));
-    glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, stride, (const void*)(offsetof(ChunkMesh_Vertex, data_1)));
-    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, stride, (const void*)(offsetof(ChunkMesh_Vertex, data_2)));
-    glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, stride, (const void*)(offsetof(ChunkMesh_Vertex, data_3)));
-    glVertexAttribIPointer(3, 1, GL_UNSIGNED_INT, stride, (const void*)(offsetof(ChunkMesh_Vertex, data_4)));
-    glVertexAttribIPointer(4, 1, GL_UNSIGNED_INT, stride, (const void*)(offsetof(ChunkMesh_Vertex, data_5)));
+    auto stride = static_cast<GLsizei>(sizeof(ChunkMeshVertex));
+    glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, stride, (const void*)(offsetof(ChunkMeshVertex, data_1)));
+    glVertexAttribIPointer(1, 1, GL_UNSIGNED_INT, stride, (const void*)(offsetof(ChunkMeshVertex, data_2)));
+    glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, stride, (const void*)(offsetof(ChunkMeshVertex, data_3)));
+    glVertexAttribIPointer(3, 1, GL_UNSIGNED_INT, stride, (const void*)(offsetof(ChunkMeshVertex, data_4)));
+    glVertexAttribIPointer(4, 1, GL_UNSIGNED_INT, stride, (const void*)(offsetof(ChunkMeshVertex, data_5)));
 
     for(GLuint i = 0; i < 5; ++i) {
         glEnableVertexAttribArray(i);
@@ -418,7 +414,7 @@ void chunk_renderer::init(void)
 
     ensure_multidraw_capacity(BATCH_MAX_PARTS);
 
-    s_last_camera_chunk = camera::chunk + ChunkPos::Ones();
+    s_last_camera_chunk = client_camera::chunk + ChunkPos::Ones();
 
     globals::dispatcher.sink<ChunkCreateEvent>().connect<&on_chunk_create>();
     globals::dispatcher.sink<ChunkRemoveEvent>().connect<&on_chunk_remove>();
@@ -459,11 +455,11 @@ void chunk_renderer::prepare(void)
         return;
     }
 
-    auto camera_chunk_changed = !camera::chunk.isApprox(s_last_camera_chunk);
+    auto camera_chunk_changed = !client_camera::chunk.isApprox(s_last_camera_chunk);
     auto needs_tbo_update = camera_chunk_changed || s_sorted_dirty;
 
     if(s_sorted_dirty || camera_chunk_changed) {
-        s_last_camera_chunk = camera::chunk;
+        s_last_camera_chunk = client_camera::chunk;
         s_sorted_dirty = false;
         update_sorted_chunks();
     }
@@ -485,7 +481,7 @@ void chunk_renderer::render_opaque(void)
 
     bind_pipeline_state(fog::model.value());
 
-    auto& frustum = camera::instance.frustum();
+    auto& frustum = client_camera::instance.frustum();
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -498,9 +494,9 @@ void chunk_renderer::render_opaque(void)
 
     for(const auto& it : s_sorted_chunks) {
         const auto& mesh = chunk_registry.get<ChunkMesh>(it.first);
-        const auto& chunk = chunk_registry.get<Chunk_Component>(it.first);
+        const auto& chunk = chunk_registry.get<ChunkComponent>(it.first);
 
-        if(mesh.opaque.count && frustum.intersects(utils::bounds(chunk.position - camera::chunk))) {
+        if(mesh.opaque.count && frustum.intersects(utils::bounds(chunk.position - client_camera::chunk))) {
             batch_append(mesh.opaque);
         }
     }
@@ -518,7 +514,7 @@ void chunk_renderer::render_alpha(void)
 
     bind_pipeline_state(fog::model.value());
 
-    auto& frustum = camera::instance.frustum();
+    auto& frustum = client_camera::instance.frustum();
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
@@ -532,9 +528,9 @@ void chunk_renderer::render_alpha(void)
 
     for(auto it = s_sorted_chunks.rbegin(); it != s_sorted_chunks.rend(); it = std::next(it)) {
         const auto& mesh = chunk_registry.get<ChunkMesh>(it->first);
-        const auto& chunk = chunk_registry.get<Chunk_Component>(it->first);
+        const auto& chunk = chunk_registry.get<ChunkComponent>(it->first);
 
-        if(mesh.alpha.count && frustum.intersects(utils::bounds(chunk.position - camera::chunk))) {
+        if(mesh.alpha.count && frustum.intersects(utils::bounds(chunk.position - client_camera::chunk))) {
             batch_append(mesh.alpha);
         }
     }
@@ -556,7 +552,7 @@ void chunk_renderer::render_fluid(void)
 
     bind_pipeline_state(fog::model.value());
 
-    auto& frustum = camera::instance.frustum();
+    auto& frustum = client_camera::instance.frustum();
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
@@ -569,9 +565,9 @@ void chunk_renderer::render_fluid(void)
 
     for(auto it = s_sorted_chunks.rbegin(); it != s_sorted_chunks.rend(); it = std::next(it)) {
         const auto& mesh = chunk_registry.get<ChunkMesh>(it->first);
-        const auto& chunk = chunk_registry.get<Chunk_Component>(it->first);
+        const auto& chunk = chunk_registry.get<ChunkComponent>(it->first);
 
-        if(mesh.fluid.count && frustum.intersects(utils::bounds(chunk.position - camera::chunk))) {
+        if(mesh.fluid.count && frustum.intersects(utils::bounds(chunk.position - client_camera::chunk))) {
             batch_append(mesh.fluid);
         }
     }

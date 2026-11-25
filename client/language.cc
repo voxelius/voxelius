@@ -229,5 +229,6 @@ std::string language::resolve_gui(std::string_view key)
     // We need window tags to retain their hierarchy when a language
     // dynamically changes; ImGui allows to provide hidden unique identifiers
     // to GUI primitives that have their name change dynamically, so we're using this
-    return std::format("{}###{}", language::resolve(key), key);
+    auto label = resolve(key);
+    return std::format("{}###{}", label, key);
 }

@@ -4,8 +4,8 @@
 
 #include "core/buffer.hh"
 
-// A slice is a handful of different ids repeated over 256 columns, which is
-// about as compressible as data gets.
+// A slice is a handful of different ids repeated over
+// 256 columns, which is about as compressible as data gets
 void BiomeSlice::encode(const BiomeSlice& slice, WriteBuffer& buffer)
 {
     buffer.write_compressed(std::as_bytes(std::span(slice.data(), constant::CHUNK_AREA)));

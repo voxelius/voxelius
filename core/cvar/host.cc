@@ -35,7 +35,7 @@ static std::string rebuild_line(std::string_view name, std::span<const std::stri
 }
 
 // A context without a client is local: the server
-// config, the server itself, or the client's own console.
+// config, the server itself, or the client's own console
 static bool is_trusted(const cvar::Context& ctx)
 {
     return !ctx.client_id.has_value() || ctx.is_operator;

@@ -1,4 +1,7 @@
 biomes.add("sky_island_grassy", {
+  temperature = 5,
+  humidity = 50,
+
   palette = {
     basic = { name = "stone" },
     filler = { name = "dirt" },

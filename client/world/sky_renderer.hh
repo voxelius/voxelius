@@ -10,7 +10,7 @@ void render(void);
 
 namespace sky_renderer
 {
-// The resource system is purged before head::shutdown runs, so the
+// The resource system is purged before client_head::shutdown runs, so the
 // texture handles have to go first; the GL objects go in shutdown
 void release_textures(void);
 } // namespace sky_renderer

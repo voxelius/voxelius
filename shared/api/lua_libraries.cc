@@ -82,7 +82,7 @@ static bool do_require(lua_State* L, std::string_view path)
     lua_rawget(L, -2);
 
     if(!lua_isnil(L, -1)) {
-        return true; // Cache hit
+        return true;
     }
 
     lua_pop(L, 1);

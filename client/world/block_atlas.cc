@@ -218,14 +218,14 @@ static void build_atlas(void)
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAX_LEVEL, 1);
 
-    std::vector<AtlasFrame_GL> gl_frames;
+    std::vector<AtlasFrameGL> gl_frames;
     gl_frames.reserve(s_pending.size());
 
     for(std::size_t i = 0; i < rects.size(); ++i) {
         const auto& rect = rects[i];
         const auto& image = s_pending.at(rect.id);
 
-        AtlasFrame_GL frame {};
+        AtlasFrameGL frame {};
         frame.layer = layers[rect.id];
         frame.uv_min.x() = static_cast<float>(rect.x + ATLAS_PADDING) / static_cast<float>(LAYER_SIZE);
         frame.uv_min.y() = static_cast<float>(rect.y + ATLAS_PADDING) / static_cast<float>(LAYER_SIZE);
@@ -237,17 +237,17 @@ static void build_atlas(void)
 
     glGenBuffers(1, &block_atlas::vbo_frames);
     glBindBuffer(GL_TEXTURE_BUFFER, block_atlas::vbo_frames);
-    glBufferData(GL_TEXTURE_BUFFER, gl_frames.size() * sizeof(AtlasFrame_GL), gl_frames.data(), GL_STATIC_DRAW);
+    glBufferData(GL_TEXTURE_BUFFER, gl_frames.size() * sizeof(AtlasFrameGL), gl_frames.data(), GL_STATIC_DRAW);
 
     glGenTextures(1, &block_atlas::tbo_frames);
     glBindTexture(GL_TEXTURE_BUFFER, block_atlas::tbo_frames);
     glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, block_atlas::vbo_frames);
 
-    std::vector<AtlasStrip_GL> gl_strips;
+    std::vector<AtlasStripGL> gl_strips;
     gl_strips.reserve(s_strips.size());
 
     for(const auto& strip : s_strips) {
-        AtlasStrip_GL gl_strip {};
+        AtlasStripGL gl_strip {};
         gl_strip.frame_base = static_cast<std::uint32_t>(strip.frame_base);
         gl_strip.frame_count = static_cast<std::uint32_t>(strip.frame_count);
         gl_strips.emplace_back(std::move(gl_strip));
@@ -255,7 +255,7 @@ static void build_atlas(void)
 
     glGenBuffers(1, &block_atlas::vbo_strips);
     glBindBuffer(GL_TEXTURE_BUFFER, block_atlas::vbo_strips);
-    glBufferData(GL_TEXTURE_BUFFER, gl_strips.size() * sizeof(AtlasStrip_GL), gl_strips.data(), GL_STATIC_DRAW);
+    glBufferData(GL_TEXTURE_BUFFER, gl_strips.size() * sizeof(AtlasStripGL), gl_strips.data(), GL_STATIC_DRAW);
 
     glGenTextures(1, &block_atlas::tbo_strips);
     glBindTexture(GL_TEXTURE_BUFFER, block_atlas::tbo_strips);
@@ -386,7 +386,7 @@ void block_atlas::init_late(void)
                 continue;
             }
 
-            if(nullptr == block_atlas::load(frames.value())) {
+            if(load(frames.value()) == nullptr) {
                 msg::log_warning("{}: failed to load atlas strip for slot '{}'", def.model_name.full_string(), slot);
             }
         }
@@ -394,7 +394,7 @@ void block_atlas::init_late(void)
         for(const auto& it : def.masks) {
             auto mask_frames = std::array { it.second };
 
-            if(nullptr == block_atlas::load(mask_frames)) {
+            if(load(mask_frames) == nullptr) {
                 msg::log_warning("{}: failed to load mask for slot '{}'", def.model_name.full_string(), it.first);
             }
         }
@@ -418,13 +418,13 @@ void block_atlas::init_late(void)
             fluid_label = std::format("#{}", id);
         }
 
-        auto albedo_still = block_atlas::load(def.albedo_still);
+        auto albedo_still = load(def.albedo_still);
 
         if(albedo_still == nullptr) {
             msg::log_warning("fluid {}: failed to load still textures", fluid_label);
         }
 
-        auto albedo_flowing = block_atlas::load(def.albedo_flowing);
+        auto albedo_flowing = load(def.albedo_flowing);
 
         if(albedo_flowing == nullptr) {
             msg::log_warning("fluid {}: failed to load flowing textures", fluid_label);
@@ -433,7 +433,7 @@ void block_atlas::init_late(void)
         if(def.mask_still.has_value()) {
             std::array mask_frames { def.mask_still.value() };
 
-            if(nullptr == block_atlas::load(mask_frames)) {
+            if(load(mask_frames) == nullptr) {
                 msg::log_warning("fluid {}: failed to load still mask", fluid_label);
             }
         }
@@ -441,7 +441,7 @@ void block_atlas::init_late(void)
         if(def.mask_flowing.has_value()) {
             std::array mask_frames { def.mask_flowing.value() };
 
-            if(nullptr == block_atlas::load(mask_frames)) {
+            if(load(mask_frames) == nullptr) {
                 msg::log_warning("fluid {}: failed to load flowing mask", fluid_label);
             }
         }

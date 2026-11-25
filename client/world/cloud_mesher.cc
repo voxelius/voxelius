@@ -13,7 +13,7 @@ struct CloudSpan final {
 
 static std::size_t column_index(const CloudWindow& window, std::size_t x, std::size_t z)
 {
-    return z * window.width + x;
+    return z * window.cells_x + x;
 }
 
 // A cell outside the window holds no cloud, so a neighbour past the edge simply hides nothing
@@ -23,7 +23,7 @@ static CloudColumn column_at(const CloudWindow& window, const std::vector<CloudC
         return CloudColumn {};
     }
 
-    if(x >= static_cast<std::int32_t>(window.width) || z >= static_cast<std::int32_t>(window.depth)) {
+    if(x >= static_cast<std::int32_t>(window.cells_x) || z >= static_cast<std::int32_t>(window.cells_z)) {
         return CloudColumn {};
     }
 
@@ -70,9 +70,8 @@ static void push_side_face(CloudMesh& mesh, const Eigen::Vector2f& a, const Eige
     push_quad(mesh, bottom_a, bottom_b, top_b, top_a, normal, color);
 }
 
-// The vertical spans of `self` that `other` leaves exposed. A neighbour can
-// hide a lower and an upper part at once, because a column's underside steps
-// down by whole cells.
+// The vertical spans of `self` that `other` leaves exposed. A neighbour can hide a
+// lower and an upper part at once, because a column's underside steps down by whole cells
 template<typename F>
 static void for_exposed_span(const CloudColumn& self, const CloudColumn& other, F&& emit)
 {
@@ -107,12 +106,12 @@ static void push_exposed_sides(CloudMesh& mesh, const CloudColumn& column, const
 
 // A ring leaves the cells inside inner to the finer ring, but keeps two of its
 // own cells past that edge: the finer ring fades out over that band, so it
-// needs the coarser one already drawn under it.
+// needs the coarser one already drawn under it
 static void fill_columns(const CloudDeck& deck, const CloudWindow& window, const Eigen::Vector3f& center, float inner,
     std::vector<CloudColumn>& columns)
 {
-    for(std::size_t z = 0; z < window.depth; ++z) {
-        for(std::size_t x = 0; x < window.width; ++x) {
+    for(std::size_t z = 0; z < window.cells_z; ++z) {
+        for(std::size_t x = 0; x < window.cells_x; ++x) {
             auto cell_x = window.min_x + static_cast<std::int32_t>(x);
             auto cell_z = window.min_z + static_cast<std::int32_t>(z);
 
@@ -210,8 +209,8 @@ static CloudWindow make_window(const Eigen::Vector3f& center, float cell, float 
     CloudWindow window {};
     window.min_x = min_x;
     window.min_z = min_z;
-    window.width = static_cast<std::size_t>(max_x - min_x + 1);
-    window.depth = static_cast<std::size_t>(max_z - min_z + 1);
+    window.cells_x = static_cast<std::size_t>(max_x - min_x + 1);
+    window.cells_z = static_cast<std::size_t>(max_z - min_z + 1);
 
     return window;
 }
@@ -221,14 +220,14 @@ static void mesh_ring(CloudMesh& mesh, const CloudInput& input, const CloudGroup
 {
     auto deck = cloud_field::make_deck(input, group, ring);
     auto window = make_window(deck.center, deck.cell, outer);
-    auto columns = std::vector<CloudColumn>(window.width * window.depth);
+    auto columns = std::vector<CloudColumn>(window.cells_x * window.cells_z);
 
     fill_columns(deck, window, deck.center, inner, columns);
 
     auto offset = mesh.indices.size();
 
-    for(std::size_t z = 0; z < window.depth; ++z) {
-        for(std::size_t x = 0; x < window.width; ++x) {
+    for(std::size_t z = 0; z < window.cells_z; ++z) {
+        for(std::size_t x = 0; x < window.cells_x; ++x) {
             mesh_column(mesh, deck, window, columns, x, z);
         }
     }
@@ -237,7 +236,7 @@ static void mesh_ring(CloudMesh& mesh, const CloudInput& input, const CloudGroup
 
     if(count) {
         // The ring dissolves over the last two cells of the coarser ring into
-        // it; the ring at the deck's edge keeps its own wide fade instead.
+        // it; the ring at the deck's edge keeps its own wide fade instead
         auto blend_width = 0.0f;
 
         if(outer < input.radius) {
@@ -245,8 +244,8 @@ static void mesh_ring(CloudMesh& mesh, const CloudInput& input, const CloudGroup
         }
 
         CloudBatch batch {};
-        batch.offset = offset;
-        batch.count = count;
+        batch.index_offset = offset;
+        batch.index_count = count;
         batch.center = Eigen::Vector2f(deck.center.x(), deck.center.z());
         batch.fade = fade;
         batch.blend_start = outer - blend_width;
@@ -259,7 +258,7 @@ static void mesh_ring(CloudMesh& mesh, const CloudInput& input, const CloudGroup
 
 // The rings tile the range from the camera out to r_cloud_range, and they are
 // meshed from the coarsest to the finest: a finer ring then draws over the
-// coarse one, so the faded edge blends into it instead of showing the sky.
+// coarse one, so the faded edge blends into it instead of showing the sky
 static void mesh_layer(CloudMesh& mesh, const CloudInput& input, const CloudGroup& group)
 {
     std::array<CloudSpan, 3> spans {};
@@ -283,7 +282,7 @@ static void mesh_layer(CloudMesh& mesh, const CloudInput& input, const CloudGrou
         inner = outer;
     }
 
-    for(auto i = span_count; i > 0; i -= 1) {
+    for(auto i = span_count; i > 0; --i) {
         const auto& span = spans[i - 1];
         auto fade = (span.outer == input.radius) ? span.outer : 0.0f;
 

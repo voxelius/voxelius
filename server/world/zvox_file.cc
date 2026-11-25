@@ -10,6 +10,7 @@ constexpr static std::uint8_t ZVOX_MAGIC_2 = 0x56;
 constexpr static std::uint8_t ZVOX_MAGIC_3 = 0x4F;
 constexpr static std::uint8_t ZVOX_MAGIC_4 = 0x58;
 constexpr static std::uint32_t ZVOX_VERSION = 0x00000001;
+constexpr static std::size_t TABLE_BYTES = constant::REGION_VOLUME * sizeof(std::uint64_t);
 
 struct Payload final {
     std::size_t slot;
@@ -202,23 +203,15 @@ std::size_t ZvoxFile::header_size(void)
     result += sizeof(ZVOX_MAGIC_3);
     result += sizeof(ZVOX_MAGIC_4);
     result += sizeof(ZVOX_VERSION);
-    result += constant::REGION_VOLUME * sizeof(std::uint64_t);
-    result += constant::REGION_VOLUME * sizeof(std::uint64_t);
-    result += constant::REGION_VOLUME * sizeof(std::uint64_t);
+    result += TABLE_BYTES;
+    result += TABLE_BYTES;
+    result += TABLE_BYTES;
     return result;
 }
 
 bool ZvoxFile::load_header(void)
 {
     auto size = header_size();
-
-    char gambit_character;
-    m_stream.seekg(static_cast<std::streamoff>(size - 1), std::ios::beg);
-    m_stream.read(&gambit_character, sizeof(gambit_character));
-
-    if(!m_stream.good()) {
-        return false;
-    }
 
     std::vector<std::byte> header;
     header.resize(size);

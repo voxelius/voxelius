@@ -5,13 +5,13 @@
 #include "shared/component/transform.hh"
 #include "shared/world/world.hh"
 
-void Stasis::fixed_update(World& world)
+void Stasis::fixed_update(World* world)
 {
-    auto& registry = world.registry();
+    auto& registry = world->registry();
     auto view = registry.view<Transform>();
 
     for(auto [entity, transform] : view.each()) {
-        if(world.find_chunk(transform.chunk)) {
+        if(world->find_chunk(transform.chunk)) {
             registry.remove<Stasis>(entity);
         }
         else {

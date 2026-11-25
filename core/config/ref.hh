@@ -11,6 +11,8 @@ public:
     constexpr Ref(void) = default;
     constexpr Ref(T default_value);
 
+    Ref<T>& operator=(const T& value);
+
     const T& value(void) const;
     operator const T&(void) const;
 
@@ -19,7 +21,6 @@ public:
     constexpr bool operator==(const Ref<T>& other) const;
 
     void set_value(const T& value);
-    Ref<T>& operator=(const T& value);
 
     void bind(Map& map, std::string_view key);
     void unbind(void);
@@ -85,6 +86,14 @@ constexpr bool config::Ref<T>::operator==(const Ref<T>& other) const
 }
 
 template<typename T>
+config::Ref<T>& config::Ref<T>::operator=(const T& value)
+{
+    set_value(value);
+
+    return *this;
+}
+
+template<typename T>
 void config::Ref<T>::set_value(const T& value)
 {
     m_value = value;
@@ -94,13 +103,6 @@ void config::Ref<T>::set_value(const T& value)
     }
 }
 
-template<typename T>
-config::Ref<T>& config::Ref<T>::operator=(const T& value)
-{
-    set_value(value);
-
-    return *this;
-}
 template<typename T>
 void config::Ref<T>::bind(Map& map, std::string_view key)
 {

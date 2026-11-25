@@ -13,7 +13,7 @@ public:
     virtual void layout(void) override;
 
 private:
-    ImVec2 m_margin { 0.0f, 0.0f };
+    ImVec2 m_margin {};
     bool m_background { false };
 };
 } // namespace gui

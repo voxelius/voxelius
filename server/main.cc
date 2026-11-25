@@ -221,8 +221,8 @@ static void wrapped_main(int argc, char** argv)
     server_game::shutdown();
     shared_game::shutdown();
 
-    // The world config is written last: every subsystem that keeps state in it
-    // has already put its own there
+    // The world config is written last: every subsystem
+    // that keeps state in it has already put its own there
     universe::shutdown();
 
     host::shutdown();

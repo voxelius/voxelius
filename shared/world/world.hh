@@ -101,6 +101,8 @@ private:
 
 class World {
 public:
+    using ColumnLookup = entt::delegate<const Column*(const BlockPosXZ&)>;
+
     static World* of(entt::registry& registry);
 
     explicit World(std::shared_ptr<const WorldDefinition> definition);
@@ -108,7 +110,7 @@ public:
 
     constexpr const WorldDefinition& definition(void) const;
     constexpr const WorldVisuals& visuals(void) const;
-    constexpr const Identifier& id(void) const;
+    constexpr const std::string& name(void) const;
 
     constexpr entt::registry& registry(void);
     constexpr entt::registry& chunk_registry(void);
@@ -123,6 +125,13 @@ public:
 
     constexpr Heightmap& heightmap(void);
     constexpr const Heightmap& heightmap(void) const;
+
+    const Column* find_column(const BlockPosXZ& pos) const;
+
+    // The store a side keeps its columns in must outlive the world. The
+    // lookup runs on the main thread only, like the stores themselves
+    template<auto Candidate, typename... Args>
+    void connect_column_lookup(Args&&... args);
 
     void load_config(void);
     void save_config(void);
@@ -170,6 +179,9 @@ public:
     float get_temperature(const ChunkPos& cpos, const LocalPos& lpos) const;
     float get_temperature(const BlockPos& pos) const;
 
+    // Same as get_temperature(pos), for a caller that sampled the front coverage already
+    float get_temperature(const BlockPos& pos, float coverage) const;
+
     float get_humidity_base(const ChunkPos& cpos, const LocalPos& lpos) const;
     float get_humidity_base(const BlockPos& pos) const;
 
@@ -199,6 +211,8 @@ public:
     std::uint64_t weather_seed { 0 };
 
 private:
+    void set_column_lookup(ColumnLookup lookup);
+
     std::shared_ptr<const WorldDefinition> m_definition;
     vx::hash_map<ChunkPos, std::shared_ptr<Chunk>> m_chunks;
     entt::registry m_registry;
@@ -206,6 +220,7 @@ private:
     BiomeMap m_biomes;
     WeatherState m_weather {};
     Heightmap m_heightmap;
+    ColumnLookup m_column_lookup;
     config::Map m_config;
     std::filesystem::path m_root;
     std::filesystem::path m_chunk_dir;
@@ -222,9 +237,9 @@ constexpr const WorldVisuals& World::visuals(void) const
     return m_definition->visuals;
 }
 
-constexpr const Identifier& World::id(void) const
+constexpr const std::string& World::name(void) const
 {
-    return m_definition->id;
+    return m_definition->name;
 }
 
 constexpr entt::registry& World::registry(void)
@@ -270,6 +285,14 @@ constexpr Heightmap& World::heightmap(void)
 constexpr const Heightmap& World::heightmap(void) const
 {
     return m_heightmap;
+}
+
+template<auto Candidate, typename... Args>
+void World::connect_column_lookup(Args&&... args)
+{
+    ColumnLookup lookup {};
+    lookup.connect<Candidate>(std::forward<Args>(args)...);
+    set_column_lookup(lookup);
 }
 
 constexpr WeatherState& World::weather(void)

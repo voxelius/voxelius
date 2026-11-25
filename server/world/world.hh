@@ -7,9 +7,9 @@
 #include "shared/world/world.hh"
 
 #include "server/constant.hh"
+#include "server/world/columns.hh"
 #include "server/world/placement_rule.hh"
-
-struct GeneratorDefinition;
+#include "server/world/world_definition.hh"
 
 using CachedEntropy = std::array<std::uint64_t, constant::CHUNK_AREA>;
 
@@ -20,10 +20,9 @@ public:
         std::vector<FeatureInstance> data;
     };
 
-    explicit ServerWorld(std::shared_ptr<const WorldDefinition> definition);
+    explicit ServerWorld(std::shared_ptr<const ServerWorldDefinition> definition);
 
     constexpr const GeneratorDefinition* generator(void) const;
-    void set_generator(const GeneratorDefinition* generator);
 
     constexpr void* generator_state(void) const;
 
@@ -37,12 +36,14 @@ public:
     void commit_placements(BlockStorage& storage, const ChunkPos& cpos);
     void commit_placements(BlockStorage& storage, const ChunkPos& cpos, std::span<const FeatureInstance> instances);
 
-    void init_generation(std::shared_ptr<void> state);
+    void init_generation(void);
 
     void schedule(const ChunkPos& cpos, const LocalPos& lpos, std::uint64_t deadline, block_tick_source source);
     void schedule(const BlockPos& pos, std::uint64_t deadline, block_tick_source source);
 
     void fixed_update(void);
+
+    WorldColumns& columns(void);
 
     std::mt19937_64 weather_random;
     float weather_strike_budget { 0.0f };
@@ -68,9 +69,7 @@ private:
 
     const std::vector<FeatureInstance>& collect_placements(const ChunkPosXZ& pos);
 
-    const GeneratorDefinition* m_generator { nullptr };
-
-    std::shared_ptr<void> m_generator_state;
+    std::shared_ptr<const ServerWorldDefinition> m_server_definition;
 
     std::uint64_t m_entropy_seed { 0 };
     mutable std::shared_mutex m_entropy_mutex;
@@ -84,16 +83,23 @@ private:
 
     std::vector<std::unique_ptr<PlacementRule>> m_placement_rules;
     std::size_t m_placement_extent { 0 };
+
+    WorldColumns m_columns;
 };
 
 constexpr const GeneratorDefinition* ServerWorld::generator(void) const
 {
-    return m_generator;
+    return m_server_definition->generator;
 }
 
 constexpr void* ServerWorld::generator_state(void) const
 {
-    return m_generator_state.get();
+    return m_server_definition->generator_state.get();
+}
+
+inline WorldColumns& ServerWorld::columns(void)
+{
+    return m_columns;
 }
 
 #endif /* B7D9F1C3_3E5A_4B2D_9C6F_8A0E2C4D6F71 */

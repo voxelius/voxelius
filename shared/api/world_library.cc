@@ -400,7 +400,7 @@ static int api_get_humidity(lua_State* L)
     return 1;
 }
 
-static std::optional<std::string_view> get_id(lua_State* L)
+static std::optional<std::string_view> get_name(lua_State* L)
 {
     auto world = WorldScope::active();
 
@@ -409,13 +409,12 @@ static std::optional<std::string_view> get_id(lua_State* L)
         return std::nullopt;
     }
 
-    auto& identifier = world->id();
-    return identifier.full_string();
+    return world->name();
 }
 
-static int api_get_id(lua_State* L)
+static int api_get_name(lua_State* L)
 {
-    auto value = get_id(L);
+    auto value = get_name(L);
 
     if(!value.has_value()) {
         return lua_error(L);
@@ -432,7 +431,7 @@ void api_shared::open_world(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     auto L = lua.get();
 
-    lua_newtable(L); // World
+    lua_newtable(L);
 
     lua_pushcfunction(L, api_get_block);
     lua_setfield(L, -2, "get_block");
@@ -470,8 +469,8 @@ void api_shared::open_world(std::shared_ptr<lua_State>& lua, ModContext* ctx)
     lua_pushcfunction(L, api_get_humidity);
     lua_setfield(L, -2, "get_humidity");
 
-    lua_pushcfunction(L, api_get_id);
-    lua_setfield(L, -2, "id");
+    lua_pushcfunction(L, api_get_name);
+    lua_setfield(L, -2, "name");
 
     lua_setglobal(L, "world");
 }

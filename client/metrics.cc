@@ -15,6 +15,8 @@
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/light_storage.hh"
+#include "shared/world/precip.hh"
+#include "shared/world/precip_registry.hh"
 #include "shared/world/weather_registry.hh"
 #include "shared/world/world.hh"
 #include "shared/world/world_clock.hh"
@@ -26,6 +28,7 @@
 #include "client/video.hh"
 #include "client/world/chunk_mesh.hh"
 #include "client/world/chunk_mesher.hh"
+#include "client/world/columns.hh"
 
 constexpr static float TEXT_XPOS = 8.0f;
 constexpr static float TEXT_YPOS = 8.0f;
@@ -225,19 +228,33 @@ static std::string_view identifier_string(const std::optional<Identifier>& name)
     return "unknown";
 }
 
+// Returned by value: the caller keeps the surface text and the liquid text at once
+static std::array<char, 24> height_string(BlockPos::value_type value)
+{
+    auto text = std::array<char, 24> {};
+
+    if(value == HEIGHTMAP_UNSET) {
+        std::snprintf(text.data(), text.size(), "unset");
+        return text;
+    }
+
+    std::snprintf(text.data(), text.size(), "%" PRId64, static_cast<std::int64_t>(value));
+    return text;
+}
+
 static std::string_view world_identifier(void)
 {
     if(globals::world == nullptr) {
         return "unknown";
     }
 
-    auto& id = globals::world->id();
+    auto& name = globals::world->name();
 
-    if(id.is_empty()) {
+    if(name.empty()) {
         return "unknown";
     }
 
-    return id.full_string();
+    return name;
 }
 
 static void sample_frame(void)
@@ -406,10 +423,10 @@ static void compose_player(void)
 
     auto world_id = world_identifier();
 
-    // emhash counts in a 32 bit size_type, while %zu reads 64 bits
+    // The emhash size_type is 32 bit, while %zu reads 64 bits
     auto meshed_chunks = static_cast<std::size_t>(meshed.size());
     auto loaded_chunks = static_cast<std::size_t>(chunks.size());
-    auto pending_meshes = chunk_mesher::backlog();
+    auto pending_meshes = chunk_mesher::backlog;
 
     push_line(s_lines_left, s_left_used, TEXT_COLOR, true, "C: %zu/%zu (+%zu)", meshed_chunks, loaded_chunks, pending_meshes);
     push_line(s_lines_left, s_left_used, TEXT_COLOR, false, "XYZ: %.5f / %.5f / %.5f", world_pos.x(), world_pos.y(), world_pos.z());
@@ -419,8 +436,8 @@ static void compose_player(void)
         static_cast<int>(world_id.size()), world_id.data());
 
     // A yaw of zero looks south, which matches the Minecraft debug screen
-    auto yaw = utils::degrees(std::atan2(-camera::forward.x(), camera::forward.z()));
-    auto pitch = -utils::degrees(std::asin(std::clamp(camera::forward.y(), -1.0f, 1.0f)));
+    auto yaw = utils::degrees(std::atan2(-client_camera::forward.x(), client_camera::forward.z()));
+    auto pitch = -utils::degrees(std::asin(std::clamp(client_camera::forward.y(), -1.0f, 1.0f)));
     auto wrapped = std::fmod(yaw + 360.0f, 360.0f);
     auto cardinal = static_cast<std::size_t>(std::lround(wrapped / 90.0f)) % 4;
 
@@ -471,6 +488,30 @@ static void compose_player(void)
 
     push_line(s_lines_left, s_left_used, TEXT_COLOR, false, "Weather: %.*s (%.0f%%)", static_cast<int>(weather_text.size()),
         weather_text.data(), 100.0f * coverage);
+
+    auto precip_context = precip::context(globals::world, definition.weather, world_pos.x(), world_pos.z());
+    auto precip_selection = precip::select(globals::world, precip_context, world_pos.x(), world_pos.y(), world_pos.z());
+    auto precip_name = precip_registry::name_of(precip_selection.type);
+    auto precip_text = identifier_string(precip_name);
+
+    auto column_x = static_cast<int>(std::floor(world_pos.x()));
+    auto column_z = static_cast<int>(std::floor(world_pos.z()));
+
+    auto column = columns::find(BlockPosXZ(column_x, column_z));
+    auto column_text = std::array<char, 64> {};
+
+    if(column == nullptr) {
+        std::snprintf(column_text.data(), column_text.size(), "no slice");
+    }
+    else {
+        auto surface_text = height_string(column->surface_y);
+        auto liquid_text = height_string(column->liquid_y);
+
+        std::snprintf(column_text.data(), column_text.size(), "surface=%s liquid=%s", surface_text.data(), liquid_text.data());
+    }
+
+    push_line(s_lines_left, s_left_used, TEXT_COLOR, false, "PrecipFront: %.*s (%.0f%%) %s", static_cast<int>(precip_text.size()),
+        precip_text.data(), 100.0f * precip_selection.effective_intensity, column_text.data());
 
     auto horizontal = Eigen::Vector2f(velocity.value.x(), velocity.value.z());
     auto speed = horizontal.norm();
@@ -850,9 +891,7 @@ void metrics::layout(void)
     auto bottom = draw_lines(draw_list, s_lines_left, left_origin, false);
 
     if(!s_lines_right.empty()) {
-        auto right_fits = right_edge - right_width >= left_origin.x + left_width + 2.0f * margin;
-
-        if(right_fits) {
+        if(right_edge - right_width >= left_origin.x + left_width + 2.0f * margin) {
             ImVec2 right_origin {};
             right_origin.x = right_edge;
             right_origin.y = left_origin.y;

@@ -51,7 +51,6 @@ void gui::Stepper<T>::layout_control(void)
     auto& palette = style::palette();
 
     auto current = m_value.value();
-    auto index = static_cast<std::size_t>((current - m_min) / m_step);
 
     auto scale = static_cast<float>(globals::gui_scale);
     auto bevel = std::max(1.0f, scale);
@@ -99,15 +98,27 @@ void gui::Stepper<T>::layout_control(void)
     auto next_clicked = ImGui::InvisibleButton("###next", ImVec2(arrow_width, frame_height));
 
     if(previous_clicked) {
-        current = (current <= m_min) ? m_max : static_cast<T>(current - m_step);
+        if(current <= m_min) {
+            current = m_max;
+        }
+        else {
+            current = static_cast<T>(current - m_step);
+        }
+
         m_value.set_value(current);
     }
     else if(next_clicked) {
-        current = (current >= m_max) ? m_min : static_cast<T>(current + m_step);
+        if(current >= m_max) {
+            current = m_min;
+        }
+        else {
+            current = static_cast<T>(current + m_step);
+        }
+
         m_value.set_value(current);
     }
 
-    index = std::min(static_cast<std::size_t>((current - m_min) / m_step), m_labels.size() - 1);
+    auto index = std::min(static_cast<std::size_t>((current - m_min) / m_step), m_labels.size() - 1);
 
     detail::draw_stone_label(draw_list, previous_min, previous_max, "<", false, true);
     detail::draw_stone_label(draw_list, next_min, next_max, ">", false, true);

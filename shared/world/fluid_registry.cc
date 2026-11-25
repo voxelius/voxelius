@@ -98,7 +98,7 @@ void fluid_registry::resolve_tints(void)
         def.tint = tint_registry::find(def.tint_name);
 
         if(def.tint == TINT_ID_NULL) {
-            msg::log_warning("fluid {} references unknown tint {}", def.tint_name.full_string(), def.tint_name.full_string());
+            msg::log_warning("fluid references unknown tint {}", def.tint_name.full_string());
         }
     }
 }
@@ -124,9 +124,9 @@ void fluid_registry::commit(ModContext& ctx)
     for(const auto& entry : names) {
         auto& name = entry.first;
         auto global_id = entry.second + fluid_offset;
-        auto [it, inserted] = s_names.try_emplace(name, global_id);
+        auto result = s_names.try_emplace(name, global_id);
 
-        if(!inserted) {
+        if(!result.second) {
             msg::log_warning("duplicate fluid name: {}", name.full_string());
             continue;
         }

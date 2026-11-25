@@ -4,14 +4,10 @@
 #include "core/identifier.hh"
 
 using weather_type_id = std::uint32_t;
+using precip_type_id = std::uint32_t;
 
 constexpr static weather_type_id WEATHER_ID_NULL = 0;
-
-enum class precipitation_kind : std::uint8_t {
-    NONE = 0,
-    RAIN,
-    SNOW,
-};
+constexpr static precip_type_id PRECIP_ID_NULL = 0;
 
 // One cloud body of a weather type: the volume starts at height and reaches
 // thickness blocks up. A type carries at most one, and a zero coverage leaves it clear
@@ -28,14 +24,14 @@ struct CloudBody final {
     std::uint32_t seed { 0 };
 };
 
-struct Precipitation final {
-    precipitation_kind kind { precipitation_kind::NONE };
-    float intensity { 0.0f };
-    float speed { 18.0f };
-    float drift { 0.0f };
-    float size { 0.08f };
+// A front names several precip types, and the local climate picks
+// one of them per point. The ids are resolved by weather_registry::commit
+// after the precip registry has committed all of this mod's definitions
+struct PrecipFront final {
+    std::vector<Identifier> type_names;
+    std::vector<precip_type_id> types;
 
-    Eigen::Vector3f color { Eigen::Vector3f(0.55f, 0.65f, 0.80f) };
+    float intensity { 0.0f };
 };
 
 struct WeatherCallback final {
@@ -49,7 +45,7 @@ struct WeatherTypeDefinition final {
 
     CloudBody cloud;
 
-    Precipitation precipitation;
+    PrecipFront precip;
 
     Eigen::Vector3f sky_tint { Eigen::Vector3f(1.0f, 1.0f, 1.0f) };
     float sky_visibility { 1.0f }; // 1 = the clear sky shows through, 0 = only sky_tint
@@ -63,7 +59,7 @@ struct WeatherTypeDefinition final {
     float weight { 1.0f };
 
     float strikes_per_minute { 0.0f };
-    float strike_radius { 96.0f };
+    float strike_radius { 96.0f }; // Blocks
 
     WeatherCallback on_tick;
     WeatherCallback on_strike;
@@ -97,6 +93,7 @@ public:
     Eigen::Vector2f wind_direction(void) const;
     float wind_speed(void) const;
 
+    // An empty allowed span disables the filter
     weather_type_id type_at(std::span<const weather_type_id> allowed, float x, float z, std::uint64_t weather_tick) const;
     float coverage_of(std::span<const weather_type_id> allowed, weather_type_id type, float x, float z, std::uint64_t weather_tick) const;
     float coverage(std::span<const weather_type_id> allowed, float x, float z, std::uint64_t weather_tick) const;

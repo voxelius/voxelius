@@ -2,7 +2,6 @@
 #define AEA23A8B_5F80_4F74_A1B6_D0CB7811FB19
 
 #include "shared/coord.hh"
-#include "shared/world/biome.hh"
 
 class World;
 

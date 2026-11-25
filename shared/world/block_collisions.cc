@@ -38,12 +38,12 @@ static Eigen::Matrix3f facing_rotation(block_face facing)
 
 static Eigen::AlignedBox3f transform_aabb(const Eigen::AlignedBox3f& aabb, const Eigen::Matrix3f& rot, const Eigen::Vector3f& offset)
 {
-    Eigen::Vector3f center = Eigen::Vector3f::Constant(0.5f);
-    Eigen::AlignedBox3f transformed;
+    auto center = Eigen::Vector3f::Constant(0.5f);
+    auto transformed = Eigen::AlignedBox3f();
 
     for(Eigen::Index i = 0; i < 8; ++i) {
-        Eigen::Vector3f corner = aabb.corner(static_cast<Eigen::AlignedBox3f::CornerType>(i));
-        Eigen::Vector3f rotated = center + rot * (corner - center);
+        auto corner = aabb.corner(static_cast<Eigen::AlignedBox3f::CornerType>(i));
+        auto rotated = center + rot * (corner - center);
         transformed.extend(rotated + offset);
     }
 

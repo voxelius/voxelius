@@ -2,10 +2,11 @@
 
 #include "core/utils/string.hh"
 
-constexpr static std::array<char, 7> WHITESPACE_CHARS = { ' ', '\t', '\n', '\v', '\f', '\r', 0 };
 constexpr static char SINGLE_QUOTE_CHAR = '\'';
 constexpr static char DOUBLE_QUOTE_CHAR = '\"';
 constexpr static char BACKSLASH_CHAR = '\\';
+
+constexpr static std::array<char, 7> WHITESPACE_CHARS = { ' ', '\t', '\n', '\v', '\f', '\r', 0 };
 
 static bool is_whitespace_char(char character)
 {
@@ -16,11 +17,15 @@ static bool is_whitespace_char(char character)
 
 bool utils::is_whitespace(std::string_view string)
 {
-    auto result = false;
-    result = result || string.empty();
-    result = result || string.size() == 1 && string[0] == 0;
-    result = result || string.find_first_not_of(WHITESPACE_CHARS.data()) == std::string_view::npos;
-    return result;
+    if(string.empty()) {
+        return true;
+    }
+
+    if(string.size() == 1 && string[0] == 0) {
+        return true;
+    }
+
+    return string.find_first_not_of(WHITESPACE_CHARS.data()) == std::string_view::npos;
 }
 
 bool utils::has_whitespace(std::string_view string)
@@ -171,7 +176,7 @@ std::string utils::join(std::span<const std::string> parts, std::string_view sep
         return {};
     }
 
-    auto total_length = separator.size() * parts.size() - parts.size();
+    auto total_length = separator.size() * (parts.size() - 1);
 
     for(const auto& part : parts) {
         total_length += part.size();
@@ -204,7 +209,7 @@ std::string utils::join(std::span<const std::string_view> parts, std::string_vie
         return {};
     }
 
-    auto total_length = separator.size() * parts.size() - parts.size();
+    auto total_length = separator.size() * (parts.size() - 1);
 
     for(const auto& part : parts) {
         total_length += part.size();

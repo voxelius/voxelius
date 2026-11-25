@@ -104,11 +104,12 @@ void outline::prepare(void)
     glDisable(GL_CULL_FACE);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    auto view_projection = camera::instance.view_projection();
+    auto view_projection = client_camera::instance.view_projection();
 
     glUseProgram(s_program.handle);
     glUniformMatrix4fv(s_program.uniforms[su_ViewProjection].location, 1, false, view_projection.data());
-    glUniform1f(s_program.uniforms[su_ViewDistance].location, static_cast<float>(constant::CHUNK_SIZE * camera::view_distance.value()));
+    glUniform1f(s_program.uniforms[su_ViewDistance].location,
+        static_cast<float>(constant::CHUNK_SIZE * client_camera::view_distance.value()));
 
     glBindVertexArray(s_vao);
     glEnableVertexAttribArray(0);
@@ -118,7 +119,7 @@ void outline::prepare(void)
 void outline::cube(const ChunkPos& cpos, const Eigen::Vector3f& fpos, const Eigen::Vector3f& size, float thickness,
     const Eigen::Vector4f& color)
 {
-    auto patch_cpos = cpos - camera::chunk;
+    auto patch_cpos = cpos - client_camera::chunk;
 
     glLineWidth(thickness);
 
@@ -136,7 +137,7 @@ void outline::cube(const ChunkPos& cpos, const Eigen::Vector3f& fpos, const Eige
 void outline::line(const ChunkPos& cpos, const Eigen::Vector3f& fpos, const Eigen::Vector3f& size, float thickness,
     const Eigen::Vector4f& color)
 {
-    auto patch_cpos = cpos - camera::chunk;
+    auto patch_cpos = cpos - client_camera::chunk;
 
     glLineWidth(thickness);
 

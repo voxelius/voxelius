@@ -122,6 +122,8 @@ static void decode_entity(entt::registry& registry, ReadBuffer& buffer)
 {
     thread_local std::vector<std::pair<std::string, std::vector<std::byte>>> components;
 
+    components.clear();
+
     auto class_name = buffer.read<std::string>();
     auto num_components = buffer.read<std::uint16_t>();
 

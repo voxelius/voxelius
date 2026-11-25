@@ -30,6 +30,7 @@
 #include "client/net/session.hh"
 #include "client/system/interpolation.hh"
 #include "client/world/cloud_renderer.hh"
+#include "client/world/columns.hh"
 #include "client/world/skybox.hh"
 
 static void on_entity_spawn(const packet::Entity_Spawn& packet)
@@ -144,6 +145,16 @@ static void on_world_biomes(const packet::World_Biomes& packet)
     globals::world->insert_biomes(packet.cpos, packet.biomes);
 }
 
+static void on_world_columns(const packet::World_Columns& packet)
+{
+    columns::set(packet.cpos, packet.columns);
+}
+
+static void on_world_column(const packet::World_Column& packet)
+{
+    columns::update(packet.bpos, packet.column);
+}
+
 static void on_world_light(const packet::World_Light& packet)
 {
     for(const auto& entry : packet.entries) {
@@ -214,6 +225,7 @@ static void on_world_info(const packet::World_Info& packet)
 {
     client_game::open_world(packet);
 
+    columns::clear();
     cloud_renderer::reset();
     skybox::set_star_seed(weather::star_seed(packet.weather_seed));
     skybox::snap();
@@ -235,7 +247,7 @@ static cvar::status cmd_time_query(const cvar::Context&, std::span<const std::st
 
 static cvar::status cmd_weather_status(const cvar::Context&, std::span<const std::string_view>)
 {
-    auto position = utils::to_fvec(camera::chunk) + camera::local;
+    auto position = utils::to_fvec(client_camera::chunk) + client_camera::local;
 
     auto& definition = globals::world->definition();
     auto& state = globals::world->weather();
@@ -252,7 +264,7 @@ static cvar::status cmd_weather_status(const cvar::Context&, std::span<const std
         description = name->full_string();
     }
 
-    auto bpos = utils::to_block(camera::chunk, camera::local.cast<LocalPos::value_type>());
+    auto bpos = utils::to_block(client_camera::chunk, client_camera::local.cast<LocalPos::value_type>());
     auto temperature = globals::world->get_temperature(bpos);
     auto temperature_base = globals::world->get_temperature_base(bpos);
     auto humidity = globals::world->get_humidity(bpos);
@@ -280,6 +292,8 @@ void receive::init(void)
 
     globals::dispatcher.sink<packet::World_Blocks>().connect<&on_world_blocks>();
     globals::dispatcher.sink<packet::World_Biomes>().connect<&on_world_biomes>();
+    globals::dispatcher.sink<packet::World_Columns>().connect<&on_world_columns>();
+    globals::dispatcher.sink<packet::World_Column>().connect<&on_world_column>();
     globals::dispatcher.sink<packet::World_Light>().connect<&on_world_light>();
     globals::dispatcher.sink<packet::World_SetBlock>().connect<&on_world_set_block>();
     globals::dispatcher.sink<packet::World_Timings>().connect<&on_world_timings>();

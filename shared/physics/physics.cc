@@ -30,17 +30,17 @@ static block_face make_block_face(const Eigen::Vector3f& normal)
         return BLOCK_FACE_NORTH;
     }
 
-    return BLOCK_FACE_NORTH; // fallback
+    return BLOCK_FACE_NORTH;
 }
 
 std::optional<physics::BlockHit> physics::raycast_block(const Ray& ray, block_filter bfilter)
 {
     assert(bfilter);
 
-    std::optional<physics::BlockHit> closest = std::nullopt;
+    std::optional<BlockHit> closest = std::nullopt;
     auto closest_distance = std::numeric_limits<float>::max();
 
-    Ray_DDA dda(ray.world, ray.start_chunk, ray.start, ray.direction);
+    RayDDA dda(ray.world, ray.start_chunk, ray.start, ray.direction);
 
     while(dda.distance() < ray.max_distance) {
         auto block_id = dda.step();
@@ -69,12 +69,12 @@ std::optional<physics::BlockHit> physics::raycast_block(const Ray& ray, block_fi
             Eigen::AlignedBox3f world_aabb = aabb;
             world_aabb.translate(bpos_float);
 
-            Ray_AABB ray_aabb(ray.start, ray.direction);
+            RayAABB ray_aabb(ray.start, ray.direction);
 
             if(auto hit = ray_aabb.intersect(world_aabb)) {
                 if(hit->distance <= ray.max_distance) {
                     if(hit->distance < closest_distance) {
-                        physics::BlockHit new_hit {};
+                        BlockHit new_hit {};
                         new_hit.world = ray.world;
 
                         new_hit.distance = hit->distance;
@@ -124,8 +124,8 @@ std::optional<physics::EntityHit> physics::raycast_entity(const Ray&, entity_fil
 
 physics::Hit physics::raycast(const Ray& ray, block_filter bfilter, entity_filter efilter)
 {
-    std::optional<physics::BlockHit> block_hit = std::nullopt;
-    std::optional<physics::EntityHit> entity_hit = std::nullopt;
+    std::optional<BlockHit> block_hit = std::nullopt;
+    std::optional<EntityHit> entity_hit = std::nullopt;
 
     if(bfilter) {
         block_hit = raycast_block(ray, bfilter);

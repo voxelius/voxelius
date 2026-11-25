@@ -10,6 +10,7 @@
 #include "shared/world/chunk.hh"
 #include "shared/world/world.hh"
 
+#include "server/utils/heightmap.hh"
 #include "server/world/generator_map.hh"
 #include "server/world/world.hh"
 
@@ -58,6 +59,10 @@ void WorldgenTask::process(void)
         return;
     }
 
+    // The height map is shared by every Y chunk of
+    // a column, so the first one to generate warms it
+    utils::heightmap_probe(world.get(), ChunkPosXZ(m_pos.x(), m_pos.z()));
+
     m_biomes = std::move(biomes);
 }
 
@@ -90,7 +95,7 @@ void worldgen::shutdown(void)
 {
     // Pending generators still touch feature rules, noise caches and the heightmap.
     // Drain them before any of that is destroyed, otherwise a worker can outlive the
-    // teardown and keep feature handles alive (or use the destroyed state outright).
+    // teardown and keep feature handles alive (or use the destroyed state outright)
     threading::wait();
 }
 

@@ -14,6 +14,7 @@ struct packet::Status_Request final : public packet::Base<packet::STATUS_REQUEST
 
 struct packet::Status_Response final : public packet::Base<packet::STATUS_RESPONSE> {
     constexpr static std::uint32_t WHITELIST_ENABLED = 0x00000001;
+    constexpr static std::size_t MOTD_MAX_LENGTH = 32;
     constexpr static std::uint32_t STRICT_VERSION = 0x00000002;
 
     static void encode(const Status_Response& packet, WriteBuffer& buffer);

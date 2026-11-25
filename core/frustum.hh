@@ -3,12 +3,12 @@
 
 class Frustum final {
 public:
-    constexpr static unsigned PLN_LF = 0; ///< Left
-    constexpr static unsigned PLN_RT = 1; ///< Right
-    constexpr static unsigned PLN_DN = 2; ///< Bottom/Up
-    constexpr static unsigned PLN_UP = 3; ///< Top/Down
-    constexpr static unsigned PLN_FT = 4; ///< Front/Near
-    constexpr static unsigned PLN_BK = 5; ///< Back/Far
+    constexpr static unsigned PLN_LF = 0;
+    constexpr static unsigned PLN_RT = 1;
+    constexpr static unsigned PLN_DN = 2;
+    constexpr static unsigned PLN_UP = 3;
+    constexpr static unsigned PLN_FT = 4;
+    constexpr static unsigned PLN_BK = 5;
 
     explicit Frustum(void);
     explicit Frustum(const Eigen::Matrix4f& matrix);

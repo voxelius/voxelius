@@ -80,16 +80,10 @@ static void commit_instance(BlockStorage& storage, const ChunkPos& cpos, const F
     }
 }
 
-ServerWorld::ServerWorld(std::shared_ptr<const WorldDefinition> definition) : World(std::move(definition))
+ServerWorld::ServerWorld(std::shared_ptr<const ServerWorldDefinition> definition)
+    : World(definition), m_server_definition(std::move(definition))
 {
-    // empty
-}
-
-void ServerWorld::set_generator(const GeneratorDefinition* generator)
-{
-    assert(generator);
-
-    m_generator = generator;
+    connect_column_lookup<&WorldColumns::find>(m_columns);
 }
 
 const CachedEntropy& ServerWorld::sample_entropy(const ChunkPosXZ& pos)
@@ -128,7 +122,7 @@ biome_id_type ServerWorld::biome_at(const BlockPosXZ& pos)
     auto entry = get_biome_entry(cpos);
 
     std::call_once(entry->init_flag, [this, cpos, entry] {
-        m_generator->generate_biomes(this, cpos, entry->data);
+        m_server_definition->generator->generate_biomes(this, cpos, entry->data);
     });
 
     auto lx = static_cast<std::size_t>(pos[0] & (constant::CHUNK_SIZE - 1));
@@ -181,10 +175,8 @@ void ServerWorld::commit_placements(BlockStorage& storage, const ChunkPos& cpos,
     }
 }
 
-void ServerWorld::init_generation(std::shared_ptr<void> state)
+void ServerWorld::init_generation(void)
 {
-    m_generator_state = std::move(state);
-
     m_placement_extent = 0;
 
     for(auto& def : biome_registry::all_definitions()) {
@@ -209,7 +201,7 @@ void ServerWorld::init_generation(std::shared_ptr<void> state)
 
     // The generator seeds its climate noise from the first five draws of a
     // seeder keyed by the world seed. Discard them so the entropy seed keeps
-    // its old value and feature placement stays stable across this change.
+    // its old value and feature placement stays stable across this change
     std::mt19937_64 seeder;
     seeder.seed(seed);
     seeder.discard(5);
@@ -337,7 +329,7 @@ void ServerWorld::fixed_update(void)
 
     std::vector<std::pair<std::size_t, block_tick_source>> due;
 
-    chunk_registry().view<Chunk_Component>().each([&](Chunk_Component& component) {
+    chunk_registry().view<ChunkComponent>().each([&](ChunkComponent& component) {
         due.clear();
 
         component.ptr->pop_due(globals::current_tick, due);
@@ -346,4 +338,6 @@ void ServerWorld::fixed_update(void)
             utils::block_sched_tick(component.position, component.ptr, it.first, it.second);
         }
     });
+
+    m_columns.flush();
 }

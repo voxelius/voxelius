@@ -6,13 +6,13 @@
 #include "shared/world/chunk.hh"
 #include "shared/world/world.hh"
 
-Ray_DDA::Ray_DDA(World* world, const ChunkPos& start_chunk, const Eigen::Vector3f& start_pos, const Eigen::Vector3f& direction)
+RayDDA::RayDDA(World* world, const ChunkPos& start_chunk, const Eigen::Vector3f& start_pos, const Eigen::Vector3f& direction)
     : m_world(world)
 {
     reset(start_chunk, start_pos, direction);
 }
 
-void Ray_DDA::reset(const ChunkPos& start_chunk, const Eigen::Vector3f& start_pos, const Eigen::Vector3f& direction)
+void RayDDA::reset(const ChunkPos& start_chunk, const Eigen::Vector3f& start_pos, const Eigen::Vector3f& direction)
 {
     assert(m_world);
 
@@ -80,7 +80,7 @@ void Ray_DDA::reset(const ChunkPos& start_chunk, const Eigen::Vector3f& start_po
     m_last_chunk = m_world->find_chunk(m_last_chunk_pos);
 }
 
-block_id_type Ray_DDA::step(void)
+block_id_type RayDDA::step(void)
 {
     if(m_side_distance.x() < m_side_distance.z()) {
         if(m_side_distance.x() < m_side_distance.y()) {

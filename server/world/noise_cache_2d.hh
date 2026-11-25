@@ -31,6 +31,7 @@ public:
     NoiseCache2D(NoiseCache2D&& other) = delete;
     NoiseCache2D& operator=(NoiseCache2D&& other) = delete;
 
+    // The reference dies when the entry is erased or purged
     const array_type& get(const ChunkPosXZ& pos);
     const float get_slow(const BlockPosXZ& pos);
 

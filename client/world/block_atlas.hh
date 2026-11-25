@@ -9,7 +9,7 @@ struct AtlasStrip final {
     std::size_t index;
 };
 
-struct AtlasFrame_GL final {
+struct AtlasFrameGL final {
     Eigen::Vector2f uv_min;
     Eigen::Vector2f uv_max;
     std::uint32_t layer;
@@ -18,17 +18,17 @@ struct AtlasFrame_GL final {
     std::uint32_t reserved_3;
 };
 
-static_assert(0x20 == sizeof(AtlasFrame_GL));
-static_assert(0x08 == offsetof(AtlasFrame_GL, uv_max));
-static_assert(0x10 == offsetof(AtlasFrame_GL, layer));
+static_assert(0x20 == sizeof(AtlasFrameGL));
+static_assert(0x08 == offsetof(AtlasFrameGL, uv_max));
+static_assert(0x10 == offsetof(AtlasFrameGL, layer));
 
-struct AtlasStrip_GL final {
+struct AtlasStripGL final {
     std::uint32_t frame_base;
     std::uint32_t frame_count;
 };
 
-static_assert(0x08 == sizeof(AtlasStrip_GL));
-static_assert(0x04 == offsetof(AtlasStrip_GL, frame_count));
+static_assert(0x08 == sizeof(AtlasStripGL));
+static_assert(0x04 == offsetof(AtlasStripGL, frame_count));
 
 namespace block_atlas
 {
@@ -41,8 +41,8 @@ extern GLuint tbo_strips;
 
 namespace block_atlas
 {
-extern const AtlasStrip* stub_white; // fully white stub texture
-extern const AtlasStrip* stub_black; // fully black stub texture
+extern const AtlasStrip* stub_white;
+extern const AtlasStrip* stub_black;
 extern const AtlasStrip* stub_check; // checkerboard stub texture
 } // namespace block_atlas
 

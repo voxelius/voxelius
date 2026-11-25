@@ -1,14 +1,10 @@
 print("mod:", core.NAMESPACE)
 print("engine version:", core.VERSION)
 
-if core.IS_SERVER then
-  dofile("world/overworld.lua")
-  dofile("world/superflat.lua")
-end
-
 tints.add("grass", { default_color = { 0.57, 0.75, 0.28 } })
 tints.add("foliage", { default_color = { 0.40, 0.65, 0.25 } })
 tints.add("water", { default_color = { 0.25, 0.45, 0.85 } })
+tints.add("rain", { default_color = { 1.00, 1.00, 1.00 } })
 
 dofile("fluid/water.lua")
 
@@ -43,10 +39,13 @@ dofile("biome/surface_hills_grassy.lua")
 dofile("biome/surface_hills_rocky.lua")
 dofile("biome/surface_plains.lua")
 
+dofile("precip/dry.lua")
+dofile("precip/rain.lua")
+dofile("precip/snow.lua")
+
 dofile("weather/clear.lua")
 dofile("weather/overcast.lua")
 dofile("weather/rain.lua")
-dofile("weather/snow.lua")
 dofile("weather/thunderstorm.lua")
 
 dofile("entity/player.lua")

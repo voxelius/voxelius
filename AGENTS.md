@@ -106,8 +106,10 @@ differently.
 - `main` catches every exception, logs it and returns a failure code. Do not add a second top-level handler.
 - Mark a class or structure `final` unless it is a base.
 - A function with no parameters writes `(void)`.
-- Do not silence an unused value with a `void` cast (`(void)x;`, `static_cast<void>(x);`). Leave an unused parameter unnamed in the
-  definition (`void f(int x, int)`).
+- Do not silence an unused value with a `void` cast (`(void)x;`, `static_cast<void>(x);`).
+- Name every parameter, including an unused one: `void f(int x, int y)`, not `void f(int x, int)`. An unnamed parameter of a
+  fundamental type such as `char` makes `function(char)` read like `function(void)`. Disable the unused-parameter warning for
+  that function or translation unit instead.
 - Put the body of a `constexpr` function in the header, right after its declaration.
 - Do not repeat a `const` that the initializer already carries. When a function returns a const reference, `auto&` is enough:
   `auto& palette = style::palette();`, not `const auto&`. Keep `const auto&` when the reference binds a temporary.

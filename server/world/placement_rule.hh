@@ -4,7 +4,7 @@
 #include "core/res/resource.hh"
 
 #include "shared/coord.hh"
-#include "shared/world/biome.hh"
+#include "shared/world/block.hh"
 
 class BlockStorage;
 class ServerWorld;

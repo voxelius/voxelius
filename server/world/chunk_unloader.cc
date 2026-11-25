@@ -59,7 +59,7 @@ void chunk_unloader::fixed_update_late(void)
         to_unload.clear();
 
         auto& chunk_registry = world->chunk_registry();
-        auto chunks = chunk_registry.view<Chunk_Component>();
+        auto chunks = chunk_registry.view<ChunkComponent>();
 
         for(const auto [entity, component] : chunks.each()) {
             auto inside_view = false;
@@ -70,7 +70,7 @@ void chunk_unloader::fixed_update_late(void)
                 auto& pos = component.position;
 
                 // Keep whole columns alive while their XZ position is in view;
-                // light needs every chunk of the realm, not only the visible ones.
+                // light needs every chunk of the realm, not only the visible ones
                 if(pos.x() < min.x() || pos.x() > max.x()) {
                     continue;
                 }

@@ -19,6 +19,10 @@ public:
     constexpr bool has_any(void) const;
 };
 
+struct BiomeSliceComponent final {
+    std::shared_ptr<BiomeSlice> ptr;
+};
+
 constexpr bool BiomeSlice::has_any(void) const
 {
     for(auto id : *this) {
@@ -29,9 +33,5 @@ constexpr bool BiomeSlice::has_any(void) const
 
     return false;
 }
-
-struct BiomeSlice_Component final {
-    std::shared_ptr<BiomeSlice> ptr;
-};
 
 #endif /* CBB4603F_23BA_4FB8_B70E_E68916DC3A44 */

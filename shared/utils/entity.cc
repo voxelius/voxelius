@@ -133,14 +133,14 @@ entt::entity utils::spawn(entt::registry& registry, const Identifier& name, entt
 {
     auto id = class_registry::find(name);
 
-    return utils::spawn(registry, id, hint);
+    return spawn(registry, id, hint);
 }
 
 entt::entity utils::spawn(entt::registry& registry, const Identifier& name, lua_State* L, int kv_idx, entt::entity hint)
 {
     auto id = class_registry::find(name);
 
-    return utils::spawn(registry, id, L, kv_idx, hint);
+    return spawn(registry, id, L, kv_idx, hint);
 }
 
 entt::entity utils::spawn_player(entt::registry& registry, const BlockPos& pos, entt::entity hint)
@@ -170,8 +170,8 @@ entt::entity utils::spawn_player(entt::registry& registry, const BlockPos& pos, 
 
     if(registry.all_of<Transform>(entity)) {
         registry.patch<Transform>(entity, [&](Transform& transform) {
-            auto local_pos = utils::to_local(pos);
-            transform.chunk = utils::to_chunk(pos);
+            auto local_pos = to_local(pos);
+            transform.chunk = to_chunk(pos);
             transform.local = local_pos.cast<float>();
         });
     }
@@ -205,7 +205,7 @@ entt::entity utils::transfer(entt::registry& from, entt::entity entity, entt::re
         snapshot.emplace_back(std::move(entry));
     });
 
-    auto result = utils::spawn(to, class_component->id);
+    auto result = spawn(to, class_component->id);
 
     if(!to.valid(result)) {
         return entt::null;

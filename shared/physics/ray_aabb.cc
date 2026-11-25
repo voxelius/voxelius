@@ -2,19 +2,19 @@
 
 #include "shared/physics/ray_aabb.hh"
 
-Ray_AABB::Ray_AABB(const Eigen::Vector3f& start, const Eigen::Vector3f& direction)
+RayAABB::RayAABB(const Eigen::Vector3f& start, const Eigen::Vector3f& direction)
 {
     reset(start, direction);
 }
 
-void Ray_AABB::reset(const Eigen::Vector3f& start, const Eigen::Vector3f& direction)
+void RayAABB::reset(const Eigen::Vector3f& start, const Eigen::Vector3f& direction)
 {
     m_start = start;
     m_direction = direction.normalized();
     m_inverse_direction = m_direction.cwiseInverse();
 }
 
-std::optional<Ray_AABB::Hit> Ray_AABB::intersect(const Eigen::AlignedBox3f& aabb) const
+std::optional<RayAABB::Hit> RayAABB::intersect(const Eigen::AlignedBox3f& aabb) const
 {
     Eigen::Vector3f t_0 = (aabb.min() - m_start).cwiseProduct(m_inverse_direction);
     Eigen::Vector3f t_1 = (aabb.max() - m_start).cwiseProduct(m_inverse_direction);

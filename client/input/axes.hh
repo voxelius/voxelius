@@ -3,7 +3,7 @@
 
 #include "client/input/source.hh"
 
-struct IN_AxisValue final {
+struct AxisValue final {
     bool is_delta;
     float value;
 };
@@ -22,7 +22,7 @@ void clear(void);
 
 namespace axes
 {
-IN_AxisValue consume(std::string_view slot);
+AxisValue consume(std::string_view slot);
 } // namespace axes
 
 namespace axes

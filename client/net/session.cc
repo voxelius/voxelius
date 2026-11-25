@@ -12,6 +12,7 @@
 #include "core/utils/string.hh"
 #include "core/version.hh"
 
+#include "shared/constant.hh"
 #include "shared/entity/class_registry.hh"
 #include "shared/globals.hh"
 #include "shared/net/packet_auth.hh"
@@ -22,6 +23,7 @@
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
 #include "shared/world/lighting.hh"
+#include "shared/world/precip_registry.hh"
 #include "shared/world/tint_registry.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
@@ -36,6 +38,7 @@
 #include "client/settings.hh"
 #include "client/video.hh"
 #include "client/world/cloud_renderer.hh"
+#include "client/world/columns.hh"
 #include "client/world/skybox.hh"
 
 constexpr static std::string_view KEYPAIR_PATH = "keypair.dat";
@@ -54,7 +57,7 @@ static void set_state(session_state state)
 {
     session::state = state;
 
-    globals::dispatcher.trigger(SessionStateEvent(state, 0));
+    globals::dispatcher.trigger(SessionStateEvent(state, packet::Session_Disconnect::UNSPECIFIED));
 }
 
 static void reset_session(void)
@@ -90,6 +93,8 @@ static void handle_disconnect(std::uint32_t reason)
         globals::world->set_weather_seed(0);
     }
 
+    columns::clear();
+
     fog::reset();
     skybox::reset();
     cloud_renderer::reset();
@@ -114,6 +119,7 @@ static void on_host_connect(const HostConnectEvent& event)
     request.tints_hash = tint_registry::checksum();
     request.ents_hash = class_registry::checksum();
     request.weather_hash = weather_registry::checksum();
+    request.precip_hash = precip_registry::checksum();
 
     auto desired_username = s_desired_username.value();
 
@@ -190,7 +196,7 @@ void session::init(void)
     s_desired_username_gui.set_flags(ImGuiInputTextFlags_CharsNoBlank);
     s_desired_username_gui.bind("net_username");
     s_desired_username_gui.set_callback([](auto data) {
-        if(data->BufTextLen >= 64) {
+        if(data->BufTextLen >= static_cast<int>(constant::USERNAME_MAX_LENGTH)) {
             return 1;
         }
 

@@ -4,54 +4,54 @@
 
 #include "core/utils/string.hh"
 
-struct IN_NamedCode final {
+struct NamedCode final {
     std::string_view name;
     std::uint32_t code;
 };
 
 constexpr static std::array MOUSE_BUTTONS = {
-    IN_NamedCode { "LF", SDL_BUTTON_LEFT },
-    IN_NamedCode { "MD", SDL_BUTTON_MIDDLE },
-    IN_NamedCode { "RT", SDL_BUTTON_RIGHT },
+    NamedCode { "LF", SDL_BUTTON_LEFT },
+    NamedCode { "MD", SDL_BUTTON_MIDDLE },
+    NamedCode { "RT", SDL_BUTTON_RIGHT },
 };
 
 constexpr static std::array MWHEEL_BUTTONS = {
-    IN_NamedCode { "XUP", MWHEEL_XUP },
-    IN_NamedCode { "XDOWN", MWHEEL_XDOWN },
-    IN_NamedCode { "YUP", MWHEEL_YUP },
-    IN_NamedCode { "YDOWN", MWHEEL_YDOWN },
+    NamedCode { "XUP", MWHEEL_XUP },
+    NamedCode { "XDOWN", MWHEEL_XDOWN },
+    NamedCode { "YUP", MWHEEL_YUP },
+    NamedCode { "YDOWN", MWHEEL_YDOWN },
 };
 
 constexpr static std::array GAMEPAD_BUTTONS = {
-    IN_NamedCode { "A", SDL_GAMEPAD_BUTTON_SOUTH },
-    IN_NamedCode { "B", SDL_GAMEPAD_BUTTON_EAST },
-    IN_NamedCode { "X", SDL_GAMEPAD_BUTTON_WEST },
-    IN_NamedCode { "Y", SDL_GAMEPAD_BUTTON_NORTH },
-    IN_NamedCode { "BACK", SDL_GAMEPAD_BUTTON_BACK },
-    IN_NamedCode { "GUIDE", SDL_GAMEPAD_BUTTON_GUIDE },
-    IN_NamedCode { "START", SDL_GAMEPAD_BUTTON_START },
-    IN_NamedCode { "LS", SDL_GAMEPAD_BUTTON_LEFT_STICK },
-    IN_NamedCode { "RS", SDL_GAMEPAD_BUTTON_RIGHT_STICK },
-    IN_NamedCode { "LB", SDL_GAMEPAD_BUTTON_LEFT_SHOULDER },
-    IN_NamedCode { "RB", SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER },
-    IN_NamedCode { "DPAD_UP", SDL_GAMEPAD_BUTTON_DPAD_UP },
-    IN_NamedCode { "DPAD_DOWN", SDL_GAMEPAD_BUTTON_DPAD_DOWN },
-    IN_NamedCode { "DPAD_LEFT", SDL_GAMEPAD_BUTTON_DPAD_LEFT },
-    IN_NamedCode { "DPAD_RIGHT", SDL_GAMEPAD_BUTTON_DPAD_RIGHT },
+    NamedCode { "A", SDL_GAMEPAD_BUTTON_SOUTH },
+    NamedCode { "B", SDL_GAMEPAD_BUTTON_EAST },
+    NamedCode { "X", SDL_GAMEPAD_BUTTON_WEST },
+    NamedCode { "Y", SDL_GAMEPAD_BUTTON_NORTH },
+    NamedCode { "BACK", SDL_GAMEPAD_BUTTON_BACK },
+    NamedCode { "GUIDE", SDL_GAMEPAD_BUTTON_GUIDE },
+    NamedCode { "START", SDL_GAMEPAD_BUTTON_START },
+    NamedCode { "LS", SDL_GAMEPAD_BUTTON_LEFT_STICK },
+    NamedCode { "RS", SDL_GAMEPAD_BUTTON_RIGHT_STICK },
+    NamedCode { "LB", SDL_GAMEPAD_BUTTON_LEFT_SHOULDER },
+    NamedCode { "RB", SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER },
+    NamedCode { "DPAD_UP", SDL_GAMEPAD_BUTTON_DPAD_UP },
+    NamedCode { "DPAD_DOWN", SDL_GAMEPAD_BUTTON_DPAD_DOWN },
+    NamedCode { "DPAD_LEFT", SDL_GAMEPAD_BUTTON_DPAD_LEFT },
+    NamedCode { "DPAD_RIGHT", SDL_GAMEPAD_BUTTON_DPAD_RIGHT },
 };
 
 constexpr static std::array MOUSE_AXES = {
-    IN_NamedCode { "X", MAXIS_X },
-    IN_NamedCode { "Y", MAXIS_Y },
+    NamedCode { "X", MAXIS_X },
+    NamedCode { "Y", MAXIS_Y },
 };
 
 constexpr static std::array GAMEPAD_AXES = {
-    IN_NamedCode { "LX", SDL_GAMEPAD_AXIS_LEFTX },
-    IN_NamedCode { "LY", SDL_GAMEPAD_AXIS_LEFTY },
-    IN_NamedCode { "RX", SDL_GAMEPAD_AXIS_RIGHTX },
-    IN_NamedCode { "RY", SDL_GAMEPAD_AXIS_RIGHTY },
-    IN_NamedCode { "LT", SDL_GAMEPAD_AXIS_LEFT_TRIGGER },
-    IN_NamedCode { "RT", SDL_GAMEPAD_AXIS_RIGHT_TRIGGER },
+    NamedCode { "LX", SDL_GAMEPAD_AXIS_LEFTX },
+    NamedCode { "LY", SDL_GAMEPAD_AXIS_LEFTY },
+    NamedCode { "RX", SDL_GAMEPAD_AXIS_RIGHTX },
+    NamedCode { "RY", SDL_GAMEPAD_AXIS_RIGHTY },
+    NamedCode { "LT", SDL_GAMEPAD_AXIS_LEFT_TRIGGER },
+    NamedCode { "RT", SDL_GAMEPAD_AXIS_RIGHT_TRIGGER },
 };
 
 static std::string normalize_name(std::string_view name)
@@ -71,7 +71,7 @@ static std::string normalize_name(std::string_view name)
     return result;
 }
 
-static std::optional<std::uint32_t> lookup_name(std::span<const IN_NamedCode> table, std::string_view name)
+static std::optional<std::uint32_t> lookup_name(std::span<const NamedCode> table, std::string_view name)
 {
     for(const auto& entry : table) {
         if(entry.name == name) {
@@ -82,7 +82,7 @@ static std::optional<std::uint32_t> lookup_name(std::span<const IN_NamedCode> ta
     return std::nullopt;
 }
 
-static std::string lookup_code(std::span<const IN_NamedCode> table, std::uint32_t code)
+static std::string lookup_code(std::span<const NamedCode> table, std::uint32_t code)
 {
     for(const auto& entry : table) {
         if(entry.code == code) {

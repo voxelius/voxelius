@@ -14,6 +14,7 @@
 #include "client/globals.hh"
 #include "client/net/session.hh"
 #include "client/world/chunk_mesher.hh"
+#include "client/world/columns.hh"
 
 constexpr static std::size_t REQUESTS_PER_TICK = 128;
 constexpr static std::size_t REQUEST_BACKLOG_LIMIT = 2048;
@@ -37,10 +38,13 @@ void chunk_visibility::fixed_update_late(void)
         return;
     }
 
-    auto radius = static_cast<ChunkPos::value_type>(camera::view_distance.value());
-    s_bounds_curr = utils::view_box(camera::chunk, radius);
+    auto radius = static_cast<ChunkPos::value_type>(client_camera::view_distance.value());
+    auto view = utils::view_box(client_camera::chunk, radius);
+    auto interest = utils::interest_box(client_camera::chunk, radius);
 
-    auto backlog = chunk_mesher::backlog();
+    s_bounds_curr = view;
+
+    auto backlog = chunk_mesher::backlog;
     std::size_t budget = 0;
 
     if(backlog < REQUEST_BACKLOG_LIMIT) {
@@ -51,16 +55,17 @@ void chunk_visibility::fixed_update_late(void)
     budget = std::min<std::size_t>(budget, MAX_CHUNK_BUDGET);
 
     packet::World_Request packet;
-    packet.view = s_bounds_curr;
+    packet.view = view;
+    packet.interest = interest;
     packet.chunk_budget = static_cast<std::uint16_t>(budget);
     protocol::send(packet, globals::peer);
 
     auto& chunk_registry = globals::world->chunk_registry();
-    auto view = chunk_registry.view<Chunk_Component>();
+    auto chunks = chunk_registry.view<ChunkComponent>();
 
     to_remove.clear();
 
-    for(const auto [entity, component] : view.each()) {
+    for(const auto [entity, component] : chunks.each()) {
         if(s_bounds_curr.contains(component.position)) {
             continue;
         }
@@ -70,5 +75,10 @@ void chunk_visibility::fixed_update_late(void)
 
     for(const auto& cpos : to_remove) {
         globals::world->remove_chunk(cpos);
+    }
+
+    // A precip column is cached per XZ, so the prune needs the interest box on its own
+    if(!to_remove.empty()) {
+        columns::prune(interest);
     }
 }

@@ -143,7 +143,7 @@ void main_menu::init_late(void)
         s_popup_mods.open();
     }
 
-    main_menu::show();
+    show();
 }
 
 void main_menu::shutdown(void)

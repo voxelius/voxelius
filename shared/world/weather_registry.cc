@@ -6,6 +6,7 @@
 
 #include "shared/constant.hh"
 #include "shared/mod_context.hh"
+#include "shared/world/precip_registry.hh"
 
 static std::vector<WeatherTypeDefinition> s_definitions;
 static vx::hash_map<Identifier, weather_type_id> s_names;
@@ -34,7 +35,6 @@ static void update_checksum(void)
     for(std::size_t i = 1; i < s_definitions.size(); ++i) {
         auto& def = s_definitions[i];
         auto name = def.name.full_string();
-        auto precip_kind = static_cast<std::uint8_t>(def.precipitation.kind);
 
         hash_trivial(hash, name.data(), name.size());
 
@@ -46,12 +46,16 @@ static void update_checksum(void)
         hash_value(hash, def.strikes_per_minute);
         hash_value(hash, def.strike_radius);
 
-        hash_value(hash, precip_kind);
-        hash_value(hash, def.precipitation.intensity);
-        hash_value(hash, def.precipitation.speed);
-        hash_value(hash, def.precipitation.drift);
-        hash_value(hash, def.precipitation.size);
-        hash_value(hash, def.precipitation.color);
+        // The climate bands and visuals live in the precip registry and travel in its checksum
+        auto type_count = static_cast<std::uint64_t>(def.precip.type_names.size());
+        hash_value(hash, type_count);
+
+        for(const auto& type_name : def.precip.type_names) {
+            auto full = type_name.full_string();
+            hash_trivial(hash, full.data(), full.size());
+        }
+
+        hash_value(hash, def.precip.intensity);
 
         hash_value(hash, def.cloud.height);
         hash_value(hash, def.cloud.thickness);
@@ -97,9 +101,9 @@ void weather_registry::commit(ModContext& ctx)
     for(const auto& entry : names) {
         auto& name = entry.first;
         auto global_id = entry.second + offset;
-        auto [it, inserted] = s_names.try_emplace(name, global_id);
+        auto result = s_names.try_emplace(name, global_id);
 
-        if(!inserted) {
+        if(!result.second) {
             msg::log_warning("duplicate weather name: {}", name.full_string());
             continue;
         }
@@ -117,6 +121,25 @@ void weather_registry::commit(ModContext& ctx)
         // registry id is the index in the combined list
         for(auto index = first; index < s_definitions.size(); index += 1) {
             s_definitions[index].id = static_cast<weather_type_id>(index);
+        }
+
+        // The precip registry committed this mod's types already; a type that a later mod adds stays unknown
+        for(auto index = first; index < s_definitions.size(); index += 1) {
+            auto& def = s_definitions[index];
+            def.precip.types.clear();
+
+            for(const auto& type_name : def.precip.type_names) {
+                auto type = precip_registry::find(type_name);
+
+                if(type == PRECIP_ID_NULL) {
+                    auto weather_name = def.name.full_string();
+                    auto type_text = type_name.full_string();
+                    msg::log_warning("weather {}: unknown precip type {}", weather_name, type_text);
+                    continue;
+                }
+
+                def.precip.types.push_back(type);
+            }
         }
 
         // Two types with the same target would make one of them
@@ -186,9 +209,7 @@ weather_type_id weather_registry::resolve(std::string_view name)
     auto id = Identifier::from_string(name);
 
     if(id.is_valid()) {
-        auto found = weather_registry::find(id);
-
-        if(found) {
+        if(auto found = find(id)) {
             return found;
         }
     }
@@ -199,7 +220,7 @@ weather_type_id weather_registry::resolve(std::string_view name)
 
     auto builtin_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, name);
 
-    if(auto found = weather_registry::find(builtin_id); found) {
+    if(auto found = find(builtin_id)) {
         return found;
     }
 

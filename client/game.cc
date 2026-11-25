@@ -33,6 +33,7 @@
 #include "client/system/pmove_client.hh"
 #include "client/system/pmove_look.hh"
 #include "client/world/chunk_mesher.hh"
+#include "client/world/columns.hh"
 
 static std::unique_ptr<World> s_world;
 
@@ -43,9 +44,8 @@ void client_game::open_world(const packet::World_Info& packet)
     WorldDefinition definition {};
     packet.to_definition(definition);
 
-    // Queued meshes are dropped and only the few running workers are joined:
-    // the old world cannot be freed under a task, and the new one must not wait
-    // for the whole queue
+    // Queued meshes are dropped and only the few running workers are joined: the old
+    // world cannot be freed under a task, and the new one must not wait for the whole queue
     threading::cancel_all();
 
     chunk_mesher::reset();
@@ -67,13 +67,14 @@ void client_game::init_world(void)
     auto definition = std::make_shared<WorldDefinition>();
 
     s_world = std::make_unique<World>(std::move(definition));
+    s_world->connect_column_lookup<&columns::find>();
 
     globals::world = s_world.get();
 }
 
 void client_game::init(void)
 {
-    // The server owns the light; the client only applies what it receives.
+    // The server owns the light; the client only applies what it receives
     lighting::set_replica(true);
 
     gamerules::init();

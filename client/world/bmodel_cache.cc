@@ -126,7 +126,7 @@ static std::int32_t unpack_normal_component(std::uint32_t packed_normal, unsigne
     return static_cast<std::int32_t>(bits << 22U) >> 22U;
 }
 
-static void make_face_geometry(const Eigen::Vector3f& min, const Eigen::Vector3f& max, block_face face, CachedBlockModel_Quad& quad)
+static void make_face_geometry(const Eigen::Vector3f& min, const Eigen::Vector3f& max, block_face face, CachedBlockModelQuad& quad)
 {
     quad.positions.fill(Eigen::Vector3f::Zero());
 
@@ -224,8 +224,8 @@ static void face_uv_extent(const Eigen::Vector3f& min, const Eigen::Vector3f& ma
     }
 }
 
-static void apply_face_uv(const BlockModel_Face* face, const Eigen::Vector3f& min, const Eigen::Vector3f& max, block_face face_type,
-    bool rescale, CachedBlockModel_Quad& quad)
+static void apply_face_uv(const BlockModelFace* face, const Eigen::Vector3f& min, const Eigen::Vector3f& max, block_face face_type,
+    bool rescale, CachedBlockModelQuad& quad)
 {
     if(face->uv.has_value() || !rescale) {
         float u_min, v_min, u_max, v_max;
@@ -411,7 +411,7 @@ static std::unique_ptr<CachedBlockModel> bake_model(const BlockDefinition& def)
                 continue;
             }
 
-            CachedBlockModel_Quad quad {};
+            CachedBlockModelQuad quad {};
 
             if(model_locked) {
                 make_face_geometry(element.min, element.max, face, quad);

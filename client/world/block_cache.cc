@@ -14,7 +14,7 @@
 constexpr static std::int32_t CHUNK_TOP_LOCAL_Y = static_cast<std::int32_t>(constant::CHUNK_SIZE) - 1;
 
 // The engine has no sea level yet. It only affects the guess for chunks
-// whose top layer lies below it, so one number in one place is enough.
+// whose top layer lies below it, so one number in one place is enough
 constexpr static std::int32_t ESTIMATED_SEA_LEVEL = 0;
 
 static std::size_t cache_index(std::size_t x, std::size_t y, std::size_t z, std::size_t size)
@@ -58,9 +58,8 @@ void BlockCache::init(const ChunkPos& cpos)
                 auto& light_storage = chunk->light();
                 auto light = light_storage.data();
 
-                // A neighbour only contributes the slice that lands inside the
-                // cache, so clip the range instead of walking its whole volume
-                // and throwing most of it away.
+                // A neighbour only contributes the slice that lands inside the cache, so
+                // clip the range instead of walking its whole volume and throwing most of it away
                 auto hx_begin = static_cast<std::int32_t>(dx) * chunk_size + PADDING;
                 auto hy_begin = static_cast<std::int32_t>(dy) * chunk_size + PADDING;
                 auto hz_begin = static_cast<std::int32_t>(dz) * chunk_size + PADDING;
@@ -93,10 +92,9 @@ void BlockCache::init(const ChunkPos& cpos)
         }
     }
 
-    // Until the authoritative light arrives, approximate the sky for every
-    // chunk around this one. A face samples the light of the cell outside
-    // the block, so estimating only the center chunk leaves a black seam on
-    // every chunk border.
+    // Until the authoritative light arrives, approximate the sky for every chunk around this one. A face
+    // samples the light of the cell outside the block, so estimating
+    // only the center chunk leaves a black seam on every chunk border
     auto estimate_from_top = [&](ChunkPos::value_type dx, ChunkPos::value_type dy, ChunkPos::value_type dz) {
         auto top_y = static_cast<std::int32_t>(cpos.y() + dy) * static_cast<std::int32_t>(CHUNK_SIZE_I16) + CHUNK_TOP_LOCAL_Y;
 
@@ -134,7 +132,7 @@ void BlockCache::init(const ChunkPos& cpos)
 
                 auto above = BLOCK_ID_NULL;
 
-                for(std::int32_t y = CHUNK_TOP_LOCAL_Y; y >= 0; y -= 1) {
+                for(std::int32_t y = CHUNK_TOP_LOCAL_Y; y >= 0; --y) {
                     auto hy = static_cast<std::int32_t>(PADDING) + dy * CHUNK_SIZE_I16 + y;
 
                     if(hy < 0) {
@@ -156,7 +154,7 @@ void BlockCache::init(const ChunkPos& cpos)
     };
 
     // The chunk above only contributes its lowest cells to this cache, so its
-    // own top layer is unknown here. Assume an open sky above the column.
+    // own top layer is unknown here. Assume an open sky above the column
     auto estimate_open_above = [&](ChunkPos::value_type dx, ChunkPos::value_type dz) {
         for(std::int32_t z = 0; z < CHUNK_SIZE_I16; ++z) {
             for(std::int32_t x = 0; x < CHUNK_SIZE_I16; ++x) {

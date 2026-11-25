@@ -9,8 +9,8 @@ extern Eigen::Vector3f fog_color;
 extern Eigen::Vector3f zenith_color;
 
 extern Eigen::Vector3f sun_direction;
+extern Eigen::Vector2f sun_azimuth; // Normalized XZ of the sun, zero at the zenith
 extern Eigen::Vector3f sun_tint;
-extern Eigen::Vector3f cloud_tint;
 extern float sun_strength;
 
 extern Eigen::Vector3f moon_direction;
@@ -18,8 +18,8 @@ extern Eigen::Vector3f moon_tint;
 extern float moon_strength;
 extern std::uint32_t moon_phase;
 
-extern float sun_tilt;
-extern float twilight;
+extern float sun_tilt; // Radians
+extern float scatter;  // How much of the sun's glow survives the cover
 
 extern float phase;
 extern float daylight;

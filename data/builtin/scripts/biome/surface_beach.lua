@@ -1,4 +1,7 @@
 biomes.add("surface_beach", {
+  temperature = 18,
+  humidity = 50,
+
   palette = {
     basic = { name = "stone" },
     filler = { name = "sand" },

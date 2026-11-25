@@ -14,7 +14,7 @@ public:
     virtual void layout(void) override;
 
 private:
-    ImVec2 m_start { 0.0f, 0.0f };
+    ImVec2 m_start {};
     ImVec2 m_size { 1.0f, 1.0f };
     ImGuiWindowFlags m_flags { ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration };
 };

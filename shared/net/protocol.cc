@@ -76,8 +76,10 @@ void protocol::decode(entt::dispatcher& dispatcher, const ENetPacket* packet, EN
     static packet::World_Request world_request_chunk;
     static packet::World_Blocks world_chunk_blocks;
     static packet::World_Biomes world_chunk_biomes;
+    static packet::World_Columns world_chunk_columns;
     static packet::World_Light world_chunk_light;
     static packet::World_SetBlock world_set_block;
+    static packet::World_Column world_column;
     static packet::World_Timings world_timings;
     static packet::World_Info world_info;
     static packet::Cvar_ServerVars cvar_server_vars;
@@ -163,6 +165,12 @@ void protocol::decode(entt::dispatcher& dispatcher, const ENetPacket* packet, EN
             dispatcher.trigger(static_cast<const packet::World_Biomes&>(world_chunk_biomes));
             break;
 
+        case packet::World_Columns::TYPE:
+            packet::World_Columns::decode(world_chunk_columns, buffer);
+            world_chunk_columns.peer = peer;
+            dispatcher.trigger(static_cast<const packet::World_Columns&>(world_chunk_columns));
+            break;
+
         case packet::World_Light::TYPE:
             packet::World_Light::decode(world_chunk_light, buffer);
             world_chunk_light.peer = peer;
@@ -173,6 +181,12 @@ void protocol::decode(entt::dispatcher& dispatcher, const ENetPacket* packet, EN
             packet::World_SetBlock::decode(world_set_block, buffer);
             world_set_block.peer = peer;
             dispatcher.trigger(static_cast<const packet::World_SetBlock&>(world_set_block));
+            break;
+
+        case packet::World_Column::TYPE:
+            packet::World_Column::decode(world_column, buffer);
+            world_column.peer = peer;
+            dispatcher.trigger(static_cast<const packet::World_Column&>(world_column));
             break;
 
         case packet::World_Timings::TYPE:
@@ -292,6 +306,8 @@ template void protocol::broadcast<packet::Session_Disconnect>(const packet::Sess
 template void protocol::broadcast<packet::World_Request>(const packet::World_Request& packet, ENetHost* host, ENetPeer* except);
 template void protocol::broadcast<packet::World_Blocks>(const packet::World_Blocks& packet, ENetHost* host, ENetPeer* except);
 template void protocol::broadcast<packet::World_Biomes>(const packet::World_Biomes& packet, ENetHost* host, ENetPeer* except);
+template void protocol::broadcast<packet::World_Columns>(const packet::World_Columns& packet, ENetHost* host, ENetPeer* except);
+template void protocol::broadcast<packet::World_Column>(const packet::World_Column& packet, ENetHost* host, ENetPeer* except);
 template void protocol::broadcast<packet::World_Light>(const packet::World_Light& packet, ENetHost* host, ENetPeer* except);
 template void protocol::broadcast<packet::World_SetBlock>(const packet::World_SetBlock& packet, ENetHost* host, ENetPeer* except);
 template void protocol::broadcast<packet::World_Timings>(const packet::World_Timings& packet, ENetHost* host, ENetPeer* except);
@@ -334,6 +350,8 @@ template void protocol::send<packet::Session_Disconnect>(const packet::Session_D
 template void protocol::send<packet::World_Request>(const packet::World_Request& packet, ENetPeer* peer);
 template void protocol::send<packet::World_Blocks>(const packet::World_Blocks& packet, ENetPeer* peer);
 template void protocol::send<packet::World_Biomes>(const packet::World_Biomes& packet, ENetPeer* peer);
+template void protocol::send<packet::World_Columns>(const packet::World_Columns& packet, ENetPeer* peer);
+template void protocol::send<packet::World_Column>(const packet::World_Column& packet, ENetPeer* peer);
 template void protocol::send<packet::World_Light>(const packet::World_Light& packet, ENetPeer* peer);
 template void protocol::send<packet::World_SetBlock>(const packet::World_SetBlock& packet, ENetPeer* peer);
 template void protocol::send<packet::World_Timings>(const packet::World_Timings& packet, ENetPeer* peer);

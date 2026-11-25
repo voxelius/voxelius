@@ -4,15 +4,22 @@
 #include "shared/constant.hh"
 #include "shared/coord.hh"
 
+class ReadBuffer;
+class WriteBuffer;
+
 constexpr static BlockPos::value_type HEIGHTMAP_UNSET = std::numeric_limits<BlockPos::value_type>::min();
 
 struct Column final {
     constexpr static BlockPos::value_type UNSET = HEIGHTMAP_UNSET;
 
-    constexpr bool is_valid(void) const;
+    static void encode(const Column& column, WriteBuffer& buffer);
+    static void decode(Column& column, ReadBuffer& buffer);
 
-    BlockPos::value_type surface_y { UNSET }; // top surface block
-    BlockPos::value_type liquid_y { UNSET };  // top liquid block (above surface, otherwise UNSET)
+    constexpr bool is_valid(void) const;
+    constexpr bool shelters(BlockPos::value_type y) const;
+
+    BlockPos::value_type surface_y { UNSET };
+    BlockPos::value_type liquid_y { UNSET }; // top liquid block (above surface, otherwise UNSET)
 };
 
 using ColumnSlice = std::array<Column, constant::CHUNK_AREA>;
@@ -36,6 +43,21 @@ private:
 constexpr bool Column::is_valid(void) const
 {
     return surface_y > UNSET;
+}
+
+// A point at or below the top of the column has no sky
+constexpr bool Column::shelters(BlockPos::value_type y) const
+{
+    if(is_valid()) {
+        if(liquid_y == UNSET || liquid_y <= surface_y) {
+            return y <= surface_y;
+        }
+        else {
+            return y <= liquid_y;
+        }
+    }
+
+    return false;
 }
 
 #endif /* C1DAD708_A904_4335_AD46_212640B0DC2B */

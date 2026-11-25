@@ -96,7 +96,7 @@ void api_shared::open_tints(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     auto L = lua.get();
 
-    lua_newtable(L); // Tints
+    lua_newtable(L);
 
     lua_pushinteger(L, TINT_ID_NULL);
     lua_setfield(L, -2, "NULL_TINT");

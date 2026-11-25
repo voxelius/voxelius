@@ -1,26 +1,26 @@
 #include "server/pch.hh"
 
 #include "server/universe.hh"
-#include "server/world/world.hh"
 
-#include "core/cmdline.hh"
 #include "core/config/map.hh"
 #include "core/config/ref.hh"
 #include "core/core.hh"
 #include "core/exception.hh"
-#include "core/identifier.hh"
 #include "core/utils/crc64.hh"
+#include "core/utils/physfs.hh"
 
+#include "shared/constant.hh"
 #include "shared/globals.hh"
 #include "shared/world/world.hh"
-#include "shared/world/world_registry.hh"
-
-#include "server/world/generator_map.hh"
 
 #include "server/globals.hh"
+#include "server/world/columns.hh"
+#include "server/world/world.hh"
+#include "server/world/world_loader.hh"
+
+constexpr static std::string_view UNIVERSE_CONFIG = "save/universe.conf";
 
 static std::filesystem::path s_root_dir;
-static std::filesystem::path s_conf_path;
 
 static config::Map s_universe_config;
 static config::Ref<std::uint64_t> s_seed { 0 };
@@ -29,12 +29,12 @@ static config::Ref<std::uint64_t> s_tick { 0 };
 static std::vector<std::shared_ptr<ServerWorld>> s_worlds;
 static std::shared_ptr<ServerWorld> s_default_world;
 
-static std::shared_ptr<ServerWorld> find_world(const Identifier& id)
+static std::shared_ptr<ServerWorld> find_world(std::string_view name)
 {
     for(const auto& world : s_worlds) {
-        auto& world_id = world->id();
+        auto& world_name = world->name();
 
-        if(world_id == id) {
+        if(world_name == name) {
             return world;
         }
     }
@@ -47,9 +47,9 @@ std::span<const std::shared_ptr<ServerWorld>> universe::worlds(void)
     return s_worlds;
 }
 
-std::shared_ptr<ServerWorld> universe::find(const Identifier& id)
+std::shared_ptr<ServerWorld> universe::find(std::string_view name)
 {
-    return find_world(id);
+    return find_world(name);
 }
 
 const std::shared_ptr<ServerWorld>& universe::default_world(void)
@@ -65,24 +65,18 @@ std::uint64_t universe::seed(void)
 void universe::init(void)
 {
     auto default_dir = core::userpath() / "save";
-    auto default_path = default_dir.string();
-    auto argument = cmdline::value_or("universe", default_path);
-    auto argument_path = std::filesystem::absolute(argument);
 
-    s_root_dir = argument_path;
-    s_conf_path = s_root_dir / "universe.conf";
+    s_root_dir = std::filesystem::absolute(default_dir);
 
     std::filesystem::create_directories(s_root_dir);
 
     s_seed.bind(s_universe_config, "seed");
     s_tick.bind(s_universe_config, "tick");
 
-    std::ifstream config_stream(s_conf_path, std::ios::in);
-    auto existing_save = config_stream.is_open();
+    std::istringstream config_stream;
 
-    if(existing_save) {
+    if(utils::read_file(UNIVERSE_CONFIG, config_stream)) {
         s_universe_config.load(config_stream);
-        config_stream.close();
     }
     else {
         std::random_device noise;
@@ -94,70 +88,56 @@ void universe::init(void)
     // that has never been saved starts at noon
     globals::current_tick = s_tick.value();
 
-    world_registry::resolve();
+    columns::init();
 
-    auto definitions = world_registry::all();
+    auto definitions = world_loader::load();
 
     s_worlds.clear();
     s_worlds.reserve(definitions.size());
+    s_default_world.reset();
 
-    for(const auto& definition : definitions) {
-        auto generator = generator_map::find(definition->generator);
-
-        auto id_text = definition->id.full_string();
-
-        vx::throw_if_not_fmt(generator, "world {}: unknown generator {}", id_text, definition->generator);
-
-        auto world = std::make_shared<ServerWorld>(definition);
-        auto full_id = definition->id.full_string();
-        auto bytes = std::span<const char>(full_id);
+    for(auto& definition : definitions) {
+        // The seed keeps the builtin-qualified name so that worlds
+        // saved before the plain-name keys keep their terrain unchanged
+        auto seed_text = std::format("{}:{}", constant::BUILTIN_NAME_SPACE, definition->name);
+        auto bytes = std::span<const char>(seed_text);
         auto id_hash = utils::crc64(bytes);
 
+        auto world = std::make_shared<ServerWorld>(definition);
+
         world->seed = s_seed.value() ^ id_hash;
-        world->set_root(s_root_dir / definition->directory);
+        world->set_root(s_root_dir / definition->name);
 
         std::filesystem::create_directories(world->chunk_dir());
         std::filesystem::create_directories(world->entity_dir());
 
+        world->columns().init(world.get());
         world->load_config();
-        world->set_generator(generator);
+        world->init_generation();
 
-        auto state = std::move(definition->generator_state);
-        vx::throw_if_fmt(state == nullptr, "world {}: generator state is missing", definition->id.full_string());
-
-        world->init_generation(std::move(state));
+        if(definition->is_default) {
+            s_default_world = world;
+        }
 
         s_worlds.push_back(std::move(world));
     }
 
-    auto configured_name = s_universe_config.value<std::string>("default_world");
-    auto default_name = configured_name.value_or(std::string("builtin:overworld"));
-
-    s_default_world = find_world(Identifier::from_string(default_name));
-
-    if(s_default_world == nullptr) {
-        s_default_world = s_worlds.front();
-    }
-
-    auto& default_id = s_default_world->id();
-    auto default_id_string = std::string(default_id.full_string());
-
-    s_universe_config.set_value<std::string>("default_world", default_id_string);
+    vx::throw_if(s_default_world == nullptr, "worlds.jsonc: no default world");
 }
 
 void universe::init_late(void)
 {
     auto root_text = s_root_dir.string();
+    auto& default_text = s_default_world->name();
 
-    msg::log_info("set universe root={} worlds={}", root_text, s_worlds.size());
+    msg::log_info("set universe root={} worlds={} default={}", root_text, s_worlds.size(), default_text);
 
     for(const auto& world : s_worlds) {
-        auto& world_id = world->id();
+        auto& world_name = world->name();
         auto& root = world->root();
-        auto id_text = world_id.full_string();
         auto dir_text = root.string();
 
-        msg::log_info("world {} seed={} dir={}", id_text, world->seed, dir_text);
+        msg::log_info("world {} seed={} dir={}", world_name, world->seed, dir_text);
     }
 }
 
@@ -165,10 +145,19 @@ void universe::shutdown(void)
 {
     s_tick.set_value(globals::current_tick);
 
-    std::ofstream out(s_conf_path, std::ios::binary | std::ios::trunc);
+    columns::shutdown();
 
-    if(out.is_open()) {
-        s_universe_config.save(out);
+    for(const auto& world : s_worlds) {
+        world->columns().save();
+    }
+
+    std::ostringstream config_stream;
+    s_universe_config.save(config_stream);
+
+    auto written = utils::write_file(UNIVERSE_CONFIG, config_stream.str());
+
+    if(!written) {
+        msg::log_warning("{}: unable to save the universe configuration", UNIVERSE_CONFIG);
     }
 
     for(const auto& world : s_worlds) {

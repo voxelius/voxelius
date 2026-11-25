@@ -3,7 +3,7 @@
 
 #include "shared/world/block.hh"
 
-struct ChunkMesh_Vertex final {
+struct ChunkMeshVertex final {
     static constexpr std::uint32_t ANIMATED_BIT = 1U << 2U;
 
     static std::uint32_t pack_1(const Eigen::Vector3f& position_16ths);
@@ -19,17 +19,17 @@ struct ChunkMesh_Vertex final {
     std::uint32_t data_5; // Index into u_ChunkPositions TBO
 };
 
-struct ChunkMesh_Part final {
-    ChunkMesh_Part(void) = default;
-    ~ChunkMesh_Part(void);
+struct ChunkMeshPart final {
+    ChunkMeshPart(void) = default;
+    ~ChunkMeshPart(void);
 
-    ChunkMesh_Part(const ChunkMesh_Part& other) = delete;
-    ChunkMesh_Part& operator=(const ChunkMesh_Part& other) = delete;
+    ChunkMeshPart(const ChunkMeshPart& other) = delete;
+    ChunkMeshPart& operator=(const ChunkMeshPart& other) = delete;
 
-    ChunkMesh_Part(ChunkMesh_Part&& other);
-    ChunkMesh_Part& operator=(ChunkMesh_Part&& other);
+    ChunkMeshPart(ChunkMeshPart&& other);
+    ChunkMeshPart& operator=(ChunkMeshPart&& other);
 
-    std::vector<ChunkMesh_Vertex> vertices;
+    std::vector<ChunkMeshVertex> vertices;
     std::uint32_t count { 0 };
     std::uint32_t base_vertex { 0 };
 };
@@ -45,9 +45,9 @@ struct ChunkMesh final {
     ChunkMesh& operator=(ChunkMesh&& other);
 
     std::uint32_t slot;
-    ChunkMesh_Part opaque;
-    ChunkMesh_Part alpha;
-    ChunkMesh_Part fluid;
+    ChunkMeshPart opaque;
+    ChunkMeshPart alpha;
+    ChunkMeshPart fluid;
 };
 
 struct ChunkMesh_DirtyMarker final {};

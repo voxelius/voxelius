@@ -1,7 +1,7 @@
 #ifndef DD1519F9_BFB2_4D8F_A405_C48ECC5EEF9D
 #define DD1519F9_BFB2_4D8F_A405_C48ECC5EEF9D
 
-class Ray_AABB final {
+class RayAABB final {
 public:
     struct Hit final {
         Eigen::Vector3f point;
@@ -9,9 +9,9 @@ public:
         float distance;
     };
 
-    Ray_AABB(void) = default;
+    RayAABB(void) = default;
 
-    explicit Ray_AABB(const Eigen::Vector3f& start, const Eigen::Vector3f& direction);
+    explicit RayAABB(const Eigen::Vector3f& start, const Eigen::Vector3f& direction);
 
     void reset(const Eigen::Vector3f& start, const Eigen::Vector3f& direction);
 
@@ -27,17 +27,17 @@ private:
     Eigen::Vector3f m_inverse_direction;
 };
 
-constexpr const Eigen::Vector3f& Ray_AABB::start(void) const
+constexpr const Eigen::Vector3f& RayAABB::start(void) const
 {
     return m_start;
 }
 
-constexpr const Eigen::Vector3f& Ray_AABB::direction(void) const
+constexpr const Eigen::Vector3f& RayAABB::direction(void) const
 {
     return m_direction;
 }
 
-constexpr const Eigen::Vector3f& Ray_AABB::inverse_direction(void) const
+constexpr const Eigen::Vector3f& RayAABB::inverse_direction(void) const
 {
     return m_inverse_direction;
 }

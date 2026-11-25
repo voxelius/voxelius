@@ -1,4 +1,7 @@
 biomes.add("surface_forest_pine", {
+  temperature = 1,
+  humidity = 60,
+
   palette = {
     basic = { name = "stone" },
     filler = { name = "dirt" },

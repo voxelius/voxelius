@@ -3,8 +3,6 @@
 #include "server/net/sessions.hh"
 
 #include "core/cvar/host.hh"
-#include "core/cvar/string.hh"
-#include "core/identifier.hh"
 #include "core/utils/crc64.hh"
 #include "core/utils/epoch.hh"
 #include "core/version.hh"
@@ -23,6 +21,7 @@
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
+#include "shared/world/precip_registry.hh"
 #include "shared/world/tint_registry.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
@@ -48,36 +47,15 @@ cvar::Boolean sessions::strict_version { false };
 std::uint16_t sessions::num_players = 0;
 
 static std::mt19937_64 s_randomizer;
-static cvar::String s_spawn_world { "" };
 
-static std::shared_ptr<ServerWorld> resolve_spawn_world(void)
+static void send_world_state(Session* session)
 {
-    auto name = s_spawn_world.value();
-
-    if(name.empty()) {
-        return universe::default_world();
-    }
-
-    auto id = Identifier::from_string(name, constant::BUILTIN_NAME_SPACE);
-    auto world = universe::find(id);
-
-    if(world == nullptr) {
-        msg::log_error("sv_spawn_world names an unknown world: {}", name);
-
-        return universe::default_world();
-    }
-
-    return world;
-}
-
-static void send_world_state(Session& session)
-{
-    auto world = session.world;
+    auto world = session->world;
 
     packet::World_Info world_info {};
     world_info.fill(world->definition());
     world_info.weather_seed = world->weather_seed;
-    protocol::send(world_info, session.peer);
+    protocol::send(world_info, session->peer);
 
     packet::World_Timings timings {};
     timings.current_tick = globals::current_tick;
@@ -85,7 +63,7 @@ static void send_world_state(Session& session)
     timings.day = world_clock::day(world->daylight_tick, server_vars::day_length_ticks());
     timings.weather_tick = world->weather_tick;
     timings.season_tick = 0; // Reserved for the season cycle
-    protocol::send(timings, session.peer);
+    protocol::send(timings, session->peer);
 }
 
 static bool is_outdated_client(std::uint32_t major, std::uint32_t minor, std::uint32_t patch)
@@ -168,6 +146,7 @@ static void on_auth_request(const packet::Auth_Request& packet)
     checksums_match = checksums_match && packet.tints_hash == tint_registry::checksum();
     checksums_match = checksums_match && packet.ents_hash == class_registry::checksum();
     checksums_match = checksums_match && packet.weather_hash == weather_registry::checksum();
+    checksums_match = checksums_match && packet.precip_hash == precip_registry::checksum();
 
     if(!checksums_match) {
         packet::Session_Disconnect response {};
@@ -245,7 +224,7 @@ static void on_auth_response(const packet::Auth_Response& packet)
     response.username = session->username;
     protocol::send(response, packet.peer);
 
-    session->world = resolve_spawn_world();
+    session->world = universe::default_world();
 
     auto& registry = session->world->registry();
 
@@ -253,7 +232,7 @@ static void on_auth_response(const packet::Auth_Response& packet)
 
     // The world shape, the seed and the weather seeds do not change, so they travel once.
     // The one-shot state packets then fix the client's time, drift and cloud deck before the first periodic update
-    send_world_state(*session);
+    send_world_state(session);
 
     auto& definition = session->world->definition();
     auto bpos = definition.spawn;
@@ -279,7 +258,7 @@ static void on_disconnect(const packet::Session_Disconnect& packet)
 static std::string sanitize_username(std::string_view username)
 {
     auto size = username.size();
-    size = std::min(size, static_cast<std::size_t>(64));
+    size = std::min(size, constant::USERNAME_MAX_LENGTH);
 
     std::string sanitized;
     sanitized.reserve(size);
@@ -457,7 +436,7 @@ void sessions::set_access(Session* session, session_access access)
 
 void sessions::refresh_access(const ed25519::pkey_type& pkey, session_access access)
 {
-    for(auto& session : sessions::all()) {
+    for(auto& session : all()) {
         if(session.state != session_state::UNCONNECTED && session.pkey == pkey) {
             set_access(&session, access);
         }
@@ -474,10 +453,6 @@ void sessions::init(void)
     auto& net_strict_version_binding = cvar::bind_var(strict_version, "net_strict_version");
     net_strict_version_binding.set_help("Reject clients with a different protocol version");
     net_strict_version_binding.set_flags(FCVAR_ARCHIVE);
-
-    auto& sv_spawn_world_binding = cvar::bind_var(s_spawn_world, "sv_spawn_world");
-    sv_spawn_world_binding.set_help("World that a new player spawns in. Empty selects the default world");
-    sv_spawn_world_binding.set_flags(FCVAR_ARCHIVE | FCVAR_ADMIN);
 
     auto& who_binding = cvar::bind_cmd("who");
     who_binding.set_help("List connected sessions and their access levels");
@@ -667,6 +642,8 @@ void sessions::destroy(Session* session, std::optional<std::uint32_t> reason)
         session->peer = nullptr;
         session->known_entities.clear();
         session->stream_sent_chunks.clear();
+        session->stream_sent_biomes.clear();
+        session->stream_sent_columns.clear();
         session->stream_wanted_chunks.clear();
         session->stream_cursor_chunks = 0;
         session->stream_budget_chunks = 0;
@@ -737,9 +714,12 @@ bool sessions::transfer(Session* session, const std::shared_ptr<ServerWorld>& wo
 
     session->view_box = {};
     session->known_entities.clear();
-    session->stream_view_box = ChunkAlignedBox { ChunkPos(1, 1, 1), ChunkPos(0, 0, 0) };
+    session->stream_view_box = {};
+    session->interest_box = ChunkAlignedBoxXZ(ChunkPosXZ::Ones(), ChunkPosXZ::Zero());
     session->stream_player_chunk = ChunkPos::Zero();
     session->stream_sent_chunks.clear();
+    session->stream_sent_biomes.clear();
+    session->stream_sent_columns.clear();
     session->stream_wanted_chunks.clear();
     session->stream_cursor_chunks = 0;
     session->stream_budget_chunks = 0;
@@ -773,7 +753,7 @@ bool sessions::transfer(Session* session, const std::shared_ptr<ServerWorld>& wo
 
     receive::forget_peer(session->peer);
 
-    send_world_state(*session);
+    send_world_state(session);
 
     packet::Entity_Client client {};
     client.entity = entity;

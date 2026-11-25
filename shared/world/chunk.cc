@@ -7,11 +7,11 @@
 #include "shared/utils/coord.hh"
 
 // Marks the schedule trailer so a slot saved before the trailer existed
-// decodes as blocks with no pending ticks instead of garbage.
+// decodes as blocks with no pending ticks instead of garbage
 constexpr static std::uint32_t SCHEDULE_MAGIC = 0x4B434954; // TICK
 
 // Marks the light trailer. A chunk saved before the trailer existed
-// decodes with light_valid = false and gets a full relight once ready.
+// decodes with light_valid = false and gets a full relight once ready
 constexpr static std::uint32_t LIGHT_MAGIC = 0x4C495448; // LITH
 
 static void serialize_schedule(const Chunk::schedule_type& schedule, WriteBuffer& buffer)
@@ -178,7 +178,13 @@ Chunk::Snapshot Chunk::snapshot(std::uint64_t now) const
     result.light_valid = m_light_valid;
 
     for(const auto& [deadline, entry] : m_scheduled) {
-        result.scheduled.emplace(deadline > now ? deadline - now : std::uint64_t(0), entry);
+        auto remaining = std::uint64_t(0);
+
+        if(deadline > now) {
+            remaining = deadline - now;
+        }
+
+        result.scheduled.emplace(remaining, entry);
     }
 
     return result;
@@ -195,7 +201,7 @@ void Chunk::restore(Snapshot snapshot, std::uint64_t now)
         auto deadline = now + remaining;
 
         if(deadline < now) {
-            continue; // corrupted file
+            continue; // Corrupted file
         }
 
         m_scheduled.emplace(deadline, entry);

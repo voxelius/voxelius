@@ -11,8 +11,8 @@ constexpr static int CLOUD_COLUMN_MAX_VOXELS = 16;
 constexpr static int CLOUD_COLUMN_MAX_STEP = 2;
 constexpr static float CLOUD_SHADE_VARIATION = 0.16f; // Enough to break a deck into blocks, small enough that no cube stands out
 
-// The deck reaches no further than this, whatever r_cloud_range says; the
-// rings tile the range below it.
+// The deck reaches no further than this, whatever
+// r_cloud_range says; the rings tile the range below it
 constexpr static float CLOUD_MAX_RADIUS_BLOCKS = static_cast<float>(constant::CHUNK_SIZE * cloud_field::MAX_RANGE_CHUNKS);
 
 constexpr static CloudRing CLOUD_RINGS[] = {
@@ -25,7 +25,7 @@ constexpr static float CLOUD_FINE_CELL_BLOCKS = CLOUD_RINGS[0].cell;
 
 // A coarse cell stands for the whole patch the finer ring resolves: averaging
 // its corners keeps the two rings on the same structure, where a point sample
-// would give the coarse ring a pattern the fine one never draws.
+// would give the coarse ring a pattern the fine one never draws
 static float cell_coverage(const CloudDeck& deck, float field_x, float field_z)
 {
     auto step = deck.cell * 0.25f;
@@ -63,7 +63,7 @@ static float shell_hash(std::int32_t x, std::int32_t y, std::int32_t z, std::uin
 }
 
 // A 3D value noise, used only to break the top of a column into heaps.
-// The weather field itself stays 2D, so the front and the seed remain shared.
+// The weather field itself stays 2D, so the front and the seed remain shared
 static float shell_noise(float x, float y, float z, std::uint32_t seed)
 {
     auto x0 = static_cast<std::int32_t>(std::floor(x));
@@ -129,7 +129,7 @@ CloudDeck cloud_field::make_deck(const CloudInput& input, const CloudGroup& grou
     deck.state = &input.state;
     deck.allowed = input.allowed;
     deck.anchor = input.anchor;
-    deck.center = input.center - Eigen::Vector3f(input.offset.x(), 0.0f, input.offset.y());
+    deck.center = input.center - Eigen::Vector3f(input.drift_offset.x(), 0.0f, input.drift_offset.y());
 
     deck.scale = std::max(group.body.scale, 8.0f);
     deck.max_levels = std::clamp(static_cast<int>(group.body.thickness / deck.height), 1, CLOUD_COLUMN_MAX_VOXELS);
@@ -160,7 +160,7 @@ CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_
     }
 
     // Two coarse octaves: the broad one carries the weight of the deck, the
-    // smaller one keeps a thin deck from collapsing.
+    // smaller one keeps a thin deck from collapsing
     auto clump = utils::weather_noise(field_x / (deck.scale * 2.0f), field_z / (deck.scale * 2.0f), deck.body.seed + 5);
     auto mass = utils::weather_noise(field_x / deck.scale, field_z / deck.scale, deck.body.seed);
     auto clump_weight = 0.45f + 0.30f * std::clamp(coverage, 0.0f, 1.0f);
@@ -173,7 +173,7 @@ CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_
     auto headroom = density - threshold;
 
     // The per-cell crumble breaks a thin deck into scraps and frays the rim
-    // of a mass, and leaves the inside of a dense deck clean.
+    // of a mass, and leaves the inside of a dense deck clean
     auto hash_x = static_cast<std::int32_t>(std::floor(field_x / deck.cell));
     auto hash_z = static_cast<std::int32_t>(std::floor(field_z / deck.cell));
     auto open = 1.0f - std::clamp(coverage, 0.0f, 1.0f);
@@ -186,7 +186,7 @@ CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_
     }
 
     // A thin front stays a sheet; a dense one grows into the body's full
-    // thickness, and the shell noise breaks the top into heaps.
+    // thickness, and the shell noise breaks the top into heaps
     auto rise = std::clamp(value / 0.30f, 0.0f, 1.0f);
     auto shell_y = deck.body.height + deck.body.thickness * 0.5f;
     auto shell = shell_noise(field_x / (deck.scale * 0.55f), shell_y / (deck.scale * 0.55f), field_z / (deck.scale * 0.55f),
@@ -196,12 +196,12 @@ CloudColumn cloud_field::sample_column(const CloudDeck& deck, std::int32_t cell_
 
     // The underside steps up into the volume here and there, so the deck reads
     // as a volume from below, but never past the body's own slab: a deck that
-    // grew past it would fight the body above it for the same pixels.
+    // grew past it would fight the body above it for the same pixels
     auto step_max = std::min(CLOUD_COLUMN_MAX_STEP, levels - 1);
     auto step = static_cast<int>(std::lround(clump * static_cast<float>(step_max)));
 
     // The column's own brightness, kept in the field's frame like everything
-    // else so a rebuild never repaints the deck.
+    // else so a rebuild never repaints the deck
     auto shade = 1.0f + (utils::weather_cell(hash_x, hash_z, deck.body.seed + 41) - 0.5f) * CLOUD_SHADE_VARIATION;
 
     CloudColumn column {};

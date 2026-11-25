@@ -295,7 +295,7 @@ void api_shared::open_fluids(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 {
     auto L = lua.get();
 
-    lua_newtable(L); // Fluids
+    lua_newtable(L);
 
     lua_pushinteger(L, FLUID_GRAVITY_DOWN);
     lua_setfield(L, -2, "GRAVITY_DOWN");

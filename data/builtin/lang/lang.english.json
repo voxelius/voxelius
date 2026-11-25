@@ -34,7 +34,7 @@
   "protocol.disconnect.kicked": "Kicked",
   "protocol.disconnect.world_unknown": "Unknown world",
 
-  "main_menu.button.play": "Play Game",
+  "main_menu.button.play": "Play",
   "main_menu.button.resume": "Resume",
   "main_menu.button.settings": "Settings",
   "main_menu.button.disconnect": "Disconnect",

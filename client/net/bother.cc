@@ -11,19 +11,20 @@
 #include "client/globals.hh"
 
 constexpr static std::uint32_t MAX_PEERS = 16;
+constexpr static enet_uint32 STATUS_CHANNEL_COUNT = 1;
 constexpr static std::uint32_t SERVICE_TIMEOUT_MS = 200;
 
-struct Job_Ping final {
+struct JobPing final {
     unsigned request_id;
     std::string host;
     std::uint16_t port;
 };
 
-struct Job_Cancel final {
+struct JobCancel final {
     unsigned request_id;
 };
 
-using Job = std::variant<Job_Ping, Job_Cancel>;
+using Job = std::variant<JobPing, JobCancel>;
 
 struct BotherData final {
     unsigned request_id;
@@ -35,7 +36,7 @@ static std::mutex s_incoming_mutex;
 static std::vector<Job> s_incoming;
 static std::mutex s_outgoing_mutex;
 static std::vector<BotherResponseEvent> s_outgoing;
-static std::deque<Job_Ping> s_pending;
+static std::deque<JobPing> s_pending;
 static std::uint32_t s_active_peers;
 
 static void push_outgoing(BotherResponseEvent event)
@@ -81,7 +82,7 @@ static std::vector<BotherResponseEvent> take_outgoing(void)
     return events;
 }
 
-static void start_ping(ENetHost* host, const Job_Ping& ping)
+static void start_ping(ENetHost* host, const JobPing& ping)
 {
     ENetAddress address {};
     address.port = ping.port;
@@ -91,7 +92,7 @@ static void start_ping(ENetHost* host, const Job_Ping& ping)
         return;
     }
 
-    auto peer = enet_host_connect(host, &address, 1, 0);
+    auto peer = enet_host_connect(host, &address, STATUS_CHANNEL_COUNT, 0);
 
     if(peer == nullptr) {
         push_outgoing(BotherResponseEvent(ping.request_id));
@@ -118,7 +119,7 @@ static void service_pending(ENetHost* host)
 
 static void thread_main(std::stop_token stop_token)
 {
-    auto host = enet_host_create(nullptr, MAX_PEERS, 1, 0, 0);
+    auto host = enet_host_create(nullptr, MAX_PEERS, STATUS_CHANNEL_COUNT, 0, 0);
 
     if(host == nullptr) {
         msg::log_warning("failed to create host");
@@ -132,7 +133,7 @@ static void thread_main(std::stop_token stop_token)
         auto jobs = take_incoming();
 
         for(const auto& job : jobs) {
-            if(auto ping = std::get_if<Job_Ping>(&job)) {
+            if(auto ping = std::get_if<JobPing>(&job)) {
                 if(s_active_peers < MAX_PEERS) {
                     start_ping(host, *ping);
                 }
@@ -140,12 +141,12 @@ static void thread_main(std::stop_token stop_token)
                     s_pending.push_back(*ping);
                 }
             }
-            else if(auto cancel = std::get_if<Job_Cancel>(&job)) {
-                std::erase_if(s_pending, [cancel](const Job_Ping& ping) {
+            else if(auto cancel = std::get_if<JobCancel>(&job)) {
+                std::erase_if(s_pending, [cancel](const JobPing& ping) {
                     return ping.request_id == cancel->request_id;
                 });
 
-                for(size_t i = 0; i < host->peerCount; ++i) {
+                for(std::size_t i = 0; i < host->peerCount; ++i) {
                     auto peer = &host->peers[i];
                     auto data = reinterpret_cast<BotherData*>(peer->data);
 
@@ -199,7 +200,7 @@ static void thread_main(std::stop_token stop_token)
         service_pending(host);
     }
 
-    for(size_t i = 0; i < host->peerCount; ++i) {
+    for(std::size_t i = 0; i < host->peerCount; ++i) {
         auto peer = &host->peers[i];
         auto data = reinterpret_cast<BotherData*>(peer->data);
 
@@ -263,7 +264,7 @@ void bother::update_late(void)
 
 void bother::ping(unsigned int request_id, std::string_view host, std::uint16_t port)
 {
-    Job_Ping job {};
+    JobPing job {};
     job.request_id = request_id;
     job.host = std::string(host);
     job.port = port;
@@ -274,7 +275,7 @@ void bother::ping(unsigned int request_id, std::string_view host, std::uint16_t 
 
 void bother::cancel(unsigned int request_id)
 {
-    Job_Cancel job {};
+    JobCancel job {};
     job.request_id = request_id;
 
     std::scoped_lock lock(s_incoming_mutex);

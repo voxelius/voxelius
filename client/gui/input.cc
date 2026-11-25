@@ -5,7 +5,7 @@
 #include "core/cvar/host.hh"
 
 template<typename T>
-gui::Input<T>& gui::Input<T>::bind(std::string_view name)
+gui::InputSetting<T>& gui::InputSetting<T>::bind(std::string_view name)
 {
     this->set_key(name);
 
@@ -15,7 +15,7 @@ gui::Input<T>& gui::Input<T>::bind(std::string_view name)
 }
 
 template<typename T>
-gui::Input<T>& gui::Input<T>::set_range(T min, T max)
+gui::InputSetting<T>& gui::InputSetting<T>::set_range(T min, T max)
 {
     m_min = min;
     m_max = max;
@@ -24,19 +24,19 @@ gui::Input<T>& gui::Input<T>::set_range(T min, T max)
 }
 
 template<typename T>
-T gui::Input<T>::value(void) const
+T gui::InputSetting<T>::value(void) const
 {
     return m_value.value();
 }
 
 template<typename T>
-void gui::Input<T>::set_value(T value)
+void gui::InputSetting<T>::set_value(T value)
 {
     m_value.set_value(value);
 }
 
 template<>
-void gui::Input<int>::layout_control(void)
+void gui::InputSetting<int>::layout_control(void)
 {
     auto current = m_value.value();
 
@@ -46,7 +46,7 @@ void gui::Input<int>::layout_control(void)
 }
 
 template<>
-void gui::Input<float>::layout_control(void)
+void gui::InputSetting<float>::layout_control(void)
 {
     auto current = m_value.value();
 
@@ -56,7 +56,7 @@ void gui::Input<float>::layout_control(void)
 }
 
 template<>
-void gui::Input<unsigned>::layout_control(void)
+void gui::InputSetting<unsigned>::layout_control(void)
 {
     auto current = m_value.value();
     auto scalar = static_cast<std::uint32_t>(current);
@@ -67,11 +67,11 @@ void gui::Input<unsigned>::layout_control(void)
 }
 
 template<typename T>
-void gui::Input<T>::translate_control(void)
+void gui::InputSetting<T>::translate_control(void)
 {
     // empty
 }
 
-template class gui::Input<int>;
-template class gui::Input<float>;
-template class gui::Input<unsigned>;
+template class gui::InputSetting<int>;
+template class gui::InputSetting<float>;
+template class gui::InputSetting<unsigned>;

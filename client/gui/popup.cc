@@ -43,6 +43,26 @@ gui::ChoicePopup& gui::ChoicePopup::set_size(float wide, float tall)
     return self();
 }
 
+void gui::ChoicePopup::translate(void)
+{
+    m_title = language::resolve(m_title_key);
+    m_title += imgui_id();
+
+    m_message = language::resolve(m_message_key);
+
+    auto id = imgui_id();
+
+    for(std::size_t i = 0; i < m_choices.size(); ++i) {
+        m_choices[i].label = language::resolve(m_choices[i].label_key);
+        m_choices[i].label += std::format("{}[{}]", id, i);
+    }
+}
+
+void gui::ChoicePopup::open(void)
+{
+    m_queued_open = true;
+}
+
 void gui::ChoicePopup::layout(void)
 {
     assert(m_choices.size());
@@ -137,67 +157,6 @@ void gui::ChoicePopup::layout(void)
 
     ImGui::PopFont();
     ImGui::PopStyleVar();
-}
-
-void gui::ChoicePopup::translate(void)
-{
-    m_title = language::resolve(m_title_key);
-    m_title += imgui_id();
-
-    m_message = language::resolve(m_message_key);
-
-    auto id = imgui_id();
-
-    for(std::size_t i = 0; i < m_choices.size(); ++i) {
-        m_choices[i].label = language::resolve(m_choices[i].label_key);
-        m_choices[i].label += std::format("{}[{}]", id, i);
-    }
-}
-
-void gui::ChoicePopup::open(void)
-{
-    m_queued_open = true;
-}
-
-gui::InputPopup& gui::InputPopup::set_title(std::string_view title)
-{
-    m_title_key = title;
-
-    return self();
-}
-
-gui::InputPopup& gui::InputPopup::add_input(std::string_view label, ImGuiInputTextFlags flags,
-    std::function<bool(std::string_view)> validator)
-{
-    Field field {};
-    field.label_key = label;
-    field.flags = flags;
-    field.validator = std::move(validator);
-    m_fields.emplace_back(std::move(field));
-
-    return self();
-}
-
-gui::InputPopup& gui::InputPopup::on_submit(std::function<void(std::span<const std::string>)> callback)
-{
-    m_submit = std::move(callback);
-
-    return self();
-}
-
-gui::InputPopup& gui::InputPopup::on_cancel(std::function<void(void)> callback)
-{
-    m_cancel = std::move(callback);
-
-    return self();
-}
-
-gui::InputPopup& gui::InputPopup::set_size(float wide, float tall)
-{
-    m_size.x = wide;
-    m_size.y = tall;
-
-    return self();
 }
 
 void gui::InputPopup::layout(void)
@@ -327,27 +286,6 @@ void gui::InputPopup::layout(void)
     ImGui::PopStyleVar();
 }
 
-void gui::InputPopup::translate(void)
-{
-    m_title = language::resolve(m_title_key);
-    m_title += imgui_id();
-
-    for(auto& field : m_fields) {
-        field.label = language::resolve(field.label_key);
-    }
-
-    m_submit_label = language::resolve("gui.input_popup.submit");
-    m_submit_label += std::format("{}[submit]", imgui_id());
-
-    m_cancel_label = language::resolve("gui.input_popup.cancel");
-    m_cancel_label += std::format("{}[cancel]", imgui_id());
-}
-
-void gui::InputPopup::open(void)
-{
-    m_queued_open = true;
-}
-
 void gui::InputPopup::set_value(std::size_t index, std::string_view value)
 {
     m_fields[index].buffer_1 = value;
@@ -389,6 +327,47 @@ gui::ProgressPopup& gui::ProgressPopup::on_cancel(std::function<void(void)> call
 }
 
 gui::ProgressPopup& gui::ProgressPopup::set_size(float wide, float tall)
+{
+    m_size.x = wide;
+    m_size.y = tall;
+
+    return self();
+}
+
+gui::InputPopup& gui::InputPopup::set_title(std::string_view title)
+{
+    m_title_key = title;
+
+    return self();
+}
+
+gui::InputPopup& gui::InputPopup::add_input(std::string_view label, ImGuiInputTextFlags flags,
+    std::function<bool(std::string_view)> validator)
+{
+    Field field {};
+    field.label_key = label;
+    field.flags = flags;
+    field.validator = std::move(validator);
+    m_fields.emplace_back(std::move(field));
+
+    return self();
+}
+
+gui::InputPopup& gui::InputPopup::on_submit(std::function<void(std::span<const std::string>)> callback)
+{
+    m_submit = std::move(callback);
+
+    return self();
+}
+
+gui::InputPopup& gui::InputPopup::on_cancel(std::function<void(void)> callback)
+{
+    m_cancel = std::move(callback);
+
+    return self();
+}
+
+gui::InputPopup& gui::InputPopup::set_size(float wide, float tall)
 {
     m_size.x = wide;
     m_size.y = tall;
@@ -475,7 +454,6 @@ void gui::ProgressPopup::layout(void)
         if(m_cancel) {
             ImGui::NewLine();
 
-            // A lone cancel button takes the whole width
             ImVec2 button_size {};
             button_size.x = content_width;
             button_size.y = BUTTON_HEIGHT * static_cast<float>(globals::gui_scale);
@@ -500,6 +478,27 @@ void gui::ProgressPopup::layout(void)
 
     ImGui::PopFont();
     ImGui::PopStyleVar();
+}
+
+void gui::InputPopup::translate(void)
+{
+    m_title = language::resolve(m_title_key);
+    m_title += imgui_id();
+
+    for(auto& field : m_fields) {
+        field.label = language::resolve(field.label_key);
+    }
+
+    m_submit_label = language::resolve("gui.input_popup.submit");
+    m_submit_label += std::format("{}[submit]", imgui_id());
+
+    m_cancel_label = language::resolve("gui.input_popup.cancel");
+    m_cancel_label += std::format("{}[cancel]", imgui_id());
+}
+
+void gui::InputPopup::open(void)
+{
+    m_queued_open = true;
 }
 
 void gui::ProgressPopup::open(void)

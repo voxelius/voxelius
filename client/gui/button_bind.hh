@@ -30,7 +30,6 @@ private:
     void capture(std::optional<ButtonSource> source);
     std::optional<ButtonSource> bound_button(void) const;
 
-    std::string m_action {};
     std::string m_press {};
     std::string m_release {};
     unsigned m_slot {};

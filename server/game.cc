@@ -85,8 +85,7 @@ static cvar::status cmd_tpe(const cvar::Context& ctx, std::span<const std::strin
         return cvar::status::ARGUMENT;
     }
 
-    auto world_id = Identifier::from_string(args[1], constant::BUILTIN_NAME_SPACE);
-    auto world = universe::find(world_id);
+    auto world = universe::find(args[1]);
 
     if(world == nullptr) {
         msg::log_error("tpe: unknown world: {}", args[1]);

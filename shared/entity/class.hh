@@ -9,7 +9,7 @@ using class_id_type = std::uint32_t;
 constexpr static class_id_type CLASS_ID_NULL = 0;
 constexpr static class_id_type CLASS_ID_MAX = std::numeric_limits<class_id_type>::max();
 
-struct ClassDefinition_Entry final {
+struct ClassDefinitionEntry final {
     component_id_type id;
     std::string name;
     std::any config;
@@ -18,7 +18,7 @@ struct ClassDefinition_Entry final {
 struct ClassDefinition final {
     ClassDefinition(void) = default;
 
-    std::vector<ClassDefinition_Entry> entries;
+    std::vector<ClassDefinitionEntry> entries;
 };
 
 struct EntityClass final {

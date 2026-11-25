@@ -95,7 +95,7 @@ static std::optional<std::vector<block_id_type>> parse_palette(const JSON_Array*
     return palette;
 }
 
-static std::optional<Feature_Part> parse_part(const JSON_Object* object, std::span<const block_id_type> palette)
+static std::optional<FeaturePart> parse_part(const JSON_Object* object, std::span<const block_id_type> palette)
 {
     if(object == nullptr) {
         return std::nullopt;
@@ -115,7 +115,7 @@ static std::optional<Feature_Part> parse_part(const JSON_Object* object, std::sp
 
     auto overwrite = utils::parse_bitmask<unsigned>(object, "overwrite", BLOCK_TAG_MAPPING);
 
-    Feature_Part part {};
+    FeaturePart part {};
     part.block = palette[block_index.value()];
     part.offset = offset.value();
     part.overwrite = static_cast<block_tag_bit>(overwrite.value_or(0));
@@ -123,7 +123,7 @@ static std::optional<Feature_Part> parse_part(const JSON_Object* object, std::sp
     return part;
 }
 
-static std::optional<std::vector<Feature_Part>> parse_parts(const JSON_Array* array, std::span<const block_id_type> palette,
+static std::optional<std::vector<FeaturePart>> parse_parts(const JSON_Array* array, std::span<const block_id_type> palette,
     Eigen::AlignedBox3i& bounds)
 {
     auto count = json_array_get_count(array);
@@ -132,7 +132,7 @@ static std::optional<std::vector<Feature_Part>> parse_parts(const JSON_Array* ar
         return std::nullopt;
     }
 
-    std::vector<Feature_Part> parts;
+    std::vector<FeaturePart> parts;
     parts.reserve(count);
 
     for(std::size_t i = 0; i < count; ++i) {

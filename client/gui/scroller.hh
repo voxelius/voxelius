@@ -14,7 +14,7 @@ public:
     virtual void layout(void) override;
 
 private:
-    ImVec2 m_margin { 0.0f, 0.0f };
+    ImVec2 m_margin {};
     float m_scroll_speed { 32.0f };
     bool m_background { false };
 };

@@ -7,7 +7,7 @@ struct MoveMode final {
 
     static void register_component(void);
 
-    unsigned value;
+    std::uint8_t value;
 };
 
 #endif /* DFFB28CF_26D9_40A5_8D5D_27DDEEAD8C3F */

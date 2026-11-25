@@ -46,6 +46,10 @@ constexpr static std::string_view HINT_KEY = "boot.hint";
 constexpr static ImGuiWindowFlags BOOT_WINDOW_FLAGS = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration
     | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoSavedSettings;
 
+constexpr static ImVec4 COLOR_INFO = ImVec4(1.000f, 1.000f, 1.000f, 1.000f);
+constexpr static ImVec4 COLOR_WARNING = ImVec4(1.000f, 0.900f, 0.400f, 1.000f);
+constexpr static ImVec4 COLOR_ERROR = ImVec4(1.000f, 0.400f, 0.350f, 1.000f);
+
 enum class boot_state {
     IDLE,
     LOADING,
@@ -78,10 +82,6 @@ struct LogLine final {
 constexpr static std::array TEXTURES = {
     TextureChoice { "main", "client_splash.png", 0, 0 },
 };
-
-static const ImVec4 COLOR_INFO { 1.000f, 1.000f, 1.000f, 1.000f };
-static const ImVec4 COLOR_WARNING { 1.000f, 0.900f, 0.400f, 1.000f };
-static const ImVec4 COLOR_ERROR { 1.000f, 0.400f, 0.350f, 1.000f };
 
 static std::vector<Stage> s_stages;
 static std::size_t s_stage_index;
@@ -585,6 +585,34 @@ static void draw_overlay(void)
     ImGui::End();
 }
 
+static bool is_skip_event(std::uint32_t type)
+{
+    switch(type) {
+        case SDL_EVENT_KEY_DOWN:
+        case SDL_EVENT_KEY_UP:
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        case SDL_EVENT_MOUSE_BUTTON_UP:
+        case SDL_EVENT_MOUSE_WHEEL:
+            return true;
+
+        default:
+            break;
+    }
+
+    return false;
+}
+
+void boot::start(void)
+{
+    s_start_time = std::chrono::steady_clock::now();
+    s_state_start = s_start_time;
+    s_state = boot_state::LOADING;
+
+    if(s_visible) {
+        msg::log_info("{} stages", s_stages.size());
+    }
+}
+
 void boot::init(void)
 {
     s_visible = !cmdline::contains("noboot");
@@ -610,17 +638,6 @@ void boot::init(void)
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     SDL_GL_SwapWindow(globals::window);
     SDL_ShowWindow(globals::window);
-}
-
-void boot::start(void)
-{
-    s_start_time = std::chrono::steady_clock::now();
-    s_state_start = s_start_time;
-    s_state = boot_state::LOADING;
-
-    if(s_visible) {
-        msg::log_info("{} stages", s_stages.size());
-    }
 }
 
 void boot::shutdown(void)
@@ -684,7 +701,7 @@ void boot::render(void)
 {
     ZoneScopedN("boot::render");
 
-    head::detail::begin_frame();
+    client_head::detail::begin_frame();
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -695,7 +712,7 @@ void boot::render(void)
         draw_overlay();
     }
 
-    head::present();
+    client_head::present();
 }
 
 void boot::render_fade(void)
@@ -746,23 +763,6 @@ bool boot::quit_requested(void)
 bool boot::active(void)
 {
     return s_state == boot_state::LOADING || s_state == boot_state::HOLDING || s_state == boot_state::FADING_OUT;
-}
-
-static bool is_skip_event(std::uint32_t type)
-{
-    switch(type) {
-        case SDL_EVENT_KEY_DOWN:
-        case SDL_EVENT_KEY_UP:
-        case SDL_EVENT_MOUSE_BUTTON_DOWN:
-        case SDL_EVENT_MOUSE_BUTTON_UP:
-        case SDL_EVENT_MOUSE_WHEEL:
-            return true;
-
-        default:
-            break;
-    }
-
-    return false;
 }
 
 bool boot::input(const SDL_Event& event)

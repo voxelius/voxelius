@@ -8,11 +8,10 @@
 
 class ServerWorld;
 struct WorldDefinition;
-struct lua_State;
 
 template<typename T>
 struct Generator final {
-    static std::shared_ptr<void> create_state(lua_State* L, int settings_idx, const WorldDefinition& definition);
+    static std::shared_ptr<void> create_state(const JSON_Object* settings, const WorldDefinition& definition, std::string_view where);
     static ColumnSlice sample_heightmap(ServerWorld* world, const ChunkPosXZ& pos);
     static bool generate_blocks(ServerWorld* world, const ChunkPos& pos, BlockStorage& blocks, BiomeSlice& biomes);
     static void generate_biomes(ServerWorld* world, const ChunkPosXZ& pos, BiomeSlice& out);

@@ -2,33 +2,35 @@
 
 #include "shared/world/world.hh"
 
+#include "core/msg/log.hh"
+
 #include "shared/entity/component_map.hh"
 #include "shared/globals.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/biome_map.hh"
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
-#include "shared/world/weather_registry.hh"
+#include "shared/world/precip.hh"
 
-constexpr static float WEATHER_COOLING = 2.0f;     // Celsius lost under full precipitation
-constexpr static float WEATHER_SATURATION = 0.98f; // Humidity under full precipitation
+constexpr static float WEATHER_COOLING = 2.0f;     // Celsius lost under full precip
+constexpr static float WEATHER_SATURATION = 0.98f; // Humidity under full precip
 
 // A precipitating front cools the air and raises the humidity under it.
-// The result scales with the local coverage, so a fringe of the front
-// moves the climate less than its center does
-static float weather_coverage_at(const World& world, float x, float z)
+// The result follows the share of that front, so its fringe moves the
+// climate less than its center does and the change fades in
+static float weather_coverage_at(const World* world, float x, float z)
 {
-    auto& definition = world.definition();
-    auto& state = world.weather();
+    auto& definition = world->definition();
 
-    auto type = state.type_at(definition.weather, x, z, world.weather_tick);
-    auto def = weather_registry::find_definition(type);
+    return precip::context(world, definition.weather, x, z).coverage;
+}
 
-    if(def == nullptr || def->precipitation.kind == precipitation_kind::NONE) {
-        return 0.0f;
-    }
+// A roof stops the weather: the air under it keeps the base climate
+static bool is_exposed(const World* world, const BlockPos& pos)
+{
+    auto column = world->find_column(BlockPosXZ(pos.x(), pos.z()));
 
-    return state.coverage(definition.weather, x, z, world.weather_tick);
+    return column == nullptr || !column->shelters(pos.y());
 }
 
 ChunkCreateEvent::ChunkCreateEvent(World* world, const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk)
@@ -117,6 +119,20 @@ void World::set_weather_seed(std::uint64_t value)
     m_weather.reseed(value);
 }
 
+void World::set_column_lookup(ColumnLookup lookup)
+{
+    m_column_lookup = lookup;
+}
+
+const Column* World::find_column(const BlockPosXZ& pos) const
+{
+    if(m_column_lookup) {
+        return m_column_lookup(pos);
+    }
+
+    return nullptr;
+}
+
 std::shared_ptr<Chunk> World::create_chunk(const ChunkPos& pos)
 {
     auto it = m_chunks.find(pos);
@@ -125,7 +141,7 @@ std::shared_ptr<Chunk> World::create_chunk(const ChunkPos& pos)
         auto entity = m_chunk_registry.create();
         auto chunk = std::make_shared<Chunk>(entity);
 
-        auto& component = m_chunk_registry.emplace<Chunk_Component>(entity);
+        auto& component = m_chunk_registry.emplace<ChunkComponent>(entity);
         component.position = pos;
         component.ptr = chunk;
 
@@ -155,7 +171,7 @@ std::shared_ptr<Chunk> World::find_chunk(const ChunkPos& pos) const
 std::shared_ptr<Chunk> World::find_chunk(entt::entity entity) const
 {
     if(m_chunk_registry.valid(entity)) {
-        auto& component = m_chunk_registry.get<Chunk_Component>(entity);
+        auto& component = m_chunk_registry.get<ChunkComponent>(entity);
         return component.ptr;
     }
 
@@ -186,7 +202,7 @@ void World::remove_chunk(const ChunkPos& pos)
 void World::remove_chunk(entt::entity entity)
 {
     if(m_chunk_registry.valid(entity)) {
-        const auto& component = m_chunk_registry.get<Chunk_Component>(entity);
+        const auto& component = m_chunk_registry.get<ChunkComponent>(entity);
 
         globals::dispatcher.trigger(ChunkRemoveEvent(this, component.position, component.ptr));
 
@@ -341,7 +357,7 @@ std::optional<std::string_view> World::get_state(const ChunkPos& cpos, const Loc
     auto decl_it = family->states.find(key);
 
     if(decl_it == family->states.cend()) {
-        return std::nullopt; // this family has no such state
+        return std::nullopt;
     }
 
     auto id_it = family->id_states.find(id);
@@ -416,11 +432,21 @@ bool World::set_state(const BlockPos& pos, std::string_view state, std::string_v
 
 float World::get_temperature_base(const ChunkPos& cpos, const LocalPos& lpos) const
 {
-    auto biome_def = biome_registry::find_definition(biome(cpos, lpos));
+    auto id = biome(cpos, lpos);
+    auto biome_def = biome_registry::find_definition(id);
 
     if(biome_def) {
         return biome_def->temperature;
     }
+
+    // A missing slice or a mod that dropped the biome: the fallback keeps the
+    // world running, but it hides sync bugs, so say it once
+    static std::once_flag warned;
+
+    std::call_once(warned, [id, cpos, lpos] {
+        auto bpos = utils::to_block(cpos, lpos);
+        msg::log_warning("unknown biome {} at ({}, {}, {}): the temperature falls back to 15 C", id, bpos.x(), bpos.y(), bpos.z());
+    });
 
     return 15.0f;
 }
@@ -435,7 +461,12 @@ float World::get_temperature_base(const BlockPos& pos) const
 float World::get_temperature(const ChunkPos& cpos, const LocalPos& lpos) const
 {
     auto bpos = utils::to_block(cpos, lpos);
-    auto coverage = weather_coverage_at(*this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
+
+    auto coverage = 0.0f;
+
+    if(is_exposed(this, bpos)) {
+        coverage = weather_coverage_at(this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
+    }
 
     return get_temperature_base(cpos, lpos) - WEATHER_COOLING * coverage; // TODO: add the season bias
 }
@@ -447,13 +478,33 @@ float World::get_temperature(const BlockPos& pos) const
     return get_temperature(cpos, lpos);
 }
 
+float World::get_temperature(const BlockPos& pos, float coverage) const
+{
+    auto cpos = utils::to_chunk(pos);
+    auto lpos = utils::to_local(pos);
+
+    if(!is_exposed(this, pos)) {
+        coverage = 0.0f;
+    }
+
+    return get_temperature_base(cpos, lpos) - WEATHER_COOLING * coverage; // TODO: add the season bias
+}
+
 float World::get_humidity_base(const ChunkPos& cpos, const LocalPos& lpos) const
 {
-    auto biome_def = biome_registry::find_definition(biome(cpos, lpos));
+    auto id = biome(cpos, lpos);
+    auto biome_def = biome_registry::find_definition(id);
 
     if(biome_def) {
         return biome_def->humidity;
     }
+
+    static std::once_flag warned;
+
+    std::call_once(warned, [id, cpos, lpos] {
+        auto bpos = utils::to_block(cpos, lpos);
+        msg::log_warning("unknown biome {} at ({}, {}, {}): the humidity falls back to 0.5", id, bpos.x(), bpos.y(), bpos.z());
+    });
 
     return 0.5f;
 }
@@ -469,7 +520,12 @@ float World::get_humidity(const ChunkPos& cpos, const LocalPos& lpos) const
 {
     auto bpos = utils::to_block(cpos, lpos);
     auto base = get_humidity_base(cpos, lpos);
-    auto coverage = weather_coverage_at(*this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
+
+    auto coverage = 0.0f;
+
+    if(is_exposed(this, bpos)) {
+        coverage = weather_coverage_at(this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
+    }
 
     return std::clamp(base + (WEATHER_SATURATION - base) * coverage, 0.0f, 1.0f); // TODO: add the season bias
 }

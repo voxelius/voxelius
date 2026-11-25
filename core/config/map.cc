@@ -166,7 +166,7 @@ void config::Map::save(std::ostream& stream) const
     stream << "# Generated on " << std::asctime(std::localtime(&curtime)) << std::endl;
 
     for(const auto& it : m_index) {
-        const auto& slot = m_slots[it.second];
+        auto& slot = m_slots[it.second];
 
         if(slot.has_value()) {
             stream << it.first << "=";

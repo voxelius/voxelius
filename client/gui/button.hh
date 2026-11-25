@@ -26,7 +26,7 @@ private:
     float m_font_size { 0.0f };
     bool m_icon_enabled { false };
     icon_type m_icon { icon_type::PLUS };
-    ImVec2 m_size { 0.0f, 0.0f };
+    ImVec2 m_size {};
     std::function<void(void)> m_callback {};
     bool m_enabled { true };
 };
