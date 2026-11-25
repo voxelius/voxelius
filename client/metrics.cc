@@ -15,8 +15,8 @@
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/light_storage.hh"
-#include "shared/world/precipitation.hh"
-#include "shared/world/precipitation_registry.hh"
+#include "shared/world/precip.hh"
+#include "shared/world/precip_registry.hh"
 #include "shared/world/weather_registry.hh"
 #include "shared/world/world.hh"
 #include "shared/world/world_clock.hh"
@@ -489,9 +489,9 @@ static void compose_player(void)
     push_line(s_lines_left, s_left_used, TEXT_COLOR, false, "Weather: %.*s (%.0f%%)", static_cast<int>(weather_text.size()),
         weather_text.data(), 100.0f * coverage);
 
-    auto precip_context = precipitation::context(globals::world, definition.weather, world_pos.x(), world_pos.z());
-    auto precip_selection = precipitation::select(globals::world, precip_context, world_pos.x(), world_pos.y(), world_pos.z());
-    auto precip_name = precipitation_registry::name_of(precip_selection.type);
+    auto precip_context = precip::context(globals::world, definition.weather, world_pos.x(), world_pos.z());
+    auto precip_selection = precip::select(globals::world, precip_context, world_pos.x(), world_pos.y(), world_pos.z());
+    auto precip_name = precip_registry::name_of(precip_selection.type);
     auto precip_text = identifier_string(precip_name);
 
     auto column_x = static_cast<int>(std::floor(world_pos.x()));
@@ -510,7 +510,7 @@ static void compose_player(void)
         std::snprintf(column_text.data(), column_text.size(), "surface=%s liquid=%s", surface_text.data(), liquid_text.data());
     }
 
-    push_line(s_lines_left, s_left_used, TEXT_COLOR, false, "PrecipitationFront: %.*s (%.0f%%) %s", static_cast<int>(precip_text.size()),
+    push_line(s_lines_left, s_left_used, TEXT_COLOR, false, "PrecipFront: %.*s (%.0f%%) %s", static_cast<int>(precip_text.size()),
         precip_text.data(), 100.0f * precip_selection.effective_intensity, column_text.data());
 
     auto horizontal = Eigen::Vector2f(velocity.value.x(), velocity.value.z());

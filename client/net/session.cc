@@ -23,7 +23,7 @@
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
 #include "shared/world/lighting.hh"
-#include "shared/world/precipitation_registry.hh"
+#include "shared/world/precip_registry.hh"
 #include "shared/world/tint_registry.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
@@ -119,7 +119,7 @@ static void on_host_connect(const HostConnectEvent& event)
     request.tints_hash = tint_registry::checksum();
     request.ents_hash = class_registry::checksum();
     request.weather_hash = weather_registry::checksum();
-    request.precip_hash = precipitation_registry::checksum();
+    request.precip_hash = precip_registry::checksum();
 
     auto desired_username = s_desired_username.value();
 

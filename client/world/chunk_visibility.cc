@@ -77,7 +77,7 @@ void chunk_visibility::fixed_update_late(void)
         globals::world->remove_chunk(cpos);
     }
 
-    // A precipitation column is cached per XZ, so the prune needs the interest box on its own
+    // A precip column is cached per XZ, so the prune needs the interest box on its own
     if(!to_remove.empty()) {
         columns::prune(interest);
     }

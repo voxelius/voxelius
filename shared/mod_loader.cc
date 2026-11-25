@@ -11,7 +11,7 @@
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
-#include "shared/world/precipitation_registry.hh"
+#include "shared/world/precip_registry.hh"
 #include "shared/world/tint_registry.hh"
 #include "shared/world/weather_registry.hh"
 #include "shared/world/world_registry.hh"
@@ -218,7 +218,7 @@ void mod_loader::init(void)
         fluid_registry::commit(ctx);
         block_registry::commit(ctx);
         biome_registry::commit(ctx);
-        precipitation_registry::commit(ctx);
+        precip_registry::commit(ctx);
         weather_registry::commit(ctx);
         class_registry::commit(ctx);
     }
@@ -239,7 +239,7 @@ void mod_loader::shutdown(void)
     world_registry::purge();
     class_registry::purge();
     weather_registry::purge();
-    precipitation_registry::purge();
+    precip_registry::purge();
     biome_registry::purge();
     block_registry::purge();
     fluid_registry::purge();

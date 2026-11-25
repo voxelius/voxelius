@@ -43,9 +43,9 @@ dofile("biome/surface_hills_grassy.lua")
 dofile("biome/surface_hills_rocky.lua")
 dofile("biome/surface_plains.lua")
 
-dofile("precipitation/dry.lua")
-dofile("precipitation/rain.lua")
-dofile("precipitation/snow.lua")
+dofile("precip/dry.lua")
+dofile("precip/rain.lua")
+dofile("precip/snow.lua")
 
 dofile("weather/clear.lua")
 dofile("weather/overcast.lua")

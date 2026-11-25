@@ -1,8 +1,8 @@
 #include "shared/pch.hh"
 
-#include "shared/world/precipitation.hh"
+#include "shared/world/precip.hh"
 
-#include "shared/world/precipitation_registry.hh"
+#include "shared/world/precip_registry.hh"
 #include "shared/world/weather_registry.hh"
 #include "shared/world/world.hh"
 
@@ -27,7 +27,7 @@ static float band(float value, float min, float max, float fade)
     return 1.0f;
 }
 
-PrecipitationContext precipitation::context(const World* world, std::span<const weather_type_id> allowed, float x, float z)
+PrecipContext precip::context(const World* world, std::span<const weather_type_id> allowed, float x, float z)
 {
     assert(world);
 
@@ -35,21 +35,21 @@ PrecipitationContext precipitation::context(const World* world, std::span<const 
     auto front = state.type_at(allowed, x, z, world->weather_tick);
     auto definition = weather_registry::find_definition(front);
 
-    if(definition == nullptr || definition->precipitation.types.empty()) {
+    if(definition == nullptr || definition->precip.types.empty()) {
         return {};
     }
 
     auto coverage = state.coverage_of(allowed, front, x, z, world->weather_tick);
 
-    PrecipitationContext result {};
+    PrecipContext result {};
     result.front = front;
     result.definition = definition;
     result.coverage = coverage;
-    result.effective_intensity = coverage * std::clamp(definition->precipitation.intensity, 0.0f, 1.0f);
+    result.effective_intensity = coverage * std::clamp(definition->precip.intensity, 0.0f, 1.0f);
     return result;
 }
 
-PrecipitationSelection precipitation::select(const World* world, const PrecipitationContext& ctx, float x, float y, float z)
+PrecipSelection precip::select(const World* world, const PrecipContext& ctx, float x, float y, float z)
 {
     assert(world);
 
@@ -65,17 +65,17 @@ PrecipitationSelection precipitation::select(const World* world, const Precipita
     return select(ctx, world->get_temperature(bpos), world->get_humidity_base(bpos));
 }
 
-PrecipitationSelection precipitation::select(const PrecipitationContext& ctx, float temperature, float humidity)
+PrecipSelection precip::select(const PrecipContext& ctx, float temperature, float humidity)
 {
     if(ctx.definition == nullptr || ctx.effective_intensity <= 0.0f) {
         return {};
     }
 
-    auto best = PRECIPITATION_ID_NULL;
+    auto best = PRECIP_ID_NULL;
     auto best_score = 0.0f;
 
-    for(auto type : ctx.definition->precipitation.types) {
-        auto definition = precipitation_registry::find_definition(type);
+    for(auto type : ctx.definition->precip.types) {
+        auto definition = precip_registry::find_definition(type);
 
         if(definition == nullptr) {
             continue;
@@ -95,7 +95,7 @@ PrecipitationSelection precipitation::select(const PrecipitationContext& ctx, fl
         }
     }
 
-    PrecipitationSelection result {};
+    PrecipSelection result {};
     result.type = best;
     result.effective_intensity = ctx.effective_intensity;
     return result;

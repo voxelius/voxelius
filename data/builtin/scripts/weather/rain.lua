@@ -15,7 +15,7 @@ weather.add("rain", {
     seed = 7,
   },
 
-  precipitation = {
+  precip = {
     types = { "rain", "snow", "dry" },
     intensity = 1.0,
   },

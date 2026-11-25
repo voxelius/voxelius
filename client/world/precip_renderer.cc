@@ -1,6 +1,6 @@
 #include "client/pch.hh"
 
-#include "client/world/precipitation_renderer.hh"
+#include "client/world/precip_renderer.hh"
 
 #include "core/camera.hh"
 #include "core/cvar/boolean.hh"
@@ -17,8 +17,8 @@
 #include "shared/world/block_registry.hh"
 #include "shared/world/chunk.hh"
 #include "shared/world/fluid.hh"
-#include "shared/world/precipitation.hh"
-#include "shared/world/precipitation_registry.hh"
+#include "shared/world/precip.hh"
+#include "shared/world/precip_registry.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/world.hh"
 
@@ -41,18 +41,18 @@ constexpr static float V_PHASE_RANGE = 4.0f; // The random phase covers four til
 constexpr static float TIME_WRAP = 3600.0f;  // The scroll offset restarts once an hour, in seconds
 constexpr static std::uint32_t PHASE_SALT = UINT32_C(0x9E3779B9);
 
-struct PrecipitationVertex final {
+struct PrecipVertex final {
     float position[3]; // Relative to client_camera::chunk, like the chunk meshes
     float uv[2];
     float color[4]; // Tint in RGB, column amount in A
 };
 
-static_assert(sizeof(PrecipitationVertex) == 9 * sizeof(float));
-static_assert(0x00 == offsetof(PrecipitationVertex, position));
-static_assert(0x0C == offsetof(PrecipitationVertex, uv));
-static_assert(0x14 == offsetof(PrecipitationVertex, color));
+static_assert(sizeof(PrecipVertex) == 9 * sizeof(float));
+static_assert(0x00 == offsetof(PrecipVertex, position));
+static_assert(0x0C == offsetof(PrecipVertex, uv));
+static_assert(0x14 == offsetof(PrecipVertex, color));
 
-struct PrecipitationColumn final {
+struct PrecipColumn final {
     float x; // Column center, in blocks of the camera's chunk
     float z;
     float bottom; // Same space, in blocks above the chunk origin
@@ -60,12 +60,12 @@ struct PrecipitationColumn final {
     float v0; // World anchored texture coordinates, so a chunk crossing does not shift them
     float v1;
     float dist2;
-    const PrecipitationDefinition* definition;
+    const PrecipDefinition* definition;
     float effective_intensity;
 };
 
 struct DrawRange final {
-    const PrecipitationDefinition* definition;
+    const PrecipDefinition* definition;
     GLint first;
     GLsizei count;
 };
@@ -80,14 +80,14 @@ static std::size_t su_ViewDistance;
 
 static GLuint s_vao;
 static GLuint s_vbo;
-static std::vector<PrecipitationVertex> s_vertices;
-static std::vector<PrecipitationColumn> s_columns;
+static std::vector<PrecipVertex> s_vertices;
+static std::vector<PrecipColumn> s_columns;
 static std::vector<DrawRange> s_ranges;
-static vx::hash_map<precipitation_type_id, res::handle<Texture2D>> s_textures;
+static vx::hash_map<precip_type_id, res::handle<Texture2D>> s_textures;
 
-static cvar::Boolean s_precipitation { true };
+static cvar::Boolean s_precip { true };
 static cvar::Number<unsigned> s_radius { 8, 3, MAX_RADIUS };
-static gui::CheckBox s_precipitation_gui;
+static gui::CheckBox s_precip_gui;
 static gui::SliderUnsigned s_radius_gui;
 
 static float s_time;
@@ -131,7 +131,7 @@ static float column_phase(int x, int z, std::uint32_t seed)
 
 // The camera sits in the local space of its own chunk, and the render works in
 // that space; a world position is built only for a lookup and for the cell hash
-static void build_columns(const World* world, const PrecipitationContext& ctx, const Eigen::Vector3f& camera)
+static void build_columns(const World* world, const PrecipContext& ctx, const Eigen::Vector3f& camera)
 {
     assert(world);
 
@@ -187,13 +187,13 @@ static void build_columns(const World* world, const PrecipitationContext& ctx, c
             auto temperature = world->get_temperature(bpos, ctx.coverage);
             auto humidity = world->get_humidity_base(bpos);
 
-            auto selection = precipitation::select(ctx, temperature, humidity);
+            auto selection = precip::select(ctx, temperature, humidity);
 
-            if(selection.type == PRECIPITATION_ID_NULL) {
+            if(selection.type == PRECIP_ID_NULL) {
                 continue;
             }
 
-            auto definition = precipitation_registry::find_definition(selection.type);
+            auto definition = precip_registry::find_definition(selection.type);
 
             if(definition == nullptr || !definition->texture.is_valid()) {
                 continue;
@@ -229,7 +229,7 @@ static void build_columns(const World* world, const PrecipitationContext& ctx, c
             auto delta_z = local_z - camera.z();
             auto phase = column_phase(world_x, world_z, seed);
 
-            PrecipitationColumn column {};
+            PrecipColumn column {};
             column.x = local_x;
             column.z = local_z;
             column.bottom = local_bottom;
@@ -250,7 +250,7 @@ static void build_vertices(const Eigen::Vector3f& camera)
     s_ranges.clear();
 
     // Batched by type, and the farthest column of a run goes first because the quads blend in order
-    std::stable_sort(s_columns.begin(), s_columns.end(), [](const PrecipitationColumn& a, const PrecipitationColumn& b) {
+    std::stable_sort(s_columns.begin(), s_columns.end(), [](const PrecipColumn& a, const PrecipColumn& b) {
         if(a.definition->id == b.definition->id) {
             return a.dist2 > b.dist2;
         }
@@ -291,7 +291,7 @@ static void build_vertices(const Eigen::Vector3f& camera)
         auto first = static_cast<GLint>(s_vertices.size());
 
         auto emit = [&](float x, float y, float z, float u, float v) {
-            PrecipitationVertex vertex {};
+            PrecipVertex vertex {};
             vertex.position[0] = x;
             vertex.position[1] = y;
             vertex.position[2] = z;
@@ -327,24 +327,24 @@ static void build_vertices(const Eigen::Vector3f& camera)
     }
 }
 
-void precipitation_renderer::init(void)
+void precip_renderer::init(void)
 {
-    auto& r_precipitation_binding = cvar::bind_var(s_precipitation, "r_precipitation");
-    r_precipitation_binding.set_help("Draw falling precipitation: 0 = off, 1 = on");
-    r_precipitation_binding.set_flags(FCVAR_ARCHIVE);
+    auto& r_precip_binding = cvar::bind_var(s_precip, "r_precip");
+    r_precip_binding.set_help("Draw falling precipitation: 0 = off, 1 = on");
+    r_precip_binding.set_flags(FCVAR_ARCHIVE);
 
-    s_precipitation_gui.bind("r_precipitation");
-    settings::video_atmosphere.add_child(s_precipitation_gui, 1);
+    s_precip_gui.bind("r_precip");
+    settings::video_atmosphere.add_child(s_precip_gui, 1);
 
-    auto& r_precipitation_radius_binding = cvar::bind_var(s_radius, "r_precipitation_radius");
-    r_precipitation_radius_binding.set_help("Radius of the precipitation volume, in blocks");
-    r_precipitation_radius_binding.set_flags(FCVAR_ARCHIVE);
+    auto& r_precip_radius_binding = cvar::bind_var(s_radius, "r_precip_radius");
+    r_precip_radius_binding.set_help("Radius of the precipitation volume, in blocks");
+    r_precip_radius_binding.set_flags(FCVAR_ARCHIVE);
 
     s_radius_gui.set_range(3, MAX_RADIUS);
-    s_radius_gui.bind("r_precipitation_radius");
+    s_radius_gui.bind("r_precip_radius");
     settings::video_atmosphere.add_child(s_radius_gui, 2);
 
-    auto program_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "precipitation");
+    auto program_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "precip");
     auto program_ok = s_program.setup(program_id);
     vx::throw_if_not_fmt(program_ok, "{}: setup failed", program_id.full_string());
 
@@ -355,12 +355,12 @@ void precipitation_renderer::init(void)
     su_FogColor = s_program.add_uniform("u_FogColor");
     su_ViewDistance = s_program.add_uniform("u_ViewDistance");
 
-    for(const auto& definition : precipitation_registry::all_definitions()) {
+    for(const auto& definition : precip_registry::all_definitions()) {
         if(!definition.texture.is_valid()) {
             continue;
         }
 
-        auto texture = res::load<Texture2D>(definition.texture, "textures/precipitation", ".png", RESFLAG_TEX_NEAREST);
+        auto texture = res::load<Texture2D>(definition.texture, "textures/precip", ".png", RESFLAG_TEX_NEAREST);
 
         if(texture == nullptr) {
             msg::log_warning("{}: texture load failed", definition.texture.full_string());
@@ -370,7 +370,7 @@ void precipitation_renderer::init(void)
         s_textures.try_emplace(definition.id, std::move(texture));
     }
 
-    constexpr auto STRIDE = static_cast<GLsizei>(sizeof(PrecipitationVertex));
+    constexpr auto STRIDE = static_cast<GLsizei>(sizeof(PrecipVertex));
 
     glGenVertexArrays(1, &s_vao);
     glBindVertexArray(s_vao);
@@ -378,13 +378,13 @@ void precipitation_renderer::init(void)
     glGenBuffers(1, &s_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, s_vbo);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, STRIDE, reinterpret_cast<const void*>(offsetof(PrecipitationVertex, position)));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, STRIDE, reinterpret_cast<const void*>(offsetof(PrecipVertex, position)));
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, STRIDE, reinterpret_cast<const void*>(offsetof(PrecipitationVertex, uv)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, STRIDE, reinterpret_cast<const void*>(offsetof(PrecipVertex, uv)));
     glEnableVertexAttribArray(1);
 
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, STRIDE, reinterpret_cast<const void*>(offsetof(PrecipitationVertex, color)));
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, STRIDE, reinterpret_cast<const void*>(offsetof(PrecipVertex, color)));
     glEnableVertexAttribArray(2);
 
     glBindVertexArray(0);
@@ -398,7 +398,7 @@ void precipitation_renderer::init(void)
     s_ranges.reserve(MAX_COLUMNS);
 }
 
-void precipitation_renderer::shutdown(void)
+void precip_renderer::shutdown(void)
 {
     s_textures.clear();
     s_vertices.clear();
@@ -414,7 +414,7 @@ void precipitation_renderer::shutdown(void)
     s_program.destroy();
 }
 
-void precipitation_renderer::render(void)
+void precip_renderer::render(void)
 {
     ZoneScoped;
 
@@ -425,7 +425,7 @@ void precipitation_renderer::render(void)
         s_time = std::fmod(s_time, TIME_WRAP);
     }
 
-    if(!s_precipitation.value() || globals::world == nullptr) {
+    if(!s_precip.value() || globals::world == nullptr) {
         return;
     }
 
@@ -442,7 +442,7 @@ void precipitation_renderer::render(void)
 
     // The weather field is sampled by world position; the geometry is built in the camera's chunk
     auto world_position = utils::to_fvec(client_camera::chunk) + client_camera::local;
-    auto ctx = precipitation::context(world, definition.weather, world_position.x(), world_position.z());
+    auto ctx = precip::context(world, definition.weather, world_position.x(), world_position.z());
 
     if(ctx.definition == nullptr || ctx.effective_intensity <= 0.0f) {
         return;
@@ -484,7 +484,7 @@ void precipitation_renderer::render(void)
     glBindVertexArray(s_vao);
     glBindBuffer(GL_ARRAY_BUFFER, s_vbo);
 
-    auto vertex_bytes = static_cast<GLsizeiptr>(s_vertices.size() * sizeof(PrecipitationVertex));
+    auto vertex_bytes = static_cast<GLsizeiptr>(s_vertices.size() * sizeof(PrecipVertex));
     glBufferData(GL_ARRAY_BUFFER, vertex_bytes, s_vertices.data(), GL_STREAM_DRAW);
 
     glActiveTexture(GL_TEXTURE0);

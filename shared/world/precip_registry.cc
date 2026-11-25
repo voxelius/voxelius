@@ -1,15 +1,15 @@
 #include "shared/pch.hh"
 
-#include "shared/world/precipitation_registry.hh"
+#include "shared/world/precip_registry.hh"
 
 #include "core/utils/crc64.hh"
 
 #include "shared/constant.hh"
 #include "shared/mod_context.hh"
 
-static std::vector<PrecipitationDefinition> s_definitions;
-static vx::hash_map<Identifier, precipitation_type_id> s_names;
-static vx::hash_map<precipitation_type_id, Identifier> s_reverse_names;
+static std::vector<PrecipDefinition> s_definitions;
+static vx::hash_map<Identifier, precip_type_id> s_names;
+static vx::hash_map<precip_type_id, Identifier> s_reverse_names;
 static std::uint64_t s_checksum;
 
 static void hash_trivial(std::uint64_t& hash, const void* data, std::size_t size)
@@ -67,32 +67,32 @@ static void update_checksum(void)
     s_checksum = hash;
 }
 
-std::span<const PrecipitationDefinition> precipitation_registry::all_definitions(void)
+std::span<const PrecipDefinition> precip_registry::all_definitions(void)
 {
     return s_definitions;
 }
 
-std::uint64_t precipitation_registry::checksum(void)
+std::uint64_t precip_registry::checksum(void)
 {
     return s_checksum;
 }
 
-void precipitation_registry::commit(ModContext& ctx)
+void precip_registry::commit(ModContext& ctx)
 {
     if(s_definitions.empty()) {
         s_definitions.emplace_back();
     }
 
-    auto definitions = ctx.take_precipitations();
-    auto names = ctx.take_precipitation_names();
+    auto definitions = ctx.take_precips();
+    auto names = ctx.take_precip_names();
 
-    precipitation_type_id offset;
+    precip_type_id offset;
 
     if(definitions.empty()) {
-        offset = static_cast<precipitation_type_id>(s_definitions.size());
+        offset = static_cast<precip_type_id>(s_definitions.size());
     }
     else {
-        offset = static_cast<precipitation_type_id>(s_definitions.size()) - 1;
+        offset = static_cast<precip_type_id>(s_definitions.size()) - 1;
     }
 
     for(const auto& entry : names) {
@@ -101,7 +101,7 @@ void precipitation_registry::commit(ModContext& ctx)
         auto result = s_names.try_emplace(name, global_id);
 
         if(!result.second) {
-            msg::log_warning("duplicate precipitation name: {}", name.full_string());
+            msg::log_warning("duplicate precip name: {}", name.full_string());
             continue;
         }
 
@@ -117,14 +117,14 @@ void precipitation_registry::commit(ModContext& ctx)
         // The definition carries its local id only; the
         // registry id is the index in the combined list
         for(auto index = first; index < s_definitions.size(); index += 1) {
-            s_definitions[index].id = static_cast<precipitation_type_id>(index);
+            s_definitions[index].id = static_cast<precip_type_id>(index);
         }
     }
 
     update_checksum();
 }
 
-void precipitation_registry::purge(void)
+void precip_registry::purge(void)
 {
     s_definitions.clear();
     s_names.clear();
@@ -133,18 +133,18 @@ void precipitation_registry::purge(void)
     s_checksum = 0;
 }
 
-precipitation_type_id precipitation_registry::find(const Identifier& id)
+precip_type_id precip_registry::find(const Identifier& id)
 {
     auto it = s_names.find(id);
 
     if(it == s_names.cend()) {
-        return PRECIPITATION_ID_NULL;
+        return PRECIP_ID_NULL;
     }
 
     return it->second;
 }
 
-std::optional<Identifier> precipitation_registry::name_of(precipitation_type_id id)
+std::optional<Identifier> precip_registry::name_of(precip_type_id id)
 {
     auto it = s_reverse_names.find(id);
 
@@ -155,21 +155,21 @@ std::optional<Identifier> precipitation_registry::name_of(precipitation_type_id 
     return it->second;
 }
 
-const PrecipitationDefinition* precipitation_registry::find_definition(precipitation_type_id id)
+const PrecipDefinition* precip_registry::find_definition(precip_type_id id)
 {
-    if(id == PRECIPITATION_ID_NULL || id >= s_definitions.size()) {
+    if(id == PRECIP_ID_NULL || id >= s_definitions.size()) {
         return nullptr;
     }
 
     return &s_definitions[id];
 }
 
-const PrecipitationDefinition* precipitation_registry::find_definition(const Identifier& id)
+const PrecipDefinition* precip_registry::find_definition(const Identifier& id)
 {
     return find_definition(find(id));
 }
 
-precipitation_type_id precipitation_registry::resolve(std::string_view name)
+precip_type_id precip_registry::resolve(std::string_view name)
 {
     auto id = Identifier::from_string(name);
 
@@ -182,7 +182,7 @@ precipitation_type_id precipitation_registry::resolve(std::string_view name)
     }
 
     if(name.find(':') != std::string_view::npos) {
-        return PRECIPITATION_ID_NULL;
+        return PRECIP_ID_NULL;
     }
 
     auto builtin_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, name);

@@ -17,7 +17,7 @@ weather.add("thunderstorm", {
     seed = 19,
   },
 
-  precipitation = {
+  precip = {
     types = { "rain", "snow", "dry" },
     intensity = 1.0,
   },

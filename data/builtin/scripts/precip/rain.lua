@@ -1,4 +1,4 @@
-precipitation.add("rain", {
+precip.add("rain", {
   temperature = { min = 2, fade = 2 },
   priority = 1,
 

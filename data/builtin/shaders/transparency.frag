@@ -16,7 +16,7 @@ uniform sampler2D u_FluidDepth;
 uniform sampler2D u_CloudColor;
 uniform sampler2D u_CloudDepth;
 
-uniform sampler2D u_PrecipitationColor;
+uniform sampler2D u_PrecipColor;
 
 uniform vec2 u_CloudRange;
 uniform vec2 u_CameraRange;
@@ -118,9 +118,9 @@ void main(void)
     }
 
     // The pass dropped what the ground hides, so this layer goes over the sorted ones
-    vec4 precipitation = texture(u_PrecipitationColor, vs_TexCoord);
+    vec4 precip = texture(u_PrecipColor, vs_TexCoord);
 
-    accum = accum * (1.0 - precipitation.a) + precipitation.rgb;
+    accum = accum * (1.0 - precip.a) + precip.rgb;
 
     float dither = (hash12(gl_FragCoord.xy) - 0.5) / 255.0;
 

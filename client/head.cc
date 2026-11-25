@@ -22,7 +22,7 @@
 #include "client/world/chunk_vbo.hh"
 #include "client/world/cloud_renderer.hh"
 #include "client/world/outline.hh"
-#include "client/world/precipitation_renderer.hh"
+#include "client/world/precip_renderer.hh"
 #include "client/world/sky_renderer.hh"
 
 struct LayerTarget final {
@@ -35,7 +35,7 @@ static LayerTarget s_diffuse;
 static LayerTarget s_clouds;
 static LayerTarget s_alpha;
 static LayerTarget s_fluid;
-static LayerTarget s_precipitation;
+static LayerTarget s_precip;
 
 static GLuint s_compose_fbo;
 static GLuint s_compose_color;
@@ -52,7 +52,7 @@ static std::size_t su_cloud_color;
 static std::size_t su_cloud_depth;
 static std::size_t su_cloud_range;
 static std::size_t su_camera_range;
-static std::size_t su_precipitation_color;
+static std::size_t su_precip_color;
 
 static cvar::Number<int> s_head_pixel_size { 1, 1, 4 };
 static gui::SliderInt s_pixel_size_gui;
@@ -114,7 +114,7 @@ static void update_framebuffer(int new_width, int new_height)
     create_or_resize_layer(s_clouds, s_scaled_width, s_scaled_height);
     create_or_resize_layer(s_alpha, s_scaled_width, s_scaled_height);
     create_or_resize_layer(s_fluid, s_scaled_width, s_scaled_height);
-    create_or_resize_layer(s_precipitation, s_scaled_width, s_scaled_height);
+    create_or_resize_layer(s_precip, s_scaled_width, s_scaled_height);
 
     if(s_compose_fbo == 0) {
         glGenFramebuffers(1, &s_compose_fbo);
@@ -224,8 +224,8 @@ static void composite_layers(void)
     glUniform1i(s_transparency.uniforms[su_cloud_depth].location, 7);
 
     glActiveTexture(GL_TEXTURE8);
-    glBindTexture(GL_TEXTURE_2D, s_precipitation.color);
-    glUniform1i(s_transparency.uniforms[su_precipitation_color].location, 8);
+    glBindTexture(GL_TEXTURE_2D, s_precip.color);
+    glUniform1i(s_transparency.uniforms[su_precip_color].location, 8);
 
     glUniform2f(s_transparency.uniforms[su_cloud_range].location, cloud_renderer::z_near, cloud_renderer::z_far);
     glUniform2f(s_transparency.uniforms[su_camera_range].location, client_camera::z_near, client_camera::z_far);
@@ -277,7 +277,7 @@ void client_head::detail::init_renderers(void)
     su_cloud_depth = s_transparency.add_uniform("u_CloudDepth");
     su_cloud_range = s_transparency.add_uniform("u_CloudRange");
     su_camera_range = s_transparency.add_uniform("u_CameraRange");
-    su_precipitation_color = s_transparency.add_uniform("u_PrecipitationColor");
+    su_precip_color = s_transparency.add_uniform("u_PrecipColor");
 
     glGenVertexArrays(1, &s_compose_vao);
 
@@ -286,7 +286,7 @@ void client_head::detail::init_renderers(void)
     chunk_vbo::init();
     chunk_renderer::init();
     cloud_renderer::init();
-    precipitation_renderer::init();
+    precip_renderer::init();
     sky_renderer::init();
     outline::init();
 }
@@ -340,7 +340,7 @@ void client_head::shutdown(void)
 {
     outline::shutdown();
     sky_renderer::shutdown();
-    precipitation_renderer::shutdown();
+    precip_renderer::shutdown();
     cloud_renderer::shutdown();
     chunk_renderer::shutdown();
     chunk_vbo::shutdown();
@@ -351,7 +351,7 @@ void client_head::shutdown(void)
     destroy_layer(s_clouds);
     destroy_layer(s_alpha);
     destroy_layer(s_fluid);
-    destroy_layer(s_precipitation);
+    destroy_layer(s_precip);
 
     if(s_compose_fbo) {
         glDeleteFramebuffers(1, &s_compose_fbo);
@@ -417,8 +417,8 @@ void client_head::render(void)
     begin_translucent(s_fluid);
     chunk_renderer::render_fluid();
 
-    begin_translucent(s_precipitation);
-    precipitation_renderer::render();
+    begin_translucent(s_precip);
+    precip_renderer::render();
 
     composite_layers();
 

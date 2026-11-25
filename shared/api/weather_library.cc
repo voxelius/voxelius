@@ -7,7 +7,7 @@
 
 #include "shared/mod_context.hh"
 #include "shared/utils/lua.hh"
-#include "shared/world/precipitation.hh"
+#include "shared/world/precip.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
 #include "shared/world/world.hh"
@@ -173,11 +173,11 @@ static bool parse_cloud(lua_State* L, int def_idx, WeatherTypeDefinition& def)
     return true;
 }
 
-static bool parse_precipitation(lua_State* L, int def_idx, WeatherTypeDefinition& def, ModContext* ctx)
+static bool parse_precip(lua_State* L, int def_idx, WeatherTypeDefinition& def, ModContext* ctx)
 {
     auto base = lua_gettop(L);
 
-    lua_getfield(L, def_idx, "precipitation");
+    lua_getfield(L, def_idx, "precip");
 
     if(lua_isnoneornil(L, -1)) {
         lua_settop(L, base);
@@ -185,7 +185,7 @@ static bool parse_precipitation(lua_State* L, int def_idx, WeatherTypeDefinition
     }
 
     if(!lua_istable(L, -1)) {
-        return fail(L, base, "precipitation must be a table");
+        return fail(L, base, "precip must be a table");
     }
 
     auto index = lua_gettop(L);
@@ -215,7 +215,7 @@ static bool parse_precipitation(lua_State* L, int def_idx, WeatherTypeDefinition
                 return fail(L, base, "types must hold valid identifiers");
             }
 
-            def.precipitation.type_names.push_back(name);
+            def.precip.type_names.push_back(name);
             lua_pop(L, 1);
         }
 
@@ -225,13 +225,13 @@ static bool parse_precipitation(lua_State* L, int def_idx, WeatherTypeDefinition
         lua_settop(L, index);
     }
 
-    auto intensity = utils::opt_number(L, index, "intensity", def.precipitation.intensity);
+    auto intensity = utils::opt_number(L, index, "intensity", def.precip.intensity);
 
     if(!intensity.has_value()) {
         return fail(L, base);
     }
 
-    def.precipitation.intensity = static_cast<float>(intensity.value());
+    def.precip.intensity = static_cast<float>(intensity.value());
 
     lua_settop(L, base);
     return true;
@@ -292,7 +292,7 @@ static bool parse_definition(lua_State* L, int def_idx, WeatherTypeDefinition& d
     def.on_tick = parse_callback(L, def_idx, "on_tick", ctx);
     def.on_strike = parse_callback(L, def_idx, "on_strike", ctx);
 
-    return parse_cloud(L, def_idx, def) && parse_precipitation(L, def_idx, def, ctx) && parse_color(L, def_idx, "sky_tint", def.sky_tint);
+    return parse_cloud(L, def_idx, def) && parse_precip(L, def_idx, def, ctx) && parse_color(L, def_idx, "sky_tint", def.sky_tint);
 }
 
 static std::optional<weather_type_id> add_definition(lua_State* L, ModContext* ctx, const char* raw_name, int def_idx)
@@ -404,14 +404,14 @@ static bool sample(lua_State* L)
 
     auto def = weather_registry::find_definition(type);
 
-    if(def && !def->precipitation.types.empty()) {
-        lua_pushnumber(L, static_cast<lua_Number>(def->precipitation.intensity * coverage));
+    if(def && !def->precip.types.empty()) {
+        lua_pushnumber(L, static_cast<lua_Number>(def->precip.intensity * coverage));
     }
     else {
         lua_pushnumber(L, 0.0);
     }
 
-    lua_setfield(L, -2, "precipitation");
+    lua_setfield(L, -2, "precip");
 
     return true;
 }
@@ -425,7 +425,7 @@ static int api_sample(lua_State* L)
     return 1;
 }
 
-static bool precipitation_at(lua_State* L)
+static bool precip_at(lua_State* L)
 {
     auto x = luaL_checknumber(L, 1);
     auto y = luaL_checknumber(L, 2);
@@ -441,8 +441,8 @@ static bool precipitation_at(lua_State* L)
     auto& definition = world->definition();
     auto& allowed = definition.weather;
 
-    auto precip_ctx = precipitation::context(world, allowed, static_cast<float>(x), static_cast<float>(z));
-    auto selection = precipitation::select(world, precip_ctx, static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
+    auto precip_ctx = precip::context(world, allowed, static_cast<float>(x), static_cast<float>(z));
+    auto selection = precip::select(world, precip_ctx, static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
 
     lua_newtable(L);
 
@@ -455,9 +455,9 @@ static bool precipitation_at(lua_State* L)
     return true;
 }
 
-static int api_precipitation_at(lua_State* L)
+static int api_precip_at(lua_State* L)
 {
-    if(!precipitation_at(L)) {
+    if(!precip_at(L)) {
         return lua_error(L);
     }
 
@@ -483,8 +483,8 @@ void api_shared::open_weather(std::shared_ptr<lua_State>& lua, ModContext* ctx)
     lua_pushcfunction(L, &api_sample);
     lua_setfield(L, -2, "sample");
 
-    lua_pushcfunction(L, &api_precipitation_at);
-    lua_setfield(L, -2, "precipitation_at");
+    lua_pushcfunction(L, &api_precip_at);
+    lua_setfield(L, -2, "precip_at");
 
     lua_setglobal(L, "weather");
 }

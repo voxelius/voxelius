@@ -4,10 +4,10 @@
 #include "core/identifier.hh"
 
 using weather_type_id = std::uint32_t;
-using precipitation_type_id = std::uint32_t;
+using precip_type_id = std::uint32_t;
 
 constexpr static weather_type_id WEATHER_ID_NULL = 0;
-constexpr static precipitation_type_id PRECIPITATION_ID_NULL = 0;
+constexpr static precip_type_id PRECIP_ID_NULL = 0;
 
 // One cloud body of a weather type: the volume starts at height and reaches
 // thickness blocks up. A type carries at most one, and a zero coverage leaves it clear
@@ -24,12 +24,12 @@ struct CloudBody final {
     std::uint32_t seed { 0 };
 };
 
-// A front names several precipitation types, and the local climate picks
+// A front names several precip types, and the local climate picks
 // one of them per point. The ids are resolved by weather_registry::commit
-// after the precipitation registry has committed all of this mod's definitions
-struct PrecipitationFront final {
+// after the precip registry has committed all of this mod's definitions
+struct PrecipFront final {
     std::vector<Identifier> type_names;
-    std::vector<precipitation_type_id> types;
+    std::vector<precip_type_id> types;
 
     float intensity { 0.0f };
 };
@@ -45,7 +45,7 @@ struct WeatherTypeDefinition final {
 
     CloudBody cloud;
 
-    PrecipitationFront precipitation;
+    PrecipFront precip;
 
     Eigen::Vector3f sky_tint { Eigen::Vector3f(1.0f, 1.0f, 1.0f) };
     float sky_visibility { 1.0f }; // 1 = the clear sky shows through, 0 = only sky_tint

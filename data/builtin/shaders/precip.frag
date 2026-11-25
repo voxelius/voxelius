@@ -19,7 +19,7 @@ void main(void)
         discard;
     }
 
-    // Distant precipitation takes the
+    // Distant precip takes the
     // color of the air in front of it
     vec3 color = tex.rgb * vs_Color.rgb;
     float fog = smoothstep(u_ViewDistance * 0.35, u_ViewDistance, length(vs_ViewPos));

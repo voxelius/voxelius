@@ -1,21 +1,21 @@
 #include "shared/pch.hh"
 
-#include "shared/api/precipitation_library.hh"
+#include "shared/api/precip_library.hh"
 
 #include "core/identifier.hh"
 #include "core/msg/log.hh"
 
 #include "shared/mod_context.hh"
 #include "shared/utils/lua.hh"
-#include "shared/world/precipitation.hh"
-#include "shared/world/precipitation_registry.hh"
+#include "shared/world/precip.hh"
+#include "shared/world/precip_registry.hh"
 
 static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
 {
     auto is_free = [&](const Identifier& candidate) {
         auto result = true;
-        result = result && ctx->find_precipitation(candidate) == PRECIPITATION_ID_NULL;
-        result = result && precipitation_registry::find(candidate) == PRECIPITATION_ID_NULL;
+        result = result && ctx->find_precip(candidate) == PRECIP_ID_NULL;
+        result = result && precip_registry::find(candidate) == PRECIP_ID_NULL;
         return result;
     };
 
@@ -33,13 +33,13 @@ static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
         if(is_free(candidate)) {
             auto id_text = id.full_string();
             auto candidate_text = candidate.full_string();
-            msg::log_warning("precipitation.add: {} is already registered, using {} instead", id_text, candidate_text);
+            msg::log_warning("precip.add: {} is already registered, using {} instead", id_text, candidate_text);
             return candidate;
         }
     }
 
     auto id_text = id.full_string();
-    msg::log_critical("precipitation.add: {}: out of resolvable names", id_text);
+    msg::log_critical("precip.add: {}: out of resolvable names", id_text);
     return id;
 }
 
@@ -161,7 +161,7 @@ static bool parse_identifier(lua_State* L, int table_idx, const char* key, const
     return true;
 }
 
-static bool parse_definition(lua_State* L, int def_idx, PrecipitationDefinition& def, const ModContext* ctx)
+static bool parse_definition(lua_State* L, int def_idx, PrecipDefinition& def, const ModContext* ctx)
 {
     auto base = lua_gettop(L);
 
@@ -230,25 +230,25 @@ static bool parse_definition(lua_State* L, int def_idx, PrecipitationDefinition&
     return true;
 }
 
-static std::optional<precipitation_type_id> add_definition(lua_State* L, ModContext* ctx, const char* raw_name, int def_idx)
+static std::optional<precip_type_id> add_definition(lua_State* L, ModContext* ctx, const char* raw_name, int def_idx)
 {
     auto id = Identifier::from_string(raw_name, ctx->name_space());
 
     if(!id.is_valid()) {
-        lua_pushfstring(L, "precipitation.add: malformed name: %s", raw_name);
+        lua_pushfstring(L, "precip.add: malformed name: %s", raw_name);
         return std::nullopt;
     }
 
     id = make_unique_id(id, ctx);
 
-    PrecipitationDefinition def {};
+    PrecipDefinition def {};
     def.name = id;
 
     if(!parse_definition(L, def_idx, def, ctx)) {
         return std::nullopt;
     }
 
-    return ctx->register_precipitation(id, std::move(def));
+    return ctx->register_precip(id, std::move(def));
 }
 
 static int api_add(lua_State* L)
@@ -268,7 +268,7 @@ static int api_add(lua_State* L)
     return 1;
 }
 
-static std::optional<precipitation_type_id> get(lua_State* L)
+static std::optional<precip_type_id> get(lua_State* L)
 {
     auto raw_name = utils::require_string(L, 1);
 
@@ -276,7 +276,7 @@ static std::optional<precipitation_type_id> get(lua_State* L)
         return std::nullopt;
     }
 
-    return precipitation_registry::resolve(raw_name.value());
+    return precip_registry::resolve(raw_name.value());
 }
 
 static int api_get(lua_State* L)
@@ -291,7 +291,7 @@ static int api_get(lua_State* L)
     return 1;
 }
 
-void api_shared::open_precipitation(std::shared_ptr<lua_State>& lua, ModContext* ctx)
+void api_shared::open_precip(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 {
     assert(lua);
     assert(ctx);
@@ -300,7 +300,7 @@ void api_shared::open_precipitation(std::shared_ptr<lua_State>& lua, ModContext*
 
     lua_newtable(L);
 
-    lua_pushinteger(L, static_cast<lua_Integer>(PRECIPITATION_ID_NULL));
+    lua_pushinteger(L, static_cast<lua_Integer>(PRECIP_ID_NULL));
     lua_setfield(L, -2, "NULL_TYPE");
 
     lua_pushlightuserdata(L, ctx);
@@ -310,5 +310,5 @@ void api_shared::open_precipitation(std::shared_ptr<lua_State>& lua, ModContext*
     lua_pushcfunction(L, &api_get);
     lua_setfield(L, -2, "get");
 
-    lua_setglobal(L, "precipitation");
+    lua_setglobal(L, "precip");
 }

@@ -6,7 +6,7 @@
 
 #include "shared/constant.hh"
 #include "shared/mod_context.hh"
-#include "shared/world/precipitation_registry.hh"
+#include "shared/world/precip_registry.hh"
 
 static std::vector<WeatherTypeDefinition> s_definitions;
 static vx::hash_map<Identifier, weather_type_id> s_names;
@@ -46,16 +46,16 @@ static void update_checksum(void)
         hash_value(hash, def.strikes_per_minute);
         hash_value(hash, def.strike_radius);
 
-        // The climate bands and visuals live in the precipitation registry and travel in its checksum
-        auto type_count = static_cast<std::uint64_t>(def.precipitation.type_names.size());
+        // The climate bands and visuals live in the precip registry and travel in its checksum
+        auto type_count = static_cast<std::uint64_t>(def.precip.type_names.size());
         hash_value(hash, type_count);
 
-        for(const auto& type_name : def.precipitation.type_names) {
+        for(const auto& type_name : def.precip.type_names) {
             auto full = type_name.full_string();
             hash_trivial(hash, full.data(), full.size());
         }
 
-        hash_value(hash, def.precipitation.intensity);
+        hash_value(hash, def.precip.intensity);
 
         hash_value(hash, def.cloud.height);
         hash_value(hash, def.cloud.thickness);
@@ -123,22 +123,22 @@ void weather_registry::commit(ModContext& ctx)
             s_definitions[index].id = static_cast<weather_type_id>(index);
         }
 
-        // The precipitation registry committed this mod's types already; a type that a later mod adds stays unknown
+        // The precip registry committed this mod's types already; a type that a later mod adds stays unknown
         for(auto index = first; index < s_definitions.size(); index += 1) {
             auto& def = s_definitions[index];
-            def.precipitation.types.clear();
+            def.precip.types.clear();
 
-            for(const auto& type_name : def.precipitation.type_names) {
-                auto type = precipitation_registry::find(type_name);
+            for(const auto& type_name : def.precip.type_names) {
+                auto type = precip_registry::find(type_name);
 
-                if(type == PRECIPITATION_ID_NULL) {
+                if(type == PRECIP_ID_NULL) {
                     auto weather_name = def.name.full_string();
                     auto type_text = type_name.full_string();
-                    msg::log_warning("weather {}: unknown precipitation type {}", weather_name, type_text);
+                    msg::log_warning("weather {}: unknown precip type {}", weather_name, type_text);
                     continue;
                 }
 
-                def.precipitation.types.push_back(type);
+                def.precip.types.push_back(type);
             }
         }
 

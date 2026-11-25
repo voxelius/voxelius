@@ -10,8 +10,8 @@
 #include "shared/world/block_registry.hh"
 #include "shared/world/weather_registry.hh"
 
-constexpr static float WEATHER_COOLING = 2.0f;     // Celsius lost under full precipitation
-constexpr static float WEATHER_SATURATION = 0.98f; // Humidity under full precipitation
+constexpr static float WEATHER_COOLING = 2.0f;     // Celsius lost under full precip
+constexpr static float WEATHER_SATURATION = 0.98f; // Humidity under full precip
 
 // A precipitating front cools the air and raises the humidity under it.
 // The result scales with the local coverage, so a fringe of the front
@@ -24,7 +24,7 @@ static float weather_coverage_at(const World* world, float x, float z)
     auto type = state.type_at(definition.weather, x, z, world->weather_tick);
     auto def = weather_registry::find_definition(type);
 
-    if(def == nullptr || def->precipitation.types.empty()) {
+    if(def == nullptr || def->precip.types.empty()) {
         return 0.0f;
     }
 

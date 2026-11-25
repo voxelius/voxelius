@@ -23,7 +23,7 @@
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/fluid_registry.hh"
-#include "shared/world/precipitation_registry.hh"
+#include "shared/world/precip_registry.hh"
 #include "shared/world/tint_registry.hh"
 #include "shared/world/weather.hh"
 #include "shared/world/weather_registry.hh"
@@ -169,7 +169,7 @@ static void on_auth_request(const packet::Auth_Request& packet)
     checksums_match = checksums_match && packet.tints_hash == tint_registry::checksum();
     checksums_match = checksums_match && packet.ents_hash == class_registry::checksum();
     checksums_match = checksums_match && packet.weather_hash == weather_registry::checksum();
-    checksums_match = checksums_match && packet.precip_hash == precipitation_registry::checksum();
+    checksums_match = checksums_match && packet.precip_hash == precip_registry::checksum();
 
     if(!checksums_match) {
         packet::Session_Disconnect response {};
