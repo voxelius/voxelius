@@ -44,8 +44,6 @@ LIT_TONES = (
 SHADOW_RIM = (0x2B, 0x2F, 0x38)
 HALO_COLOR = (0x8C, 0x9C, 0xC8)
 
-# The terminator bends by this share of the body at the equator, and
-# the penumbra is this share of the body wide
 TERMINATOR_CURVE = 0.30
 PENUMBRA_FRACTION = 0.32
 HALO_STRENGTH = 0.12

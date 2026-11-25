@@ -25,8 +25,6 @@ void main(void)
 
     vec3 lit = max(vec3(u_Ambient), max(u_SkyColor * vs_Light.x, u_BlockColor * vs_Light.y));
 
-    // Distant precipitation takes the
-    // color of the air in front of it
     vec3 color = tex.rgb * vs_Color.rgb * lit;
     float fog = smoothstep(u_ViewDistance * 0.35, u_ViewDistance, length(vs_ViewPos));
     color = mix(color, u_FogColor, clamp(fog, 0.0, 1.0));

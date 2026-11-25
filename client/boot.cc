@@ -62,7 +62,7 @@ enum class boot_state {
 struct TextureChoice final {
     std::string_view name;
     std::string_view value;
-    std::uint16_t from; // MMDD, zero means the texture is always a candidate
+    std::uint16_t from;
     std::uint16_t to;
 };
 
@@ -161,7 +161,6 @@ static std::size_t choose_texture_index(void)
         day = static_cast<std::uint16_t>(date.month * 100 + date.day);
     }
 
-    // A dated entry wins over the plain ones, a plain entry wins over all
     for(std::size_t index = 0; index < TEXTURES.size(); index += 1) {
         auto& entry = TEXTURES[index];
 

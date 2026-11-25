@@ -44,8 +44,6 @@ void gui::detail::draw_stone_face(ImDrawList* draw_list, ImVec2 item_min, ImVec2
 
     auto& palette = style::palette();
 
-    // The bevel is a pixel-art detail, so it grows with the UI scale
-    // instead of staying a hairline on a HiDPI display
     auto bevel = static_cast<float>(globals::gui_scale);
 
     auto inner_min = ImVec2(item_min.x + bevel, item_min.y + bevel);
@@ -64,8 +62,6 @@ void gui::detail::draw_stone_face(ImDrawList* draw_list, ImVec2 item_min, ImVec2
         auto noise = s_noise->imgui;
         auto tint = IM_COL32(255, 255, 255, NOISE_ALPHA);
 
-        // A texel of the grain is an interface pixel, the same way the
-        // bevel is, so the stone does not turn into dust on a HiDPI display
         auto tile_size = NOISE_SIZE * static_cast<float>(globals::gui_scale);
 
         for(auto y = inner_min.y; y < inner_max.y; y += tile_size) {
@@ -80,8 +76,6 @@ void gui::detail::draw_stone_face(ImDrawList* draw_list, ImVec2 item_min, ImVec2
         }
     }
 
-    // Light comes from the top left, so the bevel is lit on those two
-    // sides and shadowed on the other two
     draw_list->AddRectFilled(inner_min, ImVec2(inner_max.x, inner_min.y + bevel), ImGui::GetColorU32(palette.bevel_light));
     draw_list->AddRectFilled(inner_min, ImVec2(inner_min.x + bevel, inner_max.y), ImGui::GetColorU32(palette.bevel_light));
     draw_list->AddRectFilled(ImVec2(inner_min.x, inner_max.y - bevel), inner_max, ImGui::GetColorU32(palette.bevel_dark));
@@ -97,7 +91,6 @@ float gui::detail::text_shadow_offset(void)
         design = std::max(1.0f, font->LegacySize);
     }
 
-    // One design pixel, so the shadow stays on the glyph grid
     return std::max(1.0f, std::round(ImGui::GetFontSize() / design));
 }
 
@@ -119,10 +112,8 @@ void gui::detail::draw_stone_label(ImDrawList* draw_list, ImVec2 item_min, ImVec
     auto shadow_color = ImGui::GetColorU32(palette.bevel_dark);
     auto text_color = ImGui::GetColorU32(enabled ? palette.text : palette.text_disabled);
 
-    // The shadow follows the glyph size, otherwise it turns into a soft blur
     auto shadow_offset = text_shadow_offset();
 
-    // A label that does not fit must not spill over the neighbouring widget
     draw_list->PushClipRect(item_min, item_max, true);
 
     draw_list->AddText(ImVec2(position.x + shadow_offset, position.y + shadow_offset), shadow_color, label.data(),
@@ -141,8 +132,6 @@ bool gui::detail::stone_button(const char* id, std::string_view label, ImVec2 si
         label = label.substr(0, separator);
     }
 
-    // Zero or negative sizes mean "fit the text" and "the standard row
-    // height", the same way ImGui::Button treats them
     auto& style = ImGui::GetStyle();
 
     if(size.x <= 0.0f) {
@@ -233,7 +222,6 @@ bool gui::detail::stone_combo(const char* id, std::string_view label, ImVec2 siz
     auto bevel = std::max(1.0f, scale);
     auto pad = 3.0f * scale;
 
-    // Field is inset, so the shadow goes to the top left here
     draw_list->AddRectFilled(item_min, item_max, ImGui::GetColorU32(palette.frame));
     draw_list->AddRect(item_min, item_max, ImGui::GetColorU32(palette.border));
 
@@ -251,7 +239,6 @@ bool gui::detail::stone_combo(const char* id, std::string_view label, ImVec2 siz
     auto shadow_color = ImGui::GetColorU32(palette.bevel_dark);
     auto text_color = ImGui::GetColorU32(palette.text);
 
-    // The shadow follows the glyph size, otherwise it turns into a soft blur
     auto shadow_offset = text_shadow_offset();
 
     auto text_clip_max = ImVec2(item_max.x - pad - 2.0f * scale, item_max.y);
@@ -282,7 +269,6 @@ bool gui::detail::stone_popup_begin(const char* id, ImVec2 item_min, ImVec2 item
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(POPUP_PAD * scale, POPUP_PAD * scale));
     ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 0.0f);
 
-    // The list drops below its control instead of opening at the mouse
     auto popup_pos = ImVec2(item_min.x, item_max.y + 2.0f * scale);
 
     ImGui::SetNextWindowPos(popup_pos, ImGuiCond_Appearing);
@@ -321,7 +307,6 @@ void gui::detail::draw_icon(ImDrawList* draw_list, icon_type icon, ImVec2 item_m
             break;
 
         case icon_type::PENCIL:
-            // A body stroke going up to the right and a solid tip at its end
             draw_list->AddLine(ImVec2(center.x - reach, center.y + reach), ImVec2(center.x + 0.4f * reach, center.y - 0.4f * reach), color,
                 thickness);
 

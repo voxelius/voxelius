@@ -23,7 +23,7 @@ enum class mod_status {
     LOADING,
     LOADED,
     FAILED,
-    SKIPPED, // One of the mod's dependencies has failed to load and the mod will be skipped
+    SKIPPED,
 };
 
 struct ModVersion final {

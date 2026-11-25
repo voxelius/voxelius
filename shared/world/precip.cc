@@ -36,9 +36,6 @@ PrecipContext precip::context(const World* world, std::span<const weather_type_i
 
     PrecipContext result {};
 
-    // The field is a blend, not a switch: a front that carries precipitation
-    // already owns part of a point before it owns the point, so the amount
-    // follows that share and the rain thickens as the front arrives
     for(const auto& def : weather_registry::all_definitions()) {
         if(def.precip.types.empty()) {
             continue;

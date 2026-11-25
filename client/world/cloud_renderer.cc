@@ -33,15 +33,12 @@ constexpr static float BUILD_COOLDOWN_SECONDS = 0.2f; // A build closer than thi
 constexpr static float CLOUD_NEAR_PLANE = 1.0f;
 constexpr static float CLOUD_DEPTH_MARGIN = 1024.0f;
 
-// A deck is anchored to the field drift at the time it was built, so a
-// rebuild resamples only the cells that slid in at the window's edge
 struct CloudDrift final {
     Eigen::Vector2f anchor { Eigen::Vector2f::Zero() };
     Eigen::Vector2f drift_offset { Eigen::Vector2f::Zero() };
     bool anchored { false };
 };
 
-// One build on the pool: the snapshot arrives by value, the geometry comes back through the task
 class CloudTask final : public Task {
 public:
     CloudTask(CloudInput input, const std::vector<CloudGroup>& groups, CloudMesh&& scratch, std::uint64_t generation);
@@ -83,7 +80,7 @@ static std::size_t s_front;
 static std::vector<CloudGroup> s_groups;
 static CloudDrift s_drift;
 static Eigen::Vector2f s_last_build_offset;
-static std::uint64_t s_state_signature; // Weather seed the current mesh was built from
+static std::uint64_t s_state_signature;
 static std::uint64_t s_generation;
 static Eigen::Vector3f s_last_build_center { Eigen::Vector3f::Zero() };
 static unsigned s_last_cloud_range { 0 };
@@ -121,8 +118,6 @@ static void upload_mesh(const CloudMesh& mesh, std::size_t slot)
 
 static bool needs_rebuild(void)
 {
-    // A reset empties the meshes while the latches below still describe
-    // the build that went away, so the first frame after it has to rebuild
     if(s_rebuild_requested) {
         return true;
     }
@@ -131,15 +126,10 @@ static bool needs_rebuild(void)
         return true;
     }
 
-    // The deck is in world space, so leaving a chunk does not invalidate it; only a window that slid far enough does
     if((camera_world_position() - s_last_build_center).norm() > cloud_field::fine_cell_blocks() * 4.0f) {
         return true;
     }
 
-    // The mesh is only re-evaluated when the field has drifted far
-    // enough for its window to slide a cell; the wind offset alone
-    // keeps the deck moving in between, and the deck is sampled in
-    // the frame of the build, so a rebuild does not reshuffle cubes
     if((s_drift.drift_offset - s_last_build_offset).norm() > cloud_field::fine_cell_blocks() * 2.0f) {
         return true;
     }
@@ -197,7 +187,6 @@ static Eigen::Matrix4f cloud_view_projection(void)
     return projection * client_camera::instance.view();
 }
 
-// Takes the snapshot and hands the build to the pool; the deck keeps drawing the previous mesh until it lands
 static void submit_build(void)
 {
     auto camera_position = camera_world_position();
@@ -408,7 +397,6 @@ void cloud_renderer::render(void)
     for(const auto& batch : mesh.batches) {
         auto offset = reinterpret_cast<const void*>(batch.index_offset * sizeof(std::uint32_t));
 
-        // Each ring has its own fade; only the one at the deck's edge dissolves
         glUniform2fv(s_program.uniforms[su_DeckCenter].location, 1, batch.center.data());
         glUniform3f(s_program.uniforms[su_WindOffset].location, s_drift.drift_offset.x(), 0.0f, s_drift.drift_offset.y());
         glUniform1f(s_program.uniforms[su_FadeDistance].location, batch.fade);

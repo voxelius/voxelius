@@ -19,7 +19,7 @@
 constexpr static float PMOVE_EPS = 1.0e-6f;
 constexpr static float FLY_SPEED = 16.0f;
 constexpr static float FLY_ACCEL_H = 64.0f;
-constexpr static float FLY_ACCEL_V = 96.0f; // Sharper movement vertically
+constexpr static float FLY_ACCEL_V = 96.0f;
 
 constexpr static float WALK_JUMP_VELOCITY = 0.42f;
 constexpr static float WALK_GRAVITY = 0.08f;

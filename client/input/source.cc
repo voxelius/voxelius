@@ -133,7 +133,7 @@ std::optional<std::uint32_t> input::parse_button_code(input_device device, std::
 
     switch(device) {
         case input_device::MOUSE:
-            return std::nullopt; // Handled above
+            return std::nullopt;
 
         case input_device::KEYBOARD:
             return parse_scancode(normalized);
@@ -193,7 +193,6 @@ std::string input::format_button_code(input_device device, std::uint32_t code)
     switch(device) {
         case input_device::KEYBOARD:
         case input_device::MOUSE:
-            // Handled above
             break;
 
         case input_device::MWHEEL:

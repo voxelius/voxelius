@@ -185,7 +185,7 @@ static void update_chunk_positions_tbo(void)
 
     for(const auto [entity, chunk, mesh] : view.each()) {
         if(mesh.slot == std::numeric_limits<std::uint32_t>::max()) {
-            continue; // invalid slot
+            continue;
         }
 
         max_slot = std::max(max_slot, mesh.slot + 1);
@@ -199,7 +199,7 @@ static void update_chunk_positions_tbo(void)
 
     for(const auto [entity, chunk, mesh] : view.each()) {
         if(mesh.slot == std::numeric_limits<std::uint32_t>::max()) {
-            continue; // invalid slot
+            continue;
         }
 
         s_chunk_positions[mesh.slot] = utils::to_fvec(chunk.position - client_camera::chunk);

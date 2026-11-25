@@ -175,7 +175,7 @@ static bool parse_definition(lua_State* L, int def_idx, FluidDefinition& def, Mo
         return false;
     }
 
-    lua_pop(L, 1); // Albedo
+    lua_pop(L, 1);
 
     lua_getfield(L, def_idx, "masks");
 
@@ -219,7 +219,7 @@ static bool parse_definition(lua_State* L, int def_idx, FluidDefinition& def, Mo
         }
     }
 
-    lua_pop(L, 1); // Masks
+    lua_pop(L, 1);
 
     return true;
 }

@@ -125,8 +125,6 @@ static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos)
         return;
     }
 
-    // Biomes and columns are per XZ column
-    // and the client keeps one copy of each
     auto cpos_xz = ChunkPosXZ(cpos.x(), cpos.z());
 
     if(session->stream_sent_biomes.insert(cpos_xz).second) {
@@ -175,7 +173,6 @@ static void send_waiting(World* world, const ChunkPos& cpos)
     auto chunk = world->find_chunk(cpos);
 
     if(chunk == nullptr) {
-        // Still loading or generating; retry on the next sweep
         return;
     }
 
@@ -484,7 +481,6 @@ static void process_send_queue(void)
         }
 
         if(peer_window_full(request.peer)) {
-            // Keep it for the next tick without blocking the peers that can still take data
             deferred.push_back(std::move(request));
             continue;
         }

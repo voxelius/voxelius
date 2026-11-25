@@ -41,16 +41,16 @@ constexpr static unsigned MAX_RADIUS = 16;
 constexpr static std::size_t MAX_COLUMNS = (2 * MAX_RADIUS + 1) * (2 * MAX_RADIUS + 1);
 constexpr static std::size_t MAX_VERTICES = MAX_COLUMNS * 6;
 constexpr static float MIN_INTENSITY = 0.02f; // Below this the column cannot show a drop
-constexpr static float V_TILE_SCALE = 0.25f;  // One texture tile spans four blocks along V
-constexpr static float V_PHASE_RANGE = 4.0f;  // The random phase covers four tiles
+constexpr static float V_TILE_SCALE = 0.25f;
+constexpr static float V_PHASE_RANGE = 4.0f;
 constexpr static std::uint32_t PHASE_SALT = UINT32_C(0x9E3779B9);
 constexpr static std::uint32_t SPEED_SALT = UINT32_C(0x85EBCA6B);
 
 struct PrecipVertex final {
-    float position[3]; // Relative to client_camera::chunk, like the chunk meshes
+    float position[3];
     float uv[2];
-    float color[4]; // Tint in RGB, column amount in A
-    float light[2]; // Sky and block light, 0 to 1
+    float color[4];
+    float light[2];
 };
 
 static_assert(sizeof(PrecipVertex) == 11 * sizeof(float));
@@ -60,16 +60,16 @@ static_assert(0x14 == offsetof(PrecipVertex, color));
 static_assert(0x24 == offsetof(PrecipVertex, light));
 
 struct PrecipColumn final {
-    float x; // Column center, in blocks of the camera's chunk
+    float x;
     float z;
-    float bottom; // Same space, in blocks above the chunk origin
+    float bottom;
     float top;
     float v0; // World anchored texture coordinates, so a chunk crossing does not shift them
     float v1;
     float dist2;
     float sky_light;
     float block_light;
-    Eigen::Vector3f tint { Eigen::Vector3f::Ones() }; // Biome tint, multiplies the type color
+    Eigen::Vector3f tint { Eigen::Vector3f::Ones() };
     const PrecipDefinition* definition;
     float effective_intensity;
 };
@@ -103,8 +103,6 @@ static cvar::Number<unsigned> s_radius { 8, 3, MAX_RADIUS };
 static gui::CheckBox s_precip_gui;
 static gui::SliderUnsigned s_radius_gui;
 
-// A surface block stops the column; a bush or a tuft
-// does not, and a body of fluid is a surface of its own
 static bool is_surface(const World* world, const BlockPos& pos)
 {
     assert(world);
@@ -167,8 +165,6 @@ static double scroll_seconds(void)
     return (static_cast<double>(s_tick) + ahead) / static_cast<double>(constant::FIXED_TICKRATE);
 }
 
-// The type resolves its tint once per frame; a column only asks its own
-// biome, which is a slice index, so the lookup stays out of the inner loop
 static Eigen::Vector3f resolve_tint(const World* world, const BlockPos& bpos, const PrecipDefinition* definition)
 {
     auto tint = TINT_ID_NULL;
@@ -183,8 +179,6 @@ static Eigen::Vector3f resolve_tint(const World* world, const BlockPos& bpos, co
 
     auto biome_def = biome_registry::find_definition(world->biome(bpos));
 
-    // A biome that names no color for this tint falls back to the default,
-    // which is what the block meshes do for an unnamed face as well
     if(biome_def && tint < biome_def->tint_colors.size()) {
         return biome_def->tint_colors[tint];
     }
@@ -196,8 +190,6 @@ static Eigen::Vector3f resolve_tint(const World* world, const BlockPos& bpos, co
     return Eigen::Vector3f::Ones();
 }
 
-// The camera sits in the local space of its own chunk, and the render works in
-// that space; a world position is built only for a lookup and for the cell hash
 static void build_columns(const World* world, const Eigen::Vector3f& camera)
 {
     assert(world);
@@ -221,11 +213,8 @@ static void build_columns(const World* world, const Eigen::Vector3f& camera)
     auto& weather_state = world->weather();
     auto seed = static_cast<std::uint32_t>(weather_state.seed());
 
-    // The scroll follows the server tick the way the animated textures do, and
-    // the extrapolation inside a tick keeps it smooth at the frame rate
     auto tick_seconds = scroll_seconds();
 
-    // The scan window only serves a column whose slice has not arrived yet
     auto scan_top = origin_y + base_y + radius;
     auto scan_bottom = origin_y + base_y - 2 * radius;
 
@@ -257,8 +246,6 @@ static void build_columns(const World* world, const Eigen::Vector3f& camera)
                 continue;
             }
 
-            // The field is sampled per column, so the volume shows where the
-            // front actually is instead of switching over as a whole
             auto ctx = precip::context(world, allowed, static_cast<float>(world_x), static_cast<float>(world_z));
 
             if(ctx.definition == nullptr || ctx.effective_intensity < MIN_INTENSITY) {
@@ -371,8 +358,6 @@ static void build_vertices(const Eigen::Vector3f& camera)
     auto radius2 = radius * radius;
 
     for(const auto& column : s_columns) {
-        // The column center and the camera are
-        // both in the blocks of the camera's chunk
         auto dx = column.x - camera.x();
         auto dz = column.z - camera.z();
         auto length = std::sqrt(dx * dx + dz * dz);
@@ -381,8 +366,6 @@ static void build_vertices(const Eigen::Vector3f& camera)
             continue;
         }
 
-        // The column turns its face to the camera around
-        // Y, so it never reads as a wall at a grazing angle
         auto tangent_x = -dz / length;
         auto tangent_z = dx / length;
         auto half = column.definition->quad_width * 0.5f;
@@ -524,8 +507,6 @@ void precip_renderer::init(void)
 
     glBindVertexArray(0);
 
-    // Compile at boot: a broken shader must fail loudly
-    // before the first storm instead of on the first drop
     vx::throw_if_not(s_program.update());
 
     s_columns.reserve(MAX_COLUMNS);

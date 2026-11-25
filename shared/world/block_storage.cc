@@ -8,8 +8,8 @@
 #include "shared/world/block_registry.hh"
 
 constexpr static std::uint32_t TAG_UNIFORM = 0x85787370;
-constexpr static std::uint32_t TAG_PALETTE8 = 0x80657666;  // PALB
-constexpr static std::uint32_t TAG_PALETTE16 = 0x80657687; // PALW
+constexpr static std::uint32_t TAG_PALETTE8 = 0x80657666;
+constexpr static std::uint32_t TAG_PALETTE16 = 0x80657687;
 constexpr static std::size_t PALETTE8_CAPACITY = 256;
 
 static void encode_block_id(block_id_type id, WriteBuffer& buffer)

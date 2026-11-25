@@ -1063,7 +1063,7 @@ static BlockCallback parse_callback(lua_State* L, int table_idx, const char* key
     if(lua_isfunction(L, -1)) {
         BlockCallback callback {};
         callback.state = ctx->lua_state();
-        callback.callback_ref = luaL_ref(L, LUA_REGISTRYINDEX); // Pops the function
+        callback.callback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
         return callback;
     }
 

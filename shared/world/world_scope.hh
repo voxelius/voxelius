@@ -8,7 +8,6 @@ class World;
 // active world instead. Any other caller takes its world as an argument
 class WorldScope final {
 public:
-    // The world the API reads while its callback runs. Only the Lua libraries read it
     static World* active(void);
 
     explicit WorldScope(World* world);

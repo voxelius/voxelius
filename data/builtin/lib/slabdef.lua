@@ -48,7 +48,6 @@ local function holds_source(bx, by, bz)
     return false
   end
 
-  -- A filled cell has no level state and always holds a full source
   if not world.get_state(bx, by, bz, "level") then
     return true
   end

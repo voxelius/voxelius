@@ -43,7 +43,7 @@ namespace block_atlas
 {
 extern const AtlasStrip* stub_white;
 extern const AtlasStrip* stub_black;
-extern const AtlasStrip* stub_check; // checkerboard stub texture
+extern const AtlasStrip* stub_check;
 } // namespace block_atlas
 
 namespace block_atlas

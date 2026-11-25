@@ -414,9 +414,6 @@ static void compose_player(void)
     auto block_pos = utils::to_block(transform.chunk, transform.local.cast<LocalPos::value_type>());
     auto chunk_pos = utils::to_chunk(block_pos);
 
-    // Meshed chunks against loaded ones against what still waits for a mesh:
-    // a hole in the world is either a chunk nobody asked for or a mesh that
-    // never got built, and the three numbers tell them apart
     auto& chunks = globals::world->chunks();
     auto& chunk_registry = globals::world->chunk_registry();
     auto meshed = chunk_registry.view<ChunkMesh>();
@@ -435,7 +432,6 @@ static void compose_player(void)
     push_line(s_lines_left, s_left_used, TEXT_COLOR, false, "Chunk: %d %d %d in %.*s", chunk_pos.x(), chunk_pos.y(), chunk_pos.z(),
         static_cast<int>(world_id.size()), world_id.data());
 
-    // A yaw of zero looks south, which matches the Minecraft debug screen
     auto yaw = utils::degrees(std::atan2(-client_camera::forward.x(), client_camera::forward.z()));
     auto pitch = -utils::degrees(std::asin(std::clamp(client_camera::forward.y(), -1.0f, 1.0f)));
     auto wrapped = std::fmod(yaw + 360.0f, 360.0f);
@@ -726,7 +722,6 @@ static void layout_graph_frame(float top)
         draw_list->AddRectFilled(bar_start, bar_end, frametime_color(sample));
     }
 
-    // One line for 60 fps and one for 30 fps, so a stutter has a reference
     for(auto frametime_ms : std::array { FRAME_GRAPH_GOOD_MS, FRAME_GRAPH_FAIR_MS }) {
         auto fraction = frametime_ms / FRAME_GRAPH_LIMIT_MS;
 

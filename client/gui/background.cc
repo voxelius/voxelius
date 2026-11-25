@@ -130,8 +130,6 @@ void gui::Background::layout(void)
     if(registry.valid(globals::player) && !m_force_scene) {
         layout_dim(window_pos, window_size);
 
-        // The pause menu sits on top of the world
-        // itself, so it needs a darker scrim than the menu does
         auto scrim_color = ImGui::GetColorU32(ImVec4(0.0f, 0.0f, 0.0f, 0.45f));
         auto draw_list = ImGui::GetWindowDrawList();
 
@@ -155,8 +153,6 @@ void gui::Background::layout(void)
         pointer = std::clamp(pointer, -1.0f, 1.0f);
     }
 
-    // Without a loaded wall there is nothing to scroll; the sky and the dim
-    // still draw, so the menu stays readable
     if(s_tile_height > 0) {
         auto tile_reference = static_cast<float>(s_tile_height);
         auto scale = std::max(1.0f, std::ceil(window_size.y / tile_reference));

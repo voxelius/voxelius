@@ -25,18 +25,18 @@ struct PrecipDefinition final {
     Identifier tint;
     float quad_width { 1.0f };
     float band_half_height { 12.0f };
-    float fall_speed { 4.0f };  // Tiles per second along V
-    float draw_chance { 1.0f }; // A value above one draws every column
+    float fall_speed { 4.0f };
+    float draw_chance { 1.0f };
     float opacity { 0.6f };
     Eigen::Vector3f color { Eigen::Vector3f::Ones() };
-    float light_boost { 0.0f }; // How far the light rises toward full, 0 to 1
+    float light_boost { 0.0f };
 };
 
 struct PrecipContext final {
     weather_type_id front { WEATHER_ID_NULL };
     const WeatherTypeDefinition* definition { nullptr };
     float coverage { 0.0f };
-    float effective_intensity { 0.0f }; // Coverage times the front's intensity
+    float effective_intensity { 0.0f };
 };
 
 struct PrecipSelection final {

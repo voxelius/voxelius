@@ -15,7 +15,6 @@ enum class icon_type {
 
 namespace gui::detail
 {
-// Loads the grain texture; called once at startup, the counterpart of stone_shutdown
 void stone_init(void);
 void stone_shutdown(void);
 } // namespace gui::detail
@@ -28,7 +27,6 @@ void draw_stone_label(ImDrawList* draw_list, ImVec2 item_min, ImVec2 item_max, s
 
 namespace gui::detail
 {
-// One design pixel of the pixel fonts, in screen pixels
 float text_shadow_offset(void);
 } // namespace gui::detail
 
@@ -46,8 +44,6 @@ void draw_icon(ImDrawList* draw_list, icon_type icon, ImVec2 item_min, ImVec2 it
 
 namespace gui::detail
 {
-// Opens the list of a combo or a stepper under the control that spawned it,
-// without the frame and the padding of a regular window
 bool stone_popup_begin(const char* id, ImVec2 item_min, ImVec2 item_max);
 void stone_popup_end(bool open);
 } // namespace gui::detail

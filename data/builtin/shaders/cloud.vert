@@ -20,15 +20,10 @@ uniform float u_DepthBias;
 
 out vec4 vs_Color;
 
-// Where the deck's edge starts dissolving. The rest of the
-// radius fades to nothing, so the deck has no hard rim at any range
 const float FADE_START = 0.55;
 
 void main(void)
 {
-    // The deck is meshed in world space; the wind offset is
-    // what moves it between rebuilds, and the camera origin turns
-    // it back into the chunk-local space the view matrix works in
     vec3 world = vert_Position + vec3(u_WindOffset.x, 0.0, u_WindOffset.z);
     vec3 local = world - u_CameraOrigin;
 
@@ -43,14 +38,10 @@ void main(void)
 
     float alpha = vert_Color.a;
 
-    // Only the ring at the deck's edge fades out;
-    // a ring inside it has nothing to dissolve into
     if(u_FadeDistance > 0.0) {
         alpha *= 1.0 - smoothstep(FADE_START, 1.0, horizontal / u_FadeDistance);
     }
 
-    // A ring fades out over its last cells,
-    // into the coarser ring that is already drawn behind it
     if(u_BlendRange.y > 0.0) {
         alpha *= 1.0 - smoothstep(u_BlendRange.x, u_BlendRange.x + u_BlendRange.y, square);
     }
@@ -63,8 +54,6 @@ void main(void)
     float wrap = clamp(dot(normal, u_SunDirection) * 0.5 + 0.5, 0.0, 1.0);
     float sky = 0.65 + 0.35 * max(normal.y, 0.0);
 
-    // A cloud with the sun behind it scatters light forward: the side we look
-    // at is away from the sun, but the whole mass still catches the low light
     vec3 to_camera = normalize(u_CameraPosition - world);
     float backlit = pow(max(dot(-to_camera, u_SunDirection), 0.0), 6.0);
 
@@ -72,8 +61,6 @@ void main(void)
     lit += u_SunColor * (0.80 * pow(sun, 0.9) + 0.20 * wrap * wrap);
     lit += u_SunColor * backlit * 0.85 + vec3(0.05);
 
-    // Distant clouds take the color of the air in front of them, so a deck
-    // seen through a storm reads lighter than the same deck overhead
     float haze = smoothstep(u_HazeRange.x, u_HazeRange.y, horizontal);
     vec3 color = mix(vert_Color.rgb * lit, u_HazeColor, haze);
 

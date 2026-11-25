@@ -137,8 +137,6 @@ bool screenshot::handle_event(const SDL_Event& event)
         return false;
     }
 
-    // A settings control that waits for a
-    // key must get the press, not a screenshot
     if(buttons::is_capturing) {
         return false;
     }

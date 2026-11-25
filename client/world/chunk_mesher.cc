@@ -553,8 +553,6 @@ static void on_block_update(const BlockUpdateEvent& event)
 
 static void on_chunk_light(const ChunkLightUpdateEvent& event)
 {
-    // A vertex samples the light of every cell around it, diagonals
-    // included, so any of the 26 neighbours can need its mesh rebuilt
     mark_dirty(event.pos());
     mark_neighbours_dirty(event.pos());
 }

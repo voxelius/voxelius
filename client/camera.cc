@@ -21,7 +21,6 @@
 #include "client/gui/slider.hh"
 #include "client/settings.hh"
 
-// Below this horizontal speed the loader ignores the direction of travel
 constexpr static float MOVING_SPEED = 1.0f;
 
 cvar::Number<float> client_camera::vertical_fov { 70.0f, 45.0f, 110.0f };

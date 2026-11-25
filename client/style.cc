@@ -46,8 +46,6 @@ void style::apply(void)
 
     auto& pal = palette();
 
-    // Black buttons on a dark background
-    // may be harder to read than the text on them
     style.ChildBorderSize = 0.0f;
     style.FrameBorderSize = 1.0f;
     style.PopupBorderSize = 1.0f;

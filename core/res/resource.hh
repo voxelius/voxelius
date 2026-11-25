@@ -4,7 +4,7 @@
 #include "core/identifier.hh"
 
 constexpr static std::uint32_t RESFLAG_CACHE = 1 << 0;
-constexpr static std::uint32_t RESFLAG_CUSTOM = 0xFFFFFF00; // Mask of custom resource flags and data
+constexpr static std::uint32_t RESFLAG_CUSTOM = 0xFFFFFF00;
 
 namespace res
 {

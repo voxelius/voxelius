@@ -97,7 +97,7 @@ static void on_entity_remove(const packet::Entity_Remove& packet)
     if(globals::player == packet.entity) {
         globals::player = entt::null;
 
-        session::disconnect(packet::Session_Disconnect::ENTITY_ID_DESYNC); // We can't really recover from this
+        session::disconnect(packet::Session_Disconnect::ENTITY_ID_DESYNC);
     }
 }
 
@@ -259,8 +259,6 @@ static cvar::status cmd_weather_status(const cvar::Context&, std::span<const std
     std::string description = "none";
 
     if(auto name = weather_registry::name_of(type)) {
-        // The identifier is a temporary, so its view must
-        // be copied before the optional goes out of scope
         description = name->full_string();
     }
 

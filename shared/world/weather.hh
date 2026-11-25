@@ -9,14 +9,12 @@ using precip_type_id = std::uint32_t;
 constexpr static weather_type_id WEATHER_ID_NULL = 0;
 constexpr static precip_type_id PRECIP_ID_NULL = 0;
 
-// One cloud body of a weather type: the volume starts at height and reaches
-// thickness blocks up. A type carries at most one, and a zero coverage leaves it clear
 struct CloudBody final {
-    float height { 192.0f };  // World Y of the bottom of the volume, in blocks
-    float thickness { 8.0f }; // How far the volume reaches up from the bottom, in blocks; the client divides it into whole voxels
-    float opacity { 0.9f };   // How opaque the deck is where the field covers it
-    float scale { 128.0f };   // Blocks per noise tile; controls the size of the cloud masses
-    float coverage { 0.0f };  // Base density, 0 to 1
+    float height { 192.0f };
+    float thickness { 8.0f };
+    float opacity { 0.9f };
+    float scale { 128.0f };
+    float coverage { 0.0f };
 
     Eigen::Vector3f shadow_color { Eigen::Vector3f(0.55f, 0.57f, 0.62f) };
     Eigen::Vector3f lit_color { Eigen::Vector3f(0.80f, 0.82f, 0.86f) };
@@ -48,18 +46,16 @@ struct WeatherTypeDefinition final {
     PrecipFront precip;
 
     Eigen::Vector3f sky_tint { Eigen::Vector3f(1.0f, 1.0f, 1.0f) };
-    float sky_visibility { 1.0f }; // 1 = the clear sky shows through, 0 = only sky_tint
+    float sky_visibility { 1.0f };
     float light_scale { 1.0f };
 
     float intensity { 1.0f };
 
-    // Point this type owns in the climate square; the nearest target
-    // wins, and weight stretches its cell so it covers more of the world
     Eigen::Vector2f target { Eigen::Vector2f(0.5f, 0.5f) };
     float weight { 1.0f };
 
     float strikes_per_minute { 0.0f };
-    float strike_radius { 96.0f }; // Blocks
+    float strike_radius { 96.0f };
 
     WeatherCallback on_tick;
     WeatherCallback on_strike;

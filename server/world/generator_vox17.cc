@@ -488,8 +488,6 @@ bool Generator<Vox17>::generate_blocks(ServerWorld* world, const ChunkPos& pos, 
 
     auto& terrain_array = state->terrain_noise->get(pos);
 
-    // Pass 1 -- density basic terrain fill
-
     for(std::size_t i = 0; i < constant::CHUNK_VOLUME; ++i) {
         auto lpos = utils::to_local(i);
         auto bpos = utils::to_block(pos, lpos);
@@ -516,8 +514,6 @@ bool Generator<Vox17>::generate_blocks(ServerWorld* world, const ChunkPos& pos, 
             blocks.set(i, palette_fluid_array[index_xz]);
         }
     }
-
-    // Pass 2 -- surface skin
 
     for(std::size_t i = 0; i < constant::CHUNK_VOLUME; ++i) {
         auto lpos = utils::to_local(i);

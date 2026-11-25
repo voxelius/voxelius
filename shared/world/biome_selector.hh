@@ -24,7 +24,6 @@ struct BiomeSelector final {
         biome_id_type biome { BIOME_ID_NULL };
     };
 
-    // Sample holds one value per axis, each in [0, 1]
     biome_id_type select(std::span<const float> sample) const;
     void finalize(void);
 

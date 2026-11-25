@@ -27,15 +27,13 @@ struct CloudWindow final {
 struct CloudBatch final {
     std::size_t index_offset;
     std::size_t index_count;
-    Eigen::Vector2f center; // Window center this batch was meshed around, in the frame of its vertices
-    float fade;             // Outer edge of the deck; zero for a ring inside it, which does not fade out
-    float blend_start;      // Outer edge of the ring, where it fades into the coarser one; a zero width means no fade
+    Eigen::Vector2f center;
+    float fade;
+    float blend_start;
     float blend_width;
     float depth_bias; // Pushes the ring back in depth, so two rings that overlap at the same height do not fight over the pixel
 };
 
-// One build's worth of geometry; a worker
-// fills it and the main thread uploads it
 struct CloudMesh final {
     std::vector<CloudVertex> vertices;
     std::vector<std::uint32_t> indices;

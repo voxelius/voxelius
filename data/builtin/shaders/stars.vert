@@ -27,8 +27,6 @@ void main(void)
     float st = sin(u_StarTilt);
     position.yz = mat2(ct, st, -st, ct) * position.yz;
 
-    // The sun rotates about the same axis, so a star
-    // that sinks below the horizon fades out with it
     float above_horizon = smoothstep(-0.02, 0.10, normalize(position).y);
 
     vs_Alpha = u_StarVisibility * vert_Brightness * above_horizon;

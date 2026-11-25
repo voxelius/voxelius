@@ -107,7 +107,7 @@ bool ModInfo::parse(const config::Map& map, ModInfo& modinfo)
     modinfo.meta_tracker = meta_tracker_value.value_or(std::string {});
 
     auto meta_license_value = map.value<std::string>("meta_license");
-    modinfo.meta_license = meta_license_value.value_or(std::string("ARR")); // Assume all-rights-reserved
+    modinfo.meta_license = meta_license_value.value_or(std::string("ARR"));
 
     auto display_name_value = map.value<std::string>("display_name");
     modinfo.display_name = display_name_value.value_or(modinfo.name);

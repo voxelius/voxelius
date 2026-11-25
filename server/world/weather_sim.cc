@@ -218,7 +218,6 @@ static void strike(ServerWorld* world, const WeatherTypeDefinition* def)
     auto column = utils::heightmap_probe_slow(world, BlockPosXZ(x, z));
     auto y = static_cast<BlockPos::value_type>(origin.y());
 
-    // A strike lands on the surface; without a column to stand on it keeps the player's own height
     if(column.is_valid()) {
         y = column.surface_y + 1;
     }
