@@ -142,6 +142,26 @@ static float column_speed(int x, int z, std::uint32_t seed)
     return 0.75f + 0.5f * utils::weather_cell(x, z, seed ^ SPEED_SALT);
 }
 
+// The render runs faster than the tick, so the scroll runs ahead of the last
+// tick the server sent by the time since it arrived. A stalled server stops
+// the scroll one tick ahead instead of letting it run away
+static double scroll_seconds(void)
+{
+    static std::uint64_t s_tick = std::numeric_limits<std::uint64_t>::max();
+    static std::uint64_t s_tick_time_us = 0;
+
+    if(globals::current_tick != s_tick) {
+        s_tick = globals::current_tick;
+        s_tick_time_us = globals::curtime_us;
+    }
+
+    auto elapsed_us = globals::curtime_us > s_tick_time_us ? globals::curtime_us - s_tick_time_us : 0;
+    auto elapsed_ticks = 1.0e-6 * static_cast<double>(elapsed_us) * static_cast<double>(constant::FIXED_TICKRATE);
+    auto ahead = std::min(elapsed_ticks, 1.0);
+
+    return (static_cast<double>(s_tick) + ahead) / static_cast<double>(constant::FIXED_TICKRATE);
+}
+
 // The camera sits in the local space of its own chunk, and the render works in
 // that space; a world position is built only for a lookup and for the cell hash
 static void build_columns(const World* world, const PrecipContext& ctx, const Eigen::Vector3f& camera)
@@ -165,9 +185,9 @@ static void build_columns(const World* world, const PrecipContext& ctx, const Ei
     auto& weather_state = world->weather();
     auto seed = static_cast<std::uint32_t>(weather_state.seed());
 
-    // The scroll follows the server tick the way the animated textures do,
-    // so a stalled server stalls the rain; the wrap keeps the coordinate exact
-    auto tick_seconds = static_cast<double>(globals::current_tick) / static_cast<double>(constant::FIXED_TICKRATE);
+    // The scroll follows the server tick the way the animated textures do, and
+    // the extrapolation inside a tick keeps it smooth at the frame rate
+    auto tick_seconds = scroll_seconds();
 
     // The scan window only serves a column whose slice has not arrived yet
     auto scan_top = origin_y + base_y + radius;
