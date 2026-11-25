@@ -2,6 +2,8 @@
 
 #include "shared/world/world.hh"
 
+#include "core/msg/log.hh"
+
 #include "shared/entity/component_map.hh"
 #include "shared/globals.hh"
 #include "shared/utils/coord.hh"
@@ -438,11 +440,21 @@ bool World::set_state(const BlockPos& pos, std::string_view state, std::string_v
 
 float World::get_temperature_base(const ChunkPos& cpos, const LocalPos& lpos) const
 {
-    auto biome_def = biome_registry::find_definition(biome(cpos, lpos));
+    auto id = biome(cpos, lpos);
+    auto biome_def = biome_registry::find_definition(id);
 
     if(biome_def) {
         return biome_def->temperature;
     }
+
+    // A missing slice or a mod that dropped the biome: the fallback keeps the
+    // world running, but it hides sync bugs, so say it once
+    static std::once_flag warned;
+
+    std::call_once(warned, [id, cpos, lpos] {
+        auto bpos = utils::to_block(cpos, lpos);
+        msg::log_warning("unknown biome {} at ({}, {}, {}): the temperature falls back to 15 C", id, bpos.x(), bpos.y(), bpos.z());
+    });
 
     return 15.0f;
 }
@@ -488,11 +500,19 @@ float World::get_temperature(const BlockPos& pos, float coverage) const
 
 float World::get_humidity_base(const ChunkPos& cpos, const LocalPos& lpos) const
 {
-    auto biome_def = biome_registry::find_definition(biome(cpos, lpos));
+    auto id = biome(cpos, lpos);
+    auto biome_def = biome_registry::find_definition(id);
 
     if(biome_def) {
         return biome_def->humidity;
     }
+
+    static std::once_flag warned;
+
+    std::call_once(warned, [id, cpos, lpos] {
+        auto bpos = utils::to_block(cpos, lpos);
+        msg::log_warning("unknown biome {} at ({}, {}, {}): the humidity falls back to 0.5", id, bpos.x(), bpos.y(), bpos.z());
+    });
 
     return 0.5f;
 }
