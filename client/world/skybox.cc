@@ -50,7 +50,6 @@ Eigen::Vector3f skybox::zenith_color;
 Eigen::Vector3f skybox::sun_direction;
 Eigen::Vector2f skybox::sun_azimuth;
 Eigen::Vector3f skybox::sun_tint;
-Eigen::Vector3f skybox::cloud_tint { Eigen::Vector3f::Ones() };
 float skybox::sun_strength;
 
 Eigen::Vector3f skybox::moon_direction;
@@ -315,7 +314,6 @@ void skybox::update(void)
     moon_strength = utils::smoothstep(-0.05f, 0.05f, -height) * open_sky * 0.85f * moon_factor;
     moon_phase = static_cast<std::uint32_t>(world_clock::day(globals::world->daylight_tick, day_length) % MOON_PHASE_COUNT);
 
-    cloud_tint = Eigen::Vector3f::Ones() + (tint - Eigen::Vector3f::Ones()) * (twilight * visibility * 0.85f);
     scatter = twilight * visibility;
     star_visibility = (1.0f - light) * open_sky * star_factor;
 }

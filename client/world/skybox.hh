@@ -11,7 +11,6 @@ extern Eigen::Vector3f zenith_color;
 extern Eigen::Vector3f sun_direction;
 extern Eigen::Vector2f sun_azimuth; // Normalized XZ of the sun, zero at the zenith
 extern Eigen::Vector3f sun_tint;
-extern Eigen::Vector3f cloud_tint;
 extern float sun_strength;
 
 extern Eigen::Vector3f moon_direction;
