@@ -33,20 +33,31 @@ PrecipContext precip::context(const World* world, std::span<const weather_type_i
     assert(world);
 
     auto& state = world->weather();
-    auto front = state.type_at(allowed, x, z, world->weather_tick);
-    auto definition = weather_registry::find_definition(front);
 
-    if(definition == nullptr || definition->precip.types.empty()) {
+    PrecipContext result {};
+
+    // The field is a blend, not a switch: a front that carries precipitation
+    // already owns part of a point before it owns the point, so the amount
+    // follows that share and the rain thickens as the front arrives
+    for(const auto& def : weather_registry::all_definitions()) {
+        if(def.precip.types.empty()) {
+            continue;
+        }
+
+        auto coverage = state.coverage_of(allowed, def.id, x, z, world->weather_tick);
+
+        if(coverage > result.coverage) {
+            result.front = def.id;
+            result.definition = &def;
+            result.coverage = coverage;
+        }
+    }
+
+    if(result.definition == nullptr) {
         return {};
     }
 
-    auto coverage = state.coverage_of(allowed, front, x, z, world->weather_tick);
-
-    PrecipContext result {};
-    result.front = front;
-    result.definition = definition;
-    result.coverage = coverage;
-    result.effective_intensity = coverage * std::clamp(definition->precip.intensity, 0.0f, 1.0f);
+    result.effective_intensity = result.coverage * std::clamp(result.definition->precip.intensity, 0.0f, 1.0f);
     return result;
 }
 

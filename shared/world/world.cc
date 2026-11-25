@@ -10,27 +10,19 @@
 #include "shared/world/biome_map.hh"
 #include "shared/world/biome_registry.hh"
 #include "shared/world/block_registry.hh"
-#include "shared/world/weather_registry.hh"
+#include "shared/world/precip.hh"
 
 constexpr static float WEATHER_COOLING = 2.0f;     // Celsius lost under full precip
 constexpr static float WEATHER_SATURATION = 0.98f; // Humidity under full precip
 
 // A precipitating front cools the air and raises the humidity under it.
-// The result scales with the local coverage, so a fringe of the front
-// moves the climate less than its center does
+// The result follows the share of that front, so its fringe moves the
+// climate less than its center does and the change fades in
 static float weather_coverage_at(const World* world, float x, float z)
 {
     auto& definition = world->definition();
-    auto& state = world->weather();
 
-    auto type = state.type_at(definition.weather, x, z, world->weather_tick);
-    auto def = weather_registry::find_definition(type);
-
-    if(def == nullptr || def->precip.types.empty()) {
-        return 0.0f;
-    }
-
-    return state.coverage(definition.weather, x, z, world->weather_tick);
+    return precip::context(world, definition.weather, x, z).coverage;
 }
 
 // A roof stops the weather: the air under it keeps the base climate

@@ -40,8 +40,9 @@
 constexpr static unsigned MAX_RADIUS = 16;
 constexpr static std::size_t MAX_COLUMNS = (2 * MAX_RADIUS + 1) * (2 * MAX_RADIUS + 1);
 constexpr static std::size_t MAX_VERTICES = MAX_COLUMNS * 6;
-constexpr static float V_TILE_SCALE = 0.25f; // One texture tile spans four blocks along V
-constexpr static float V_PHASE_RANGE = 4.0f; // The random phase covers four tiles
+constexpr static float MIN_INTENSITY = 0.02f; // Below this the column cannot show a drop
+constexpr static float V_TILE_SCALE = 0.25f;  // One texture tile spans four blocks along V
+constexpr static float V_PHASE_RANGE = 4.0f;  // The random phase covers four tiles
 constexpr static std::uint32_t PHASE_SALT = UINT32_C(0x9E3779B9);
 constexpr static std::uint32_t SPEED_SALT = UINT32_C(0x85EBCA6B);
 
@@ -197,11 +198,13 @@ static Eigen::Vector3f resolve_tint(const World* world, const BlockPos& bpos, co
 
 // The camera sits in the local space of its own chunk, and the render works in
 // that space; a world position is built only for a lookup and for the cell hash
-static void build_columns(const World* world, const PrecipContext& ctx, const Eigen::Vector3f& camera)
+static void build_columns(const World* world, const Eigen::Vector3f& camera)
 {
     assert(world);
 
     s_columns.clear();
+
+    auto& allowed = world->definition().weather;
 
     auto radius = static_cast<int>(s_radius.value());
 
@@ -251,6 +254,14 @@ static void build_columns(const World* world, const PrecipContext& ctx, const Ei
             auto bpos = BlockPos(world_x, world_surface, world_z);
 
             if(world->find_chunk(utils::to_chunk(bpos)) == nullptr) {
+                continue;
+            }
+
+            // The field is sampled per column, so the volume shows where the
+            // front actually is instead of switching over as a whole
+            auto ctx = precip::context(world, allowed, static_cast<float>(world_x), static_cast<float>(world_z));
+
+            if(ctx.definition == nullptr || ctx.effective_intensity < MIN_INTENSITY) {
                 continue;
             }
 
@@ -558,15 +569,16 @@ void precip_renderer::render(void)
         return;
     }
 
-    // The weather field is sampled by world position; the geometry is built in the camera's chunk
+    // The field is sampled per column, so the point under the camera only gates
+    // the pass: a fringe this weak cannot put a visible drop into the volume
     auto world_position = utils::to_fvec(client_camera::chunk) + client_camera::local;
-    auto ctx = precip::context(world, definition.weather, world_position.x(), world_position.z());
+    auto camera_ctx = precip::context(world, definition.weather, world_position.x(), world_position.z());
 
-    if(ctx.definition == nullptr || ctx.effective_intensity <= 0.0f) {
+    if(camera_ctx.definition == nullptr || camera_ctx.effective_intensity < MIN_INTENSITY) {
         return;
     }
 
-    build_columns(world, ctx, client_camera::local);
+    build_columns(world, client_camera::local);
 
     if(s_columns.empty()) {
         return;
