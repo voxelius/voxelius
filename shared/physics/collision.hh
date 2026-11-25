@@ -40,6 +40,8 @@ struct Fluid final {
     block_id_type block { BLOCK_ID_NULL };
     fluid_id_type fluid { FLUID_ID_NULL };
     float volume_fraction { 0.0f };
+    float submersion { 0.0f };
+    Eigen::Vector3f flow { Eigen::Vector3f::Zero() };
 };
 } // namespace physics
 

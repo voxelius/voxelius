@@ -109,11 +109,18 @@ static bool parse_physics(lua_State* L, int idx, FluidPhysics& out)
         return false;
     }
 
+    auto flow_scale = utils::require_number(L, idx, "flow_scale");
+
+    if(!flow_scale.has_value()) {
+        return false;
+    }
+
     out.drag = static_cast<float>(drag.value());
     out.gravity_scale = static_cast<float>(gravity_scale.value());
     out.input_scale = static_cast<float>(input_scale.value());
     out.swim_speed = static_cast<float>(swim_speed.value());
     out.climb_speed = static_cast<float>(climb_speed.value());
+    out.flow_scale = static_cast<float>(flow_scale.value());
 
     return true;
 }

@@ -34,6 +34,7 @@ struct BlockOverridePatch final {
     std::optional<Identifier> fluid_name;
     std::optional<unsigned> fluid_level;
     std::optional<std::uint32_t> fluid_faces;
+    std::optional<bool> fluid_falling;
 
     std::optional<unsigned> health;
 

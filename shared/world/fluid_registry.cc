@@ -72,6 +72,7 @@ static void update_checksum(void)
         hash_value(hash, def.physics.input_scale);
         hash_value(hash, def.physics.swim_speed);
         hash_value(hash, def.physics.climb_speed);
+        hash_value(hash, def.physics.flow_scale);
         hash_value(hash, static_cast<std::uint8_t>(def.opaque));
         hash_value(hash, def.fog_density);
         hash_value(hash, def.fog_color);

@@ -20,6 +20,7 @@ struct FluidPhysics final {
     float input_scale { 0.0f };
     float swim_speed { 0.0f };
     float climb_speed { 0.0f };
+    float flow_scale { 0.0f };
 };
 
 struct FluidDefinition final {

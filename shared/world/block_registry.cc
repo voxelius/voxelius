@@ -195,6 +195,7 @@ static void update_checksum(void)
         hash_value(hash, static_cast<std::uint32_t>(def.fluid));
         hash_value(hash, static_cast<std::uint32_t>(def.fluid_level));
         hash_value(hash, def.fluid_faces);
+        hash_value(hash, static_cast<std::uint8_t>(def.fluid_falling));
         hash_value(hash, static_cast<std::uint8_t>(def.fluid_name.has_value()));
 
         if(def.fluid_name) {
@@ -292,6 +293,10 @@ BlockDefinition BlockOverridePatch::apply(BlockDefinition base, const BlockOverr
 
     if(patch.fluid_faces.has_value()) {
         base.fluid_faces = patch.fluid_faces.value();
+    }
+
+    if(patch.fluid_falling.has_value()) {
+        base.fluid_falling = patch.fluid_falling.value();
     }
 
     if(patch.health) {

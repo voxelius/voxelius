@@ -100,6 +100,7 @@ struct BlockDefinition final {
     unsigned fluid_level;
     std::uint32_t fluid_faces;
     std::optional<Identifier> fluid_name;
+    bool fluid_falling { false };
 
     unsigned health;
     block_tool_bit tools; // Union of the tool bits in drops

@@ -12,6 +12,7 @@
 #include "shared/world/block_registry.hh"
 #include "shared/world/block_storage.hh"
 #include "shared/world/chunk.hh"
+#include "shared/world/fluid_flow.hh"
 #include "shared/world/fluid_registry.hh"
 #include "shared/world/light_material.hh"
 #include "shared/world/tint_registry.hh"
@@ -381,17 +382,6 @@ static float fluid_floor_y(fluid_gravity gravity)
     }
 
     return 1.0f;
-}
-
-static std::optional<float> fluid_neighbour_level(const BlockCache& cache, const LocalPos& lpos, fluid_id_type fluid_id)
-{
-    auto def = block_registry::find_definition(cache.get(lpos));
-
-    if(def == nullptr || def->fluid != fluid_id || def->fluid_level == 0) {
-        return std::nullopt;
-    }
-
-    return 0.0625f * static_cast<float>(def->fluid_level);
 }
 
 static std::array<Eigen::Vector2f, 4> flowing_top_uvs(float flow_x, float flow_z)
@@ -953,30 +943,20 @@ void MeshingTask::mesh_fluid(const LocalPos& lpos, const BlockDefinition* def)
     auto& bucket = fluid->opaque ? m_opaque : m_fluid;
     auto tint = fluid->tint;
 
-    auto use_still = def->fluid_level >= fluid->full_level;
-    auto flow_x = 0.0f;
-    auto flow_z = 0.0f;
+    auto use_still = def->fluid_level >= fluid->full_level && !def->fluid_falling;
+    auto origin = utils::to_block(m_cpos);
 
-    if(!use_still) {
-        const std::array dirs = {
-            LocalPos(-1, 0, 0),
-            LocalPos(+1, 0, 0),
-            LocalPos(0, 0, -1),
-            LocalPos(0, 0, +1),
-        };
+    auto lookup = [this, origin](const BlockPos& bpos) {
+        auto offset = bpos - origin;
+        auto local = LocalPos(offset.cast<LocalPos::value_type>());
 
-        for(const auto& dir : dirs) {
-            auto neighbour_h = fluid_neighbour_level(m_cache, lpos + dir, def->fluid);
+        return block_registry::find_definition(m_cache.get(local));
+    };
 
-            if(!neighbour_h.has_value()) {
-                continue;
-            }
-
-            auto delta = height - neighbour_h.value();
-            flow_x += delta * static_cast<float>(dir.x());
-            flow_z += delta * static_cast<float>(dir.z());
-        }
-    }
+    auto flow_position = utils::to_block(m_cpos, lpos);
+    auto flow = fluid_flow::sample(def, flow_position, lookup, fluid->gravity);
+    auto flow_x = flow.x();
+    auto flow_z = flow.z();
 
     auto floor_y = fluid_floor_y(fluid->gravity);
     auto y0 = fluid_surface_y(corners[0], fluid->gravity);

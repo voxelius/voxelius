@@ -33,6 +33,7 @@ fluids.add("water", {
         input_scale = 0.02,
         swim_speed = 0.04,
         climb_speed = 0.3,
+        flow_scale = 0.014,
     },
 
     fog_density = 10.0,

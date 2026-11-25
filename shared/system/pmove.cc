@@ -188,7 +188,7 @@ static void update_walk(entt::registry& registry, entt::entity entity, World* wo
 
     auto fluid = physics::sample_fluid(world, transform.chunk, transform.local, collision.local_box);
     auto fluid_def = fluid_registry::find_definition(fluid.fluid);
-    bool in_fluid = fluid_def;
+    bool in_fluid = fluid_def && fluid.submersion > 0.0f;
 
     std::uint32_t cooldown_ticks = 0;
 
@@ -249,6 +249,10 @@ static void update_walk(entt::registry& registry, entt::entity entity, World* wo
         }
 
         movement += horizontal * (factor / std::max(1.0f, length));
+    }
+
+    if(in_fluid) {
+        movement += fluid.flow * (fluid.submersion * fluid_def->physics.flow_scale);
     }
 
     movement += collect_push(registry, entity, transform, collision);

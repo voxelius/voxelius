@@ -6,6 +6,8 @@
 #include "shared/world/block_collisions.hh"
 #include "shared/world/block_registry.hh"
 #include "shared/world/chunk.hh"
+#include "shared/world/fluid_flow.hh"
+#include "shared/world/fluid_registry.hh"
 #include "shared/world/world.hh"
 
 constexpr static float COLLISION_ADJUSTMENT = 0.001f;
@@ -435,6 +437,7 @@ physics::Fluid physics::sample_fluid(World* world, const ChunkPos& chunk, const 
 {
     auto body = bounds(position, local_box);
     auto body_volume = local_box.sizes().prod();
+    auto origin = utils::to_block(chunk);
 
     Fluid result;
     auto overlap_volume = 0.0f;
@@ -462,6 +465,24 @@ physics::Fluid physics::sample_fluid(World* world, const ChunkPos& chunk, const 
 
         overlap_volume += (overlap_max - overlap_min).prod();
 
+        auto fluid_def = fluid_registry::find_definition(definition->fluid);
+
+        if(fluid_def == nullptr) {
+            return true;
+        }
+
+        BlockPos bpos = origin + relative.cast<BlockPos::value_type>();
+
+        auto lookup = [world](const BlockPos& pos) {
+            return block_registry::find_definition(world->get_block(pos));
+        };
+
+        result.flow += fluid_flow::sample(definition, bpos, lookup, fluid_def->gravity);
+
+        auto cell_top = relative.y() + 0.0625f * static_cast<float>(definition->fluid_level);
+        auto covered = std::min(cell_top, body.max().y()) - body.min().y();
+        result.submersion = std::max(result.submersion, covered);
+
         if(result.block == BLOCK_ID_NULL) {
             result.block = id;
             result.fluid = definition->fluid;
@@ -472,6 +493,12 @@ physics::Fluid physics::sample_fluid(World* world, const ChunkPos& chunk, const 
 
     if(body_volume > 0.0f) {
         result.volume_fraction = std::min(overlap_volume / body_volume, 1.0f);
+    }
+
+    auto flow_length = result.flow.norm();
+
+    if(flow_length > 1.0e-6f) {
+        result.flow /= flow_length;
     }
 
     return result;

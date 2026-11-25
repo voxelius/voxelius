@@ -556,6 +556,7 @@ function flowdef.variants(config_src)
       when = { source = "false", level = tostring(config.max_level) },
       overrides = {
         fluid_level = config.full_height,
+        fluid_falling = true,
       },
     }
   }
