@@ -12,6 +12,7 @@
 #include "core/res/resource.hh"
 
 #include "shared/constant.hh"
+#include "shared/globals.hh"
 #include "shared/utils/coord.hh"
 #include "shared/utils/weather.hh"
 #include "shared/world/block_registry.hh"
@@ -39,8 +40,8 @@ constexpr static std::size_t MAX_COLUMNS = (2 * MAX_RADIUS + 1) * (2 * MAX_RADIU
 constexpr static std::size_t MAX_VERTICES = MAX_COLUMNS * 6;
 constexpr static float V_TILE_SCALE = 0.25f; // One texture tile spans four blocks along V
 constexpr static float V_PHASE_RANGE = 4.0f; // The random phase covers four tiles
-constexpr static float TIME_WRAP = 3600.0f;  // The scroll offset restarts once an hour, in seconds
 constexpr static std::uint32_t PHASE_SALT = UINT32_C(0x9E3779B9);
+constexpr static std::uint32_t SPEED_SALT = UINT32_C(0x85EBCA6B);
 
 struct PrecipVertex final {
     float position[3]; // Relative to client_camera::chunk, like the chunk meshes
@@ -78,7 +79,6 @@ struct DrawRange final {
 static ShaderProgram s_program;
 static std::size_t su_ViewProjection;
 static std::size_t su_CameraLocal;
-static std::size_t su_Scroll;
 static std::size_t su_Texture;
 static std::size_t su_FogColor;
 static std::size_t su_ViewDistance;
@@ -97,8 +97,6 @@ static cvar::Boolean s_precip { true };
 static cvar::Number<unsigned> s_radius { 8, 3, MAX_RADIUS };
 static gui::CheckBox s_precip_gui;
 static gui::SliderUnsigned s_radius_gui;
-
-static float s_time;
 
 // A surface block stops the column; a bush or a tuft
 // does not, and a body of fluid is a surface of its own
@@ -137,6 +135,13 @@ static float column_phase(int x, int z, std::uint32_t seed)
     return utils::weather_cell(x, z, seed ^ PHASE_SALT) * V_PHASE_RANGE;
 }
 
+// The same cell hash gives every column a slightly different fall
+// rate, so a sheet of rain does not move as one piece
+static float column_speed(int x, int z, std::uint32_t seed)
+{
+    return 0.75f + 0.5f * utils::weather_cell(x, z, seed ^ SPEED_SALT);
+}
+
 // The camera sits in the local space of its own chunk, and the render works in
 // that space; a world position is built only for a lookup and for the cell hash
 static void build_columns(const World* world, const PrecipContext& ctx, const Eigen::Vector3f& camera)
@@ -159,6 +164,10 @@ static void build_columns(const World* world, const PrecipContext& ctx, const Ei
 
     auto& weather_state = world->weather();
     auto seed = static_cast<std::uint32_t>(weather_state.seed());
+
+    // The scroll follows the server tick the way the animated textures do,
+    // so a stalled server stalls the rain; the wrap keeps the coordinate exact
+    auto tick_seconds = static_cast<double>(globals::current_tick) / static_cast<double>(constant::FIXED_TICKRATE);
 
     // The scan window only serves a column whose slice has not arrived yet
     auto scan_top = origin_y + base_y + radius;
@@ -258,13 +267,16 @@ static void build_columns(const World* world, const PrecipContext& ctx, const Ei
             sky_light += light_boost * (1.0f - sky_light);
             block_light += light_boost * (1.0f - block_light);
 
+            auto speed = static_cast<double>(definition->fall_speed) * static_cast<double>(column_speed(world_x, world_z, seed));
+            auto scroll = static_cast<float>(std::fmod(tick_seconds * speed, 1.0));
+
             PrecipColumn column {};
             column.x = local_x;
             column.z = local_z;
             column.bottom = local_bottom;
             column.top = local_top;
-            column.v0 = world_bottom * V_TILE_SCALE + phase;
-            column.v1 = world_top * V_TILE_SCALE + phase;
+            column.v0 = world_bottom * V_TILE_SCALE + phase + scroll;
+            column.v1 = world_top * V_TILE_SCALE + phase + scroll;
             column.dist2 = delta_x * delta_x + delta_z * delta_z;
             column.sky_light = sky_light;
             column.block_light = block_light;
@@ -289,6 +301,9 @@ static void build_vertices(const Eigen::Vector3f& camera)
             return a.definition->id < b.definition->id;
         }
     });
+
+    auto radius = static_cast<float>(s_radius.value());
+    auto radius2 = radius * radius;
 
     for(const auto& column : s_columns) {
         // The column center and the camera are
@@ -315,7 +330,11 @@ static void build_vertices(const Eigen::Vector3f& camera)
         auto red = column.definition->color.x();
         auto green = column.definition->color.y();
         auto blue = column.definition->color.z();
-        auto alpha = std::clamp(column.effective_intensity * column.definition->opacity, 0.0f, 1.0f);
+
+        // The column fades towards the edge of the volume, so the
+        // nearest drops stay dense and the volume has no hard rim
+        auto edge = std::min(column.dist2 / radius2, 1.0f);
+        auto alpha = std::clamp(column.effective_intensity * column.definition->opacity, 0.0f, 1.0f) * (1.0f - 0.5f * edge);
 
         auto first = static_cast<GLint>(s_vertices.size());
 
@@ -381,7 +400,6 @@ void precip_renderer::init(void)
 
     su_ViewProjection = s_program.add_uniform("u_ViewProjection");
     su_CameraLocal = s_program.add_uniform("u_CameraLocal");
-    su_Scroll = s_program.add_uniform("u_Scroll");
     su_Texture = s_program.add_uniform("u_Texture");
     su_FogColor = s_program.add_uniform("u_FogColor");
     su_ViewDistance = s_program.add_uniform("u_ViewDistance");
@@ -454,13 +472,6 @@ void precip_renderer::shutdown(void)
 void precip_renderer::render(void)
 {
     ZoneScoped;
-
-    s_time += globals::window_frametime;
-
-    // A float texture coordinate loses precision after hours of play, so the offset wraps
-    if(s_time > TIME_WRAP) {
-        s_time = std::fmod(s_time, TIME_WRAP);
-    }
 
     if(!s_precip.value() || globals::world == nullptr) {
         return;
@@ -539,10 +550,7 @@ void precip_renderer::render(void)
             continue;
         }
 
-        auto& range_definition = *range.definition;
-
         glBindTexture(GL_TEXTURE_2D, it->second->handle);
-        glUniform2f(s_program.uniforms[su_Scroll].location, 0.0f, s_time * range_definition.fall_speed);
         glDrawArrays(GL_TRIANGLES, range.first, range.count);
 
         globals::num_draw_calls += 1;

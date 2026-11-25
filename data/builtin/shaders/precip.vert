@@ -12,13 +12,12 @@ out vec3 vs_ViewPos;
 
 uniform mat4 u_ViewProjection;
 uniform vec3 u_CameraLocal;
-uniform vec2 u_Scroll;
 
 void main(void)
 {
     gl_Position = u_ViewProjection * vec4(vert_Position, 1.0);
     vs_ViewPos = vert_Position - u_CameraLocal;
-    vs_UV = vert_UV + u_Scroll;
+    vs_UV = vert_UV;
     vs_Color = vert_Color;
     vs_Light = vert_Light;
 }
