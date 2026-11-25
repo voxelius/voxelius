@@ -538,7 +538,18 @@ Session* sessions::create(ENetPeer* peer, std::string_view username)
             session.player = entt::null;
             session.world = nullptr;
             session.peer = peer;
+            session.view_box = ChunkAlignedBox(ChunkPos::Ones(), ChunkPos::Zero());
             session.known_entities.clear();
+            session.stream_view_box = ChunkAlignedBox(ChunkPos::Ones(), ChunkPos::Zero());
+            session.stream_player_chunk = ChunkPos::Zero();
+            session.stream_sent_chunks.clear();
+            session.stream_wanted_chunks.clear();
+            session.stream_cursor_chunks = 0;
+            session.stream_budget_chunks = 0;
+            session.stream_rebuild = true;
+            session.stream_sent_biomes.clear();
+            session.stream_sent_columns.clear();
+            session.interest_box = ChunkAlignedBoxXZ(ChunkPosXZ::Ones(), ChunkPosXZ::Zero());
             session.cvar_ratelimit_tick = globals::current_tick;
             session.cvar_ratelimit_tokens = 1.0f; // Allow one command right after connecting
 
