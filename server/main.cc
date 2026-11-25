@@ -87,7 +87,7 @@ static void zoned_fixed_update_late(void)
 
 static void wrapped_main(int argc, char** argv)
 {
-    core::setup(argc, argv);
+    core::setup_server(argc, argv);
 
     tracy::SetThreadName("Main");
     TracySetProgramName("Voxelius Server");

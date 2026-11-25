@@ -10,7 +10,8 @@ const std::filesystem::path& modspath(void);
 
 namespace core
 {
-void setup(int argc, char** argv);
+void setup_client(int argc, char** argv);
+void setup_server(int argc, char** argv);
 void teardown(void);
 } // namespace core
 
