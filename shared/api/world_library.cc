@@ -432,7 +432,7 @@ void api_shared::open_world(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     auto L = lua.get();
 
-    lua_newtable(L); // World
+    lua_newtable(L);
 
     lua_pushcfunction(L, api_get_block);
     lua_setfield(L, -2, "get_block");

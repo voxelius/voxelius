@@ -9,14 +9,14 @@ class World;
 namespace physics
 {
 enum block_filter {
-    BLOCK_FILTER_NONE = 0, ///< Raycast will ignore all blocks
-    BLOCK_FILTER_SOLID,    ///< Raycast will only hit solid blocks: must have a collision model and have a valid touch response
-    BLOCK_FILTER_ALL,      ///< Raycast will hit all blocks with a collision model regardless of touch response
+    BLOCK_FILTER_NONE = 0,
+    BLOCK_FILTER_SOLID, // A block is solid only with a collision model and a valid touch response
+    BLOCK_FILTER_ALL,   // A block without a collision model is still ignored
 };
 
 enum entity_filter {
-    ENTITY_FILTER_NONE = 0, ///< Raycast will ignore all entities
-    ENTITY_FILTER_ALL,      ///< Raycast will hit all entities
+    ENTITY_FILTER_NONE = 0,
+    ENTITY_FILTER_ALL,
 };
 } // namespace physics
 

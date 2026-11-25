@@ -9,7 +9,7 @@
 #include "shared/entity/component_map.hh"
 #include "shared/utils/lua.hh"
 
-static std::string_view value_to_string(unsigned value)
+static std::string_view value_to_string(std::uint8_t value)
 {
     switch(value) {
         case MoveMode::FLY:
@@ -22,14 +22,14 @@ static std::string_view value_to_string(unsigned value)
     return {};
 }
 
-static std::optional<unsigned> value_from_string(std::string_view str)
+static std::optional<std::uint8_t> value_from_string(std::string_view str)
 {
     if(str == "FLY") {
-        return MoveMode::FLY;
+        return static_cast<std::uint8_t>(MoveMode::FLY);
     }
 
     if(str == "WALK") {
-        return MoveMode::WALK;
+        return static_cast<std::uint8_t>(MoveMode::WALK);
     }
 
     return std::nullopt;
@@ -56,7 +56,7 @@ std::any Component<MoveMode>::prepare(lua_State* L, int config_idx)
 template<>
 void Component<MoveMode>::hash_config(std::uint64_t& hash, const std::any& config)
 {
-    auto value = std::any_cast<unsigned>(&config);
+    auto value = std::any_cast<std::uint8_t>(&config);
 
     if(value) {
         hash = utils::crc64(value, sizeof(*value), hash);
@@ -72,10 +72,10 @@ void Component<MoveMode>::connect(entt::registry& registry)
 template<>
 void Component<MoveMode>::attach(entt::registry& registry, entt::entity entity, const std::any& config)
 {
-    assert(std::any_cast<const unsigned>(&config));
+    assert(std::any_cast<const std::uint8_t>(&config));
 
     MoveMode move_mode {};
-    move_mode.value = std::any_cast<const unsigned>(config);
+    move_mode.value = std::any_cast<const std::uint8_t>(config);
 
     registry.emplace_or_replace<MoveMode>(entity, std::move(move_mode));
 }
@@ -118,7 +118,7 @@ template<>
 void Component<MoveMode>::decode_net(entt::registry& registry, entt::entity entity, ReadBuffer& buffer)
 {
     registry.patch<MoveMode>(entity, [&](MoveMode& move_mode) {
-        move_mode.value = static_cast<unsigned>(buffer.read<std::uint8_t>());
+        move_mode.value = buffer.read<std::uint8_t>();
     });
 }
 

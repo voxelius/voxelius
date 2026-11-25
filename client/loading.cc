@@ -130,7 +130,7 @@ void loading::shutdown(void)
 
 void loading::update(void)
 {
-    if(!loading::stage) {
+    if(stage == LOADING_IDLE) {
         s_cancel_requested = false;
 
         return;
@@ -144,7 +144,7 @@ void loading::update(void)
         return;
     }
 
-    if(loading::stage != LOADING_CHUNKS) {
+    if(stage != LOADING_CHUNKS) {
         return;
     }
 
@@ -157,7 +157,7 @@ void loading::update(void)
     auto& definition = globals::world->definition();
     auto min_chunk_y = static_cast<ChunkPos::value_type>(definition.min_y >> constant::CHUNK_SIZE_LOG2);
     auto max_chunk_y = static_cast<ChunkPos::value_type>(definition.max_y >> constant::CHUNK_SIZE_LOG2);
-    auto box = utils::view_box(camera::chunk, VIEW_RADIUS);
+    auto box = utils::view_box(client_camera::chunk, VIEW_RADIUS);
 
     box.min().y() = std::max(box.min().y(), min_chunk_y);
     box.max().y() = std::min(box.max().y(), max_chunk_y);
@@ -165,9 +165,9 @@ void loading::update(void)
     std::size_t total = 0;
     std::size_t ready = 0;
 
-    for(auto y = box.min().y(); y <= box.max().y(); y += 1) {
-        for(auto z = box.min().z(); z <= box.max().z(); z += 1) {
-            for(auto x = box.min().x(); x <= box.max().x(); x += 1) {
+    for(auto y = box.min().y(); y <= box.max().y(); ++y) {
+        for(auto z = box.min().z(); z <= box.max().z(); ++z) {
+            for(auto x = box.min().x(); x <= box.max().x(); ++x) {
                 total += 1;
 
                 if(chunk_ready(ChunkPos(x, y, z))) {
@@ -194,7 +194,7 @@ void loading::show_stage(loading_stage new_stage)
         return;
     }
 
-    loading::stage = new_stage;
+    stage = new_stage;
     s_spawn_known = false;
 
     s_panel.set_title(CONNECT_TITLE_KEY);
@@ -212,7 +212,7 @@ void loading::attach_player(void)
         return;
     }
 
-    loading::stage = LOADING_CHUNKS;
+    stage = LOADING_CHUNKS;
     s_spawn_known = false;
 
     s_panel.set_title(TITLE_KEY);
@@ -226,7 +226,7 @@ void loading::attach_player(void)
 
 void loading::on_local_patch(void)
 {
-    if(loading::stage) {
+    if(stage) {
         s_spawn_known = true;
     }
 }

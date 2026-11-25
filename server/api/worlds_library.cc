@@ -752,7 +752,7 @@ void api_server::open_worlds(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     auto L = lua.get();
 
-    lua_newtable(L); // Worlds
+    lua_newtable(L);
 
     lua_pushinteger(L, BIOME_SELECTION_NEAREST);
     lua_setfield(L, -2, "SELECTION_NEAREST");

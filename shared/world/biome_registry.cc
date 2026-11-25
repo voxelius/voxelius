@@ -137,9 +137,9 @@ void biome_registry::commit(ModContext& ctx)
     for(const auto& entry : names) {
         auto& name = entry.first;
         auto global_id = entry.second + biome_offset;
-        auto [it, inserted] = s_names.try_emplace(name, global_id);
+        auto result = s_names.try_emplace(name, global_id);
 
-        if(!inserted) {
+        if(!result.second) {
             msg::log_warning("duplicate biome name: {}", name.full_string());
             continue;
         }

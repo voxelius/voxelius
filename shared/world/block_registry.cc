@@ -9,18 +9,12 @@
 #include "shared/mod_context.hh"
 #include "shared/world/fluid_registry.hh"
 
-static std::vector<BlockDefinition> s_definitions;
-static std::vector<BlockFamily> s_families;
-static vx::hash_map<Identifier, block_id_type> s_names;
-static vx::hash_map<block_id_type, Identifier> s_reverse_names;
-static std::uint64_t s_checksum;
-
 struct StateFluidKey final {
+    bool operator==(const StateFluidKey& other) const = default;
+
     block_id_type id;
     blockstate_key_type state;
     blockstate_val_type value;
-
-    bool operator==(const StateFluidKey& other) const = default;
 };
 
 struct StateFluidKeyHash final {
@@ -32,6 +26,12 @@ struct StateFluidKeyHash final {
         return h;
     }
 };
+
+static std::vector<BlockDefinition> s_definitions;
+static std::vector<BlockFamily> s_families;
+static vx::hash_map<Identifier, block_id_type> s_names;
+static vx::hash_map<block_id_type, Identifier> s_reverse_names;
+static std::uint64_t s_checksum;
 
 static std::unordered_map<StateFluidKey, fluid_id_type, StateFluidKeyHash> s_state_fluid_cache;
 
@@ -70,7 +70,7 @@ static void resolve_fluid_binding(BlockDefinition& def)
 
         def.fluid_name.reset();
 
-        // A variant that only names a fluid renders that fluid at its full height.
+        // A variant that only names a fluid renders that fluid at its full height
         if(def.fluid_level == 0) {
             if(auto fluid_def = fluid_registry::find_definition(def.fluid)) {
                 def.fluid_level = fluid_def->full_level;
@@ -79,10 +79,10 @@ static void resolve_fluid_binding(BlockDefinition& def)
     }
 }
 
-static const BlockVariantRule* find_matching_rule(const BlockFamily& family,
+static const BlockVariantRule* find_matching_rule(const BlockFamily* family,
     const vx::hash_map<blockstate_key_type, blockstate_val_type>& map)
 {
-    for(const auto& rule : family.variants) {
+    for(const auto& rule : family->variants) {
         auto matches = true;
 
         for(const auto& it : rule.when) {
@@ -109,13 +109,13 @@ static const BlockVariantRule* find_matching_rule(const BlockFamily& family,
     return nullptr;
 }
 
-static BlockDefinition apply_matching_variant(const BlockDefinition& base_def, const BlockFamily& family,
+static BlockDefinition apply_matching_variant(const BlockDefinition* base_def, const BlockFamily* family,
     const vx::hash_map<blockstate_key_type, blockstate_val_type>& map)
 {
-    BlockDefinition resolved = base_def;
+    BlockDefinition resolved = *base_def;
 
     if(const auto rule = find_matching_rule(family, map)) {
-        resolved = BlockOverridePatch::apply(base_def, rule->overrides);
+        resolved = BlockOverridePatch::apply(*base_def, rule->overrides);
     }
 
     return resolved;
@@ -436,9 +436,9 @@ void block_registry::commit(ModContext& ctx)
     for(const auto& entry : names) {
         auto& name = entry.first;
         auto global_id = entry.second + block_offset;
-        auto [it, inserted] = s_names.try_emplace(name, global_id);
+        auto result = s_names.try_emplace(name, global_id);
 
-        if(!inserted) {
+        if(!result.second) {
             msg::log_warning("duplicate block name: {}", name.full_string());
             continue;
         }
@@ -466,7 +466,7 @@ void block_registry::commit(ModContext& ctx)
                 }
 
                 if(auto stem_def = find_definition(family.stem_id)) {
-                    auto resolved = apply_matching_variant(*stem_def, family, default_map);
+                    auto resolved = apply_matching_variant(stem_def, &family, default_map);
 
                     resolve_fluid_binding(resolved);
 
@@ -615,7 +615,7 @@ block_id_type block_registry::resolve_variant(block_id_type curr_id, const vx::h
     auto stem_def = find_definition(family.stem_id);
     vx::throw_if_fmt(stem_def == nullptr, "block_registry: {}: invalid stem_id: {}", family.name.full_string(), family.stem_id);
 
-    BlockDefinition resolved = apply_matching_variant(*stem_def, family, full_map);
+    BlockDefinition resolved = apply_matching_variant(stem_def, &family, full_map);
 
     resolve_fluid_binding(resolved);
 
@@ -648,7 +648,10 @@ fluid_id_type block_registry::preview_fluid(block_id_type id, blockstate_key_typ
         return FLUID_ID_NULL;
     }
 
-    StateFluidKey key { id, state, value };
+    StateFluidKey key {};
+    key.id = id;
+    key.state = state;
+    key.value = value;
 
     if(auto it = s_state_fluid_cache.find(key); it != s_state_fluid_cache.cend()) {
         return it->second;
@@ -663,7 +666,7 @@ fluid_id_type block_registry::preview_fluid(block_id_type id, blockstate_key_typ
     map.insert_or_assign(blockstate_key_type(state), blockstate_val_type(value));
 
     fluid_id_type result = FLUID_ID_NULL;
-    const auto rule = find_matching_rule(*family, map);
+    const auto rule = find_matching_rule(family, map);
 
     if(rule) {
         if(rule->overrides.fluid_name.has_value()) {

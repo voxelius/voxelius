@@ -209,7 +209,7 @@ void ServerWorld::init_generation(std::shared_ptr<void> state)
 
     // The generator seeds its climate noise from the first five draws of a
     // seeder keyed by the world seed. Discard them so the entropy seed keeps
-    // its old value and feature placement stays stable across this change.
+    // its old value and feature placement stays stable across this change
     std::mt19937_64 seeder;
     seeder.seed(seed);
     seeder.discard(5);
@@ -337,7 +337,7 @@ void ServerWorld::fixed_update(void)
 
     std::vector<std::pair<std::size_t, block_tick_source>> due;
 
-    chunk_registry().view<Chunk_Component>().each([&](Chunk_Component& component) {
+    chunk_registry().view<ChunkComponent>().each([&](ChunkComponent& component) {
         due.clear();
 
         component.ptr->pop_due(globals::current_tick, due);

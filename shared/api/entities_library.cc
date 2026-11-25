@@ -45,7 +45,7 @@ static Identifier make_unique_id(const Identifier& id, const ModContext* ctx)
     return id;
 }
 
-static bool parse_component(lua_State* L, int, ModContext*, ClassDefinition_Entry& entry)
+static bool parse_component(lua_State* L, int, ModContext*, ClassDefinitionEntry& entry)
 {
     auto component_name = utils::require_string(L, -2);
 
@@ -84,7 +84,7 @@ static bool parse_component(lua_State* L, int, ModContext*, ClassDefinition_Entr
 
 static bool parse_components(lua_State* L, int def_idx, ModContext* ctx, ClassDefinition& def)
 {
-    vx::hash_map<std::string, ClassDefinition_Entry> components;
+    vx::hash_map<std::string, ClassDefinitionEntry> components;
 
     lua_pushnil(L);
 
@@ -94,7 +94,7 @@ static bool parse_components(lua_State* L, int def_idx, ModContext* ctx, ClassDe
             return false;
         }
 
-        ClassDefinition_Entry entry {};
+        ClassDefinitionEntry entry {};
 
         if(!parse_component(L, -1, ctx, entry)) {
             return false;
@@ -394,7 +394,7 @@ void api_shared::open_entities(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     auto L = lua.get();
 
-    lua_newtable(L); // Entities
+    lua_newtable(L);
 
     lua_pushinteger(L, CLASS_ID_NULL);
     lua_setfield(L, -2, "NULL_CLASS");

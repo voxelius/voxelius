@@ -6,7 +6,7 @@
 
 // Sky light is mostly full and block light mostly empty, so the array shrinks
 // by an order of magnitude. Whole arrays go through the buffer compressor, so
-// it costs less than the blocks do once those are packed into a palette.
+// it costs less than the blocks do once those are packed into a palette
 void LightStorage::encode_net(const LightStorage& storage, WriteBuffer& buffer)
 {
     buffer.write_compressed(std::as_bytes(std::span(storage.m_cells)));

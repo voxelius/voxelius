@@ -45,7 +45,7 @@ PrecipitationContext precipitation::context(const World* world, std::span<const 
     result.front = front;
     result.definition = definition;
     result.coverage = coverage;
-    result.amount = coverage * std::clamp(definition->precipitation.intensity, 0.0f, 1.0f);
+    result.effective_intensity = coverage * std::clamp(definition->precipitation.intensity, 0.0f, 1.0f);
     return result;
 }
 
@@ -53,7 +53,7 @@ PrecipitationSelection precipitation::select(const World* world, const Precipita
 {
     assert(world);
 
-    if(ctx.definition == nullptr || ctx.amount <= 0.0f) {
+    if(ctx.definition == nullptr || ctx.effective_intensity <= 0.0f) {
         return {};
     }
 
@@ -67,7 +67,7 @@ PrecipitationSelection precipitation::select(const World* world, const Precipita
 
 PrecipitationSelection precipitation::select(const PrecipitationContext& ctx, float temperature, float humidity)
 {
-    if(ctx.definition == nullptr || ctx.amount <= 0.0f) {
+    if(ctx.definition == nullptr || ctx.effective_intensity <= 0.0f) {
         return {};
     }
 
@@ -97,6 +97,6 @@ PrecipitationSelection precipitation::select(const PrecipitationContext& ctx, fl
 
     PrecipitationSelection result {};
     result.type = best;
-    result.amount = ctx.amount;
+    result.effective_intensity = ctx.effective_intensity;
     return result;
 }

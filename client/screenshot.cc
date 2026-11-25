@@ -51,9 +51,7 @@ static std::string timestamp(void)
     SDL_Time now {};
     SDL_DateTime date {};
 
-    auto converted = SDL_GetCurrentTime(&now) && SDL_TimeToDateTime(now, &date, true);
-
-    if(!converted) {
+    if(!(SDL_GetCurrentTime(&now) && SDL_TimeToDateTime(now, &date, true))) {
         return std::format("{}", utils::epoch_seconds());
     }
 

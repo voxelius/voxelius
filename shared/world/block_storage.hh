@@ -61,11 +61,11 @@ private:
     static std::optional<std::size_t> find_slot(const palette_type& palette, block_id_type id);
     static std::size_t add_slot(palette_type& palette, block_id_type id);
 
-    static void promote(Palette8& dest, const Uniform& src);
-    static void promote(Palette16& dest, const Palette8& src);
+    static void promote(Palette8& dest, const Uniform* src);
+    static void promote(Palette16& dest, const Palette8* src);
 
-    static void optimize(Palette8& p8, variant_type& dest);
-    static void optimize(Palette16& p16, variant_type& dest);
+    static void optimize(Palette8* p8, variant_type& dest);
+    static void optimize(Palette16* p16, variant_type& dest);
 
 private:
     variant_type m_variant { Uniform { BLOCK_ID_NULL } };

@@ -19,7 +19,7 @@ constexpr static float FLY_ACCEL_V = 96.0f; // Sharper movement vertically
 
 static Eigen::Vector3f accelerate(const Eigen::Vector3f& target, const Eigen::Vector3f& velocity, float accel, float frametime)
 {
-    Eigen::Vector3f delta = target - velocity;
+    auto delta = target - velocity;
     auto distance = delta.norm();
 
     if(distance < accel * frametime || distance < PMOVE_EPS) {
@@ -44,9 +44,9 @@ static float accelerate(float target, float velocity, float accel, float frameti
 static void update_fly(entt::registry& registry, entt::entity entity, const Eigen::Vector3f& wishdir, float frametime)
 {
     registry.patch<Velocity>(entity, [&](Velocity& velocity) {
-        Eigen::Vector3f target_h(wishdir.x() * FLY_SPEED, 0.0f, wishdir.z() * FLY_SPEED);
-        Eigen::Vector3f current_h(velocity.value.x(), 0.0f, velocity.value.z());
-        Eigen::Vector3f new_h = accelerate(target_h, current_h, FLY_ACCEL_H, frametime);
+        auto target_h = Eigen::Vector3f(wishdir.x() * FLY_SPEED, 0.0f, wishdir.z() * FLY_SPEED);
+        auto current_h = Eigen::Vector3f(velocity.value.x(), 0.0f, velocity.value.z());
+        auto new_h = accelerate(target_h, current_h, FLY_ACCEL_H, frametime);
 
         auto new_y = accelerate(wishdir.y() * FLY_SPEED, velocity.value.y(), FLY_ACCEL_V, frametime);
 

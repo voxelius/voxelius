@@ -50,9 +50,9 @@ enum block_tag_bit : std::uint32_t {
 };
 
 enum block_tick_source : unsigned {
-    BLOCK_TICK_RANDOM,    ///< Random tick update
-    BLOCK_TICK_NEIGHBOUR, ///< Neighbour block change
-    BLOCK_TICK_SCRIPTED,  ///< Scripted update
+    BLOCK_TICK_RANDOM,
+    BLOCK_TICK_NEIGHBOUR,
+    BLOCK_TICK_SCRIPTED,
 };
 
 using block_id_type = std::uint32_t;
@@ -103,7 +103,7 @@ struct BlockDefinition final {
     std::optional<Identifier> fluid_name;
 
     unsigned health;
-    block_tool_bit tools; // big tool mask made from drops cond_tool_bits
+    block_tool_bit tools; // Union of the tool bits in drops
 
     Identifier sound_set;
     block_light_type emission;

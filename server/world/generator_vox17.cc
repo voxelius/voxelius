@@ -21,6 +21,7 @@
 #include "server/world/world.hh"
 
 constexpr static LocalPos::value_type CHUNK_SIZE_LP = static_cast<LocalPos::value_type>(constant::CHUNK_SIZE);
+constexpr static unsigned SURFACE_SKIN_DEPTH = 5;
 
 constexpr static std::size_t CLIMATE_AXES = 5;
 constexpr static std::array<const char*, CLIMATE_AXES> AXIS_NAMES {
@@ -97,9 +98,9 @@ static fnl_state make_climate_noise(int seed, float frequency)
 }
 
 // The world seed appears only after universe::init, so the noise starts on first use
-static void seed_state(Vox17State& state, std::uint64_t seed)
+static void seed_state(Vox17State* state, std::uint64_t seed)
 {
-    std::call_once(state.seed_once, [&state, seed] {
+    std::call_once(state->seed_once, [state, seed] {
         std::mt19937_64 terrain_seeder;
         terrain_seeder.seed(seed);
 
@@ -107,36 +108,36 @@ static void seed_state(Vox17State& state, std::uint64_t seed)
         noise_terrain.seed = static_cast<int>(terrain_seeder());
         noise_terrain.noise_type = FNL_NOISE_OPENSIMPLEX2S;
         noise_terrain.fractal_type = FNL_FRACTAL_FBM;
-        noise_terrain.frequency = state.settings.terrain_frequency;
-        noise_terrain.octaves = state.settings.terrain_octaves;
+        noise_terrain.frequency = state->settings.terrain_frequency;
+        noise_terrain.octaves = state->settings.terrain_octaves;
 
-        state.terrain_noise = std::make_unique<NoiseCache3D_4x8x4>(std::move(noise_terrain));
+        state->terrain_noise = std::make_unique<NoiseCache3D_4x8x4>(std::move(noise_terrain));
 
         std::mt19937_64 climate_seeder;
         climate_seeder.seed(seed);
 
         auto make_noise = [&](std::size_t axis) {
             auto axis_seed = static_cast<int>(climate_seeder());
-            return make_climate_noise(axis_seed, state.settings.climate_frequencies[axis]);
+            return make_climate_noise(axis_seed, state->settings.climate_frequencies[axis]);
         };
 
-        state.climate_temperature = std::make_unique<NoiseCache2D_8x8>(make_noise(0));
-        state.climate_humidity = std::make_unique<NoiseCache2D_8x8>(make_noise(1));
-        state.climate_continentalness = std::make_unique<NoiseCache2D_8x8>(make_noise(2));
-        state.climate_erosion = std::make_unique<NoiseCache2D_8x8>(make_noise(3));
-        state.climate_weirdness = std::make_unique<NoiseCache2D_8x8>(make_noise(4));
+        state->climate_temperature = std::make_unique<NoiseCache2D_8x8>(make_noise(0));
+        state->climate_humidity = std::make_unique<NoiseCache2D_8x8>(make_noise(1));
+        state->climate_continentalness = std::make_unique<NoiseCache2D_8x8>(make_noise(2));
+        state->climate_erosion = std::make_unique<NoiseCache2D_8x8>(make_noise(3));
+        state->climate_weirdness = std::make_unique<NoiseCache2D_8x8>(make_noise(4));
     });
 }
 
-static ClimateSampleArray sample_climate_array(const Vox17State& state, const ChunkPosXZ& pos)
+static ClimateSampleArray sample_climate_array(const Vox17State* state, const ChunkPosXZ& pos)
 {
     ClimateSampleArray samples {};
 
-    auto& temperature = state.climate_temperature->get(pos);
-    auto& humidity = state.climate_humidity->get(pos);
-    auto& continentalness = state.climate_continentalness->get(pos);
-    auto& erosion = state.climate_erosion->get(pos);
-    auto& weirdness = state.climate_weirdness->get(pos);
+    auto& temperature = state->climate_temperature->get(pos);
+    auto& humidity = state->climate_humidity->get(pos);
+    auto& continentalness = state->climate_continentalness->get(pos);
+    auto& erosion = state->climate_erosion->get(pos);
+    auto& weirdness = state->climate_weirdness->get(pos);
 
     for(std::size_t i = 0; i < constant::CHUNK_AREA; ++i) {
         auto lpos = utils::to_local_xz(i);
@@ -175,17 +176,17 @@ static bool is_inside_terrain(const NoiseCache3D_4x8x4::array_type& terrain, con
     return is_inside_terrain(variation_noise, y_relative, base_variation);
 }
 
-static bool is_inside_terrain(const Vox17State& state, const BlockPos& bpos, float y_relative, float base_variation)
+static bool is_inside_terrain(const Vox17State* state, const BlockPos& bpos, float y_relative, float base_variation)
 {
-    auto variation_noise = state.terrain_noise->get_slow(bpos);
+    auto variation_noise = state->terrain_noise->get_slow(bpos);
     return is_inside_terrain(variation_noise, y_relative, base_variation);
 }
 
-static bool column_solid_pass_1(const Vox17State& state, BlockPos::value_type wx, BlockPos::value_type y, BlockPos::value_type wz,
+static bool column_solid_pass_1(const Vox17State* state, BlockPos::value_type wx, BlockPos::value_type y, BlockPos::value_type wz,
     float base, float variation)
 {
     auto y_relative = static_cast<float>(y) - base;
-    auto density_range = variation * state.settings.terrain_density_peak;
+    auto density_range = variation * state->settings.terrain_density_peak;
 
     if(y_relative > density_range) {
         return false;
@@ -200,12 +201,12 @@ static bool column_solid_pass_1(const Vox17State& state, BlockPos::value_type wx
     return is_inside_terrain(state, bpos, y_relative, variation);
 }
 
-static BlockPos::value_type column_liquid_y(const Vox17State& state, BlockPos::value_type wx, BlockPos::value_type surface_y,
+static BlockPos::value_type column_liquid_y(const Vox17State* state, BlockPos::value_type wx, BlockPos::value_type surface_y,
     BlockPos::value_type wz, float base, float variation)
 {
     auto liquid_y = Column::UNSET;
 
-    for(auto y = surface_y + 1; y < state.settings.sea_level; ++y) {
+    for(auto y = surface_y + 1; y < state->settings.sea_level; ++y) {
         if(column_solid_pass_1(state, wx, y, wz, base, variation)) {
             break;
         }
@@ -216,9 +217,9 @@ static BlockPos::value_type column_liquid_y(const Vox17State& state, BlockPos::v
     return liquid_y;
 }
 
-static Column probe_one_column(const Vox17State& state, BlockPos::value_type bx, BlockPos::value_type bz, float base, float variation)
+static Column probe_one_column(const Vox17State* state, BlockPos::value_type bx, BlockPos::value_type bz, float base, float variation)
 {
-    for(auto y = constant::SURFACE_MAX_Y; y >= constant::SURFACE_MIN_Y; y -= 1) {
+    for(auto y = constant::SURFACE_MAX_Y; y >= constant::SURFACE_MIN_Y; --y) {
         if(column_solid_pass_1(state, bx, y, bz, base, variation)) {
             Column column {};
             column.surface_y = y;
@@ -396,7 +397,7 @@ ColumnSlice Generator<Vox17>::sample_heightmap(ServerWorld* world, const ChunkPo
 
     assert(state);
 
-    seed_state(*state, world->seed);
+    seed_state(state, world->seed);
 
     thread_local std::array<float, constant::CHUNK_AREA> variation_array;
     thread_local std::array<float, constant::CHUNK_AREA> base_array;
@@ -405,7 +406,7 @@ ColumnSlice Generator<Vox17>::sample_heightmap(ServerWorld* world, const ChunkPo
     base_array.fill(state->settings.base_min);
 
     ColumnSlice slice {};
-    auto climate_array = sample_climate_array(*state, pos);
+    auto climate_array = sample_climate_array(state, pos);
     auto origin_x = static_cast<BlockPos::value_type>(pos.x()) << constant::CHUNK_SIZE_LOG2;
     auto origin_z = static_cast<BlockPos::value_type>(pos.y()) << constant::CHUNK_SIZE_LOG2;
 
@@ -424,7 +425,7 @@ ColumnSlice Generator<Vox17>::sample_heightmap(ServerWorld* world, const ChunkPo
     for(LocalPos::value_type lz = 0; lz < constant::CHUNK_SIZE; lz += 1) {
         for(LocalPos::value_type lx = 0; lx < constant::CHUNK_SIZE; lx += 1) {
             auto index = static_cast<std::size_t>(lx + lz * constant::CHUNK_SIZE);
-            auto column = probe_one_column(*state, origin_x + lx, origin_z + lz, base_array[index], variation_array[index]);
+            auto column = probe_one_column(state, origin_x + lx, origin_z + lz, base_array[index], variation_array[index]);
             slice[index] = std::move(column);
         }
     }
@@ -439,11 +440,11 @@ void Generator<Vox17>::generate_biomes(ServerWorld* world, const ChunkPosXZ& pos
 
     assert(state);
 
-    seed_state(*state, world->seed);
+    seed_state(state, world->seed);
 
     auto& definition = world->definition();
     auto& selector = definition.biome_selector;
-    auto climate_array = sample_climate_array(*state, pos);
+    auto climate_array = sample_climate_array(state, pos);
 
     for(std::size_t i = 0; i < constant::CHUNK_AREA; ++i) {
         auto unit = sample_to_unit(climate_array[i]);
@@ -467,7 +468,7 @@ bool Generator<Vox17>::generate_blocks(ServerWorld* world, const ChunkPos& pos, 
 
     assert(state);
 
-    seed_state(*state, world->seed);
+    seed_state(state, world->seed);
 
     auto& selector = definition.biome_selector;
 
@@ -486,7 +487,7 @@ bool Generator<Vox17>::generate_blocks(ServerWorld* world, const ChunkPos& pos, 
     base_array.fill(state->settings.base_min);
 
     auto cpos_xz = ChunkPosXZ(pos.x(), pos.z());
-    auto climate_array = sample_climate_array(*state, cpos_xz);
+    auto climate_array = sample_climate_array(state, cpos_xz);
 
     for(std::size_t i = 0; i < constant::CHUNK_AREA; ++i) {
         auto& sample = climate_array[i];
@@ -513,9 +514,7 @@ bool Generator<Vox17>::generate_blocks(ServerWorld* world, const ChunkPos& pos, 
 
     auto& terrain_array = state->terrain_noise->get(pos);
 
-    //
     // Pass 1 -- density basic terrain fill
-    //
 
     for(std::size_t i = 0; i < constant::CHUNK_VOLUME; ++i) {
         auto lpos = utils::to_local(i);
@@ -544,9 +543,7 @@ bool Generator<Vox17>::generate_blocks(ServerWorld* world, const ChunkPos& pos, 
         }
     }
 
-    //
     // Pass 2 -- surface skin
-    //
 
     for(std::size_t i = 0; i < constant::CHUNK_VOLUME; ++i) {
         auto lpos = utils::to_local(i);
@@ -571,7 +568,7 @@ bool Generator<Vox17>::generate_blocks(ServerWorld* world, const ChunkPos& pos, 
         auto depth = 0U;
         auto underwater = false;
 
-        for(unsigned dy = 0; dy < 5; dy += 1) {
+        for(unsigned dy = 0; dy < SURFACE_SKIN_DEPTH; dy += 1) {
             auto d_lpos = LocalPos(lpos.x(), lpos.y() + static_cast<LocalPos::value_type>(dy + 1), lpos.z());
             auto d_bpos = utils::to_block(pos, d_lpos);
             auto d_index = utils::to_index(d_lpos);
@@ -579,7 +576,7 @@ bool Generator<Vox17>::generate_blocks(ServerWorld* world, const ChunkPos& pos, 
             if(d_lpos.y() >= CHUNK_SIZE_LP) {
                 auto y_relative_above = static_cast<float>(d_bpos.y()) - base;
 
-                if(!is_inside_terrain(*state, d_bpos, y_relative_above, variation)) {
+                if(!is_inside_terrain(state, d_bpos, y_relative_above, variation)) {
                     underwater = dy == 0 && d_bpos.y() < state->settings.sea_level;
                     break;
                 }
@@ -598,7 +595,7 @@ bool Generator<Vox17>::generate_blocks(ServerWorld* world, const ChunkPos& pos, 
             }
         }
 
-        if(depth < 5) {
+        if(depth < SURFACE_SKIN_DEPTH) {
             if(underwater || depth > 0) {
                 blocks.set(i, palette_filler_array[index_xz]);
             }

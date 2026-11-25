@@ -50,7 +50,7 @@ static std::optional<std::vector<std::string>> parse_texture_slots(const JSON_Ar
     return texture_slots;
 }
 
-static std::optional<BlockModel_Face> parse_face(const JSON_Object* object)
+static std::optional<BlockModelFace> parse_face(const JSON_Object* object)
 {
     if(object == nullptr) {
         return std::nullopt;
@@ -64,7 +64,7 @@ static std::optional<BlockModel_Face> parse_face(const JSON_Object* object)
 
     auto uv_rotation = utils::parse_arithmetic<unsigned>(object, "uv_rotation");
 
-    BlockModel_Face face {};
+    BlockModelFace face {};
     face.texture_slot = texture;
     face.uv_rotation = uv_rotation.value_or(0);
 
@@ -87,7 +87,7 @@ static std::optional<BlockModel_Face> parse_face(const JSON_Object* object)
     return face;
 }
 
-static std::optional<BlockModel_Element> parse_element(const JSON_Object* object)
+static std::optional<BlockModelElement> parse_element(const JSON_Object* object)
 {
     if(object == nullptr) {
         return std::nullopt;
@@ -99,7 +99,7 @@ static std::optional<BlockModel_Element> parse_element(const JSON_Object* object
     auto rotation = utils::parse_vector<float, 3>(object, "rotation");
 
     if(min.has_value() && max.has_value()) {
-        BlockModel_Element element {};
+        BlockModelElement element {};
         element.min = 0.0625f * min.value();
         element.max = 0.0625f * max.value();
         element.rotation_angles = rotation.value_or(Eigen::Vector3f::Zero());

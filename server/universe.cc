@@ -78,9 +78,8 @@ void universe::init(void)
     s_tick.bind(s_universe_config, "tick");
 
     std::ifstream config_stream(s_conf_path, std::ios::in);
-    auto existing_save = config_stream.is_open();
 
-    if(existing_save) {
+    if(config_stream.is_open()) {
         s_universe_config.load(config_stream);
         config_stream.close();
     }

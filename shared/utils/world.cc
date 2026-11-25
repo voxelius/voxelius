@@ -137,7 +137,7 @@ bool utils::block_place(const physics::BlockHit& hit, entt::entity actor, block_
                 const auto key_cstr = lua_tolstring(L, -2, &key_length);
                 const auto val_cstr = lua_tolstring(L, -1, &val_length);
 
-                auto key = static_cast<blockstate_key_type>(utils::crc64(std::span(key_cstr, key_length)));
+                auto key = static_cast<blockstate_key_type>(crc64(std::span(key_cstr, key_length)));
 
                 if(family->states.contains(key)) {
                     auto val = family->state_hash(std::string_view(val_cstr, val_length));
@@ -241,11 +241,11 @@ bool utils::block_interact(const physics::BlockHit& hit, entt::entity actor)
     lua_setfield(L, -2, "ly");
     lua_pushnumber(L, static_cast<lua_Number>(hit.point.z()));
     lua_setfield(L, -2, "lz");
-    lua_pushinteger(L, static_cast<lua_Integer>(std::fmod(hit.point.x(), 1.0f)));
+    lua_pushnumber(L, static_cast<lua_Number>(std::fmod(hit.point.x(), 1.0f)));
     lua_setfield(L, -2, "rx");
-    lua_pushinteger(L, static_cast<lua_Integer>(std::fmod(hit.point.y(), 1.0f)));
+    lua_pushnumber(L, static_cast<lua_Number>(std::fmod(hit.point.y(), 1.0f)));
     lua_setfield(L, -2, "ry");
-    lua_pushinteger(L, static_cast<lua_Integer>(std::fmod(hit.point.z(), 1.0f)));
+    lua_pushnumber(L, static_cast<lua_Number>(std::fmod(hit.point.z(), 1.0f)));
     lua_setfield(L, -2, "rz");
 
     lua_pushinteger(L, static_cast<lua_Integer>(actor));
@@ -271,8 +271,8 @@ bool utils::block_sched_tick(const ChunkPos& cpos, const std::shared_ptr<Chunk>&
     auto L = callback.state.get();
     lua_rawgeti(L, LUA_REGISTRYINDEX, callback.callback_ref);
 
-    auto lpos = utils::to_local(index);
-    auto bpos = utils::to_block(cpos, lpos);
+    auto lpos = to_local(index);
+    auto bpos = to_block(cpos, lpos);
 
     lua_pushinteger(L, static_cast<lua_Integer>(bpos.x()));
     lua_pushinteger(L, static_cast<lua_Integer>(bpos.y()));

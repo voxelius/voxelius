@@ -101,9 +101,9 @@ void weather_registry::commit(ModContext& ctx)
     for(const auto& entry : names) {
         auto& name = entry.first;
         auto global_id = entry.second + offset;
-        auto [it, inserted] = s_names.try_emplace(name, global_id);
+        auto result = s_names.try_emplace(name, global_id);
 
-        if(!inserted) {
+        if(!result.second) {
             msg::log_warning("duplicate weather name: {}", name.full_string());
             continue;
         }
@@ -209,9 +209,7 @@ weather_type_id weather_registry::resolve(std::string_view name)
     auto id = Identifier::from_string(name);
 
     if(id.is_valid()) {
-        auto found = weather_registry::find(id);
-
-        if(found) {
+        if(auto found = find(id)) {
             return found;
         }
     }
@@ -222,7 +220,7 @@ weather_type_id weather_registry::resolve(std::string_view name)
 
     auto builtin_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, name);
 
-    if(auto found = weather_registry::find(builtin_id); found) {
+    if(auto found = find(builtin_id)) {
         return found;
     }
 

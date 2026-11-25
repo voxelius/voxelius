@@ -22,7 +22,7 @@ std::optional<Eigen::Vector<lua_Integer, N>> utils::require_ivec(lua_State* L, i
     for(std::size_t i = 0; i < N; ++i) {
         lua_rawgeti(L, idx, static_cast<lua_Integer>(i + 1));
 
-        auto value = utils::require_integer(L, -1);
+        auto value = require_integer(L, -1);
 
         if(!value.has_value()) {
             return std::nullopt;
@@ -118,7 +118,7 @@ std::optional<Eigen::Vector<lua_Number, N>> utils::require_fvec(lua_State* L, in
     for(std::size_t i = 0; i < N; ++i) {
         lua_rawgeti(L, idx, static_cast<lua_Integer>(i + 1));
 
-        auto value = utils::require_number(L, -1);
+        auto value = require_number(L, -1);
 
         if(!value.has_value()) {
             return std::nullopt;
@@ -208,7 +208,7 @@ std::optional<T> utils::require_bitmask(lua_State* L, int idx)
     for(lua_Integer i = 1; i <= static_cast<lua_Integer>(count); ++i) {
         lua_rawgeti(L, idx, i);
 
-        auto value = utils::require_integer(L, -1);
+        auto value = require_integer(L, -1);
 
         if(!value.has_value()) {
             return std::nullopt;

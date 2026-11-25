@@ -26,18 +26,20 @@ constexpr static std::int64_t UNDERGROUND_MIN_Y = -256;
 constexpr static std::int64_t UNDERGROUND_MAX_Y = -65;
 constexpr static std::int64_t THE_DEPTHS_MIN_Y = -512;
 constexpr static std::int64_t THE_DEPTHS_MAX_Y = -257;
+
+constexpr static std::size_t USERNAME_MAX_LENGTH = 64;
 } // namespace constant
 
 namespace constant
 {
-constexpr static std::int32_t SURFACE_MIN_CHUNK_Y = SURFACE_MIN_Y >> constant::CHUNK_SIZE_LOG2;
-constexpr static std::int32_t SURFACE_MAX_CHUNK_Y = SURFACE_MAX_Y >> constant::CHUNK_SIZE_LOG2;
-constexpr static std::int32_t SKY_MIN_CHUNK_Y = SKY_MIN_Y >> constant::CHUNK_SIZE_LOG2;
-constexpr static std::int32_t SKY_MAX_CHUNK_Y = SKY_MAX_Y >> constant::CHUNK_SIZE_LOG2;
-constexpr static std::int32_t UNDERGROUND_MIN_CHUNK_Y = UNDERGROUND_MIN_Y >> constant::CHUNK_SIZE_LOG2;
-constexpr static std::int32_t UNDERGROUND_MAX_CHUNK_Y = UNDERGROUND_MAX_Y >> constant::CHUNK_SIZE_LOG2;
-constexpr static std::int32_t THE_DEPTHS_MIN_CHUNK_Y = THE_DEPTHS_MIN_Y >> constant::CHUNK_SIZE_LOG2;
-constexpr static std::int32_t THE_DEPTHS_MAX_CHUNK_Y = THE_DEPTHS_MAX_Y >> constant::CHUNK_SIZE_LOG2;
+constexpr static std::int32_t SURFACE_MIN_CHUNK_Y = SURFACE_MIN_Y >> CHUNK_SIZE_LOG2;
+constexpr static std::int32_t SURFACE_MAX_CHUNK_Y = SURFACE_MAX_Y >> CHUNK_SIZE_LOG2;
+constexpr static std::int32_t SKY_MIN_CHUNK_Y = SKY_MIN_Y >> CHUNK_SIZE_LOG2;
+constexpr static std::int32_t SKY_MAX_CHUNK_Y = SKY_MAX_Y >> CHUNK_SIZE_LOG2;
+constexpr static std::int32_t UNDERGROUND_MIN_CHUNK_Y = UNDERGROUND_MIN_Y >> CHUNK_SIZE_LOG2;
+constexpr static std::int32_t UNDERGROUND_MAX_CHUNK_Y = UNDERGROUND_MAX_Y >> CHUNK_SIZE_LOG2;
+constexpr static std::int32_t THE_DEPTHS_MIN_CHUNK_Y = THE_DEPTHS_MIN_Y >> CHUNK_SIZE_LOG2;
+constexpr static std::int32_t THE_DEPTHS_MAX_CHUNK_Y = THE_DEPTHS_MAX_Y >> CHUNK_SIZE_LOG2;
 } // namespace constant
 
 namespace constant

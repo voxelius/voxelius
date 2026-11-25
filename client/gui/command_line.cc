@@ -146,7 +146,7 @@ void gui::CommandLine::layout(void)
     input_flags |= ImGuiInputTextFlags_CallbackCharFilter;
     input_flags |= ImGuiInputTextFlags_CallbackHistory;
 
-    auto submitted = ImGui::InputText(imgui_id().c_str(), &m_buffer, input_flags, &CommandLine::on_callback, this);
+    auto submitted = ImGui::InputText(imgui_id().c_str(), &m_buffer, input_flags, &on_callback, this);
     auto input_active = ImGui::IsItemActive();
 
     ImGui::SameLine();

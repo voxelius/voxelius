@@ -228,7 +228,7 @@ static void composite_layers(void)
     glUniform1i(s_transparency.uniforms[su_precipitation_color].location, 8);
 
     glUniform2f(s_transparency.uniforms[su_cloud_range].location, cloud_renderer::z_near, cloud_renderer::z_far);
-    glUniform2f(s_transparency.uniforms[su_camera_range].location, camera::z_near, camera::z_far);
+    glUniform2f(s_transparency.uniforms[su_camera_range].location, client_camera::z_near, client_camera::z_far);
 
     glBindVertexArray(s_compose_vao);
     glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -250,7 +250,7 @@ static void on_pixel_size_changed(void)
     s_pixel_size_dirty = true;
 }
 
-void head::detail::begin_frame(void)
+void client_head::detail::begin_frame(void)
 {
     int width, height;
     SDL_GetWindowSizeInPixels(globals::window, &width, &height);
@@ -261,7 +261,7 @@ void head::detail::begin_frame(void)
     ImGui::NewFrame();
 }
 
-void head::detail::init_renderers(void)
+void client_head::detail::init_renderers(void)
 {
     auto transparency_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "transparency");
     auto transparency_ok = s_transparency.setup(transparency_id);
@@ -291,7 +291,7 @@ void head::detail::init_renderers(void)
     outline::init();
 }
 
-void head::init(void)
+void client_head::init(void)
 {
     auto& r_pixel_size_binding = cvar::bind_var(s_head_pixel_size, "r_pixel_size");
     r_pixel_size_binding.set_help("Internal render scale, in pixels");
@@ -331,12 +331,12 @@ void head::init(void)
     globals::dispatcher.sink<SDL_WindowEvent>().connect<&on_sdl_window_event>();
 }
 
-void head::init_late(void)
+void client_head::init_late(void)
 {
     // empty
 }
 
-void head::shutdown(void)
+void client_head::shutdown(void)
 {
     outline::shutdown();
     sky_renderer::shutdown();
@@ -374,7 +374,7 @@ void head::shutdown(void)
     SDL_GL_DestroyContext(globals::gl_context);
 }
 
-bool head::prepare(void)
+bool client_head::prepare(void)
 {
     ZoneScoped;
 
@@ -394,7 +394,7 @@ bool head::prepare(void)
     return true;
 }
 
-void head::render(void)
+void client_head::render(void)
 {
     ZoneScoped;
 
@@ -430,7 +430,7 @@ void head::render(void)
     glBlitFramebuffer(0, 0, s_scaled_width, s_scaled_height, 0, 0, globals::width, globals::height, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 }
 
-void head::present(void)
+void client_head::present(void)
 {
     ZoneScoped;
 

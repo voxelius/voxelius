@@ -196,7 +196,11 @@ void skybox::update(void)
     auto sun_factor = visuals.sun ? 1.0f : 0.0f;
     auto moon_factor = visuals.moon ? 1.0f : 0.0f;
     auto star_factor = visuals.stars ? 1.0f : 0.0f;
-    auto sun_tilt_offset = visuals.sun ? visuals.sun->tilt : 0.0f;
+    auto sun_tilt_offset = 0.0f;
+
+    if(visuals.sun) {
+        sun_tilt_offset = visuals.sun->tilt;
+    }
     Eigen::Vector3f moon_color = Eigen::Vector3f::Zero();
 
     if(visuals.moon) {
@@ -210,7 +214,7 @@ void skybox::update(void)
     auto sun_vector = tilt_about_x(world_clock::sun_direction(s_phase), tilt);
     auto moon_vector = tilt_about_x(world_clock::sun_direction(s_phase + 0.5f), tilt);
 
-    Eigen::Vector3f world_position = utils::to_fvec(camera::chunk) + camera::local;
+    Eigen::Vector3f world_position = utils::to_fvec(client_camera::chunk) + client_camera::local;
     auto& definition = globals::world->definition();
     auto& state = globals::world->weather();
     auto& allowed = definition.weather;
@@ -266,7 +270,7 @@ void skybox::update(void)
 
     // The fog takes the horizon color in the direction the camera
     // faces, so turning towards the sunset warms the haze as well
-    auto camera_flat = Eigen::Vector2f(camera::forward.x(), camera::forward.z());
+    auto camera_flat = Eigen::Vector2f(client_camera::forward.x(), client_camera::forward.z());
     auto sun_flat = Eigen::Vector2f(sun_vector.x(), sun_vector.z());
     auto camera_length = camera_flat.norm();
     auto sun_length = sun_flat.norm();
@@ -278,27 +282,27 @@ void skybox::update(void)
 
     auto warmth = std::pow(std::max(alignment, 0.0f), 2.0f) * twilight * visibility * sun_factor;
 
-    skybox::horizon_color = s_horizon;
-    skybox::sun_horizon_color = s_warm_horizon;
-    skybox::fog_color = s_horizon + (s_warm_horizon - s_horizon) * warmth;
-    skybox::zenith_color = s_zenith;
-    skybox::phase = s_phase;
-    skybox::daylight = light;
-    skybox::light_scale = s_light;
+    horizon_color = s_horizon;
+    sun_horizon_color = s_warm_horizon;
+    fog_color = s_horizon + (s_warm_horizon - s_horizon) * warmth;
+    zenith_color = s_zenith;
+    phase = s_phase;
+    daylight = light;
+    light_scale = s_light;
 
-    skybox::sun_tilt = tilt + sun_tilt_offset;
-    skybox::sun_tint = tint;
-    skybox::sun_direction = sun_vector;
-    skybox::sun_strength = utils::smoothstep(-0.05f, 0.05f, height) * visibility * sun_factor;
+    sun_tilt = tilt + sun_tilt_offset;
+    sun_tint = tint;
+    sun_direction = sun_vector;
+    sun_strength = utils::smoothstep(-0.05f, 0.05f, height) * visibility * sun_factor;
 
-    skybox::moon_direction = moon_vector;
-    skybox::moon_tint = moon_color + (tint - moon_color) * (twilight * 0.85f);
-    skybox::moon_strength = utils::smoothstep(-0.05f, 0.05f, -height) * visibility * 0.85f * moon_factor;
-    skybox::moon_phase = static_cast<std::uint32_t>(world_clock::day(globals::world->daylight_tick, day_length) % MOON_PHASE_COUNT);
+    moon_direction = moon_vector;
+    moon_tint = moon_color + (tint - moon_color) * (twilight * 0.85f);
+    moon_strength = utils::smoothstep(-0.05f, 0.05f, -height) * visibility * 0.85f * moon_factor;
+    moon_phase = static_cast<std::uint32_t>(world_clock::day(globals::world->daylight_tick, day_length) % MOON_PHASE_COUNT);
 
-    skybox::cloud_tint = Eigen::Vector3f::Ones() + (tint - Eigen::Vector3f::Ones()) * (twilight * visibility * 0.85f);
-    skybox::twilight = twilight * visibility;
-    skybox::star_visibility = (1.0f - light) * visibility * star_factor;
+    cloud_tint = Eigen::Vector3f::Ones() + (tint - Eigen::Vector3f::Ones()) * (twilight * visibility * 0.85f);
+    twilight = twilight * visibility;
+    star_visibility = (1.0f - light) * visibility * star_factor;
 }
 
 void skybox::reset(void)

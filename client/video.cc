@@ -29,7 +29,6 @@ static gui::CheckBox s_enable_vsync_gui;
 static gui::VideoSelector s_video_mode_control;
 
 static SDL_DisplayID s_display;
-static SDL_GPUPresentMode s_unlocked_present_mode;
 static std::vector<SDL_DisplayMode> s_fullscreen_modes;
 
 bool video::mode_pending;
@@ -207,7 +206,7 @@ void video::init_late(void)
     auto& mode = s_current_mode.string();
 
     if(mode == "windowed") {
-        video::request_windowed(s_last_windowed_size.x(), s_last_windowed_size.y());
+        request_windowed(s_last_windowed_size.x(), s_last_windowed_size.y());
     }
     else {
         int target_width;
@@ -215,7 +214,7 @@ void video::init_late(void)
         int target_rate;
 
         if(3 == std::sscanf(mode.c_str(), "%d:%d:%d", &target_width, &target_height, &target_rate)) {
-            video::request_fullscreen(target_width, target_height, target_rate);
+            request_fullscreen(target_width, target_height, target_rate);
         }
     }
 
@@ -332,7 +331,7 @@ void video::request_fullscreen(int width, int height, int rate)
     auto flags = SDL_GetWindowFlags(globals::window);
     auto already_fullscreen = SDL_WINDOW_FULLSCREEN == (flags & SDL_WINDOW_FULLSCREEN);
     auto current = SDL_GetWindowFullscreenMode(globals::window);
-    auto same_size = current != nullptr && current->w == best_mode.w && current->h == best_mode.h;
+    auto same_size = current && current->w == best_mode.w && current->h == best_mode.h;
     auto same_mode = same_size && current->refresh_rate == best_mode.refresh_rate;
 
     SDL_SetWindowFullscreenMode(globals::window, &best_mode);
@@ -378,7 +377,7 @@ void video::request_windowed(int width, int height)
 
 void video::request_windowed(void)
 {
-    video::request_windowed(s_last_windowed_size.x(), s_last_windowed_size.y());
+    request_windowed(s_last_windowed_size.x(), s_last_windowed_size.y());
 }
 
 void video::update_window_title(void)

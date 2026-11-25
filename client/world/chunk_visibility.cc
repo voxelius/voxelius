@@ -38,13 +38,13 @@ void chunk_visibility::fixed_update_late(void)
         return;
     }
 
-    auto radius = static_cast<ChunkPos::value_type>(camera::view_distance.value());
-    auto view = utils::view_box(camera::chunk, radius);
-    auto interest = utils::interest_box(camera::chunk, radius);
+    auto radius = static_cast<ChunkPos::value_type>(client_camera::view_distance.value());
+    auto view = utils::view_box(client_camera::chunk, radius);
+    auto interest = utils::interest_box(client_camera::chunk, radius);
 
     s_bounds_curr = view;
 
-    auto backlog = chunk_mesher::backlog();
+    auto backlog = chunk_mesher::backlog;
     std::size_t budget = 0;
 
     if(backlog < REQUEST_BACKLOG_LIMIT) {
@@ -61,7 +61,7 @@ void chunk_visibility::fixed_update_late(void)
     protocol::send(packet, globals::peer);
 
     auto& chunk_registry = globals::world->chunk_registry();
-    auto chunks = chunk_registry.view<Chunk_Component>();
+    auto chunks = chunk_registry.view<ChunkComponent>();
 
     to_remove.clear();
 
@@ -77,8 +77,7 @@ void chunk_visibility::fixed_update_late(void)
         globals::world->remove_chunk(cpos);
     }
 
-    // A precipitation column is cached per
-    // XZ, so it needs the view box on its own
+    // A precipitation column is cached per XZ, so the prune needs the interest box on its own
     if(!to_remove.empty()) {
         columns::prune(interest);
     }

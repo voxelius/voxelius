@@ -53,6 +53,8 @@ static const void* image_load_fn(const char* path, std::uint32_t flags)
     int channels;
     auto pixels = stbi_load_from_callbacks(&callbacks, file, &width, &height, &channels, desired_channels);
 
+    PHYSFS_close(file);
+
     if(pixels == nullptr) {
         msg::log_warning("{}: {}", path, stbi_failure_reason());
         return nullptr;

@@ -1,10 +1,10 @@
 #include "server/pch.hh"
 
+#include "server/net/invites.hh"
+
 #include "core/cvar/bits.hh"
 #include "core/cvar/host.hh"
 #include "core/msg/log.hh"
-
-#include "server/net/invites.hh"
 
 #include "server/net/whitelist.hh"
 

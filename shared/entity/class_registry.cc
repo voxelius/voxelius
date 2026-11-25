@@ -43,14 +43,14 @@ static void update_checksum(void)
 
         hash_value(hash, static_cast<std::uint32_t>(def.entries.size()));
 
-        std::vector<const ClassDefinition_Entry*> entries;
+        std::vector<const ClassDefinitionEntry*> entries;
 
         for(const auto& entry : def.entries) {
             entries.push_back(&entry);
         }
 
         // Class entries come from an unordered map; sort them so both sides hash the same order
-        std::sort(entries.begin(), entries.end(), [](const ClassDefinition_Entry* a, const ClassDefinition_Entry* b) {
+        std::sort(entries.begin(), entries.end(), [](const ClassDefinitionEntry* a, const ClassDefinitionEntry* b) {
             if(a->id != b->id) {
                 return a->id < b->id;
             }

@@ -138,19 +138,19 @@ void streaming::fixed_update_late(void)
     }
 }
 
-void streaming::subscribe(Session& session, const packet::World_Request& packet)
+void streaming::subscribe(Session* session, const packet::World_Request& packet)
 {
-    if(session.world == nullptr) {
+    if(session->world == nullptr) {
         return;
     }
 
-    auto& registry = session.world->registry();
+    auto& registry = session->world->registry();
 
-    if(!registry.valid(session.player) || !registry.all_of<Transform>(session.player)) {
+    if(!registry.valid(session->player) || !registry.all_of<Transform>(session->player)) {
         return;
     }
 
-    const auto& transform = registry.get<Transform>(session.player);
+    const auto& transform = registry.get<Transform>(session->player);
     auto& player = transform.chunk;
 
     auto radius = static_cast<ChunkPos::value_type>(interest::view_distance.value());
@@ -160,7 +160,7 @@ void streaming::subscribe(Session& session, const packet::World_Request& packet)
 
     // A chunk the world does not hold can never
     // arrive, so the box is clipped to its height
-    auto& definition = session.world->definition();
+    auto& definition = session->world->definition();
     auto min_y = static_cast<ChunkPos::value_type>(definition.min_y >> constant::CHUNK_SIZE_LOG2);
     auto max_y = static_cast<ChunkPos::value_type>(definition.max_y >> constant::CHUNK_SIZE_LOG2);
 
@@ -175,30 +175,30 @@ void streaming::subscribe(Session& session, const packet::World_Request& packet)
     auto column_interest = ChunkAlignedBoxXZ(interest_min, interest_max);
 
     auto changed = false;
-    changed = changed || !session.stream_view_box.isApprox(view, 0);
-    changed = changed || (session.stream_player_chunk.array() != player.array()).any();
+    changed = changed || !session->stream_view_box.isApprox(view, 0);
+    changed = changed || (session->stream_player_chunk.array() != player.array()).any();
 
     // A column the client dropped has to travel
     // again when the player comes back; biomes stay
-    if(!session.interest_box.isApprox(column_interest, 0)) {
-        auto it = session.stream_sent_columns.begin();
+    if(!session->interest_box.isApprox(column_interest, 0)) {
+        auto it = session->stream_sent_columns.begin();
 
-        while(it != session.stream_sent_columns.end()) {
+        while(it != session->stream_sent_columns.end()) {
             if(column_interest.contains(*it)) {
                 it = std::next(it);
             }
             else {
-                it = session.stream_sent_columns.erase(it);
+                it = session->stream_sent_columns.erase(it);
             }
         }
     }
 
-    session.stream_view_box = view;
-    session.interest_box = column_interest;
-    session.stream_player_chunk = player;
-    session.stream_budget_chunks = std::min(packet.chunk_budget, MAX_CHUNK_BUDGET);
+    session->stream_view_box = view;
+    session->interest_box = column_interest;
+    session->stream_player_chunk = player;
+    session->stream_budget_chunks = std::min(packet.chunk_budget, MAX_CHUNK_BUDGET);
 
     if(changed) {
-        session.stream_rebuild = true;
+        session->stream_rebuild = true;
     }
 }

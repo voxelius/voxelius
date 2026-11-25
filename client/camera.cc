@@ -24,51 +24,51 @@
 // Below this horizontal speed the loader ignores the direction of travel
 constexpr static float MOVING_SPEED = 1.0f;
 
-cvar::Number<float> camera::vertical_fov { 70.0f, 45.0f, 110.0f };
-cvar::Number<unsigned> camera::view_distance { 8, 1, 32 };
-cvar::Number<unsigned> camera::cloud_range { 16, 8, 256 };
+cvar::Number<float> client_camera::vertical_fov { 70.0f, 45.0f, 110.0f };
+cvar::Number<unsigned> client_camera::view_distance { 8, 1, 32 };
+cvar::Number<unsigned> client_camera::cloud_range { 16, 8, 256 };
 
 static gui::SliderFloat s_vertical_fov_gui;
 static gui::SliderUnsigned s_view_distance_gui;
 static gui::SliderUnsigned s_cloud_range_gui;
 
-Camera camera::instance;
+Camera client_camera::instance;
 
-Eigen::Vector3f camera::angles;
-Eigen::Vector3f camera::forward;
-Eigen::Vector3f camera::right;
-Eigen::Vector3f camera::up;
-Eigen::Vector3f camera::local;
-ChunkPos camera::chunk;
+Eigen::Vector3f client_camera::angles;
+Eigen::Vector3f client_camera::forward;
+Eigen::Vector3f client_camera::right;
+Eigen::Vector3f client_camera::up;
+Eigen::Vector3f client_camera::local;
+ChunkPos client_camera::chunk;
 
-float camera::z_near = 0.01f;
-float camera::z_far = 1.0f;
+float client_camera::z_near = 0.01f;
+float client_camera::z_far = 1.0f;
 
-block_id_type camera::inside_block;
-fluid_id_type camera::inside_fluid;
+block_id_type client_camera::inside_block;
+fluid_id_type client_camera::inside_fluid;
 
 static LocalPos s_eye_lpos;
 static BlockPos s_eye_bpos;
 
 static void reset_camera(void)
 {
-    camera::angles.setZero();
+    client_camera::angles.setZero();
 
-    camera::forward = Eigen::Vector3f::UnitZ();
-    camera::right = Eigen::Vector3f::UnitX();
-    camera::up = Eigen::Vector3f::UnitY();
+    client_camera::forward = Eigen::Vector3f::UnitZ();
+    client_camera::right = Eigen::Vector3f::UnitX();
+    client_camera::up = Eigen::Vector3f::UnitY();
 
-    camera::local.setZero();
-    camera::chunk.setZero();
+    client_camera::local.setZero();
+    client_camera::chunk.setZero();
 
-    camera::inside_block = BLOCK_ID_NULL;
-    camera::inside_fluid = FLUID_ID_NULL;
+    client_camera::inside_block = BLOCK_ID_NULL;
+    client_camera::inside_fluid = FLUID_ID_NULL;
 
     s_eye_lpos.setZero();
     s_eye_bpos.setZero();
 }
 
-Eigen::Vector3f camera::lookahead(float chunks)
+Eigen::Vector3f client_camera::lookahead(float chunks)
 {
     auto& registry = globals::world->registry();
 
@@ -91,7 +91,7 @@ Eigen::Vector3f camera::lookahead(float chunks)
     return Eigen::Vector3f(direction.x(), 0.0f, direction.y()) * chunks;
 }
 
-void camera::init(void)
+void client_camera::init(void)
 {
     auto& r_fov_binding = cvar::bind_var(vertical_fov, "r_fov");
     r_fov_binding.set_help("Vertical field of view");
@@ -119,13 +119,13 @@ void camera::init(void)
     s_cloud_range_gui.bind("r_cloud_range");
     settings::video_atmosphere.add_child(s_cloud_range_gui, 0);
 
-    camera::z_near = 0.01f;
-    camera::z_far = 1.25f * static_cast<float>(constant::CHUNK_SIZE * view_distance.value());
+    z_near = 0.01f;
+    z_far = 1.25f * static_cast<float>(constant::CHUNK_SIZE * view_distance.value());
 
     reset_camera();
 }
 
-void camera::update(void)
+void client_camera::update(void)
 {
     auto& registry = globals::world->registry();
 
@@ -137,26 +137,26 @@ void camera::update(void)
     const auto& head = registry.get<Head_Intr>(globals::player);
     const auto& transform = registry.get<Transform_Intr>(globals::player);
 
-    camera::angles = head.angles;
-    camera::chunk = transform.chunk;
-    camera::local = transform.local + head.offset;
+    angles = head.angles;
+    chunk = transform.chunk;
+    local = transform.local + head.offset;
 
-    camera::z_near = 0.01f;
-    camera::z_far = 1.25f * static_cast<float>(constant::CHUNK_SIZE * view_distance.value());
+    z_near = 0.01f;
+    z_far = 1.25f * static_cast<float>(constant::CHUNK_SIZE * view_distance.value());
 
     auto fov_radians = utils::radians(vertical_fov.value());
-    instance.set_perspective(fov_radians, globals::aspect, camera::z_near, camera::z_far);
-    instance.set_view(camera::local, camera::angles);
+    instance.set_perspective(fov_radians, globals::aspect, z_near, z_far);
+    instance.set_view(local, angles);
     instance.update();
 
     forward = instance.forward_vector();
     right = instance.right_vector();
     up = instance.up_vector();
 
-    auto local_array = camera::local.array();
+    auto local_array = local.array();
     auto floored = local_array.floor();
     s_eye_lpos = floored.cast<LocalPos::value_type>();
-    s_eye_bpos = utils::to_block(camera::chunk, s_eye_lpos);
+    s_eye_bpos = utils::to_block(chunk, s_eye_lpos);
 
     inside_block = globals::world->get_block(s_eye_bpos);
     inside_fluid = FLUID_ID_NULL;

@@ -1,10 +1,11 @@
 #include "shared/pch.hh"
 
-#include "shared/world/biome_registry.hh"
-#include "shared/world/weather_registry.hh"
 #include "shared/world/world_registry.hh"
 
 #include "core/exception.hh"
+
+#include "shared/world/biome_registry.hh"
+#include "shared/world/weather_registry.hh"
 
 static std::vector<std::shared_ptr<WorldDefinition>> s_definitions;
 
@@ -15,7 +16,8 @@ static bool is_valid_directory(std::string_view value)
     }
 
     for(auto character : value) {
-        auto allowed = std::isalnum(static_cast<unsigned char>(character)) != 0;
+        auto allowed = false;
+        allowed = allowed || std::isalnum(static_cast<unsigned char>(character));
         allowed = allowed || character == '_';
         allowed = allowed || character == '-';
         allowed = allowed || character == '.';

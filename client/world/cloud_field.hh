@@ -6,7 +6,7 @@
 // The deck is meshed in rings: a cell is this many blocks across and this
 // many tall in a ring, and the ring reaches out to this radius. Each ring
 // uses four times the cell of the one inside it, so the column count grows
-// with the radius instead of its square.
+// with the radius instead of its square
 struct CloudRing final {
     float cell;
     float height;
@@ -15,15 +15,14 @@ struct CloudRing final {
 
 // A column in cell units, relative to the layer's base; top <= bottom means
 // the spot holds no cloud. The shade is this column's own brightness, so a
-// deck is a mosaic of blocks instead of one flat slab.
+// deck is a mosaic of blocks instead of one flat slab
 struct CloudColumn final {
     std::int16_t bottom;
     std::int16_t top;
     float shade;
 };
 
-// One cloud body of one weather type in one ring, with everything the mesher
-// needs worked out once.
+// One cloud body of one weather type in one ring, with everything the mesher needs worked out once
 struct CloudDeck final {
     weather_type_id type;
     CloudBody body;
@@ -42,7 +41,7 @@ struct CloudDeck final {
 };
 
 // A cloud body that is actually built, with the distance it sits at from the
-// camera; the mesher draws the farthest first.
+// camera; the mesher draws the farthest first
 struct CloudGroup final {
     weather_type_id type;
     // A copy, because the registry may grow between the sort and the build
@@ -50,13 +49,12 @@ struct CloudGroup final {
     float distance;
 };
 
-// Everything a worker needs: a copy of the field state and the frame the
-// window belongs to
+// Everything a worker needs: a copy of the field state and the frame the window belongs to
 struct CloudInput final {
     WeatherState state;
     std::vector<weather_type_id> allowed;
     Eigen::Vector2f anchor;
-    Eigen::Vector2f offset;
+    Eigen::Vector2f drift_offset;
     Eigen::Vector3f center;
     float radius;
 };

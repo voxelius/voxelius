@@ -26,9 +26,9 @@ ChunkPosXZ utils::to_chunk_xz(const BlockPosXZ& bpos)
 LocalPos utils::to_local(const BlockPos& bpos)
 {
     LocalPos lpos;
-    lpos.x() = static_cast<LocalPos::value_type>(utils::mod_signed<BlockPos::value_type>(bpos.x(), constant::CHUNK_SIZE));
-    lpos.y() = static_cast<LocalPos::value_type>(utils::mod_signed<BlockPos::value_type>(bpos.y(), constant::CHUNK_SIZE));
-    lpos.z() = static_cast<LocalPos::value_type>(utils::mod_signed<BlockPos::value_type>(bpos.z(), constant::CHUNK_SIZE));
+    lpos.x() = static_cast<LocalPos::value_type>(mod_signed<BlockPos::value_type>(bpos.x(), constant::CHUNK_SIZE));
+    lpos.y() = static_cast<LocalPos::value_type>(mod_signed<BlockPos::value_type>(bpos.y(), constant::CHUNK_SIZE));
+    lpos.z() = static_cast<LocalPos::value_type>(mod_signed<BlockPos::value_type>(bpos.z(), constant::CHUNK_SIZE));
     return lpos;
 }
 
@@ -45,8 +45,8 @@ LocalPos utils::to_local(std::size_t index)
 LocalPosXZ utils::to_local_xz(const BlockPosXZ& bpos)
 {
     LocalPosXZ lpos;
-    lpos[0] = static_cast<LocalPosXZ::value_type>(utils::mod_signed<BlockPosXZ::value_type>(bpos[0], constant::CHUNK_SIZE));
-    lpos[1] = static_cast<LocalPosXZ::value_type>(utils::mod_signed<BlockPosXZ::value_type>(bpos[1], constant::CHUNK_SIZE));
+    lpos[0] = static_cast<LocalPosXZ::value_type>(mod_signed<BlockPosXZ::value_type>(bpos[0], constant::CHUNK_SIZE));
+    lpos[1] = static_cast<LocalPosXZ::value_type>(mod_signed<BlockPosXZ::value_type>(bpos[1], constant::CHUNK_SIZE));
     return lpos;
 }
 
@@ -151,16 +151,16 @@ Eigen::Vector3f utils::to_fvec(const ChunkPos& cpos, const Eigen::Vector3f& offs
 LocalPos utils::wrap_local(const LocalPos& lpos)
 {
     LocalPos result;
-    result.x() = static_cast<LocalPos::value_type>(utils::mod_signed<LocalPos::value_type>(lpos.x(), constant::CHUNK_SIZE));
-    result.y() = static_cast<LocalPos::value_type>(utils::mod_signed<LocalPos::value_type>(lpos.y(), constant::CHUNK_SIZE));
-    result.z() = static_cast<LocalPos::value_type>(utils::mod_signed<LocalPos::value_type>(lpos.z(), constant::CHUNK_SIZE));
+    result.x() = static_cast<LocalPos::value_type>(mod_signed<LocalPos::value_type>(lpos.x(), constant::CHUNK_SIZE));
+    result.y() = static_cast<LocalPos::value_type>(mod_signed<LocalPos::value_type>(lpos.y(), constant::CHUNK_SIZE));
+    result.z() = static_cast<LocalPos::value_type>(mod_signed<LocalPos::value_type>(lpos.z(), constant::CHUNK_SIZE));
     return result;
 }
 
 LocalPosXZ utils::wrap_local_xz(const LocalPosXZ& lpos)
 {
     LocalPosXZ result;
-    result[0] = static_cast<LocalPosXZ::value_type>(utils::mod_signed<LocalPosXZ::value_type>(lpos[0], constant::CHUNK_SIZE));
-    result[1] = static_cast<LocalPosXZ::value_type>(utils::mod_signed<LocalPosXZ::value_type>(lpos[1], constant::CHUNK_SIZE));
+    result[0] = static_cast<LocalPosXZ::value_type>(mod_signed<LocalPosXZ::value_type>(lpos[0], constant::CHUNK_SIZE));
+    result[1] = static_cast<LocalPosXZ::value_type>(mod_signed<LocalPosXZ::value_type>(lpos[1], constant::CHUNK_SIZE));
     return result;
 }

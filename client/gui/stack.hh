@@ -16,8 +16,8 @@ class HorizontalStack final : public WidgetBuilder<HorizontalStack> {
 public:
     HorizontalStack& add_item(Widget& widget, stack_policy_type policy = FIXED, float fixed_width = 0.0f);
 
-    virtual void layout(void) override;
     virtual void translate(void) override;
+    virtual void layout(void) override;
 
 private:
     struct Item final {

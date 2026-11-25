@@ -9,6 +9,8 @@
 #include "shared/utils/lua.hh"
 #include "shared/world/block_registry.hh"
 
+constexpr static float OFFSET_UNIT = 1.0f / 16.0f;
+
 class BlockDefReader final {
 public:
     explicit BlockDefReader(lua_State* L, int def_idx, int proto_idx);
@@ -18,37 +20,6 @@ public:
     int def_idx;
     int proto_idx;
 };
-
-BlockDefReader::BlockDefReader(lua_State* L, int def_idx, int proto_idx) : L(L), def_idx(def_idx), proto_idx(proto_idx)
-{
-    assert(L);
-    assert(def_idx > 0);
-    assert(proto_idx >= 0);
-}
-
-bool BlockDefReader::try_push(const char* key) const
-{
-    lua_getfield(L, def_idx, key);
-
-    if(lua_isnil(L, -1)) {
-        lua_pop(L, 1);
-
-        if(proto_idx) {
-            lua_getfield(L, proto_idx, key);
-
-            if(lua_isnil(L, -1)) {
-                lua_pop(L, 1);
-                return false;
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
-    return true;
-}
 
 static block_light_type clamp_light(lua_Integer value)
 {
@@ -324,7 +295,7 @@ static bool parse_overrides(lua_State* L, int idx, ModContext* ctx, BlockOverrid
             return false;
         }
 
-        patch.model_offset = 0.0625f * offset->cast<float>();
+        patch.model_offset = OFFSET_UNIT * offset->cast<float>();
         lua_pop(L, 1);
     }
 
@@ -357,7 +328,7 @@ static bool parse_overrides(lua_State* L, int idx, ModContext* ctx, BlockOverrid
             return false;
         }
 
-        patch.bcoll_offset = 0.0625f * offset->cast<float>();
+        patch.bcoll_offset = OFFSET_UNIT * offset->cast<float>();
         lua_pop(L, 1);
     }
 
@@ -543,7 +514,7 @@ static bool parse_definition(const BlockDefReader& reader, ModContext* ctx, Bloc
             return false;
         }
 
-        def.model_offset = 0.0625f * offset->cast<float>();
+        def.model_offset = OFFSET_UNIT * offset->cast<float>();
         lua_pop(L, 1);
     }
 
@@ -576,7 +547,7 @@ static bool parse_definition(const BlockDefReader& reader, ModContext* ctx, Bloc
             return false;
         }
 
-        def.bcoll_offset = 0.0625f * offset->cast<float>();
+        def.bcoll_offset = OFFSET_UNIT * offset->cast<float>();
         lua_pop(L, 1);
     }
 
@@ -1222,6 +1193,37 @@ static int api_add(lua_State* L)
     return 1;
 }
 
+BlockDefReader::BlockDefReader(lua_State* L, int def_idx, int proto_idx) : L(L), def_idx(def_idx), proto_idx(proto_idx)
+{
+    assert(L);
+    assert(def_idx > 0);
+    assert(proto_idx >= 0);
+}
+
+bool BlockDefReader::try_push(const char* key) const
+{
+    lua_getfield(L, def_idx, key);
+
+    if(lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+
+        if(proto_idx) {
+            lua_getfield(L, proto_idx, key);
+
+            if(lua_isnil(L, -1)) {
+                lua_pop(L, 1);
+                return false;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    return true;
+}
+
 void api_shared::open_blocks(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 {
     assert(lua);
@@ -1229,7 +1231,7 @@ void api_shared::open_blocks(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     auto L = lua.get();
 
-    lua_newtable(L); // Blocks
+    lua_newtable(L);
 
     lua_pushinteger(L, BLOCK_RENDER_SOLID);
     lua_setfield(L, -2, "RENDER_SOLID");

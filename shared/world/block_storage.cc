@@ -7,9 +7,10 @@
 #include "shared/utils/coord.hh"
 #include "shared/world/block_registry.hh"
 
-constexpr static std::uint32_t TAG_UNIFORM = 0x85787370;   // UNIF
+constexpr static std::uint32_t TAG_UNIFORM = 0x85787370;
 constexpr static std::uint32_t TAG_PALETTE8 = 0x80657666;  // PALB
 constexpr static std::uint32_t TAG_PALETTE16 = 0x80657687; // PALW
+constexpr static std::size_t PALETTE8_CAPACITY = 256;
 
 static void encode_block_id(block_id_type id, WriteBuffer& buffer)
 {
@@ -293,32 +294,32 @@ std::size_t BlockStorage::add_slot(palette_type& palette, block_id_type id)
     return slot;
 }
 
-void BlockStorage::promote(Palette8& dest, const Uniform& src)
+void BlockStorage::promote(Palette8& dest, const Uniform* src)
 {
     dest.indices.fill(0);
     dest.palette.clear();
-    dest.palette.emplace_back(src.filler, static_cast<std::uint16_t>(constant::CHUNK_VOLUME));
+    dest.palette.emplace_back(src->filler, static_cast<std::uint16_t>(constant::CHUNK_VOLUME));
 }
 
-void BlockStorage::promote(Palette16& dest, const Palette8& src)
+void BlockStorage::promote(Palette16& dest, const Palette8* src)
 {
-    dest.palette = src.palette;
+    dest.palette = src->palette;
 
     for(std::size_t i = 0; i < constant::CHUNK_VOLUME; ++i) {
-        dest.indices[i] = src.indices[i];
+        dest.indices[i] = src->indices[i];
     }
 }
 
-void BlockStorage::optimize(Palette8& p8, variant_type& dest)
+void BlockStorage::optimize(Palette8* p8, variant_type& dest)
 {
     palette_type compact;
     std::vector<std::uint8_t> remap;
-    remap.resize(p8.palette.size(), 0);
+    remap.resize(p8->palette.size(), 0);
 
-    for(std::size_t i = 0; i < p8.palette.size(); ++i) {
-        if(p8.palette[i].second > 0) {
+    for(std::size_t i = 0; i < p8->palette.size(); ++i) {
+        if(p8->palette[i].second > 0) {
             remap[i] = static_cast<std::uint8_t>(compact.size());
-            compact.push_back(p8.palette[i]);
+            compact.push_back(p8->palette[i]);
         }
     }
 
@@ -332,23 +333,23 @@ void BlockStorage::optimize(Palette8& p8, variant_type& dest)
         return;
     }
 
-    for(auto& index : p8.indices) {
+    for(auto& index : p8->indices) {
         index = remap[index];
     }
 
-    p8.palette = std::move(compact);
+    p8->palette = std::move(compact);
 }
 
-void BlockStorage::optimize(Palette16& p16, variant_type& dest)
+void BlockStorage::optimize(Palette16* p16, variant_type& dest)
 {
     palette_type compact;
     std::vector<std::uint16_t> remap;
-    remap.resize(p16.palette.size(), 0);
+    remap.resize(p16->palette.size(), 0);
 
-    for(std::size_t i = 0; i < p16.palette.size(); ++i) {
-        if(p16.palette[i].second > 0) {
+    for(std::size_t i = 0; i < p16->palette.size(); ++i) {
+        if(p16->palette[i].second > 0) {
             remap[i] = static_cast<std::uint16_t>(compact.size());
-            compact.push_back(p16.palette[i]);
+            compact.push_back(p16->palette[i]);
         }
     }
 
@@ -362,18 +363,18 @@ void BlockStorage::optimize(Palette16& p16, variant_type& dest)
         return;
     }
 
-    for(auto& index : p16.indices) {
+    for(auto& index : p16->indices) {
         index = remap[index];
     }
 
-    p16.palette = std::move(compact);
+    p16->palette = std::move(compact);
 
-    if(p16.palette.size() <= 256) {
+    if(p16->palette.size() <= PALETTE8_CAPACITY) {
         Palette8 p8;
-        p8.palette = p16.palette;
+        p8.palette = p16->palette;
 
         for(std::size_t i = 0; i < constant::CHUNK_VOLUME; ++i) {
-            p8.indices[i] = static_cast<std::uint8_t>(p16.indices[i]);
+            p8.indices[i] = static_cast<std::uint8_t>(p16->indices[i]);
         }
 
         dest = std::move(p8);
@@ -446,7 +447,7 @@ void BlockStorage::set(std::size_t index, block_id_type id)
         }
 
         Palette8 p8;
-        promote(p8, *uniform);
+        promote(p8, uniform);
         m_variant = std::move(p8);
 
         set(index, id);
@@ -457,9 +458,9 @@ void BlockStorage::set(std::size_t index, block_id_type id)
     if(auto p8 = std::get_if<Palette8>(&m_variant)) {
         auto slot = find_slot(p8->palette, id);
 
-        if(!slot.has_value() && p8->palette.size() >= 256) {
+        if(!slot.has_value() && p8->palette.size() >= PALETTE8_CAPACITY) {
             Palette16 p16;
-            promote(p16, *p8);
+            promote(p16, p8);
             m_variant = std::move(p16);
 
             set(index, id);
@@ -517,12 +518,12 @@ void BlockStorage::fill(block_id_type id)
 void BlockStorage::optimize(void)
 {
     if(auto p8 = std::get_if<Palette8>(&m_variant)) {
-        optimize(*p8, m_variant);
+        optimize(p8, m_variant);
         return;
     }
 
     if(auto p16 = std::get_if<Palette16>(&m_variant)) {
-        optimize(*p16, m_variant);
+        optimize(p16, m_variant);
         return;
     }
 }

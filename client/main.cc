@@ -160,7 +160,7 @@ static void zoned_update(void)
 
     chunk_mesher::update();
 
-    camera::update();
+    client_camera::update();
 
     loading::update();
 
@@ -174,8 +174,8 @@ static void zoned_render(void)
 {
     ZoneScopedN("client::render");
 
-    if(head::prepare()) {
-        head::render();
+    if(client_head::prepare()) {
+        client_head::render();
 
         if(globals::gui_screen) {
             globals::gui_screen->layout();
@@ -185,7 +185,7 @@ static void zoned_render(void)
 
         boot::render_fade();
 
-        head::present();
+        client_head::present();
     }
 }
 
@@ -247,8 +247,8 @@ static void wrapped_main(int argc, char** argv)
     Texture2D::register_resource();
 
     video::init();
-    head::init();
-    camera::init();
+    client_head::init();
+    client_camera::init();
 
     screenshot::init();
 
@@ -283,7 +283,7 @@ static void wrapped_main(int argc, char** argv)
     });
 
     boot::add("render", "boot.stage.render", 2.0f, [] {
-        head::detail::init_renderers();
+        client_head::detail::init_renderers();
 
         return true;
     });
@@ -331,7 +331,7 @@ static void wrapped_main(int argc, char** argv)
             s_started = true;
 
             video::init_late();
-            head::init_late();
+            client_head::init_late();
         }
 
         return !video::mode_pending;
@@ -484,7 +484,7 @@ static void wrapped_main(int argc, char** argv)
 
     res::hard_purge();
 
-    head::shutdown();
+    client_head::shutdown();
     video::shutdown();
 
     cvar::save_values("client.conf", FCVAR_REPLICATED);

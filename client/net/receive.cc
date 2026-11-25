@@ -247,7 +247,7 @@ static cvar::status cmd_time_query(const cvar::Context&, std::span<const std::st
 
 static cvar::status cmd_weather_status(const cvar::Context&, std::span<const std::string_view>)
 {
-    auto position = utils::to_fvec(camera::chunk) + camera::local;
+    auto position = utils::to_fvec(client_camera::chunk) + client_camera::local;
 
     auto& definition = globals::world->definition();
     auto& state = globals::world->weather();
@@ -264,7 +264,7 @@ static cvar::status cmd_weather_status(const cvar::Context&, std::span<const std
         description = name->full_string();
     }
 
-    auto bpos = utils::to_block(camera::chunk, camera::local.cast<LocalPos::value_type>());
+    auto bpos = utils::to_block(client_camera::chunk, client_camera::local.cast<LocalPos::value_type>());
     auto temperature = globals::world->get_temperature(bpos);
     auto temperature_base = globals::world->get_temperature_base(bpos);
     auto humidity = globals::world->get_humidity(bpos);

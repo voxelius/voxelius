@@ -4,7 +4,7 @@
 #include "shared/world/block.hh"
 #include "shared/world/tint.hh"
 
-struct CachedBlockModel_Quad final {
+struct CachedBlockModelQuad final {
     std::array<Eigen::Vector3f, 4> positions;
     std::array<Eigen::Vector2f, 4> uvs;
     std::uint32_t packed_normal;
@@ -17,8 +17,8 @@ struct CachedBlockModel_Quad final {
 };
 
 struct CachedBlockModel final {
-    std::vector<CachedBlockModel_Quad> unculled_quads;
-    std::array<std::vector<CachedBlockModel_Quad>, 6> face_quads;
+    std::vector<CachedBlockModelQuad> unculled_quads;
+    std::array<std::vector<CachedBlockModelQuad>, 6> face_quads;
     std::array<bool, 6> fully_covered;
 };
 

@@ -18,7 +18,7 @@ void BiomeMap::purge(void)
 
 void BiomeMap::attach(entt::registry& registry, entt::entity entity, const ChunkPos& cpos)
 {
-    BiomeSlice_Component component {};
+    BiomeSliceComponent component {};
 
     auto cpos_xz = ChunkPosXZ(cpos.x(), cpos.z());
 
@@ -39,7 +39,7 @@ void BiomeMap::attach(entt::registry& registry, entt::entity entity, const Chunk
         component.ptr = it->second.ptr;
     }
 
-    registry.emplace<BiomeSlice_Component>(entity, std::move(component));
+    registry.emplace<BiomeSliceComponent>(entity, std::move(component));
 }
 
 bool BiomeMap::has(const ChunkPosXZ& pos) const

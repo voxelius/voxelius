@@ -20,13 +20,13 @@ struct CloudVertex final {
 struct CloudWindow final {
     std::int32_t min_x;
     std::int32_t min_z;
-    std::size_t width;
-    std::size_t depth;
+    std::size_t cells_x;
+    std::size_t cells_z;
 };
 
 struct CloudBatch final {
-    std::size_t offset;
-    std::size_t count;
+    std::size_t index_offset;
+    std::size_t index_count;
     Eigen::Vector2f center; // Window center this batch was meshed around, in the frame of its vertices
     float fade;             // Outer edge of the deck; zero for a ring inside it, which does not fade out
     float blend_start;      // Outer edge of the ring, where it fades into the coarser one; a zero width means no fade
@@ -45,7 +45,7 @@ struct CloudMesh final {
 namespace cloud_mesher
 {
 // Fills the mesh with the geometry of every group. Groups are drawn farthest
-// first, which is the order the renderer needs for blending.
+// first, which is the order the renderer needs for blending
 void build(const CloudInput& input, std::span<const CloudGroup> groups, CloudMesh& mesh);
 } // namespace cloud_mesher
 

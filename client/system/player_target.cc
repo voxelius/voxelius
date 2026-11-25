@@ -137,9 +137,9 @@ void player_target::update(void)
 {
     physics::Ray ray {};
     ray.world = globals::world;
-    ray.start_chunk = camera::chunk;
-    ray.start = camera::instance.position();
-    ray.direction = camera::forward;
+    ray.start_chunk = client_camera::chunk;
+    ray.start = client_camera::instance.position();
+    ray.direction = client_camera::forward;
     ray.max_distance = gamerules::reach_distance.value();
 
     hit = physics::raycast(ray, physics::BLOCK_FILTER_ALL, physics::ENTITY_FILTER_ALL);

@@ -5,11 +5,10 @@ class World;
 
 // Sets the active world for the duration of an API call. Use it only around
 // code that calls the mod API: a callback has no world argument and reads the
-// active world instead. Any other caller takes its world as an argument.
+// active world instead. Any other caller takes its world as an argument
 class WorldScope final {
 public:
-    // The world the API reads while its callback runs. Only the Lua libraries
-    // read it.
+    // The world the API reads while its callback runs. Only the Lua libraries read it
     static World* active(void);
 
     explicit WorldScope(World* world);

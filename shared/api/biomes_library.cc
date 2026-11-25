@@ -356,7 +356,7 @@ void api_shared::open_biomes(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     auto L = lua.get();
 
-    lua_newtable(L); // Biomes
+    lua_newtable(L);
 
     lua_pushinteger(L, BIOME_ID_NULL);
     lua_setfield(L, -2, "NULL_BIOME");

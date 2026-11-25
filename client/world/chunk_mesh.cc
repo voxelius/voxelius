@@ -23,12 +23,12 @@ static std::uint32_t pack_unorm8(float value)
     return static_cast<std::uint32_t>(std::lround(std::clamp(value, 0.0f, 1.0f) * 255.0f)) & 0xFFU;
 }
 
-std::uint32_t ChunkMesh_Vertex::pack_1(const Eigen::Vector3f& position_16ths)
+std::uint32_t ChunkMeshVertex::pack_1(const Eigen::Vector3f& position_16ths)
 {
     return pack_10_10_10(position_16ths, INT32_C(16));
 }
 
-std::uint32_t ChunkMesh_Vertex::pack_2(const Eigen::Vector2f& uv, std::uint32_t mask_frame)
+std::uint32_t ChunkMeshVertex::pack_2(const Eigen::Vector2f& uv, std::uint32_t mask_frame)
 {
     std::uint32_t result = 0;
     result |= pack_unorm8(uv.x());
@@ -37,7 +37,7 @@ std::uint32_t ChunkMesh_Vertex::pack_2(const Eigen::Vector2f& uv, std::uint32_t 
     return result;
 }
 
-std::uint32_t ChunkMesh_Vertex::pack_3(std::uint32_t albedo_strip, std::uint32_t frame_offset)
+std::uint32_t ChunkMeshVertex::pack_3(std::uint32_t albedo_strip, std::uint32_t frame_offset)
 {
     std::uint32_t result = 0;
     result |= (albedo_strip & 0xFFFFU);
@@ -45,7 +45,7 @@ std::uint32_t ChunkMesh_Vertex::pack_3(std::uint32_t albedo_strip, std::uint32_t
     return result;
 }
 
-std::uint32_t ChunkMesh_Vertex::pack_4(std::uint32_t ao, float shade, bool animated, const Eigen::Vector3f& tint_rgb,
+std::uint32_t ChunkMeshVertex::pack_4(std::uint32_t ao, float shade, bool animated, const Eigen::Vector3f& tint_rgb,
     block_light_type sky_light, block_light_type block_light)
 {
     auto r = static_cast<std::uint32_t>(std::lround(std::clamp(tint_rgb.x(), 0.0f, 1.0f) * 31.0f)) & 0x1FU;
@@ -69,21 +69,21 @@ std::uint32_t ChunkMesh_Vertex::pack_4(std::uint32_t ao, float shade, bool anima
     return result;
 }
 
-ChunkMesh_Part::~ChunkMesh_Part(void)
+ChunkMeshPart::~ChunkMeshPart(void)
 {
     if(count) {
         chunk_vbo::free(base_vertex, count);
     }
 }
 
-ChunkMesh_Part::ChunkMesh_Part(ChunkMesh_Part&& other)
+ChunkMeshPart::ChunkMeshPart(ChunkMeshPart&& other)
     : vertices(std::move(other.vertices)), count(other.count), base_vertex(other.base_vertex)
 {
     other.count = 0;
     other.base_vertex = 0;
 }
 
-ChunkMesh_Part& ChunkMesh_Part::operator=(ChunkMesh_Part&& other)
+ChunkMeshPart& ChunkMeshPart::operator=(ChunkMeshPart&& other)
 {
     if(this == &other) {
         return *this;

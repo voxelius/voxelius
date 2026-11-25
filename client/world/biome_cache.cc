@@ -24,7 +24,7 @@ void BiomeCache::init(const ChunkPos& cpos)
             }
 
             auto& chunk_registry = globals::world->chunk_registry();
-            auto component = chunk_registry.try_get<BiomeSlice_Component>(chunk->entity());
+            auto component = chunk_registry.try_get<BiomeSliceComponent>(chunk->entity());
 
             if(component == nullptr || component->ptr == nullptr) {
                 continue;

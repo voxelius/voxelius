@@ -18,7 +18,7 @@ extern Eigen::Vector3f moon_tint;
 extern float moon_strength;
 extern std::uint32_t moon_phase;
 
-extern float sun_tilt;
+extern float sun_tilt; // Radians
 extern float twilight;
 
 extern float phase;

@@ -119,19 +119,19 @@ static cvar::status cmd_echo(const cvar::Context&, std::span<const std::string_v
 
 void cvar::register_commands_core(void)
 {
-    auto& list_binding = cvar::bind_cmd("list_vars");
-    list_binding.set_help("List all variables");
-    list_binding.connect<&cmd_list_vars>();
+    auto& list_vars_binding = bind_cmd("list_vars");
+    list_vars_binding.set_help("List all variables");
+    list_vars_binding.connect<&cmd_list_vars>();
 
-    auto& list_cmds_binding = cvar::bind_cmd("list_cmds");
+    auto& list_cmds_binding = bind_cmd("list_cmds");
     list_cmds_binding.set_help("List all commands");
     list_cmds_binding.connect<&cmd_list_cmds>();
 
-    auto& help_binding = cvar::bind_cmd("help");
+    auto& help_binding = bind_cmd("help");
     help_binding.set_help("Show help for a variable or command");
     help_binding.connect<&cmd_help>();
 
-    auto& echo_binding = cvar::bind_cmd("echo");
+    auto& echo_binding = bind_cmd("echo");
     echo_binding.set_help("Echo arguments to console");
     echo_binding.connect<&cmd_echo>();
 }

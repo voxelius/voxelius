@@ -12,10 +12,11 @@ public:
     ChoicePopup& add_choice(std::string_view choice, std::function<void(void)> callback = {});
     ChoicePopup& set_size(float wide, float tall);
 
-    virtual void layout(void) override;
     virtual void translate(void) override;
 
     void open(void);
+
+    virtual void layout(void) override;
 
 private:
     struct Choice final {
@@ -42,19 +43,19 @@ namespace gui
 {
 class InputPopup final : public WidgetBuilder<InputPopup> {
 public:
-    InputPopup& set_title(std::string_view title);
-    InputPopup& add_input(std::string_view label, ImGuiInputTextFlags flags = 0, std::function<bool(std::string_view)> validator = {});
-    InputPopup& on_submit(std::function<void(std::span<const std::string>)> callback);
-    InputPopup& on_cancel(std::function<void(void)> callback);
-    InputPopup& set_size(float wide, float tall);
-
-    virtual void layout(void) override;
     virtual void translate(void) override;
+    virtual void layout(void) override;
 
     void open(void);
 
     std::string_view value(std::size_t index) const;
     void set_value(std::size_t index, std::string_view value);
+
+    InputPopup& set_title(std::string_view title);
+    InputPopup& add_input(std::string_view label, ImGuiInputTextFlags flags = 0, std::function<bool(std::string_view)> validator = {});
+    InputPopup& on_submit(std::function<void(std::span<const std::string>)> callback);
+    InputPopup& on_cancel(std::function<void(void)> callback);
+    InputPopup& set_size(float wide, float tall);
 
 private:
     struct Field final {

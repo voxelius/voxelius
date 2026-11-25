@@ -34,12 +34,12 @@ struct PrecipitationContext final {
     weather_type_id front { WEATHER_ID_NULL };
     const WeatherTypeDefinition* definition { nullptr };
     float coverage { 0.0f };
-    float amount { 0.0f }; // Coverage times the front's intensity
+    float effective_intensity { 0.0f }; // Coverage times the front's intensity
 };
 
 struct PrecipitationSelection final {
     precipitation_type_id type { PRECIPITATION_ID_NULL };
-    float amount { 0.0f };
+    float effective_intensity { 0.0f };
 };
 
 namespace precipitation

@@ -2,8 +2,6 @@
 
 #include "server/world/noise_cache_3d.hh"
 
-#include "core/utils/modulo.hh"
-
 #include "shared/utils/coord.hh"
 
 template<unsigned CellW, unsigned CellH, unsigned CellD>

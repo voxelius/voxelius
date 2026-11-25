@@ -90,9 +90,6 @@ bool unpack_animated(uint data_4)
 
 void main(void)
 {
-    vec3 local_position = unpack_position(vert_Data1);
-    local_position += texelFetch(u_ChunkPositions, int(vert_Data5)).xyz;
-
     vs_TexCoord = unpack_texcoord(vert_Data2);
     vs_MaskFrame = unpack_mask_frame(vert_Data2);
 

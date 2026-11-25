@@ -5,8 +5,8 @@ union SDL_Event;
 
 namespace boot
 {
-void init(void);
 void start(void);
+void init(void);
 void shutdown(void);
 } // namespace boot
 

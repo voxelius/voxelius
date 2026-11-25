@@ -129,14 +129,18 @@ static void push_vertex(std::vector<StarVertex>& vertices, const Eigen::Vector3f
 static void build_stars(void)
 {
     auto& visuals = utils::world_visuals();
-    auto count = static_cast<std::size_t>(visuals.stars ? visuals.stars->count : 0U);
+    auto star_count = std::size_t(0);
+
+    if(visuals.stars) {
+        star_count = static_cast<std::size_t>(visuals.stars->count);
+    }
 
     std::mt19937_64 random(skybox::star_seed);
     std::vector<StarVertex> vertices;
 
-    vertices.reserve(count * 6);
+    vertices.reserve(star_count * 6);
 
-    for(std::size_t i = 0; i < count; ++i) {
+    for(std::size_t i = 0; i < star_count; ++i) {
         Eigen::Vector3f direction;
 
         for(;;) {
@@ -189,7 +193,7 @@ static void build_stars(void)
     glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(vertices.size() * sizeof(StarVertex)), vertices.data(), GL_STATIC_DRAW);
 
     s_star_vertices = static_cast<GLsizei>(vertices.size());
-    s_built_stars = std::make_pair(skybox::star_seed, static_cast<std::uint32_t>(count));
+    s_built_stars = std::make_pair(skybox::star_seed, static_cast<std::uint32_t>(star_count));
 }
 
 static void draw_stars(const Eigen::Matrix4f& sky_view_projection)
@@ -349,15 +353,19 @@ void sky_renderer::render(void)
 
     // The camera has no valid matrices until a player exists; the
     // flat clear color is the right sky for the menu that follows
-    auto view = camera::instance.view();
-    auto projection = camera::instance.projection();
+    auto view = client_camera::instance.view();
+    auto projection = client_camera::instance.projection();
 
     if(view.hasNaN() || projection.hasNaN()) {
         return;
     }
 
     auto& visuals = utils::world_visuals();
-    auto expected_count = visuals.stars ? visuals.stars->count : 0U;
+    auto expected_count = std::uint32_t(0);
+
+    if(visuals.stars) {
+        expected_count = visuals.stars->count;
+    }
     auto draw_sky = visuals.sky.has_value();
 
     if(!s_built_stars.has_value()) {
@@ -369,7 +377,7 @@ void sky_renderer::render(void)
 
     // The sky spheres turn with the camera, so the view
     // matrix loses its translation and keeps only its rotation
-    auto view_rotation = camera::instance.view();
+    auto view_rotation = client_camera::instance.view();
     view_rotation(0, 3) = 0.0f;
     view_rotation(1, 3) = 0.0f;
     view_rotation(2, 3) = 0.0f;
@@ -384,13 +392,13 @@ void sky_renderer::render(void)
     if(draw_sky) {
         vx::throw_if_not(s_sky.update());
 
-        auto half_fov = 0.5f * utils::radians(camera::vertical_fov.value());
+        auto half_fov = 0.5f * utils::radians(client_camera::vertical_fov.value());
         auto tan_half_fov = std::tan(half_fov);
         auto ground_color = Eigen::Vector3f(skybox::horizon_color * 0.35f);
 
-        auto forward = camera::instance.forward_vector();
-        auto right = camera::instance.right_vector();
-        auto up = camera::instance.up_vector();
+        auto forward = client_camera::instance.forward_vector();
+        auto right = client_camera::instance.right_vector();
+        auto up = client_camera::instance.up_vector();
 
         glUseProgram(s_sky.handle);
         glUniform3fv(s_sky.uniforms[su_CameraForward].location, 1, forward.data());

@@ -42,7 +42,7 @@ constexpr static float TIME_WRAP = 3600.0f;  // The scroll offset restarts once 
 constexpr static std::uint32_t PHASE_SALT = UINT32_C(0x9E3779B9);
 
 struct PrecipitationVertex final {
-    float position[3]; // Relative to camera::chunk, like the chunk meshes
+    float position[3]; // Relative to client_camera::chunk, like the chunk meshes
     float uv[2];
     float color[4]; // Tint in RGB, column amount in A
 };
@@ -53,7 +53,7 @@ static_assert(0x0C == offsetof(PrecipitationVertex, uv));
 static_assert(0x14 == offsetof(PrecipitationVertex, color));
 
 struct PrecipitationColumn final {
-    float x; // Column centre, in blocks of the camera's chunk
+    float x; // Column center, in blocks of the camera's chunk
     float z;
     float bottom; // Same space, in blocks above the chunk origin
     float top;
@@ -61,7 +61,7 @@ struct PrecipitationColumn final {
     float v1;
     float dist2;
     const PrecipitationDefinition* definition;
-    float amount;
+    float effective_intensity;
 };
 
 struct DrawRange final {
@@ -139,9 +139,9 @@ static void build_columns(const World* world, const PrecipitationContext& ctx, c
 
     auto radius = static_cast<int>(s_radius.value());
 
-    auto origin_x = camera::chunk.x() << constant::CHUNK_SIZE_LOG2;
-    auto origin_y = camera::chunk.y() << constant::CHUNK_SIZE_LOG2;
-    auto origin_z = camera::chunk.z() << constant::CHUNK_SIZE_LOG2;
+    auto origin_x = client_camera::chunk.x() << constant::CHUNK_SIZE_LOG2;
+    auto origin_y = client_camera::chunk.y() << constant::CHUNK_SIZE_LOG2;
+    auto origin_z = client_camera::chunk.z() << constant::CHUNK_SIZE_LOG2;
 
     auto base_x = static_cast<int>(std::floor(camera.x()));
     auto base_y = static_cast<int>(std::floor(camera.y()));
@@ -199,7 +199,7 @@ static void build_columns(const World* world, const PrecipitationContext& ctx, c
                 continue;
             }
 
-            auto probability = selection.amount * definition->draw_chance;
+            auto probability = selection.effective_intensity * definition->draw_chance;
 
             if(probability <= 0.0f) {
                 continue;
@@ -238,7 +238,7 @@ static void build_columns(const World* world, const PrecipitationContext& ctx, c
             column.v1 = world_top * V_TILE_SCALE + phase;
             column.dist2 = delta_x * delta_x + delta_z * delta_z;
             column.definition = definition;
-            column.amount = selection.amount;
+            column.effective_intensity = selection.effective_intensity;
             s_columns.push_back(column);
         }
     }
@@ -262,7 +262,7 @@ static void build_vertices(const Eigen::Vector3f& camera)
     auto light = fog::daylight * fog::light_scale;
 
     for(const auto& column : s_columns) {
-        // The column centre and the camera are
+        // The column center and the camera are
         // both in the blocks of the camera's chunk
         auto dx = column.x - camera.x();
         auto dz = column.z - camera.z();
@@ -286,7 +286,7 @@ static void build_vertices(const Eigen::Vector3f& camera)
         auto red = column.definition->color.x() * light;
         auto green = column.definition->color.y() * light;
         auto blue = column.definition->color.z() * light;
-        auto alpha = std::clamp(column.amount * column.definition->opacity, 0.0f, 1.0f);
+        auto alpha = std::clamp(column.effective_intensity * column.definition->opacity, 0.0f, 1.0f);
 
         auto first = static_cast<GLint>(s_vertices.size());
 
@@ -436,25 +436,25 @@ void precipitation_renderer::render(void)
         return;
     }
 
-    if(camera::inside_fluid) {
+    if(client_camera::inside_fluid) {
         return;
     }
 
     // The weather field is sampled by world position; the geometry is built in the camera's chunk
-    auto world_position = utils::to_fvec(camera::chunk) + camera::local;
+    auto world_position = utils::to_fvec(client_camera::chunk) + client_camera::local;
     auto ctx = precipitation::context(world, definition.weather, world_position.x(), world_position.z());
 
-    if(ctx.definition == nullptr || ctx.amount <= 0.0f) {
+    if(ctx.definition == nullptr || ctx.effective_intensity <= 0.0f) {
         return;
     }
 
-    build_columns(world, ctx, camera::local);
+    build_columns(world, ctx, client_camera::local);
 
     if(s_columns.empty()) {
         return;
     }
 
-    build_vertices(camera::local);
+    build_vertices(client_camera::local);
 
     if(s_vertices.empty()) {
         return;
@@ -464,9 +464,9 @@ void precipitation_renderer::render(void)
 
     glUseProgram(s_program.handle);
 
-    auto& view_projection = camera::instance.view_projection();
+    auto& view_projection = client_camera::instance.view_projection();
     glUniformMatrix4fv(s_program.uniforms[su_ViewProjection].location, 1, GL_FALSE, view_projection.data());
-    glUniform3fv(s_program.uniforms[su_CameraLocal].location, 1, camera::local.data());
+    glUniform3fv(s_program.uniforms[su_CameraLocal].location, 1, client_camera::local.data());
     glUniform3fv(s_program.uniforms[su_FogColor].location, 1, fog::color.data());
     glUniform1f(s_program.uniforms[su_ViewDistance].location, fog::distance);
     glUniform1i(s_program.uniforms[su_Texture].location, 0);

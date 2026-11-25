@@ -8,10 +8,10 @@
 namespace gui
 {
 template<typename T>
-class Input final : public SettingBuilder<Input<T>> {
+class InputSetting final : public SettingBuilder<InputSetting<T>> {
 public:
-    Input<T>& bind(std::string_view name);
-    Input<T>& set_range(T min, T max);
+    InputSetting<T>& bind(std::string_view name);
+    InputSetting<T>& set_range(T min, T max);
 
     T value(void) const;
     void set_value(T value);
@@ -29,9 +29,9 @@ private:
 
 namespace gui
 {
-using InputInt = Input<int>;
-using InputFloat = Input<float>;
-using InputUnsigned = Input<unsigned>;
+using InputInt = InputSetting<int>;
+using InputFloat = InputSetting<float>;
+using InputUnsigned = InputSetting<unsigned>;
 } // namespace gui
 
 #endif /* F2320026_A60A_4208_B5BB_3D8CF60BE732 */

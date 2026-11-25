@@ -25,7 +25,6 @@ entt::entity spawn_player(entt::registry& registry, const BlockPos& pos, entt::e
 
 namespace utils
 {
-// Destroys the source entity. The caller places the returned new entity in the target registry
 entt::entity transfer(entt::registry& from, entt::entity entity, entt::registry& to);
 } // namespace utils
 

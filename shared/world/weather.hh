@@ -27,7 +27,7 @@ struct CloudBody final {
 // A front names several precipitation types, and the local climate picks
 // one of them per point. The ids are resolved by weather_registry::commit
 // after the precipitation registry has committed all of this mod's definitions
-struct Precipitation final {
+struct PrecipitationFront final {
     std::vector<Identifier> type_names;
     std::vector<precipitation_type_id> types;
 
@@ -45,7 +45,7 @@ struct WeatherTypeDefinition final {
 
     CloudBody cloud;
 
-    Precipitation precipitation;
+    PrecipitationFront precipitation;
 
     Eigen::Vector3f sky_tint { Eigen::Vector3f(1.0f, 1.0f, 1.0f) };
     float sky_visibility { 1.0f }; // 1 = the clear sky shows through, 0 = only sky_tint
@@ -59,7 +59,7 @@ struct WeatherTypeDefinition final {
     float weight { 1.0f };
 
     float strikes_per_minute { 0.0f };
-    float strike_radius { 96.0f };
+    float strike_radius { 96.0f }; // Blocks
 
     WeatherCallback on_tick;
     WeatherCallback on_strike;
@@ -93,6 +93,7 @@ public:
     Eigen::Vector2f wind_direction(void) const;
     float wind_speed(void) const;
 
+    // An empty allowed span disables the filter
     weather_type_id type_at(std::span<const weather_type_id> allowed, float x, float z, std::uint64_t weather_tick) const;
     float coverage_of(std::span<const weather_type_id> allowed, weather_type_id type, float x, float z, std::uint64_t weather_tick) const;
     float coverage(std::span<const weather_type_id> allowed, float x, float z, std::uint64_t weather_tick) const;

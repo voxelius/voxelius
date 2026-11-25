@@ -34,7 +34,7 @@ static block_face opposite_face(block_face face)
 
 // The collision box is the shape the game already knows about, so it decides
 // which cell faces the block really closes. A block without one is treated as
-// filling its cell, which keeps it as opaque as it has always been.
+// filling its cell, which keeps it as opaque as it has always been
 static std::uint8_t make_covered_faces(block_id_type id, const BlockDefinition& def)
 {
     if(def.is_stem || def.bcoll_name.is_empty()) {
@@ -95,7 +95,7 @@ static LightMaterial make_material(block_id_type id, const BlockDefinition& def)
     material.covered_faces = make_covered_faces(id, def);
 
     if(def.render == BLOCK_RENDER_SOLID && material.opacity == BLOCK_LIGHT_MIN) {
-        // A solid block without opacity would leak light like air.
+        // A solid block without opacity would leak light like air
         material.opacity = BLOCK_LIGHT_MAX;
     }
 
@@ -136,7 +136,7 @@ const LightMaterial& light_material::get(block_id_type id)
 
 block_light_type light_material::face_cost(block_id_type id, block_face face)
 {
-    auto& material = light_material::get(id);
+    auto& material = get(id);
 
     if(0 == (material.covered_faces & (1U << face))) {
         return BLOCK_LIGHT_MIN;
@@ -147,19 +147,19 @@ block_light_type light_material::face_cost(block_id_type id, block_face face)
 
 block_light_type light_material::crossing_cost(block_id_type from, block_id_type to, block_face enter_face)
 {
-    auto cost = light_material::face_cost(to, enter_face);
-    auto& from_material = light_material::get(from);
+    auto cost = face_cost(to, enter_face);
+    auto& from_material = get(from);
 
     if(from_material.covered_faces == LightMaterial::ALL_FACES) {
         return cost;
     }
 
-    return std::max(cost, light_material::face_cost(from, opposite_face(enter_face)));
+    return std::max(cost, face_cost(from, opposite_face(enter_face)));
 }
 
 bool light_material::is_opaque(block_id_type id)
 {
-    auto& material = light_material::get(id);
+    auto& material = get(id);
 
     return material.covered_faces == LightMaterial::ALL_FACES && material.opacity >= BLOCK_LIGHT_MAX;
 }

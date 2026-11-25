@@ -32,7 +32,7 @@ static bool s_primed { false };
 
 void fog::init(void)
 {
-    auto& r_fog_binding = cvar::bind_var(fog::model, "r_fog");
+    auto& r_fog_binding = cvar::bind_var(model, "r_fog");
     r_fog_binding.set_help("Fog style: 0 = off, 1 = simple, 2 = fancy");
     r_fog_binding.set_flags(FCVAR_ARCHIVE);
 
@@ -43,7 +43,7 @@ void fog::init(void)
 
 void fog::update(void)
 {
-    distance = static_cast<float>(constant::CHUNK_SIZE * camera::view_distance.value());
+    distance = static_cast<float>(constant::CHUNK_SIZE * client_camera::view_distance.value());
 
     // The atmosphere owns the sky color and the weather tint; the fog
     // only copies them so the terrain dissolves into the same horizon
@@ -52,8 +52,7 @@ void fog::update(void)
     daylight = skybox::daylight;
     light_scale = skybox::light_scale;
 
-    // Under a fluid the color comes from the fluid itself
-    if(auto def = fluid_registry::find_definition(camera::inside_fluid)) {
+    if(auto def = fluid_registry::find_definition(client_camera::inside_fluid)) {
         distance /= def->fog_density;
         target_color = def->fog_color;
     }

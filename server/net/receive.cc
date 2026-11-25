@@ -194,7 +194,7 @@ static void on_world_request(const packet::World_Request& packet)
         return;
     }
 
-    streaming::subscribe(*session, packet);
+    streaming::subscribe(session, packet);
 }
 
 static void on_chunk_ready(const ChunkReadyEvent& event)

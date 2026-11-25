@@ -40,8 +40,7 @@ void gui::detail::SettingWidget::layout(void)
     ImGui::SetCursorPosX(row_start_x + pad_x);
     ImGui::AlignTextToFramePadding();
 
-    // Long translations wrap inside their column instead of running under
-    // the control
+    // Long translations wrap inside their column instead of running under the control
     ImGui::PushTextWrapPos(row_start_x + pad_x + label_width);
     ImGui::TextUnformatted(m_label.c_str());
     ImGui::PopTextWrapPos();
@@ -70,8 +69,7 @@ void gui::detail::SettingWidget::layout(void)
         }
     }
 
-    // The control always sits on the first line of the row, even when the
-    // label wrapped to a second one
+    // The control always sits on the first line of the row, even when the label wrapped to a second one
     ImGui::SetNextItemWidth(control_width);
     ImGui::SetCursorScreenPos(ImVec2(row_min.x + content_size.x - control_width - pad_x, row_min.y));
 

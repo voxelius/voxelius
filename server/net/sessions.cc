@@ -71,14 +71,14 @@ static std::shared_ptr<ServerWorld> resolve_spawn_world(void)
     return world;
 }
 
-static void send_world_state(Session& session)
+static void send_world_state(Session* session)
 {
-    auto world = session.world;
+    auto world = session->world;
 
     packet::World_Info world_info {};
     world_info.fill(world->definition());
     world_info.weather_seed = world->weather_seed;
-    protocol::send(world_info, session.peer);
+    protocol::send(world_info, session->peer);
 
     packet::World_Timings timings {};
     timings.current_tick = globals::current_tick;
@@ -86,7 +86,7 @@ static void send_world_state(Session& session)
     timings.day = world_clock::day(world->daylight_tick, server_vars::day_length_ticks());
     timings.weather_tick = world->weather_tick;
     timings.season_tick = 0; // Reserved for the season cycle
-    protocol::send(timings, session.peer);
+    protocol::send(timings, session->peer);
 }
 
 static bool is_outdated_client(std::uint32_t major, std::uint32_t minor, std::uint32_t patch)
@@ -255,7 +255,7 @@ static void on_auth_response(const packet::Auth_Response& packet)
 
     // The world shape, the seed and the weather seeds do not change, so they travel once.
     // The one-shot state packets then fix the client's time, drift and cloud deck before the first periodic update
-    send_world_state(*session);
+    send_world_state(session);
 
     auto& definition = session->world->definition();
     auto bpos = definition.spawn;
@@ -281,7 +281,7 @@ static void on_disconnect(const packet::Session_Disconnect& packet)
 static std::string sanitize_username(std::string_view username)
 {
     auto size = username.size();
-    size = std::min(size, static_cast<std::size_t>(64));
+    size = std::min(size, constant::USERNAME_MAX_LENGTH);
 
     std::string sanitized;
     sanitized.reserve(size);
@@ -459,7 +459,7 @@ void sessions::set_access(Session* session, session_access access)
 
 void sessions::refresh_access(const ed25519::pkey_type& pkey, session_access access)
 {
-    for(auto& session : sessions::all()) {
+    for(auto& session : all()) {
         if(session.state != session_state::UNCONNECTED && session.pkey == pkey) {
             set_access(&session, access);
         }
@@ -778,7 +778,7 @@ bool sessions::transfer(Session* session, const std::shared_ptr<ServerWorld>& wo
 
     receive::forget_peer(session->peer);
 
-    send_world_state(*session);
+    send_world_state(session);
 
     packet::Entity_Client client {};
     client.entity = entity;

@@ -110,9 +110,9 @@ void Camera::set_view(const Eigen::Vector3f& position, const Eigen::Vector3f& an
     assert(position.allFinite());
     assert(angles.allFinite());
 
-    Eigen::AngleAxisf pitch(angles.x(), Eigen::Vector3f::UnitX()); // Pitch-around-X
-    Eigen::AngleAxisf yaw(angles.y(), Eigen::Vector3f::UnitY());   // Yaw-around-Y
-    Eigen::AngleAxisf roll(angles.z(), Eigen::Vector3f::UnitZ());  // Roll-around-Z
+    Eigen::AngleAxisf pitch(angles.x(), Eigen::Vector3f::UnitX());
+    Eigen::AngleAxisf yaw(angles.y(), Eigen::Vector3f::UnitY());
+    Eigen::AngleAxisf roll(angles.z(), Eigen::Vector3f::UnitZ());
 
     set_view(position, Eigen::Quaternionf(yaw * pitch * roll));
 }

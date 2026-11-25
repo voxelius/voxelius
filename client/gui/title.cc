@@ -42,7 +42,7 @@ gui::Title& gui::Title::set_top(float top)
 
 gui::Title& gui::Title::set_width(float width)
 {
-    m_width = width;
+    m_width_fraction = width;
 
     return self();
 }
@@ -99,7 +99,7 @@ void gui::Title::layout_header(ImVec2 window_size, ImDrawList* draw_list, float 
     // The wordmark is very wide, so the height cap is what keeps it
     // from eating the whole screen on wide windows
     auto max_height = 0.225f * window_size.y;
-    auto width = std::min(window_size.x * m_width, max_height * aspect);
+    auto width = std::min(window_size.x * m_width_fraction, max_height * aspect);
     auto height = width / aspect;
 
     auto position = ImVec2(0.5f * (window_size.x - width), window_size.y * m_top);
@@ -119,8 +119,7 @@ void gui::Title::layout_header(ImVec2 window_size, ImDrawList* draw_list, float 
 
     ImGui::SetCursorPos(splash_position);
 
-    // Drawn by hand: the sky behind is bright and a flat line of text
-    // sinks into it without a shadow
+    // Drawn by hand: the sky behind is bright and a flat line of text sinks into it without a shadow
     auto splash_screen = ImGui::GetCursorScreenPos();
 
     auto shadow_color = ImGui::GetColorU32(ImVec4(0.000f, 0.000f, 0.000f, 0.850f));

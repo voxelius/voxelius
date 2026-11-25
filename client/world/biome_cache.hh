@@ -1,9 +1,9 @@
 #ifndef F5E99223_7BE3_4C54_9C31_74E34262ED63
 #define F5E99223_7BE3_4C54_9C31_74E34262ED63
 
-#include "client/world/block_cache.hh"
-
 #include "shared/world/biome.hh"
+
+#include "client/world/block_cache.hh"
 
 class BiomeCache final {
 public:

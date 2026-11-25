@@ -34,8 +34,7 @@ float text_shadow_offset(void);
 
 namespace gui::detail
 {
-// The label may carry an ImGui "###id" suffix; it is used for the item id
-// and cut off before drawing
+// The label may carry an ImGui "###id" suffix; it is used for the item id and cut off before drawing
 bool stone_button(const char* id, std::string_view label, ImVec2 size);
 bool stone_arrow_button(const char* id, ImVec2 size);
 } // namespace gui::detail

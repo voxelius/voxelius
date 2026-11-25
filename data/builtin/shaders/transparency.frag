@@ -30,7 +30,7 @@ const int MAX_LAYERS = 4;
 // gradient becomes bands, and where each channel rounds at its own
 // step. In a dark deck over a fog that reads as green and
 // magenta stripes instead of a brightness ramp. Half a level
-// of noise scatters the steps before the store quantises them
+// of noise scatters the steps before the store quantizes them
 float hash12(vec2 p)
 {
     vec3 p3 = fract(vec3(p.xyx) * 0.1031);

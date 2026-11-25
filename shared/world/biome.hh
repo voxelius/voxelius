@@ -30,7 +30,7 @@ struct BiomePaletteEntry final {
     block_id_type cached;
 };
 
-struct BiomeDefinition {
+struct BiomeDefinition final {
     BiomeDefinition(void) = default;
 
     float temperature { 15.0f }; // Base temperature in Celsius

@@ -3,8 +3,8 @@
 
 #include "core/identifier.hh"
 
-constexpr static std::uint32_t RESFLAG_CACHE = 1 << 0;      ///< Cache the resource after loading
-constexpr static std::uint32_t RESFLAG_CUSTOM = 0xFFFFFF00; ///< Mask of custom resource flags/data
+constexpr static std::uint32_t RESFLAG_CACHE = 1 << 0;
+constexpr static std::uint32_t RESFLAG_CUSTOM = 0xFFFFFF00; // Mask of custom resource flags and data
 
 namespace res
 {

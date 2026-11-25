@@ -17,8 +17,8 @@ struct Column final {
 
     constexpr bool is_valid(void) const;
 
-    BlockPos::value_type surface_y { UNSET }; // top surface block
-    BlockPos::value_type liquid_y { UNSET };  // top liquid block (above surface, otherwise UNSET)
+    BlockPos::value_type surface_y { UNSET };
+    BlockPos::value_type liquid_y { UNSET }; // top liquid block (above surface, otherwise UNSET)
 };
 
 using ColumnSlice = std::array<Column, constant::CHUNK_AREA>;

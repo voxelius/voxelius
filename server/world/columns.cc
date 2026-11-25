@@ -55,7 +55,7 @@ static BlockPos::value_type find_surface(World* world, const BlockPos& origin, B
 {
     auto& definition = world->definition();
 
-    for(auto y = from; y >= definition.min_y; y -= 1) {
+    for(auto y = from; y >= definition.min_y; --y) {
         if(is_surface(world, BlockPos(origin.x(), y, origin.z()))) {
             return y;
         }
@@ -68,7 +68,7 @@ static BlockPos::value_type find_liquid(World* world, const BlockPos& origin, Bl
 {
     auto& definition = world->definition();
 
-    for(auto y = from; y > surface && y >= definition.min_y; y -= 1) {
+    for(auto y = from; y > surface && y >= definition.min_y; --y) {
         if(is_liquid(world, BlockPos(origin.x(), y, origin.z()))) {
             return y;
         }

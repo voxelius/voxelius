@@ -5,13 +5,13 @@
 
 #include "shared/world/biome.hh"
 
+constexpr static std::size_t BIOME_SELECTOR_MAX_GRID_SIZE = 128;
+
 enum biome_selection_strategy : unsigned {
     BIOME_SELECTION_NEAREST = 0,
     BIOME_SELECTION_GRID,
     BIOME_SELECTION_CONSTANT,
 };
-
-constexpr static std::size_t BIOME_SELECTOR_MAX_GRID_SIZE = 128;
 
 struct BiomeSelector final {
     struct Entry final {
@@ -23,6 +23,10 @@ struct BiomeSelector final {
         // Resolved from biome_name in world_registry::resolve()
         biome_id_type biome { BIOME_ID_NULL };
     };
+
+    // Sample holds one value per axis, each in [0, 1]
+    biome_id_type select(std::span<const float> sample) const;
+    void finalize(void);
 
     biome_selection_strategy strategy { BIOME_SELECTION_CONSTANT };
 
@@ -37,10 +41,6 @@ struct BiomeSelector final {
 
     Identifier constant_biome_name;
     biome_id_type constant_biome { BIOME_ID_NULL };
-
-    // sample holds one value per axis, each in [0, 1]
-    biome_id_type select(std::span<const float> sample) const;
-    void finalize(void);
 };
 
 #endif /* A4E7C2B9_8D1F_4C3A_9E6B_2F5D7A8C0B1E */

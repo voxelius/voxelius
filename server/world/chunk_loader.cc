@@ -106,7 +106,7 @@ static std::shared_ptr<RegionEntry> get_region(const World* world, const RegionP
 
     // Another thread may have opened the region while this one waited for the
     // exclusive lock. Opening the same file twice would give both instances their
-    // own stream and free-range bookkeeping, and their writes would corrupt each other.
+    // own stream and free-range bookkeeping, and their writes would corrupt each other
     if(auto it = s_cache.find(key); it != s_cache.cend()) {
         it->second->last_used.store(std::chrono::steady_clock::now(), std::memory_order_relaxed);
         return it->second;
@@ -144,7 +144,7 @@ static void evict_stale(void)
             if(entry.use_count() <= 2) {
                 // Baseline while iterating this snapshot is 2 refs
                 // (s_cache's own + this local copy); anything above
-                // that means an in-flight task is still using it.
+                // that means an in-flight task is still using it
                 s_cache.erase(key);
             }
         }
@@ -195,7 +195,7 @@ static void on_block_update(const BlockUpdateEvent& event)
 static void on_chunk_light(const ChunkLightUpdateEvent& event)
 {
     // The light lives in the chunk snapshot, so a chunk whose light changed
-    // has to be saved even when its blocks did not.
+    // has to be saved even when its blocks did not
     auto world = event.world();
     auto chunk = world->find_chunk(event.pos());
 
@@ -286,7 +286,7 @@ void LoadTask::finalize(void)
         }
 
         // Not ChunkUpdateEvent: loaded-from-disk chunks are identical
-        // to what's saved and must NOT be marked ChunkDirtyMarker.
+        // to what's saved and must NOT be marked ChunkDirtyMarker
         globals::dispatcher.trigger(ChunkReadyEvent(m_world.get(), m_pos, chunk));
 
         entity_loader::load(m_world.get(), m_pos);
@@ -324,12 +324,12 @@ void chunk_loader::init(void)
 void chunk_loader::shutdown(void)
 {
     // Unloading submits saves to the pool; without this they are still
-    // queued when the pool is cancelled and the chunks are lost.
+    // queued when the pool is cancelled and the chunks are lost
     threading::wait();
 
     for(const auto& world : universe::worlds()) {
         auto& chunk_registry = world->chunk_registry();
-        auto view = chunk_registry.view<Chunk_Component, ChunkDirtyMarker>();
+        auto view = chunk_registry.view<ChunkComponent, ChunkDirtyMarker>();
 
         for(auto [entity, component] : view.each()) {
             write_chunk(world.get(), component.position, component.ptr->snapshot(globals::current_tick));

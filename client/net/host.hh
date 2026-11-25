@@ -3,7 +3,7 @@
 
 class HostConnectEvent final {
 public:
-    constexpr HostConnectEvent(ENetEvent event);
+    constexpr explicit HostConnectEvent(ENetEvent event);
     constexpr const ENetEvent& event(void) const;
 
 private:
@@ -12,7 +12,7 @@ private:
 
 class HostDisconnectEvent final {
 public:
-    constexpr HostDisconnectEvent(ENetEvent event);
+    constexpr explicit HostDisconnectEvent(ENetEvent event);
     constexpr const ENetEvent& event(void) const;
 
 private:

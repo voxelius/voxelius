@@ -16,19 +16,19 @@ constexpr static float WEATHER_SATURATION = 0.98f; // Humidity under full precip
 // A precipitating front cools the air and raises the humidity under it.
 // The result scales with the local coverage, so a fringe of the front
 // moves the climate less than its center does
-static float weather_coverage_at(const World& world, float x, float z)
+static float weather_coverage_at(const World* world, float x, float z)
 {
-    auto& definition = world.definition();
-    auto& state = world.weather();
+    auto& definition = world->definition();
+    auto& state = world->weather();
 
-    auto type = state.type_at(definition.weather, x, z, world.weather_tick);
+    auto type = state.type_at(definition.weather, x, z, world->weather_tick);
     auto def = weather_registry::find_definition(type);
 
     if(def == nullptr || def->precipitation.types.empty()) {
         return 0.0f;
     }
 
-    return state.coverage(definition.weather, x, z, world.weather_tick);
+    return state.coverage(definition.weather, x, z, world->weather_tick);
 }
 
 ChunkCreateEvent::ChunkCreateEvent(World* world, const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk)
@@ -125,7 +125,7 @@ std::shared_ptr<Chunk> World::create_chunk(const ChunkPos& pos)
         auto entity = m_chunk_registry.create();
         auto chunk = std::make_shared<Chunk>(entity);
 
-        auto& component = m_chunk_registry.emplace<Chunk_Component>(entity);
+        auto& component = m_chunk_registry.emplace<ChunkComponent>(entity);
         component.position = pos;
         component.ptr = chunk;
 
@@ -155,7 +155,7 @@ std::shared_ptr<Chunk> World::find_chunk(const ChunkPos& pos) const
 std::shared_ptr<Chunk> World::find_chunk(entt::entity entity) const
 {
     if(m_chunk_registry.valid(entity)) {
-        auto& component = m_chunk_registry.get<Chunk_Component>(entity);
+        auto& component = m_chunk_registry.get<ChunkComponent>(entity);
         return component.ptr;
     }
 
@@ -186,7 +186,7 @@ void World::remove_chunk(const ChunkPos& pos)
 void World::remove_chunk(entt::entity entity)
 {
     if(m_chunk_registry.valid(entity)) {
-        const auto& component = m_chunk_registry.get<Chunk_Component>(entity);
+        const auto& component = m_chunk_registry.get<ChunkComponent>(entity);
 
         globals::dispatcher.trigger(ChunkRemoveEvent(this, component.position, component.ptr));
 
@@ -341,7 +341,7 @@ std::optional<std::string_view> World::get_state(const ChunkPos& cpos, const Loc
     auto decl_it = family->states.find(key);
 
     if(decl_it == family->states.cend()) {
-        return std::nullopt; // this family has no such state
+        return std::nullopt;
     }
 
     auto id_it = family->id_states.find(id);
@@ -435,7 +435,7 @@ float World::get_temperature_base(const BlockPos& pos) const
 float World::get_temperature(const ChunkPos& cpos, const LocalPos& lpos) const
 {
     auto bpos = utils::to_block(cpos, lpos);
-    auto coverage = weather_coverage_at(*this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
+    auto coverage = weather_coverage_at(this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
 
     return get_temperature_base(cpos, lpos) - WEATHER_COOLING * coverage; // TODO: add the season bias
 }
@@ -477,7 +477,7 @@ float World::get_humidity(const ChunkPos& cpos, const LocalPos& lpos) const
 {
     auto bpos = utils::to_block(cpos, lpos);
     auto base = get_humidity_base(cpos, lpos);
-    auto coverage = weather_coverage_at(*this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
+    auto coverage = weather_coverage_at(this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
 
     return std::clamp(base + (WEATHER_SATURATION - base) * coverage, 0.0f, 1.0f); // TODO: add the season bias
 }

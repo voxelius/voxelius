@@ -40,10 +40,10 @@ protected:
     void attach(std::shared_ptr<detail::VariableBinding>& binding);
     void detach(void);
 
+    friend detail::VariableBinding& cvar::bind_var(Variable& variable, std::string_view name);
+
     mutable std::uint64_t m_generation { 0 };
     std::shared_ptr<detail::VariableBinding> m_binding { nullptr };
-
-    friend detail::VariableBinding& cvar::bind_var(Variable& variable, std::string_view name);
 };
 } // namespace cvar
 

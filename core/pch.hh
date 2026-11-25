@@ -90,9 +90,9 @@ using cmp_for = std::conditional_t<hash_string_key<T>, std::equal_to<>, std::equ
 namespace vx
 {
 template<typename Key, typename Value>
-using hash_map = emhash8::HashMap<Key, Value, vx::detail::hash_for<Key>, vx::detail::cmp_for<Key>>;
+using hash_map = emhash8::HashMap<Key, Value, detail::hash_for<Key>, detail::cmp_for<Key>>;
 template<typename Key>
-using hash_set = emhash8::HashSet<Key, vx::detail::hash_for<Key>, vx::detail::cmp_for<Key>>;
+using hash_set = emhash8::HashSet<Key, detail::hash_for<Key>, detail::cmp_for<Key>>;
 } // namespace vx
 
 #include "core/msg/log.hh"

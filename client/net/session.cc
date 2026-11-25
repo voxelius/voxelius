@@ -12,6 +12,7 @@
 #include "core/utils/string.hh"
 #include "core/version.hh"
 
+#include "shared/constant.hh"
 #include "shared/entity/class_registry.hh"
 #include "shared/globals.hh"
 #include "shared/net/packet_auth.hh"
@@ -56,7 +57,7 @@ static void set_state(session_state state)
 {
     session::state = state;
 
-    globals::dispatcher.trigger(SessionStateEvent(state, 0));
+    globals::dispatcher.trigger(SessionStateEvent(state, packet::Session_Disconnect::UNSPECIFIED));
 }
 
 static void reset_session(void)
@@ -195,7 +196,7 @@ void session::init(void)
     s_desired_username_gui.set_flags(ImGuiInputTextFlags_CharsNoBlank);
     s_desired_username_gui.bind("net_username");
     s_desired_username_gui.set_callback([](auto data) {
-        if(data->BufTextLen >= 64) {
+        if(data->BufTextLen >= static_cast<int>(constant::USERNAME_MAX_LENGTH)) {
             return 1;
         }
 

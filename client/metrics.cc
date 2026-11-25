@@ -423,10 +423,10 @@ static void compose_player(void)
 
     auto world_id = world_identifier();
 
-    // emhash counts in a 32 bit size_type, while %zu reads 64 bits
+    // The emhash size_type is 32 bit, while %zu reads 64 bits
     auto meshed_chunks = static_cast<std::size_t>(meshed.size());
     auto loaded_chunks = static_cast<std::size_t>(chunks.size());
-    auto pending_meshes = chunk_mesher::backlog();
+    auto pending_meshes = chunk_mesher::backlog;
 
     push_line(s_lines_left, s_left_used, TEXT_COLOR, true, "C: %zu/%zu (+%zu)", meshed_chunks, loaded_chunks, pending_meshes);
     push_line(s_lines_left, s_left_used, TEXT_COLOR, false, "XYZ: %.5f / %.5f / %.5f", world_pos.x(), world_pos.y(), world_pos.z());
@@ -436,8 +436,8 @@ static void compose_player(void)
         static_cast<int>(world_id.size()), world_id.data());
 
     // A yaw of zero looks south, which matches the Minecraft debug screen
-    auto yaw = utils::degrees(std::atan2(-camera::forward.x(), camera::forward.z()));
-    auto pitch = -utils::degrees(std::asin(std::clamp(camera::forward.y(), -1.0f, 1.0f)));
+    auto yaw = utils::degrees(std::atan2(-client_camera::forward.x(), client_camera::forward.z()));
+    auto pitch = -utils::degrees(std::asin(std::clamp(client_camera::forward.y(), -1.0f, 1.0f)));
     auto wrapped = std::fmod(yaw + 360.0f, 360.0f);
     auto cardinal = static_cast<std::size_t>(std::lround(wrapped / 90.0f)) % 4;
 
@@ -510,8 +510,8 @@ static void compose_player(void)
         std::snprintf(column_text.data(), column_text.size(), "surface=%s liquid=%s", surface_text.data(), liquid_text.data());
     }
 
-    push_line(s_lines_left, s_left_used, TEXT_COLOR, false, "Precipitation: %.*s (%.0f%%) %s", static_cast<int>(precip_text.size()),
-        precip_text.data(), 100.0f * precip_selection.amount, column_text.data());
+    push_line(s_lines_left, s_left_used, TEXT_COLOR, false, "PrecipitationFront: %.*s (%.0f%%) %s", static_cast<int>(precip_text.size()),
+        precip_text.data(), 100.0f * precip_selection.effective_intensity, column_text.data());
 
     auto horizontal = Eigen::Vector2f(velocity.value.x(), velocity.value.z());
     auto speed = horizontal.norm();
@@ -891,9 +891,7 @@ void metrics::layout(void)
     auto bottom = draw_lines(draw_list, s_lines_left, left_origin, false);
 
     if(!s_lines_right.empty()) {
-        auto right_fits = right_edge - right_width >= left_origin.x + left_width + 2.0f * margin;
-
-        if(right_fits) {
+        if(right_edge - right_width >= left_origin.x + left_width + 2.0f * margin) {
             ImVec2 right_origin {};
             right_origin.x = right_edge;
             right_origin.y = left_origin.y;

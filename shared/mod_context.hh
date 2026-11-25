@@ -19,22 +19,22 @@ class ModContext;
 using library_opener = entt::delegate<void(std::shared_ptr<lua_State>&, ModContext*)>;
 
 enum class mod_status {
-    PENDING, ///< The mod is pending to be loaded
-    LOADING, ///< The mod is currently being loaded
-    LOADED,  ///< The mod has been successfully loaded
-    FAILED,  ///< The mod has failed to load
-    SKIPPED, ///< One of the mod's dependencies has failed to load and the mod will be skipped
+    PENDING,
+    LOADING,
+    LOADED,
+    FAILED,
+    SKIPPED, // One of the mod's dependencies has failed to load and the mod will be skipped
 };
 
 struct ModVersion final {
     static ModVersion parse(std::string_view string);
     static std::string to_string(const ModVersion& version);
 
+    constexpr auto operator<=>(const ModVersion& other) const = default;
+
     unsigned major { 0 };
     unsigned minor { 0 };
     unsigned patch { 0 };
-
-    constexpr auto operator<=>(const ModVersion& other) const = default;
 };
 
 struct ModInfo final {
@@ -47,13 +47,13 @@ struct ModInfo final {
     std::vector<std::pair<std::string, ModVersion>> soft_depends;
     std::vector<std::pair<std::string, ModVersion>> conflicts;
 
-    std::string meta_author;   ///< Author or authors of the mod
-    std::string meta_homepage; ///< Homepage or website of the mod
-    std::string meta_tracker;  ///< Tracker or issue tracker of the mod
-    std::string meta_license;  ///< Short SPDX-identifier of the mod's license
+    std::string meta_author;
+    std::string meta_homepage;
+    std::string meta_tracker;
+    std::string meta_license; // Short SPDX-identifier of the mod's license
 
-    std::string display_name; ///< Printable name of the mod
-    std::string display_desc; ///< Printable description of the mod
+    std::string display_name;
+    std::string display_desc;
 };
 
 class ModContext final {

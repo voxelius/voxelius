@@ -24,7 +24,7 @@ static void on_block_update(const BlockUpdateEvent& event)
     };
 
     // Schedule for the next tick so neighbour updates never fire mid-pass
-    // in an order that depends on chunk iteration order.
+    // in an order that depends on chunk iteration order
     auto deadline = globals::current_tick + 1;
 
     for(const auto& npos : neighbours) {

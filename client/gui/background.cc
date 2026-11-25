@@ -18,8 +18,8 @@ constexpr static float POINTER_SHIFT = 8.0f;
 
 struct BackgroundLayerInfo final {
     std::string_view file;
-    float speed;
-    float shift;
+    float scroll_speed;
+    float pointer_factor;
 };
 
 constexpr static std::array LAYER_INFOS = {
@@ -34,7 +34,7 @@ static std::array<res::handle<Texture2D>, LAYER_INFOS.size()> s_textures = {};
 // A wall texture is one window tall, so the window picks a whole number of
 // pixels per texel instead of stretching the art; the speed of a wall is given
 // per second at that 1:1 scale. The height comes from the resource itself,
-// because the scale of the whole scene depends on it.
+// because the scale of the whole scene depends on it
 static int s_tile_height = 0;
 
 static void draw_wall(ImDrawList* draw_list, const ImVec2& window_pos, const ImVec2& window_end, ImTextureID texture, float tile_width,
@@ -56,35 +56,6 @@ static void draw_wall(ImDrawList* draw_list, const ImVec2& window_pos, const ImV
         auto bottom_right = ImVec2(xpos + tile_width, bottom_ypos);
         draw_list->AddImage(texture, top_left, bottom_right);
     }
-}
-
-void gui::Background::init(void)
-{
-    for(std::size_t i = 0; i < s_textures.size(); ++i) {
-        auto id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, LAYER_INFOS[i].file);
-
-        s_textures[i] = res::load<Texture2D>(id, "textures/gui");
-
-        if(s_textures[i] == nullptr) {
-            msg::log_warning("{}: texture load failed", id.full_string());
-            continue;
-        }
-
-        auto height = s_textures[i]->height;
-
-        if(s_tile_height == 0) {
-            s_tile_height = height;
-        }
-        else if(height != s_tile_height) {
-            msg::log_warning("{}: wall height {} does not match {}", id.full_string(), height, s_tile_height);
-        }
-    }
-}
-
-void gui::Background::shutdown(void)
-{
-    s_textures.fill(nullptr);
-    s_tile_height = 0;
 }
 
 gui::Background& gui::Background::set_left(const ImVec4& color)
@@ -117,6 +88,35 @@ void gui::Background::layout_dim(ImVec2 window_pos, ImVec2 window_size)
     auto right = ImGui::GetColorU32(m_right);
 
     draw_list->AddRectFilledMultiColor(window_pos, window_end, left, right, right, left);
+}
+
+void gui::Background::init(void)
+{
+    for(std::size_t i = 0; i < s_textures.size(); ++i) {
+        auto id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, LAYER_INFOS[i].file);
+
+        s_textures[i] = res::load<Texture2D>(id, "textures/gui");
+
+        if(s_textures[i] == nullptr) {
+            msg::log_warning("{}: texture load failed", id.full_string());
+            continue;
+        }
+
+        auto height = s_textures[i]->height;
+
+        if(s_tile_height == 0) {
+            s_tile_height = height;
+        }
+        else if(height != s_tile_height) {
+            msg::log_warning("{}: wall height {} does not match {}", id.full_string(), height, s_tile_height);
+        }
+    }
+}
+
+void gui::Background::shutdown(void)
+{
+    s_textures.fill(nullptr);
+    s_tile_height = 0;
 }
 
 void gui::Background::layout(void)
@@ -169,7 +169,7 @@ void gui::Background::layout(void)
 
             auto tile_width = scale * static_cast<float>(s_textures[i]->width);
             auto tile_height = scale * static_cast<float>(s_textures[i]->height);
-            auto offset = time * LAYER_INFOS[i].speed * ratio - pointer * POINTER_SHIFT * LAYER_INFOS[i].shift * ratio;
+            auto offset = time * LAYER_INFOS[i].scroll_speed * ratio - pointer * POINTER_SHIFT * LAYER_INFOS[i].pointer_factor * ratio;
 
             draw_wall(draw_list, window_pos, window_end, s_textures[i]->imgui, tile_width, tile_height, offset);
         }

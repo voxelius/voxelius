@@ -58,7 +58,7 @@ private:
     schedule_type m_scheduled;
 };
 
-struct Chunk_Component final {
+struct ChunkComponent final {
     std::shared_ptr<Chunk> ptr;
     ChunkPos position;
 };

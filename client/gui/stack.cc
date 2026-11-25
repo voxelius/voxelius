@@ -16,6 +16,25 @@ gui::HorizontalStack& gui::HorizontalStack::add_item(Widget& widget, stack_polic
     return self();
 }
 
+void gui::HorizontalStack::translate(void)
+{
+    for(auto& item : m_items) {
+        item.widget->translate();
+    }
+}
+
+gui::VerticalStack& gui::VerticalStack::add_item(Widget& widget, stack_policy_type policy, float fixed_height)
+{
+    Item item {};
+    item.widget = &widget;
+    item.policy = policy;
+    item.fixed_height = fixed_height;
+
+    m_items.emplace_back(std::move(item));
+
+    return self();
+}
+
 void gui::HorizontalStack::layout(void)
 {
     auto& style = ImGui::GetStyle();
@@ -71,25 +90,6 @@ void gui::HorizontalStack::layout(void)
             ImGui::SameLine();
         }
     }
-}
-
-void gui::HorizontalStack::translate(void)
-{
-    for(auto& item : m_items) {
-        item.widget->translate();
-    }
-}
-
-gui::VerticalStack& gui::VerticalStack::add_item(Widget& widget, stack_policy_type policy, float fixed_height)
-{
-    Item item {};
-    item.widget = &widget;
-    item.policy = policy;
-    item.fixed_height = fixed_height;
-
-    m_items.emplace_back(std::move(item));
-
-    return self();
 }
 
 void gui::VerticalStack::layout(void)

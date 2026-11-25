@@ -9,7 +9,7 @@
 #include "client/input/buttons.hh"
 
 static vx::hash_map<AxisSource, std::string> s_binds {};
-static vx::hash_map<std::string, IN_AxisValue> s_slots {};
+static vx::hash_map<std::string, AxisValue> s_slots {};
 
 static void accumulate(input_device device, std::uint32_t code, float value, bool is_delta)
 {
@@ -19,7 +19,7 @@ static void accumulate(input_device device, std::uint32_t code, float value, boo
         return;
     }
 
-    IN_AxisValue axis {};
+    AxisValue axis {};
     axis.is_delta = is_delta;
     axis.value = 0.0f;
 
@@ -157,12 +157,12 @@ void axes::clear(void)
     s_slots.clear();
 }
 
-IN_AxisValue axes::consume(std::string_view slot)
+AxisValue axes::consume(std::string_view slot)
 {
     auto it = s_slots.find(slot);
 
     if(it == s_slots.end()) {
-        IN_AxisValue result {};
+        AxisValue result {};
         result.is_delta = false;
         result.value = 0.0f;
         return result;

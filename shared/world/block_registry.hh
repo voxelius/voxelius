@@ -65,6 +65,9 @@ struct BlockCallback final {
 struct BlockFamily final {
     BlockFamily(void) = default;
 
+    blockstate_val_type state_hash(std::string_view string);
+    std::string_view state_value(blockstate_val_type value);
+
     Identifier name;
     block_id_type stem_id;
     block_id_type default_variant;
@@ -80,9 +83,6 @@ struct BlockFamily final {
 
     vx::hash_map<std::uint64_t, block_id_type> resolved_states;
     vx::hash_map<block_id_type, vx::hash_map<blockstate_key_type, blockstate_val_type>> id_states;
-
-    blockstate_val_type state_hash(std::string_view string);
-    std::string_view state_value(blockstate_val_type value);
 };
 
 namespace block_registry

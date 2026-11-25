@@ -298,7 +298,7 @@ void api_shared::open_precipitation(std::shared_ptr<lua_State>& lua, ModContext*
 
     auto L = lua.get();
 
-    lua_newtable(L); // Precipitation
+    lua_newtable(L);
 
     lua_pushinteger(L, static_cast<lua_Integer>(PRECIPITATION_ID_NULL));
     lua_setfield(L, -2, "NULL_TYPE");

@@ -283,7 +283,7 @@ static bool parse_definition(lua_State* L, int def_idx, WeatherTypeDefinition& d
         return fail(L, base, "target must hold two numbers");
     }
 
-    if(target->x() < 0.0 || target->x() > 1.0 || target->y() < 0.0 || target->y() > 1.0) {
+    if(target->minCoeff() < 0.0 || target->maxCoeff() > 1.0) {
         return fail(L, base, "target must be in 0 to 1 on both axes");
     }
 
@@ -449,7 +449,7 @@ static bool precipitation_at(lua_State* L)
     lua_pushinteger(L, static_cast<lua_Integer>(selection.type));
     lua_setfield(L, -2, "type");
 
-    lua_pushnumber(L, static_cast<lua_Number>(selection.amount));
+    lua_pushnumber(L, static_cast<lua_Number>(selection.effective_intensity));
     lua_setfield(L, -2, "amount");
 
     return true;
@@ -471,7 +471,7 @@ void api_shared::open_weather(std::shared_ptr<lua_State>& lua, ModContext* ctx)
 
     auto L = lua.get();
 
-    lua_newtable(L); // Weather
+    lua_newtable(L);
 
     lua_pushlightuserdata(L, ctx);
     lua_pushcclosure(L, &api_add, 1);

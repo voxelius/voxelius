@@ -52,13 +52,13 @@ void fonts::load(void)
     auto unscii8_id = Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "unscii-8");
     auto unscii8_path = unscii8_id.as_file_path("fonts", ".ttf");
 
-    fonts::proggy_clean = io.Fonts->AddFontDefault();
-    vx::throw_if_not(fonts::proggy_clean, "proggyclean: load failed");
+    proggy_clean = io.Fonts->AddFontDefault();
+    vx::throw_if_not(proggy_clean, "proggyclean: load failed");
 
-    fonts::unscii16 = load_font(unscii16_path, 16.0f, s_unscii16_data, io);
-    fonts::unscii8 = load_font(unscii8_path, 8.0f, s_unscii8_data, io);
+    unscii16 = load_font(unscii16_path, 16.0f, s_unscii16_data, io);
+    unscii8 = load_font(unscii8_path, 8.0f, s_unscii8_data, io);
 
     // Everything that does not push a font is UI text, so the small face is
     // the default; FontScaleMain turns it into the size the window wants
-    io.FontDefault = fonts::unscii8;
+    io.FontDefault = unscii8;
 }
