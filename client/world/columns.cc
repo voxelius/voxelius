@@ -33,16 +33,16 @@ void columns::prune(const ChunkAlignedBoxXZ& box)
     }
 }
 
-const Column* columns::find(int x, int z)
+const Column* columns::find(const BlockPosXZ& bpos)
 {
-    auto cpos = ChunkPosXZ(x >> constant::CHUNK_SIZE_LOG2, z >> constant::CHUNK_SIZE_LOG2);
+    auto cpos = ChunkPosXZ(bpos.x() >> constant::CHUNK_SIZE_LOG2, bpos.y() >> constant::CHUNK_SIZE_LOG2);
     auto it = s_chunks.find(cpos);
 
     if(it == s_chunks.cend()) {
         return nullptr;
     }
 
-    auto index = local_index(x) + local_index(z) * constant::CHUNK_SIZE;
+    auto index = local_index(bpos.x()) + local_index(bpos.y()) * constant::CHUNK_SIZE;
     return &it->second[index];
 }
 

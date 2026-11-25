@@ -46,6 +46,8 @@ public:
     void flush(void);
 
     const Chunk& get(const ChunkPosXZ& cpos);
+    const Column* find(const BlockPosXZ& bpos) const;
+
     void touch(const BlockPos& bpos);
 
 private:

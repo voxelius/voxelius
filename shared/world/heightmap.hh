@@ -16,6 +16,7 @@ struct Column final {
     static void decode(Column& column, ReadBuffer& buffer);
 
     constexpr bool is_valid(void) const;
+    constexpr bool shelters(BlockPos::value_type y) const;
 
     BlockPos::value_type surface_y { UNSET };
     BlockPos::value_type liquid_y { UNSET }; // top liquid block (above surface, otherwise UNSET)
@@ -42,6 +43,21 @@ private:
 constexpr bool Column::is_valid(void) const
 {
     return surface_y > UNSET;
+}
+
+// A point at or below the top of the column has no sky
+constexpr bool Column::shelters(BlockPos::value_type y) const
+{
+    if(is_valid()) {
+        if(liquid_y == UNSET || liquid_y <= surface_y) {
+            return y <= surface_y;
+        }
+        else {
+            return y <= liquid_y;
+        }
+    }
+
+    return false;
 }
 
 #endif /* C1DAD708_A904_4335_AD46_212640B0DC2B */

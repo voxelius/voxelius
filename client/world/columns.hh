@@ -8,7 +8,7 @@ namespace columns
 {
 void clear(void);
 void prune(const ChunkAlignedBoxXZ& box);
-const Column* find(int x, int z);
+const Column* find(const BlockPosXZ& bpos);
 void set(const ChunkPosXZ& cpos, const ColumnSlice& slice);
 void update(const BlockPosXZ& bpos, const Column& column);
 } // namespace columns

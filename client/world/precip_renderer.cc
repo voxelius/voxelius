@@ -162,7 +162,7 @@ static void build_columns(const World* world, const PrecipContext& ctx, const Ei
             auto world_z = origin_z + base_z + dz;
 
             auto world_surface = static_cast<std::int64_t>(origin_y + base_y);
-            auto column_data = columns::find(world_x, world_z);
+            auto column_data = columns::find(BlockPosXZ(world_x, world_z));
 
             if(column_data && column_data->surface_y != Column::UNSET) {
                 auto surface_y = column_data->surface_y;

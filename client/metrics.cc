@@ -497,7 +497,7 @@ static void compose_player(void)
     auto column_x = static_cast<int>(std::floor(world_pos.x()));
     auto column_z = static_cast<int>(std::floor(world_pos.z()));
 
-    auto column = columns::find(column_x, column_z);
+    auto column = columns::find(BlockPosXZ(column_x, column_z));
     auto column_text = std::array<char, 64> {};
 
     if(column == nullptr) {

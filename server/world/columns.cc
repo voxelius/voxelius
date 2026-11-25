@@ -217,6 +217,19 @@ const WorldColumns::Chunk& WorldColumns::get(const ChunkPosXZ& cpos)
     return ensure(cpos);
 }
 
+const Column* WorldColumns::find(const BlockPosXZ& bpos) const
+{
+    auto it = m_chunks.find(utils::to_chunk_xz(bpos));
+
+    if(it == m_chunks.cend()) {
+        return nullptr;
+    }
+
+    auto lpos = utils::to_local_xz(bpos);
+    auto index = utils::to_index_xz(lpos);
+    return &it->second.columns[index];
+}
+
 void WorldColumns::touch(const BlockPos& bpos)
 {
     auto cpos = ChunkPosXZ(bpos.x() >> constant::CHUNK_SIZE_LOG2, bpos.z() >> constant::CHUNK_SIZE_LOG2);

@@ -82,7 +82,7 @@ static void commit_instance(BlockStorage& storage, const ChunkPos& cpos, const F
 
 ServerWorld::ServerWorld(std::shared_ptr<const WorldDefinition> definition) : World(std::move(definition))
 {
-    // empty
+    connect_column_lookup<&WorldColumns::find>(m_columns);
 }
 
 void ServerWorld::set_generator(const GeneratorDefinition* generator)

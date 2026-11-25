@@ -31,6 +31,14 @@ static float weather_coverage_at(const World* world, float x, float z)
     return state.coverage(definition.weather, x, z, world->weather_tick);
 }
 
+// A roof stops the weather: the air under it keeps the base climate
+static bool is_exposed(const World* world, const BlockPos& pos)
+{
+    auto column = world->find_column(BlockPosXZ(pos.x(), pos.z()));
+
+    return column == nullptr || !column->shelters(pos.y());
+}
+
 ChunkCreateEvent::ChunkCreateEvent(World* world, const ChunkPos& pos, const std::shared_ptr<Chunk>& chunk)
     : m_world(world), m_chunk(chunk), m_pos(pos)
 {
@@ -115,6 +123,20 @@ void World::set_weather_seed(std::uint64_t value)
 {
     weather_seed = value;
     m_weather.reseed(value);
+}
+
+void World::set_column_lookup(ColumnLookup lookup)
+{
+    m_column_lookup = lookup;
+}
+
+const Column* World::find_column(const BlockPosXZ& pos) const
+{
+    if(!m_column_lookup) {
+        return nullptr;
+    }
+
+    return m_column_lookup(pos);
 }
 
 std::shared_ptr<Chunk> World::create_chunk(const ChunkPos& pos)
@@ -435,7 +457,12 @@ float World::get_temperature_base(const BlockPos& pos) const
 float World::get_temperature(const ChunkPos& cpos, const LocalPos& lpos) const
 {
     auto bpos = utils::to_block(cpos, lpos);
-    auto coverage = weather_coverage_at(this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
+
+    auto coverage = 0.0f;
+
+    if(is_exposed(this, bpos)) {
+        coverage = weather_coverage_at(this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
+    }
 
     return get_temperature_base(cpos, lpos) - WEATHER_COOLING * coverage; // TODO: add the season bias
 }
@@ -451,6 +478,10 @@ float World::get_temperature(const BlockPos& pos, float coverage) const
 {
     auto cpos = utils::to_chunk(pos);
     auto lpos = utils::to_local(pos);
+
+    if(!is_exposed(this, pos)) {
+        coverage = 0.0f;
+    }
 
     return get_temperature_base(cpos, lpos) - WEATHER_COOLING * coverage; // TODO: add the season bias
 }
@@ -477,7 +508,12 @@ float World::get_humidity(const ChunkPos& cpos, const LocalPos& lpos) const
 {
     auto bpos = utils::to_block(cpos, lpos);
     auto base = get_humidity_base(cpos, lpos);
-    auto coverage = weather_coverage_at(this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
+
+    auto coverage = 0.0f;
+
+    if(is_exposed(this, bpos)) {
+        coverage = weather_coverage_at(this, static_cast<float>(bpos.x()), static_cast<float>(bpos.z()));
+    }
 
     return std::clamp(base + (WEATHER_SATURATION - base) * coverage, 0.0f, 1.0f); // TODO: add the season bias
 }

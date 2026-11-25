@@ -2,6 +2,7 @@
 
 #include "shared/world/precip.hh"
 
+#include "shared/world/heightmap.hh"
 #include "shared/world/precip_registry.hh"
 #include "shared/world/weather_registry.hh"
 #include "shared/world/world.hh"
@@ -61,6 +62,13 @@ PrecipSelection precip::select(const World* world, const PrecipContext& ctx, flo
     bpos.x() = static_cast<BlockPos::value_type>(std::floor(x));
     bpos.y() = static_cast<BlockPos::value_type>(std::floor(y));
     bpos.z() = static_cast<BlockPos::value_type>(std::floor(z));
+
+    auto column = world->find_column(BlockPosXZ(bpos.x(), bpos.z()));
+
+    // Nothing falls through a roof, and an unknown column counts as open sky
+    if(column && column->shelters(bpos.y())) {
+        return {};
+    }
 
     return select(ctx, world->get_temperature(bpos), world->get_humidity_base(bpos));
 }

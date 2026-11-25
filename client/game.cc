@@ -33,6 +33,7 @@
 #include "client/system/pmove_client.hh"
 #include "client/system/pmove_look.hh"
 #include "client/world/chunk_mesher.hh"
+#include "client/world/columns.hh"
 
 static std::unique_ptr<World> s_world;
 
@@ -66,6 +67,7 @@ void client_game::init_world(void)
     auto definition = std::make_shared<WorldDefinition>();
 
     s_world = std::make_unique<World>(std::move(definition));
+    s_world->connect_column_lookup<&columns::find>();
 
     globals::world = s_world.get();
 }
