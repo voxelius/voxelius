@@ -14,6 +14,7 @@
 #include "shared/physics/collision.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/block_registry.hh"
+#include "shared/world/fluid_registry.hh"
 #include "shared/world/world.hh"
 
 constexpr static float PMOVE_EPS = 1.0e-6f;
@@ -29,12 +30,6 @@ constexpr static float WALK_GROUND_FRICTION = 0.6f;
 constexpr static float WALK_INPUT_GROUND = 0.1f;
 constexpr static float WALK_INPUT_AIR = 0.02f;
 constexpr static float WALK_BOUNCE_MIN = 0.1f;
-
-constexpr static float WALK_FLUID_DRAG = 0.8f;
-constexpr static float WALK_FLUID_GRAVITY = WALK_GRAVITY / 16.0f;
-constexpr static float WALK_FLUID_INPUT = 0.02f;
-constexpr static float WALK_FLUID_JUMP = 0.04f;
-constexpr static float WALK_FLUID_CLIMB = 0.3f;
 
 // Fixed ticks between two jumps, the same delay Minecraft uses
 constexpr static std::uint32_t WALK_JUMP_COOLDOWN = 10;
@@ -192,7 +187,8 @@ static void update_walk(entt::registry& registry, entt::entity entity, World* wo
     }
 
     auto fluid = physics::sample_fluid(world, transform.chunk, transform.local, collision.local_box);
-    bool in_fluid = fluid.block;
+    auto fluid_def = fluid_registry::find_definition(fluid.fluid);
+    bool in_fluid = fluid_def;
 
     std::uint32_t cooldown_ticks = 0;
 
@@ -214,7 +210,7 @@ static void update_walk(entt::registry& registry, entt::entity entity, World* wo
 
     if(in_fluid) {
         if(jump_requested) {
-            movement.y() += WALK_FLUID_JUMP;
+            movement.y() += fluid_def->physics.swim_speed;
         }
     }
     else if(jump_requested && was_on_ground && cooldown_ticks == 0) {
@@ -238,7 +234,7 @@ static void update_walk(entt::registry& registry, entt::entity entity, World* wo
         auto factor = WALK_INPUT_AIR;
 
         if(in_fluid) {
-            factor = WALK_FLUID_INPUT;
+            factor = fluid_def->physics.input_scale;
         }
         else if(was_on_ground) {
             auto friction = WALK_GROUND_FRICTION;
@@ -275,12 +271,14 @@ static void update_walk(entt::registry& registry, entt::entity entity, World* wo
         auto hit_horizontal = result.axis_contacts[0].block || result.axis_contacts[2].block;
 
         if(jump_requested && hit_horizontal) {
-            movement.y() = WALK_FLUID_CLIMB;
+            movement.y() = fluid_def->physics.climb_speed;
         }
 
-        movement.x() *= WALK_FLUID_DRAG;
-        movement.z() *= WALK_FLUID_DRAG;
-        movement.y() = movement.y() * WALK_FLUID_DRAG - WALK_FLUID_GRAVITY;
+        const auto& fluid_physics = fluid_def->physics;
+
+        movement.x() *= fluid_physics.drag;
+        movement.z() *= fluid_physics.drag;
+        movement.y() = movement.y() * fluid_physics.drag - WALK_GRAVITY * fluid_physics.gravity_scale;
     }
     else {
         movement.x() *= WALK_DRAG_H;

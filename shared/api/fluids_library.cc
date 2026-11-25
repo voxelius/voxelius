@@ -71,6 +71,53 @@ static bool parse_textures(lua_State* L, int idx, std::vector<Identifier>& out, 
     return true;
 }
 
+static bool parse_physics(lua_State* L, int idx, FluidPhysics& out)
+{
+    if(!lua_istable(L, idx)) {
+        auto type_name = lua_typename(L, lua_type(L, idx));
+        lua_pushfstring(L, "expected a physics table, got %s", type_name);
+        return false;
+    }
+
+    auto drag = utils::require_number(L, idx, "drag");
+
+    if(!drag.has_value()) {
+        return false;
+    }
+
+    auto gravity_scale = utils::require_number(L, idx, "gravity_scale");
+
+    if(!gravity_scale.has_value()) {
+        return false;
+    }
+
+    auto input_scale = utils::require_number(L, idx, "input_scale");
+
+    if(!input_scale.has_value()) {
+        return false;
+    }
+
+    auto swim_speed = utils::require_number(L, idx, "swim_speed");
+
+    if(!swim_speed.has_value()) {
+        return false;
+    }
+
+    auto climb_speed = utils::require_number(L, idx, "climb_speed");
+
+    if(!climb_speed.has_value()) {
+        return false;
+    }
+
+    out.drag = static_cast<float>(drag.value());
+    out.gravity_scale = static_cast<float>(gravity_scale.value());
+    out.input_scale = static_cast<float>(input_scale.value());
+    out.swim_speed = static_cast<float>(swim_speed.value());
+    out.climb_speed = static_cast<float>(climb_speed.value());
+
+    return true;
+}
+
 static bool parse_definition(lua_State* L, int def_idx, FluidDefinition& def, ModContext* ctx)
 {
     auto gravity = utils::require_integer(L, def_idx, "gravity");
@@ -89,6 +136,16 @@ static bool parse_definition(lua_State* L, int def_idx, FluidDefinition& def, Mo
 
     def.full_level = static_cast<unsigned>(full_level.value());
     def.full_level = std::clamp(def.full_level, 1U, 15U);
+
+    lua_getfield(L, def_idx, "physics");
+
+    auto physics_idx = lua_gettop(L);
+
+    if(!parse_physics(L, physics_idx, def.physics)) {
+        return false;
+    }
+
+    lua_pop(L, 1);
 
     lua_getfield(L, def_idx, "opaque");
 

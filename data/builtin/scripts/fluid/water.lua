@@ -27,6 +27,14 @@ fluids.add("water", {
 
     full_level = WATER_CONFIG.full_height,
 
+    physics = {
+        drag = 0.8,
+        gravity_scale = 0.0625,
+        input_scale = 0.02,
+        swim_speed = 0.04,
+        climb_speed = 0.3,
+    },
+
     fog_density = 10.0,
     fog_color = { 0.0, 0.0, 0.5 },
 
