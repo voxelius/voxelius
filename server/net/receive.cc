@@ -387,14 +387,14 @@ static void on_player_interact_b(const packet::Player_InteractB& packet)
     hit.point = packet.point;
 
     // TODO: hardcoded placed block until an inventory/hotbar system exists; keep it in sync with client/system/player_target.cc
-    auto family = block_registry::find_family(Identifier::from_string("builtin:emitter"));
+    auto family = block_registry::find_family(Identifier::from_string("builtin:stone_slab"));
     block_id_type block;
 
     if(family) {
         block = family->default_variant;
     }
     else {
-        block = block_registry::find(Identifier::from_string("builtin:emitter"));
+        block = block_registry::find(Identifier::from_string("builtin:stone_slab"));
     }
 
     utils::block_place(hit, session->player, block);
