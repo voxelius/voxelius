@@ -669,6 +669,8 @@ void sessions::destroy(Session* session, std::optional<std::uint32_t> reason)
         session->peer = nullptr;
         session->known_entities.clear();
         session->stream_sent_chunks.clear();
+        session->stream_sent_biomes.clear();
+        session->stream_sent_columns.clear();
         session->stream_wanted_chunks.clear();
         session->stream_cursor_chunks = 0;
         session->stream_budget_chunks = 0;
