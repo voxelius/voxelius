@@ -132,11 +132,11 @@ void World::set_column_lookup(ColumnLookup lookup)
 
 const Column* World::find_column(const BlockPosXZ& pos) const
 {
-    if(!m_column_lookup) {
-        return nullptr;
+    if(m_column_lookup) {
+        return m_column_lookup(pos);
     }
 
-    return m_column_lookup(pos);
+    return nullptr;
 }
 
 std::shared_ptr<Chunk> World::create_chunk(const ChunkPos& pos)

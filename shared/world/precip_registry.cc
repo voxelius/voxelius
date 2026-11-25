@@ -62,6 +62,7 @@ static void update_checksum(void)
         hash_value(hash, def.draw_chance);
         hash_value(hash, def.opacity);
         hash_value(hash, def.color);
+        hash_value(hash, def.light_boost);
     }
 
     s_checksum = hash;

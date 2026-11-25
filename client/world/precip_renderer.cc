@@ -28,6 +28,7 @@
 #include "client/gui/checkbox.hh"
 #include "client/gui/container.hh"
 #include "client/gui/slider.hh"
+#include "client/lighting.hh"
 #include "client/res/texture_2d.hh"
 #include "client/settings.hh"
 #include "client/shader_program.hh"
@@ -45,12 +46,14 @@ struct PrecipVertex final {
     float position[3]; // Relative to client_camera::chunk, like the chunk meshes
     float uv[2];
     float color[4]; // Tint in RGB, column amount in A
+    float light[2]; // Sky and block light, 0 to 1
 };
 
-static_assert(sizeof(PrecipVertex) == 9 * sizeof(float));
+static_assert(sizeof(PrecipVertex) == 11 * sizeof(float));
 static_assert(0x00 == offsetof(PrecipVertex, position));
 static_assert(0x0C == offsetof(PrecipVertex, uv));
 static_assert(0x14 == offsetof(PrecipVertex, color));
+static_assert(0x24 == offsetof(PrecipVertex, light));
 
 struct PrecipColumn final {
     float x; // Column center, in blocks of the camera's chunk
@@ -60,6 +63,8 @@ struct PrecipColumn final {
     float v0; // World anchored texture coordinates, so a chunk crossing does not shift them
     float v1;
     float dist2;
+    float sky_light;
+    float block_light;
     const PrecipDefinition* definition;
     float effective_intensity;
 };
@@ -77,6 +82,9 @@ static std::size_t su_Scroll;
 static std::size_t su_Texture;
 static std::size_t su_FogColor;
 static std::size_t su_ViewDistance;
+static std::size_t su_SkyColor;
+static std::size_t su_BlockColor;
+static std::size_t su_Ambient;
 
 static GLuint s_vao;
 static GLuint s_vbo;
@@ -229,6 +237,27 @@ static void build_columns(const World* world, const PrecipContext& ctx, const Ei
             auto delta_z = local_z - camera.z();
             auto phase = column_phase(world_x, world_z, seed);
 
+            // Lit where the fall meets the eye or the ground; a chunk
+            // that carries no light yet counts as open sky
+            auto eye_y = static_cast<BlockPos::value_type>(std::floor(world_eye_y));
+            auto light_y = std::max(eye_y, static_cast<BlockPos::value_type>(world_surface));
+            auto light_bpos = BlockPos(world_x, light_y, world_z);
+
+            auto sky_light = 1.0f;
+            auto block_light = 0.0f;
+
+            auto light_chunk = world->find_chunk(utils::to_chunk(light_bpos));
+
+            if(light_chunk && light_chunk->has_light()) {
+                auto index = utils::to_index(utils::to_local(light_bpos));
+                sky_light = static_cast<float>(light_chunk->get_light(index, LIGHT_SKY)) / 15.0f;
+                block_light = static_cast<float>(light_chunk->get_light(index, LIGHT_BLOCK)) / 15.0f;
+            }
+
+            auto light_boost = definition->light_boost;
+            sky_light += light_boost * (1.0f - sky_light);
+            block_light += light_boost * (1.0f - block_light);
+
             PrecipColumn column {};
             column.x = local_x;
             column.z = local_z;
@@ -237,6 +266,8 @@ static void build_columns(const World* world, const PrecipContext& ctx, const Ei
             column.v0 = world_bottom * V_TILE_SCALE + phase;
             column.v1 = world_top * V_TILE_SCALE + phase;
             column.dist2 = delta_x * delta_x + delta_z * delta_z;
+            column.sky_light = sky_light;
+            column.block_light = block_light;
             column.definition = definition;
             column.effective_intensity = selection.effective_intensity;
             s_columns.push_back(column);
@@ -258,8 +289,6 @@ static void build_vertices(const Eigen::Vector3f& camera)
             return a.definition->id < b.definition->id;
         }
     });
-
-    auto light = fog::daylight * fog::light_scale;
 
     for(const auto& column : s_columns) {
         // The column center and the camera are
@@ -283,9 +312,9 @@ static void build_vertices(const Eigen::Vector3f& camera)
         auto right_x = column.x + tangent_x * half;
         auto right_z = column.z + tangent_z * half;
 
-        auto red = column.definition->color.x() * light;
-        auto green = column.definition->color.y() * light;
-        auto blue = column.definition->color.z() * light;
+        auto red = column.definition->color.x();
+        auto green = column.definition->color.y();
+        auto blue = column.definition->color.z();
         auto alpha = std::clamp(column.effective_intensity * column.definition->opacity, 0.0f, 1.0f);
 
         auto first = static_cast<GLint>(s_vertices.size());
@@ -301,6 +330,8 @@ static void build_vertices(const Eigen::Vector3f& camera)
             vertex.color[1] = green;
             vertex.color[2] = blue;
             vertex.color[3] = alpha;
+            vertex.light[0] = column.sky_light;
+            vertex.light[1] = column.block_light;
             s_vertices.push_back(vertex);
         };
 
@@ -354,6 +385,9 @@ void precip_renderer::init(void)
     su_Texture = s_program.add_uniform("u_Texture");
     su_FogColor = s_program.add_uniform("u_FogColor");
     su_ViewDistance = s_program.add_uniform("u_ViewDistance");
+    su_SkyColor = s_program.add_uniform("u_SkyColor");
+    su_BlockColor = s_program.add_uniform("u_BlockColor");
+    su_Ambient = s_program.add_uniform("u_Ambient");
 
     for(const auto& definition : precip_registry::all_definitions()) {
         if(!definition.texture.is_valid()) {
@@ -386,6 +420,9 @@ void precip_renderer::init(void)
 
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, STRIDE, reinterpret_cast<const void*>(offsetof(PrecipVertex, color)));
     glEnableVertexAttribArray(2);
+
+    glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, STRIDE, reinterpret_cast<const void*>(offsetof(PrecipVertex, light)));
+    glEnableVertexAttribArray(3);
 
     glBindVertexArray(0);
 
@@ -465,10 +502,14 @@ void precip_renderer::render(void)
     glUseProgram(s_program.handle);
 
     auto& view_projection = client_camera::instance.view_projection();
+    auto sky_light_color = client_lighting::sky_color();
     glUniformMatrix4fv(s_program.uniforms[su_ViewProjection].location, 1, GL_FALSE, view_projection.data());
     glUniform3fv(s_program.uniforms[su_CameraLocal].location, 1, client_camera::local.data());
     glUniform3fv(s_program.uniforms[su_FogColor].location, 1, fog::color.data());
     glUniform1f(s_program.uniforms[su_ViewDistance].location, fog::distance);
+    glUniform3fv(s_program.uniforms[su_SkyColor].location, 1, sky_light_color.data());
+    glUniform3fv(s_program.uniforms[su_BlockColor].location, 1, client_lighting::BLOCK_COLOR.data());
+    glUniform1f(s_program.uniforms[su_Ambient].location, client_lighting::AMBIENT);
     glUniform1i(s_program.uniforms[su_Texture].location, 0);
 
     // The next passes own their own state, so the culling state goes back as found

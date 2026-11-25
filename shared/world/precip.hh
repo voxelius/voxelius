@@ -28,6 +28,7 @@ struct PrecipDefinition final {
     float draw_chance { 1.0f }; // A value above one draws every column
     float opacity { 0.6f };
     Eigen::Vector3f color { Eigen::Vector3f::Ones() };
+    float light_boost { 0.0f }; // How far the light rises toward full, 0 to 1
 };
 
 struct PrecipContext final {

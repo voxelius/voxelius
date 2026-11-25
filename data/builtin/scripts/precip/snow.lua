@@ -8,5 +8,6 @@ precip.add("snow", {
   fall = 0.2,
   density = 0.8,
   opacity = 0.9,
+  light_boost = 0.25,
   color = { 0.92, 0.95, 1.00 },
 })

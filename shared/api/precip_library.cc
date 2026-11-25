@@ -191,6 +191,7 @@ static bool parse_definition(lua_State* L, int def_idx, PrecipDefinition& def, c
         std::make_pair("fall", &def.fall_speed),
         std::make_pair("density", &def.draw_chance),
         std::make_pair("opacity", &def.opacity),
+        std::make_pair("light_boost", &def.light_boost),
     };
 
     for(const auto& [field_name, field_ptr] : numbers) {
@@ -217,6 +218,10 @@ static bool parse_definition(lua_State* L, int def_idx, PrecipDefinition& def, c
 
     if(def.opacity < 0.0f || def.opacity > 1.0f) {
         return fail(L, base, "opacity must be in 0 to 1");
+    }
+
+    if(def.light_boost < 0.0f || def.light_boost > 1.0f) {
+        return fail(L, base, "light_boost must be in 0 to 1");
     }
 
     if(!parse_identifier(L, def_idx, "texture", ctx, def.texture)) {

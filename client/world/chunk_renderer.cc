@@ -17,6 +17,7 @@
 #include "client/camera.hh"
 #include "client/fog.hh"
 #include "client/globals.hh"
+#include "client/lighting.hh"
 #include "client/shader_program.hh"
 #include "client/world/block_atlas.hh"
 #include "client/world/chunk_mesh.hh"
@@ -36,11 +37,6 @@ constexpr static unsigned FOG_MODEL = 0;
 //  2048                89.510
 //  4096                77.742
 constexpr static std::size_t BATCH_MAX_PARTS = 1024;
-
-constexpr static float AMBIENT_LIGHT = 0.03f;
-
-static const Eigen::Vector3f SKY_LIGHT_COLOR { 1.0f, 1.0f, 1.0f };
-static const Eigen::Vector3f BLOCK_LIGHT_COLOR { 1.0f, 0.86f, 0.66f };
 
 static ShaderProgram s_program;
 static std::size_t su_ViewProjection;
@@ -315,7 +311,7 @@ static void bind_pipeline_state(unsigned fog_model)
 
     auto& vproj = client_camera::instance.view_projection();
     auto animation_timer = static_cast<std::uint32_t>(globals::current_tick >> 1);
-    auto sky_light_color = Eigen::Vector3f(SKY_LIGHT_COLOR * fog::daylight * fog::light_scale);
+    auto sky_light_color = client_lighting::sky_color();
 
     glUseProgram(s_program.handle);
     glUniformMatrix4fv(s_program.uniforms[su_ViewProjection].location, 1, GL_FALSE, vproj.data());
@@ -323,8 +319,8 @@ static void bind_pipeline_state(unsigned fog_model)
     glUniform1f(s_program.uniforms[su_ViewDistance].location, fog::distance);
     glUniform3fv(s_program.uniforms[su_FogColor].location, 1, fog::color.data());
     glUniform3fv(s_program.uniforms[su_SkyColor].location, 1, sky_light_color.data());
-    glUniform3fv(s_program.uniforms[su_BlockColor].location, 1, BLOCK_LIGHT_COLOR.data());
-    glUniform1f(s_program.uniforms[su_Ambient].location, AMBIENT_LIGHT);
+    glUniform3fv(s_program.uniforms[su_BlockColor].location, 1, client_lighting::BLOCK_COLOR.data());
+    glUniform1f(s_program.uniforms[su_Ambient].location, client_lighting::AMBIENT);
     glUniform3fv(s_program.uniforms[su_CameraLocal].location, 1, client_camera::local.data());
 
     glActiveTexture(GL_TEXTURE0);

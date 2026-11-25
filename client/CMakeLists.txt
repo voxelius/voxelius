@@ -149,6 +149,8 @@ add_executable(vclient
     "${CMAKE_CURRENT_LIST_DIR}/head.hh"
     "${CMAKE_CURRENT_LIST_DIR}/language.cc"
     "${CMAKE_CURRENT_LIST_DIR}/language.hh"
+    "${CMAKE_CURRENT_LIST_DIR}/lighting.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/lighting.hh"
     "${CMAKE_CURRENT_LIST_DIR}/loading.cc"
     "${CMAKE_CURRENT_LIST_DIR}/loading.hh"
     "${CMAKE_CURRENT_LIST_DIR}/metrics.cc"
