@@ -39,7 +39,8 @@ blocks.add("water", {
     fluid_name = "water",
 
     replaceable = true,
-    touch = blocks.TOUCH_NONE,
+    collidable = false,
+    selectable = false,
 
     emission = 0,
     dissipation = 1,

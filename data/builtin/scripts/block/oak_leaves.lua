@@ -14,7 +14,6 @@ blocks.add("oak_leaves", {
   health = 1,
   tools = { blocks.TOOL_XBLADE },
 
-  touch = blocks.TOUCH_SOLID,
   tags = { blocks.TAG_SFOIL },
 
   emission = 0,

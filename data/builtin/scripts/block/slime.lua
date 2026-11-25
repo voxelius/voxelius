@@ -13,7 +13,8 @@ blocks.add("slime", {
 
   health = 1,
 
-  touch = blocks.TOUCH_BOUNCE,
+  bounce = { 0, 1, 0 },
+  friction = 0.8,
 
   emission = 0,
   dissipation = 15,

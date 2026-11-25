@@ -24,7 +24,6 @@ logdef.add_block("pine_log", {
   emission = 0,
   dissipation = 15,
 
-  touch = blocks.TOUCH_SOLID,
   tags = { blocks.TAG_WOOD },
 
   drops = {
@@ -60,7 +59,6 @@ blocks.add("pine_wood", {
   emission = 0,
   dissipation = 15,
 
-  touch = blocks.TOUCH_SOLID,
   tags = { blocks.TAG_WOOD },
 
   drops = {

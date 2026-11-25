@@ -21,8 +21,8 @@
 #include "server/universe.hh"
 #include "server/world/world.hh"
 
-static cvar::Number<float> s_pos_threshold { 10.0f, 0.0f, 100.0f };
-static cvar::Number<float> s_vel_threshold { 10.0f, 0.0f, 100.0f };
+static cvar::Number<float> s_pos_threshold { 128.0f, 0.0f, 65536.0f };
+static cvar::Number<float> s_vel_threshold { 128.0f, 0.0f, 65536.0f };
 
 static void send_full_update(entt::registry& registry, entt::entity entity)
 {
@@ -89,7 +89,8 @@ void pmove_validator::fixed_update_late(void)
                 send_full_update(registry, entity);
             }
             else {
-                // The view angles live in Head; the body yaw follows them
+                // The client owns its predicted position and velocity; the
+                // server only corrects them when the thresholds are exceeded
                 registry.patch<Head>(entity, [&](Head& phead) {
                     phead.angles = sim_data.angles;
                 });

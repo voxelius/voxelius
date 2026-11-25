@@ -16,8 +16,6 @@ blocks.add("dev_vtest", {
 
   health = 1,
 
-  touch = blocks.TOUCH_SOLID,
-
   emission = 0,
   dissipation = 15,
 })

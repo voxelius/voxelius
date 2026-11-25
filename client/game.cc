@@ -118,6 +118,7 @@ void client_game::fixed_update(World* world)
 
         Transform::fixed_update(registry);
         Velocity::fixed_update(registry);
+        pmove::fixed_update(registry);
     }
 }
 
@@ -138,7 +139,6 @@ void client_game::update(void)
 
     player_look::update();
     player_move::update();
-    pmove::update(globals::world->registry(), globals::window_frametime);
 
     metrics::update();
 }

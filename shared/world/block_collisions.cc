@@ -66,6 +66,9 @@ static std::unique_ptr<BakedBlockCollision> bake_collision(const BlockDefinition
     auto rot = facing_rotation(def.bcoll_facing);
     auto baked = std::make_unique<BakedBlockCollision>();
 
+    baked->collidable = def.collidable;
+    baked->selectable = def.selectable;
+
     for(const auto& element : collision->elements) {
         Eigen::AlignedBox3f transformed = transform_aabb(element, rot, def.bcoll_offset);
         baked->elements.push_back(transformed);

@@ -427,25 +427,76 @@ static bool parse_overrides(lua_State* L, int idx, ModContext* ctx, BlockOverrid
         lua_pop(L, 1);
     }
 
-    if(reader.try_push("touch")) {
-        auto value = utils::require_integer(L, -1);
+    if(reader.try_push("collidable")) {
+        auto value = utils::require_bool(L, -1);
 
         if(!value.has_value()) {
             return false;
         }
 
-        patch.touch = static_cast<block_touch>(value.value());
+        patch.collidable = value.value();
         lua_pop(L, 1);
     }
 
-    if(reader.try_push("touch_coeffs")) {
-        auto coeffs = utils::require_fvec<3>(L, lua_gettop(L));
+    if(reader.try_push("selectable")) {
+        auto value = utils::require_bool(L, -1);
 
-        if(!coeffs.has_value()) {
+        if(!value.has_value()) {
             return false;
         }
 
-        patch.touch_coeffs = coeffs->cast<float>();
+        patch.selectable = value.value();
+        lua_pop(L, 1);
+    }
+
+    if(reader.try_push("friction")) {
+        auto value = utils::require_number(L, -1);
+
+        if(!value.has_value()) {
+            return false;
+        }
+
+        auto friction = static_cast<float>(value.value());
+
+        if(!std::isfinite(friction) || friction <= 0.0f) {
+            return false;
+        }
+
+        patch.friction = friction;
+        lua_pop(L, 1);
+    }
+
+    if(reader.try_push("speed")) {
+        auto value = utils::require_number(L, -1);
+
+        if(!value.has_value()) {
+            return false;
+        }
+
+        auto speed = static_cast<float>(value.value());
+
+        if(!std::isfinite(speed) || speed < 0.0f) {
+            return false;
+        }
+
+        patch.speed = speed;
+        lua_pop(L, 1);
+    }
+
+    if(reader.try_push("bounce")) {
+        auto bounce = utils::require_fvec<3>(L, lua_gettop(L));
+
+        if(!bounce.has_value()) {
+            return false;
+        }
+
+        auto bounce_value = bounce->cast<float>();
+
+        if(!bounce_value.allFinite()) {
+            return false;
+        }
+
+        patch.bounce = bounce_value;
         lua_pop(L, 1);
     }
 
@@ -727,25 +778,76 @@ static bool parse_definition(const BlockDefReader& reader, ModContext* ctx, Bloc
         lua_pop(L, 1);
     }
 
-    if(reader.try_push("touch")) {
-        auto value = utils::require_integer(L, -1);
+    if(reader.try_push("collidable")) {
+        auto value = utils::require_bool(L, -1);
 
         if(!value.has_value()) {
             return false;
         }
 
-        def.touch = static_cast<block_touch>(value.value());
+        def.collidable = value.value();
         lua_pop(L, 1);
     }
 
-    if(reader.try_push("touch_coeffs")) {
-        auto coeffs = utils::require_fvec<3>(L, lua_gettop(L));
+    if(reader.try_push("selectable")) {
+        auto value = utils::require_bool(L, -1);
 
-        if(!coeffs.has_value()) {
+        if(!value.has_value()) {
             return false;
         }
 
-        def.touch_coeffs = coeffs->cast<float>();
+        def.selectable = value.value();
+        lua_pop(L, 1);
+    }
+
+    if(reader.try_push("friction")) {
+        auto value = utils::require_number(L, -1);
+
+        if(!value.has_value()) {
+            return false;
+        }
+
+        auto friction = static_cast<float>(value.value());
+
+        if(!std::isfinite(friction) || friction <= 0.0f) {
+            return false;
+        }
+
+        def.surface.friction = friction;
+        lua_pop(L, 1);
+    }
+
+    if(reader.try_push("speed")) {
+        auto value = utils::require_number(L, -1);
+
+        if(!value.has_value()) {
+            return false;
+        }
+
+        auto speed = static_cast<float>(value.value());
+
+        if(!std::isfinite(speed) || speed < 0.0f) {
+            return false;
+        }
+
+        def.surface.speed = speed;
+        lua_pop(L, 1);
+    }
+
+    if(reader.try_push("bounce")) {
+        auto bounce = utils::require_fvec<3>(L, lua_gettop(L));
+
+        if(!bounce.has_value()) {
+            return false;
+        }
+
+        auto bounce_value = bounce->cast<float>();
+
+        if(!bounce_value.allFinite()) {
+            return false;
+        }
+
+        def.surface.bounce = bounce_value;
         lua_pop(L, 1);
     }
 
@@ -1070,9 +1172,11 @@ static bool add_block(lua_State* L, ModContext* ctx, const char* raw_name, int d
     def.emission = BLOCK_LIGHT_MIN;
     def.dissipation = BLOCK_LIGHT_MIN;
 
-    def.touch = BLOCK_TOUCH_SOLID;
-    def.touch_coeffs.setOnes();
-
+    def.collidable = true;
+    def.selectable = true;
+    def.surface.friction = 0.6f;
+    def.surface.speed = 1.0f;
+    def.surface.bounce.setZero();
     def.tags = static_cast<block_tag_bit>(0);
     def.replaceable = false;
 
@@ -1273,15 +1377,6 @@ void api_shared::open_blocks(std::shared_ptr<lua_State>& lua, ModContext* ctx)
     lua_setfield(L, -2, "TOOL_HAMMER");
     lua_pushinteger(L, BLOCK_TOOL_PICK);
     lua_setfield(L, -2, "TOOL_PICK");
-
-    lua_pushinteger(L, BLOCK_TOUCH_NONE);
-    lua_setfield(L, -2, "TOUCH_NONE");
-    lua_pushinteger(L, BLOCK_TOUCH_SOLID);
-    lua_setfield(L, -2, "TOUCH_SOLID");
-    lua_pushinteger(L, BLOCK_TOUCH_BOUNCE);
-    lua_setfield(L, -2, "TOUCH_BOUNCE");
-    lua_pushinteger(L, BLOCK_TOUCH_THROUGH);
-    lua_setfield(L, -2, "TOUCH_THROUGH");
 
     lua_pushinteger(L, BLOCK_TAG_GAS);
     lua_setfield(L, -2, "TAG_GAS");

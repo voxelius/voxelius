@@ -403,6 +403,38 @@ static void on_player_interact_b(const packet::Player_InteractB& packet)
     utils::block_place(hit, session->player, block);
 }
 
+static Eigen::Vector3f sanitize_direction(Eigen::Vector3f value)
+{
+    for(Eigen::Index axis = 0; axis < value.size(); axis += 1) {
+        auto component = value[axis];
+
+        if(!std::isfinite(component)) {
+            component = 0.0f;
+        }
+
+        value[axis] = std::clamp(component, -1.0f, 1.0f);
+    }
+
+    return value;
+}
+
+static Eigen::Vector3f sanitize_vector(Eigen::Vector3f value)
+{
+    constexpr static float LIMIT = 1.0e6f;
+
+    for(Eigen::Index axis = 0; axis < value.size(); axis += 1) {
+        auto component = value[axis];
+
+        if(!std::isfinite(component)) {
+            component = 0.0f;
+        }
+
+        value[axis] = std::clamp(component, -LIMIT, LIMIT);
+    }
+
+    return value;
+}
+
 static void on_player_move_data(const packet::Player_MoveData& packet)
 {
     auto session = sessions::find(packet.peer);
@@ -413,13 +445,13 @@ static void on_player_move_data(const packet::Player_MoveData& packet)
 
     auto& registry = session->world->registry();
 
-    registry.emplace_or_replace<MoveData>(session->player, MoveData { packet.wishdir });
+    registry.emplace_or_replace<MoveData>(session->player, MoveData { sanitize_direction(packet.wishdir) });
 
     SimulatedMoveData sim_data;
     sim_data.chunk = packet.simulated_cpos;
-    sim_data.local = packet.simulated_lpos;
-    sim_data.velocity = packet.velocity;
-    sim_data.angles = packet.camera_angles;
+    sim_data.local = sanitize_vector(packet.simulated_lpos);
+    sim_data.velocity = sanitize_vector(packet.velocity);
+    sim_data.angles = sanitize_vector(packet.camera_angles);
 
     registry.emplace_or_replace<SimulatedMoveData>(session->player, std::move(sim_data));
 }

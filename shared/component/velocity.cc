@@ -4,6 +4,7 @@
 
 #include "core/buffer.hh"
 
+#include "shared/component/player.hh"
 #include "shared/component/stasis.hh"
 #include "shared/component/transform.hh"
 #include "shared/constant.hh"
@@ -101,7 +102,8 @@ void Velocity::register_component(void)
 
 void Velocity::fixed_update(entt::registry& registry)
 {
-    auto view = registry.view<Velocity, Transform>(entt::exclude<Stasis>);
+    // Players are integrated by pmove; every other body integrates here
+    auto view = registry.view<Velocity, Transform>(entt::exclude<Stasis, Player>);
 
     for(auto [entity, velocity, transform] : view.each()) {
         auto speed_sq = velocity.value.squaredNorm();

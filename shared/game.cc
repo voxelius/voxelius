@@ -2,6 +2,7 @@
 
 #include "shared/game.hh"
 
+#include "shared/component/collision.hh"
 #include "shared/component/head.hh"
 #include "shared/component/move_mode.hh"
 #include "shared/component/player.hh"
@@ -28,6 +29,7 @@ void shared_game::init(void)
     Velocity::register_component();
     Player::register_component();
     MoveMode::register_component();
+    Collision::register_component();
 
     mod_loader::init();
 

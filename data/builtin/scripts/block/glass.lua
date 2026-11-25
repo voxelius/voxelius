@@ -13,8 +13,6 @@ blocks.add("glass", {
 
   health = 1,
 
-  touch = blocks.TOUCH_SOLID,
-
   emission = 0,
   dissipation = 0,
 

@@ -16,6 +16,7 @@
 #include "shared/net/packet_session.hh"
 #include "shared/net/packet_world.hh"
 #include "shared/net/protocol.hh"
+#include "shared/system/pmove.hh"
 #include "shared/utils/coord.hh"
 #include "shared/utils/entity.hh"
 #include "shared/world/biome_registry.hh"
@@ -242,6 +243,10 @@ static void on_auth_response(const packet::Auth_Response& packet)
     SessionRef ref {};
     ref.ptr = session;
     registry.emplace<SessionRef>(player, std::move(ref));
+
+    // The player falls and collides before the first move packet arrives
+    auto& move_data = registry.emplace<MoveData>(player);
+    move_data.wishdir.setZero();
 
     packet::Entity_Client response_2 {};
     response_2.entity = player;

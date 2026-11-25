@@ -239,7 +239,7 @@ void server_game::fixed_update(ServerWorld* world)
 
         world->fixed_update();
 
-        pmove::update(registry, globals::fixed_frametime);
+        pmove::fixed_update(registry);
     }
 }
 

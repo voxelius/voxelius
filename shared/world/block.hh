@@ -31,13 +31,6 @@ enum block_tool_bit : unsigned {
     BLOCK_TOOL_PICK = 0x0040U,
 };
 
-enum block_touch : unsigned {
-    BLOCK_TOUCH_NONE = 0,
-    BLOCK_TOUCH_SOLID,
-    BLOCK_TOUCH_BOUNCE,
-    BLOCK_TOUCH_THROUGH,
-};
-
 enum block_tag_bit : std::uint32_t {
     BLOCK_TAG_GAS = 0x00000001U,
     BLOCK_TAG_ROCK = 0x00000002U,
@@ -78,6 +71,12 @@ struct BlockDrop final {
     block_tool_bit cond_tool_bits;
 };
 
+struct BlockSurface final {
+    float friction { 0.6f };
+    float speed { 1.0f };
+    Eigen::Vector3f bounce { Eigen::Vector3f::Zero() };
+};
+
 struct BlockDefinition final {
     BlockDefinition(void) = default;
 
@@ -109,8 +108,9 @@ struct BlockDefinition final {
     block_light_type emission;
     block_light_type dissipation;
 
-    block_touch touch;
-    Eigen::Vector3f touch_coeffs;
+    bool collidable { true };
+    bool selectable { true };
+    BlockSurface surface;
 
     block_tag_bit tags;
     bool replaceable;

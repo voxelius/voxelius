@@ -3,10 +3,20 @@
 
 #include "shared/world/block.hh"
 
-struct BakedBlockCollision final {
+class BakedBlockCollision final {
+public:
+    constexpr bool collides(void) const;
+
     std::vector<Eigen::AlignedBox3f> elements;
     Eigen::AlignedBox3f bounds;
+    bool collidable { true };
+    bool selectable { true };
 };
+
+constexpr bool BakedBlockCollision::collides(void) const
+{
+    return collidable && !elements.empty();
+}
 
 namespace block_collisions
 {
