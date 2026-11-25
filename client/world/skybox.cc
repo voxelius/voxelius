@@ -285,8 +285,6 @@ void skybox::update(void)
         alignment = camera_flat.dot(sun_flat) / (camera_length * sun_length);
     }
 
-    auto warmth = std::pow(std::max(alignment, 0.0f), 2.0f) * twilight * visibility * sun_factor;
-
     // The shader only needs the heading of the sun, and a zero
     // vector when the sun stands right above
     if(sun_length > 1.0e-4f) {
@@ -296,9 +294,19 @@ void skybox::update(void)
         sun_azimuth.setZero();
     }
 
+    // The fog copies the whole horizon color of the sky, glow included,
+    // or the terrain edge shows up against a warm sky
+    scatter = twilight * visibility;
+
+    auto side = std::max(alignment, 0.0f);
+    auto align = side * sun_length;
+    auto align2 = align * align;
+
     horizon_color = s_horizon;
     sun_horizon_color = s_warm_horizon;
-    fog_color = s_horizon + (s_warm_horizon - s_horizon) * warmth;
+    fog_color = s_horizon + (s_warm_horizon - s_horizon) * (side * side * scatter);
+    fog_color += tint * (0.75f * (1.0f + align2) * scatter * 0.55f);
+    fog_color += tint * (align2 * align2 * scatter * 0.08f);
     zenith_color = s_zenith;
     phase = s_phase;
     daylight = light;
@@ -314,7 +322,6 @@ void skybox::update(void)
     moon_strength = utils::smoothstep(-0.05f, 0.05f, -height) * open_sky * 0.85f * moon_factor;
     moon_phase = static_cast<std::uint32_t>(world_clock::day(globals::world->daylight_tick, day_length) % MOON_PHASE_COUNT);
 
-    scatter = twilight * visibility;
     star_visibility = (1.0f - light) * open_sky * star_factor;
 }
 
