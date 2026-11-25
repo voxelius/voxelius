@@ -2,6 +2,8 @@
 
 #include "server/world/generator_superflat.hh"
 
+#include "core/utils/json.hh"
+
 #include "shared/constant.hh"
 #include "shared/utils/coord.hh"
 #include "shared/world/biome_registry.hh"
@@ -10,13 +12,7 @@
 #include "shared/world/world.hh"
 
 #include "server/world/generator_map.hh"
-#include "server/world/generator_settings.hh"
 #include "server/world/world.hh"
-
-constexpr static std::array<const char*, 2> ALLOWED_KEYS {
-    "surface_y",
-    "filler_depth",
-};
 
 struct SuperflatSettings final {
     BlockPos::value_type surface_y { 0 };
@@ -28,56 +24,46 @@ struct SuperflatState final {
 };
 
 template<>
-std::shared_ptr<void> Generator<Superflat>::create_state(lua_State* L, int settings_idx, const WorldDefinition& definition)
+std::shared_ptr<void> Generator<Superflat>::create_state(const JSON_Object* settings, const WorldDefinition& definition,
+    std::string_view where)
 {
-    SuperflatSettings settings;
+    SuperflatSettings values;
+    SuperflatSettings defaults;
 
-    if(settings_idx) {
-        if(!generator_settings::check_keys(L, settings_idx, "superflat", ALLOWED_KEYS)) {
-            return nullptr;
+    if(settings) {
+        if(auto value = utils::parse_integer<long long>(settings, "surface_y")) {
+            values.surface_y = static_cast<BlockPos::value_type>(value.value());
         }
 
-        auto surface_y = static_cast<lua_Integer>(settings.surface_y);
-
-        if(!generator_settings::read_integer(L, settings_idx, "superflat", "surface_y", surface_y)) {
-            return nullptr;
+        if(auto value = utils::parse_integer<long long>(settings, "filler_depth")) {
+            values.filler_depth = static_cast<BlockPos::value_type>(value.value());
         }
-
-        settings.surface_y = static_cast<BlockPos::value_type>(surface_y);
-
-        auto filler_depth = static_cast<lua_Integer>(settings.filler_depth);
-
-        if(!generator_settings::read_integer(L, settings_idx, "superflat", "filler_depth", filler_depth)) {
-            return nullptr;
-        }
-
-        settings.filler_depth = static_cast<BlockPos::value_type>(filler_depth);
     }
 
-    if(settings.surface_y < definition.min_y || settings.surface_y > definition.max_y) {
-        lua_pushliteral(L, "superflat: surface_y is outside the world height");
-        return nullptr;
+    if(values.surface_y < definition.min_y || values.surface_y > definition.max_y) {
+        msg::log_warning("{}: surface_y is outside the world height; it is clamped", where);
+        values.surface_y = std::clamp(values.surface_y, definition.min_y, definition.max_y);
     }
 
-    if(settings.filler_depth < 0) {
-        lua_pushliteral(L, "superflat: filler_depth must not be negative");
-        return nullptr;
+    if(values.filler_depth < 0) {
+        msg::log_warning("{}: filler_depth is invalid; the default is used", where);
+        values.filler_depth = defaults.filler_depth;
     }
 
-    auto headroom = static_cast<std::uint64_t>(settings.surface_y) - static_cast<std::uint64_t>(definition.min_y);
+    auto headroom = static_cast<std::uint64_t>(values.surface_y) - static_cast<std::uint64_t>(definition.min_y);
 
-    if(static_cast<std::uint64_t>(settings.filler_depth) > headroom) {
-        lua_pushliteral(L, "superflat: filler_depth reaches below the world");
-        return nullptr;
+    if(static_cast<std::uint64_t>(values.filler_depth) > headroom) {
+        msg::log_warning("{}: filler_depth reaches below the world; it is clamped", where);
+        values.filler_depth = static_cast<BlockPos::value_type>(headroom);
     }
 
     if(definition.biome_selector.strategy != BIOME_SELECTION_CONSTANT) {
-        lua_pushliteral(L, "superflat: biome selector must be constant");
+        msg::log_error("{}: superflat needs a constant biome selector; the world is skipped", where);
         return nullptr;
     }
 
     auto state = std::make_shared<SuperflatState>();
-    state->settings = settings;
+    state->settings = values;
 
     return state;
 }

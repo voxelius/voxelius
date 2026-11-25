@@ -248,13 +248,13 @@ static std::string_view world_identifier(void)
         return "unknown";
     }
 
-    auto& id = globals::world->id();
+    auto& name = globals::world->name();
 
-    if(id.is_empty()) {
+    if(name.empty()) {
         return "unknown";
     }
 
-    return id.full_string();
+    return name;
 }
 
 static void sample_frame(void)

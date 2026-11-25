@@ -110,7 +110,7 @@ public:
 
     constexpr const WorldDefinition& definition(void) const;
     constexpr const WorldVisuals& visuals(void) const;
-    constexpr const Identifier& id(void) const;
+    constexpr const std::string& name(void) const;
 
     constexpr entt::registry& registry(void);
     constexpr entt::registry& chunk_registry(void);
@@ -237,9 +237,9 @@ constexpr const WorldVisuals& World::visuals(void) const
     return m_definition->visuals;
 }
 
-constexpr const Identifier& World::id(void) const
+constexpr const std::string& World::name(void) const
 {
-    return m_definition->id;
+    return m_definition->name;
 }
 
 constexpr entt::registry& World::registry(void)

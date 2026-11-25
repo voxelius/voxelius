@@ -3,8 +3,6 @@
 #include "server/net/sessions.hh"
 
 #include "core/cvar/host.hh"
-#include "core/cvar/string.hh"
-#include "core/identifier.hh"
 #include "core/utils/crc64.hh"
 #include "core/utils/epoch.hh"
 #include "core/version.hh"
@@ -49,27 +47,6 @@ cvar::Boolean sessions::strict_version { false };
 std::uint16_t sessions::num_players = 0;
 
 static std::mt19937_64 s_randomizer;
-static cvar::String s_spawn_world { "" };
-
-static std::shared_ptr<ServerWorld> resolve_spawn_world(void)
-{
-    auto name = s_spawn_world.value();
-
-    if(name.empty()) {
-        return universe::default_world();
-    }
-
-    auto id = Identifier::from_string(name, constant::BUILTIN_NAME_SPACE);
-    auto world = universe::find(id);
-
-    if(world == nullptr) {
-        msg::log_error("sv_spawn_world names an unknown world: {}", name);
-
-        return universe::default_world();
-    }
-
-    return world;
-}
 
 static void send_world_state(Session* session)
 {
@@ -247,7 +224,7 @@ static void on_auth_response(const packet::Auth_Response& packet)
     response.username = session->username;
     protocol::send(response, packet.peer);
 
-    session->world = resolve_spawn_world();
+    session->world = universe::default_world();
 
     auto& registry = session->world->registry();
 
@@ -476,10 +453,6 @@ void sessions::init(void)
     auto& net_strict_version_binding = cvar::bind_var(strict_version, "net_strict_version");
     net_strict_version_binding.set_help("Reject clients with a different protocol version");
     net_strict_version_binding.set_flags(FCVAR_ARCHIVE);
-
-    auto& sv_spawn_world_binding = cvar::bind_var(s_spawn_world, "sv_spawn_world");
-    sv_spawn_world_binding.set_help("World that a new player spawns in. Empty selects the default world");
-    sv_spawn_world_binding.set_flags(FCVAR_ARCHIVE | FCVAR_ADMIN);
 
     auto& who_binding = cvar::bind_cmd("who");
     who_binding.set_help("List connected sessions and their access levels");

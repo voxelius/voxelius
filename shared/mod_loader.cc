@@ -14,7 +14,6 @@
 #include "shared/world/precip_registry.hh"
 #include "shared/world/tint_registry.hh"
 #include "shared/world/weather_registry.hh"
-#include "shared/world/world_registry.hh"
 
 static std::vector<ModContext> s_mods;
 static std::vector<library_opener> s_libraries;
@@ -236,7 +235,6 @@ void mod_loader::shutdown(void)
 {
     s_mods.clear();
 
-    world_registry::purge();
     class_registry::purge();
     weather_registry::purge();
     precip_registry::purge();

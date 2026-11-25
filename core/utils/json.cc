@@ -32,9 +32,9 @@ std::optional<Eigen::Vector<T, N>> utils::parse_vector(const JSON_Value* value)
 }
 
 template<vx::arithmetic T, std::size_t N>
-std::optional<Eigen::Vector<T, N>> utils::parse_vector(const JSON_Object* object, std::string_view name)
+std::optional<Eigen::Vector<T, N>> utils::parse_vector(const JSON_Object* object, const char* name)
 {
-    const auto value = json_object_get_value(object, name.data());
+    const auto value = json_object_get_value(object, name);
 
     if(value == nullptr) {
         return std::nullopt;
@@ -54,9 +54,9 @@ std::optional<T> utils::parse_arithmetic(const JSON_Value* value)
 }
 
 template<vx::arithmetic T>
-std::optional<T> utils::parse_arithmetic(const JSON_Object* object, std::string_view name)
+std::optional<T> utils::parse_arithmetic(const JSON_Object* object, const char* name)
 {
-    const auto value = json_object_get_value(object, name.data());
+    const auto value = json_object_get_value(object, name);
 
     if(value == nullptr) {
         return std::nullopt;
@@ -96,10 +96,9 @@ std::optional<T> utils::parse_bitmask(const JSON_Value* value, std::span<const s
 }
 
 template<std::unsigned_integral T>
-std::optional<T> utils::parse_bitmask(const JSON_Object* object, std::string_view name,
-    std::span<const std::pair<std::string_view, T>> mapping)
+std::optional<T> utils::parse_bitmask(const JSON_Object* object, const char* name, std::span<const std::pair<std::string_view, T>> mapping)
 {
-    const auto value = json_object_get_value(object, name.data());
+    const auto value = json_object_get_value(object, name);
 
     if(value == nullptr) {
         return std::nullopt;
@@ -127,16 +126,45 @@ std::optional<T> utils::parse_enum(const JSON_Value* value, std::span<const std:
 }
 
 template<std::integral T>
-std::optional<T> utils::parse_enum(const JSON_Object* object, std::string_view name,
-    std::span<const std::pair<std::string_view, T>> mapping)
+std::optional<T> utils::parse_enum(const JSON_Object* object, const char* name, std::span<const std::pair<std::string_view, T>> mapping)
 {
-    const auto value = json_object_get_value(object, name.data());
+    const auto value = json_object_get_value(object, name);
 
     if(value == nullptr) {
         return std::nullopt;
     }
 
     return parse_enum<T>(value, mapping);
+}
+
+template<std::integral T>
+std::optional<T> utils::parse_integer(const JSON_Value* value)
+{
+    auto number = parse_arithmetic<double>(value);
+
+    if(!number.has_value()) {
+        return std::nullopt;
+    }
+
+    auto integer = number.value();
+
+    auto is_valid = true;
+    is_valid = is_valid && std::isfinite(integer);
+    is_valid = is_valid && integer == std::trunc(integer);
+    is_valid = is_valid && integer >= static_cast<double>(std::numeric_limits<T>::lowest());
+    is_valid = is_valid && integer < 1.0 + static_cast<double>(std::numeric_limits<T>::max());
+
+    if(is_valid) {
+        return static_cast<T>(integer);
+    }
+
+    return std::nullopt;
+}
+
+template<std::integral T>
+std::optional<T> utils::parse_integer(const JSON_Object* object, const char* name)
+{
+    return parse_integer<T>(json_object_get_value(object, name));
 }
 
 template std::optional<Eigen::Vector<int, 2>> utils::parse_vector(const JSON_Value* value);
@@ -151,17 +179,17 @@ template std::optional<Eigen::Vector<double, 2>> utils::parse_vector(const JSON_
 template std::optional<Eigen::Vector<double, 3>> utils::parse_vector(const JSON_Value* value);
 template std::optional<Eigen::Vector<double, 4>> utils::parse_vector(const JSON_Value* value);
 
-template std::optional<Eigen::Vector<int, 2>> utils::parse_vector(const JSON_Object* object, std::string_view name);
-template std::optional<Eigen::Vector<int, 3>> utils::parse_vector(const JSON_Object* object, std::string_view name);
-template std::optional<Eigen::Vector<int, 4>> utils::parse_vector(const JSON_Object* object, std::string_view name);
+template std::optional<Eigen::Vector<int, 2>> utils::parse_vector(const JSON_Object* object, const char* name);
+template std::optional<Eigen::Vector<int, 3>> utils::parse_vector(const JSON_Object* object, const char* name);
+template std::optional<Eigen::Vector<int, 4>> utils::parse_vector(const JSON_Object* object, const char* name);
 
-template std::optional<Eigen::Vector<float, 2>> utils::parse_vector(const JSON_Object* object, std::string_view name);
-template std::optional<Eigen::Vector<float, 3>> utils::parse_vector(const JSON_Object* object, std::string_view name);
-template std::optional<Eigen::Vector<float, 4>> utils::parse_vector(const JSON_Object* object, std::string_view name);
+template std::optional<Eigen::Vector<float, 2>> utils::parse_vector(const JSON_Object* object, const char* name);
+template std::optional<Eigen::Vector<float, 3>> utils::parse_vector(const JSON_Object* object, const char* name);
+template std::optional<Eigen::Vector<float, 4>> utils::parse_vector(const JSON_Object* object, const char* name);
 
-template std::optional<Eigen::Vector<double, 2>> utils::parse_vector(const JSON_Object* object, std::string_view name);
-template std::optional<Eigen::Vector<double, 3>> utils::parse_vector(const JSON_Object* object, std::string_view name);
-template std::optional<Eigen::Vector<double, 4>> utils::parse_vector(const JSON_Object* object, std::string_view name);
+template std::optional<Eigen::Vector<double, 2>> utils::parse_vector(const JSON_Object* object, const char* name);
+template std::optional<Eigen::Vector<double, 3>> utils::parse_vector(const JSON_Object* object, const char* name);
+template std::optional<Eigen::Vector<double, 4>> utils::parse_vector(const JSON_Object* object, const char* name);
 
 template std::optional<signed char> utils::parse_arithmetic(const JSON_Value* value);
 template std::optional<short> utils::parse_arithmetic(const JSON_Value* value);
@@ -171,19 +199,27 @@ template std::optional<long long> utils::parse_arithmetic(const JSON_Value* valu
 template std::optional<float> utils::parse_arithmetic(const JSON_Value* value);
 template std::optional<double> utils::parse_arithmetic(const JSON_Value* value);
 
-template std::optional<unsigned char> utils::parse_arithmetic(const JSON_Object* object, std::string_view name);
-template std::optional<unsigned short> utils::parse_arithmetic(const JSON_Object* object, std::string_view name);
-template std::optional<unsigned> utils::parse_arithmetic(const JSON_Object* object, std::string_view name);
-template std::optional<unsigned long> utils::parse_arithmetic(const JSON_Object* object, std::string_view name);
-template std::optional<unsigned long long> utils::parse_arithmetic(const JSON_Object* object, std::string_view name);
+template std::optional<int> utils::parse_integer(const JSON_Value* value);
+template std::optional<long> utils::parse_integer(const JSON_Value* value);
+template std::optional<long long> utils::parse_integer(const JSON_Value* value);
 
-template std::optional<signed char> utils::parse_arithmetic(const JSON_Object* object, std::string_view name);
-template std::optional<short> utils::parse_arithmetic(const JSON_Object* object, std::string_view name);
-template std::optional<int> utils::parse_arithmetic(const JSON_Object* object, std::string_view name);
-template std::optional<long> utils::parse_arithmetic(const JSON_Object* object, std::string_view name);
-template std::optional<long long> utils::parse_arithmetic(const JSON_Object* object, std::string_view name);
-template std::optional<float> utils::parse_arithmetic(const JSON_Object* object, std::string_view name);
-template std::optional<double> utils::parse_arithmetic(const JSON_Object* object, std::string_view name);
+template std::optional<int> utils::parse_integer(const JSON_Object* object, const char* name);
+template std::optional<long> utils::parse_integer(const JSON_Object* object, const char* name);
+template std::optional<long long> utils::parse_integer(const JSON_Object* object, const char* name);
+
+template std::optional<unsigned char> utils::parse_arithmetic(const JSON_Object* object, const char* name);
+template std::optional<unsigned short> utils::parse_arithmetic(const JSON_Object* object, const char* name);
+template std::optional<unsigned> utils::parse_arithmetic(const JSON_Object* object, const char* name);
+template std::optional<unsigned long> utils::parse_arithmetic(const JSON_Object* object, const char* name);
+template std::optional<unsigned long long> utils::parse_arithmetic(const JSON_Object* object, const char* name);
+
+template std::optional<signed char> utils::parse_arithmetic(const JSON_Object* object, const char* name);
+template std::optional<short> utils::parse_arithmetic(const JSON_Object* object, const char* name);
+template std::optional<int> utils::parse_arithmetic(const JSON_Object* object, const char* name);
+template std::optional<long> utils::parse_arithmetic(const JSON_Object* object, const char* name);
+template std::optional<long long> utils::parse_arithmetic(const JSON_Object* object, const char* name);
+template std::optional<float> utils::parse_arithmetic(const JSON_Object* object, const char* name);
+template std::optional<double> utils::parse_arithmetic(const JSON_Object* object, const char* name);
 
 template std::optional<unsigned char> utils::parse_bitmask(const JSON_Value* value,
     std::span<const std::pair<std::string_view, unsigned char>> mapping);
@@ -196,15 +232,15 @@ template std::optional<unsigned long> utils::parse_bitmask(const JSON_Value* val
 template std::optional<unsigned long long> utils::parse_bitmask(const JSON_Value* value,
     std::span<const std::pair<std::string_view, unsigned long long>> mapping);
 
-template std::optional<unsigned char> utils::parse_bitmask(const JSON_Object* object, std::string_view name,
+template std::optional<unsigned char> utils::parse_bitmask(const JSON_Object* object, const char* name,
     std::span<const std::pair<std::string_view, unsigned char>> mapping);
-template std::optional<unsigned short> utils::parse_bitmask(const JSON_Object* object, std::string_view name,
+template std::optional<unsigned short> utils::parse_bitmask(const JSON_Object* object, const char* name,
     std::span<const std::pair<std::string_view, unsigned short>> mapping);
-template std::optional<unsigned> utils::parse_bitmask(const JSON_Object* object, std::string_view name,
+template std::optional<unsigned> utils::parse_bitmask(const JSON_Object* object, const char* name,
     std::span<const std::pair<std::string_view, unsigned>> mapping);
-template std::optional<unsigned long> utils::parse_bitmask(const JSON_Object* object, std::string_view name,
+template std::optional<unsigned long> utils::parse_bitmask(const JSON_Object* object, const char* name,
     std::span<const std::pair<std::string_view, unsigned long>> mapping);
-template std::optional<unsigned long long> utils::parse_bitmask(const JSON_Object* object, std::string_view name,
+template std::optional<unsigned long long> utils::parse_bitmask(const JSON_Object* object, const char* name,
     std::span<const std::pair<std::string_view, unsigned long long>> mapping);
 
 template std::optional<signed char> utils::parse_enum(const JSON_Value* value,
@@ -215,15 +251,15 @@ template std::optional<long> utils::parse_enum(const JSON_Value* value, std::spa
 template std::optional<long long> utils::parse_enum(const JSON_Value* value,
     std::span<const std::pair<std::string_view, long long>> mapping);
 
-template std::optional<signed char> utils::parse_enum(const JSON_Object* object, std::string_view name,
+template std::optional<signed char> utils::parse_enum(const JSON_Object* object, const char* name,
     std::span<const std::pair<std::string_view, signed char>> mapping);
-template std::optional<short> utils::parse_enum(const JSON_Object* object, std::string_view name,
+template std::optional<short> utils::parse_enum(const JSON_Object* object, const char* name,
     std::span<const std::pair<std::string_view, short>> mapping);
-template std::optional<int> utils::parse_enum(const JSON_Object* object, std::string_view name,
+template std::optional<int> utils::parse_enum(const JSON_Object* object, const char* name,
     std::span<const std::pair<std::string_view, int>> mapping);
-template std::optional<long> utils::parse_enum(const JSON_Object* object, std::string_view name,
+template std::optional<long> utils::parse_enum(const JSON_Object* object, const char* name,
     std::span<const std::pair<std::string_view, long>> mapping);
-template std::optional<long long> utils::parse_enum(const JSON_Object* object, std::string_view name,
+template std::optional<long long> utils::parse_enum(const JSON_Object* object, const char* name,
     std::span<const std::pair<std::string_view, long long>> mapping);
 
 template std::optional<unsigned char> utils::parse_enum(const JSON_Value* value,
@@ -236,13 +272,13 @@ template std::optional<unsigned long> utils::parse_enum(const JSON_Value* value,
 template std::optional<unsigned long long> utils::parse_enum(const JSON_Value* value,
     std::span<const std::pair<std::string_view, unsigned long long>> mapping);
 
-template std::optional<unsigned char> utils::parse_enum(const JSON_Object* object, std::string_view name,
+template std::optional<unsigned char> utils::parse_enum(const JSON_Object* object, const char* name,
     std::span<const std::pair<std::string_view, unsigned char>> mapping);
-template std::optional<unsigned short> utils::parse_enum(const JSON_Object* object, std::string_view name,
+template std::optional<unsigned short> utils::parse_enum(const JSON_Object* object, const char* name,
     std::span<const std::pair<std::string_view, unsigned short>> mapping);
-template std::optional<unsigned> utils::parse_enum(const JSON_Object* object, std::string_view name,
+template std::optional<unsigned> utils::parse_enum(const JSON_Object* object, const char* name,
     std::span<const std::pair<std::string_view, unsigned>> mapping);
-template std::optional<unsigned long> utils::parse_enum(const JSON_Object* object, std::string_view name,
+template std::optional<unsigned long> utils::parse_enum(const JSON_Object* object, const char* name,
     std::span<const std::pair<std::string_view, unsigned long>> mapping);
-template std::optional<unsigned long long> utils::parse_enum(const JSON_Object* object, std::string_view name,
+template std::optional<unsigned long long> utils::parse_enum(const JSON_Object* object, const char* name,
     std::span<const std::pair<std::string_view, unsigned long long>> mapping);

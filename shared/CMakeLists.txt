@@ -134,8 +134,6 @@ add_library(shared STATIC
     "${CMAKE_CURRENT_LIST_DIR}/world/world.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/world.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/world_definition.hh"
-    "${CMAKE_CURRENT_LIST_DIR}/world/world_registry.cc"
-    "${CMAKE_CURRENT_LIST_DIR}/world/world_registry.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/world_scope.cc"
     "${CMAKE_CURRENT_LIST_DIR}/world/world_scope.hh"
     "${CMAKE_CURRENT_LIST_DIR}/world/world_visuals.cc"

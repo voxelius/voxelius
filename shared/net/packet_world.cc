@@ -3,7 +3,6 @@
 #include "shared/net/packet_world.hh"
 
 #include "core/buffer.hh"
-#include "core/identifier.hh"
 
 #include "shared/world/world_definition.hh"
 
@@ -212,7 +211,7 @@ void packet::World_Timings::decode(World_Timings& packet, ReadBuffer& buffer)
 
 void packet::World_Info::encode(const World_Info& packet, WriteBuffer& buffer)
 {
-    buffer.write<std::string_view>(packet.id);
+    buffer.write<std::string_view>(packet.name);
     buffer.write<std::uint64_t>(packet.weather_seed);
 
     buffer.write<std::int64_t>(packet.min_y);
@@ -230,7 +229,7 @@ void packet::World_Info::encode(const World_Info& packet, WriteBuffer& buffer)
 
 void packet::World_Info::decode(World_Info& packet, ReadBuffer& buffer)
 {
-    packet.id = buffer.read<std::string>();
+    packet.name = buffer.read<std::string>();
     packet.weather_seed = buffer.read<std::uint64_t>();
 
     packet.min_y = buffer.read<std::int64_t>();
@@ -256,7 +255,7 @@ void packet::World_Info::decode(World_Info& packet, ReadBuffer& buffer)
 
 void packet::World_Info::fill(const WorldDefinition& definition)
 {
-    id = std::string(definition.id.full_string());
+    name = definition.name;
     min_y = definition.min_y;
     max_y = definition.max_y;
     spawn = definition.spawn;
@@ -266,7 +265,7 @@ void packet::World_Info::fill(const WorldDefinition& definition)
 
 void packet::World_Info::to_definition(WorldDefinition& definition) const
 {
-    definition.id = Identifier::from_string(id);
+    definition.name = name;
     definition.min_y = min_y;
     definition.max_y = max_y;
     definition.spawn = spawn;

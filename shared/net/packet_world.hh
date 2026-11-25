@@ -101,7 +101,7 @@ struct packet::World_Info final : public packet::Base<packet::WORLD_INFO> {
     void fill(const WorldDefinition& definition);
     void to_definition(WorldDefinition& definition) const;
 
-    std::string id;
+    std::string name;
 
     // The weather seed, so the client can derive the same field. The world
     // seed itself never leaves the server: knowing it would reveal terrain

@@ -79,9 +79,9 @@ static cvar::status cmd_time_set(const cvar::Context& ctx, std::span<const std::
     auto day_length = server_vars::day_length_ticks();
     auto phase = world_clock::phase(tick, day_length);
     auto day = world_clock::day(tick, day_length);
-    auto id_text = world->id().full_string();
+    auto& world_name = world->name();
 
-    msg::log_info("time_set: world={} daylight_tick={} day={} phase={:.3f}", id_text, tick, day, phase);
+    msg::log_info("time_set: world={} daylight_tick={} day={} phase={:.3f}", world_name, tick, day, phase);
 
     return cvar::status::OK;
 }

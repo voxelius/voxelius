@@ -2,8 +2,7 @@
 
 #include "server/world/generator_vox17.hh"
 
-#include "core/exception.hh"
-#include "core/identifier.hh"
+#include "core/utils/json.hh"
 
 #include "shared/constant.hh"
 #include "shared/utils/coord.hh"
@@ -15,7 +14,6 @@
 
 #include "server/utils/climate.hh"
 #include "server/world/generator_map.hh"
-#include "server/world/generator_settings.hh"
 #include "server/world/noise_cache_2d.hh"
 #include "server/world/noise_cache_3d.hh"
 #include "server/world/world.hh"
@@ -30,20 +28,6 @@ constexpr static std::array<const char*, CLIMATE_AXES> AXIS_NAMES {
     "continentalness",
     "erosion",
     "weirdness",
-};
-
-constexpr static std::array<const char*, 11> ALLOWED_KEYS {
-    "terrain_frequency",
-    "terrain_octaves",
-    "terrain_density_peak",
-    "sea_level",
-    "base_min",
-    "base_max",
-    "variation_min",
-    "variation_max",
-    "pv_valley_offset",
-    "pv_peak_offset",
-    "climate_frequencies",
 };
 
 struct ClimateSample final {
@@ -232,129 +216,109 @@ static Column probe_one_column(const Vox17State* state, BlockPos::value_type bx,
 }
 
 template<>
-std::shared_ptr<void> Generator<Vox17>::create_state(lua_State* L, int settings_idx, const WorldDefinition& definition)
+std::shared_ptr<void> Generator<Vox17>::create_state(const JSON_Object* settings, const WorldDefinition& definition, std::string_view where)
 {
-    Vox17Settings settings;
+    Vox17Settings values;
+    Vox17Settings defaults;
 
-    if(settings_idx) {
-        if(!generator_settings::check_keys(L, settings_idx, "vox17", ALLOWED_KEYS)) {
-            return nullptr;
+    if(settings) {
+        if(auto value = utils::parse_arithmetic<float>(settings, "terrain_frequency")) {
+            values.terrain_frequency = value.value();
         }
 
-        if(!generator_settings::read_number(L, settings_idx, "vox17", "terrain_frequency", settings.terrain_frequency)) {
-            return nullptr;
+        if(auto value = utils::parse_integer<long long>(settings, "terrain_octaves")) {
+            values.terrain_octaves = static_cast<int>(value.value());
         }
 
-        auto terrain_octaves = static_cast<lua_Integer>(settings.terrain_octaves);
-
-        if(!generator_settings::read_integer(L, settings_idx, "vox17", "terrain_octaves", terrain_octaves)) {
-            return nullptr;
+        if(auto value = utils::parse_arithmetic<float>(settings, "terrain_density_peak")) {
+            values.terrain_density_peak = value.value();
         }
 
-        if(terrain_octaves < 1 || terrain_octaves > 8) {
-            lua_pushliteral(L, "vox17: terrain_octaves must be between 1 and 8");
-            return nullptr;
+        if(auto value = utils::parse_integer<long long>(settings, "sea_level")) {
+            values.sea_level = static_cast<BlockPos::value_type>(value.value());
         }
 
-        settings.terrain_octaves = static_cast<int>(terrain_octaves);
-
-        if(!generator_settings::read_number(L, settings_idx, "vox17", "terrain_density_peak", settings.terrain_density_peak)) {
-            return nullptr;
+        if(auto value = utils::parse_arithmetic<float>(settings, "base_min")) {
+            values.base_min = value.value();
         }
 
-        auto sea_level = static_cast<lua_Integer>(settings.sea_level);
-
-        if(!generator_settings::read_integer(L, settings_idx, "vox17", "sea_level", sea_level)) {
-            return nullptr;
+        if(auto value = utils::parse_arithmetic<float>(settings, "base_max")) {
+            values.base_max = value.value();
         }
 
-        settings.sea_level = static_cast<BlockPos::value_type>(sea_level);
-
-        if(!generator_settings::read_number(L, settings_idx, "vox17", "base_min", settings.base_min)) {
-            return nullptr;
+        if(auto value = utils::parse_arithmetic<float>(settings, "variation_min")) {
+            values.variation_min = value.value();
         }
 
-        if(!generator_settings::read_number(L, settings_idx, "vox17", "base_max", settings.base_max)) {
-            return nullptr;
+        if(auto value = utils::parse_arithmetic<float>(settings, "variation_max")) {
+            values.variation_max = value.value();
         }
 
-        if(!generator_settings::read_number(L, settings_idx, "vox17", "variation_min", settings.variation_min)) {
-            return nullptr;
+        if(auto value = utils::parse_arithmetic<float>(settings, "pv_valley_offset")) {
+            values.pv_valley_offset = value.value();
         }
 
-        if(!generator_settings::read_number(L, settings_idx, "vox17", "variation_max", settings.variation_max)) {
-            return nullptr;
+        if(auto value = utils::parse_arithmetic<float>(settings, "pv_peak_offset")) {
+            values.pv_peak_offset = value.value();
         }
 
-        if(!generator_settings::read_number(L, settings_idx, "vox17", "pv_valley_offset", settings.pv_valley_offset)) {
-            return nullptr;
-        }
-
-        if(!generator_settings::read_number(L, settings_idx, "vox17", "pv_peak_offset", settings.pv_peak_offset)) {
-            return nullptr;
-        }
-
-        auto climate_idx = 0;
-
-        if(!generator_settings::read_table(L, settings_idx, "vox17", "climate_frequencies", climate_idx)) {
-            return nullptr;
-        }
-
-        if(climate_idx) {
-            if(!generator_settings::check_keys(L, climate_idx, "vox17", AXIS_NAMES)) {
-                return nullptr;
-            }
-
+        if(auto climate = json_object_get_object(settings, "climate_frequencies")) {
             for(std::size_t i = 0; i < CLIMATE_AXES; ++i) {
-                if(!generator_settings::read_number(L, climate_idx, "vox17", AXIS_NAMES[i], settings.climate_frequencies[i])) {
-                    return nullptr;
+                if(auto value = utils::parse_arithmetic<float>(climate, AXIS_NAMES[i])) {
+                    values.climate_frequencies[i] = value.value();
                 }
             }
-
-            lua_pop(L, 1);
         }
     }
 
-    if(!std::isfinite(settings.terrain_frequency) || settings.terrain_frequency <= 0.0f) {
-        lua_pushliteral(L, "vox17: terrain_frequency must be positive");
-        return nullptr;
+    if(!std::isfinite(values.terrain_frequency) || values.terrain_frequency <= 0.0f) {
+        msg::log_warning("{}: terrain_frequency is invalid; the default is used", where);
+        values.terrain_frequency = defaults.terrain_frequency;
     }
 
-    if(!std::isfinite(settings.terrain_density_peak) || settings.terrain_density_peak < 0.0f || settings.terrain_density_peak > 1.0f) {
-        lua_pushliteral(L, "vox17: terrain_density_peak must be between 0 and 1");
-        return nullptr;
+    if(values.terrain_octaves < 1 || values.terrain_octaves > 8) {
+        msg::log_warning("{}: terrain_octaves is invalid; the default is used", where);
+        values.terrain_octaves = defaults.terrain_octaves;
     }
 
-    if(settings.sea_level < definition.min_y || settings.sea_level > definition.max_y) {
-        lua_pushliteral(L, "vox17: sea_level is outside the world height");
-        return nullptr;
+    if(!std::isfinite(values.terrain_density_peak) || values.terrain_density_peak < 0.0f || values.terrain_density_peak > 1.0f) {
+        msg::log_warning("{}: terrain_density_peak is invalid; the default is used", where);
+        values.terrain_density_peak = defaults.terrain_density_peak;
     }
 
-    if(!std::isfinite(settings.base_min) || !std::isfinite(settings.base_max) || settings.base_min > settings.base_max) {
-        lua_pushliteral(L, "vox17: base_min must not be greater than base_max");
-        return nullptr;
+    if(values.sea_level < definition.min_y || values.sea_level > definition.max_y) {
+        msg::log_warning("{}: sea_level is outside the world height; it is clamped", where);
+        values.sea_level = std::clamp(values.sea_level, definition.min_y, definition.max_y);
     }
 
-    if(!std::isfinite(settings.variation_min) || !std::isfinite(settings.variation_max)) {
-        lua_pushliteral(L, "vox17: variation_min and variation_max must be finite");
-        return nullptr;
+    if(!std::isfinite(values.base_min) || !std::isfinite(values.base_max) || values.base_min > values.base_max) {
+        msg::log_warning("{}: base_min and base_max are invalid; the defaults are used", where);
+        values.base_min = defaults.base_min;
+        values.base_max = defaults.base_max;
     }
 
-    if(settings.variation_min < 0.0f || settings.variation_min > settings.variation_max) {
-        lua_pushliteral(L, "vox17: variation_min must not be greater than variation_max");
-        return nullptr;
+    auto variation_valid = std::isfinite(values.variation_min) && std::isfinite(values.variation_max);
+    auto variation_ordered = values.variation_min >= 0.0f && values.variation_min <= values.variation_max;
+
+    if(!variation_valid || !variation_ordered) {
+        msg::log_warning("{}: variation_min and variation_max are invalid; the defaults are used", where);
+        values.variation_min = defaults.variation_min;
+        values.variation_max = defaults.variation_max;
     }
 
-    if(!std::isfinite(settings.pv_valley_offset) || !std::isfinite(settings.pv_peak_offset)
-        || settings.pv_valley_offset > settings.pv_peak_offset) {
-        lua_pushliteral(L, "vox17: pv_valley_offset must not be greater than pv_peak_offset");
-        return nullptr;
+    auto pv_valid = std::isfinite(values.pv_valley_offset) && std::isfinite(values.pv_peak_offset);
+    auto pv_ordered = values.pv_valley_offset <= values.pv_peak_offset;
+
+    if(!pv_valid || !pv_ordered) {
+        msg::log_warning("{}: pv_valley_offset and pv_peak_offset are invalid; the defaults are used", where);
+        values.pv_valley_offset = defaults.pv_valley_offset;
+        values.pv_peak_offset = defaults.pv_peak_offset;
     }
 
     for(std::size_t i = 0; i < CLIMATE_AXES; ++i) {
-        if(!std::isfinite(settings.climate_frequencies[i]) || settings.climate_frequencies[i] <= 0.0f) {
-            lua_pushliteral(L, "vox17: climate_frequencies must be positive");
-            return nullptr;
+        if(!std::isfinite(values.climate_frequencies[i]) || values.climate_frequencies[i] <= 0.0f) {
+            msg::log_warning("{}: climate_frequencies.{} is invalid; the default is used", where, AXIS_NAMES[i]);
+            values.climate_frequencies[i] = defaults.climate_frequencies[i];
         }
     }
 
@@ -362,30 +326,40 @@ std::shared_ptr<void> Generator<Vox17>::create_state(lua_State* L, int settings_
 
     if(selector.strategy == BIOME_SELECTION_NEAREST) {
         if(selector.axes.size() != CLIMATE_AXES) {
-            lua_pushliteral(L, "vox17: nearest biome selector must declare five axes");
+            msg::log_error("{}: vox17 needs five climate axes; the world is skipped", where);
             return nullptr;
         }
 
         for(std::size_t i = 0; i < CLIMATE_AXES; ++i) {
             if(selector.axes[i] != AXIS_NAMES[i]) {
-                lua_pushliteral(L, "vox17: nearest biome selector has an unexpected axis name");
+                msg::log_error("{}: vox17 expects the {} axis at position {}; the world is skipped", where, AXIS_NAMES[i], i);
                 return nullptr;
             }
         }
     }
     else if(selector.strategy == BIOME_SELECTION_GRID) {
-        if(selector.axes.size() != 2 || selector.axes[0] != "temperature" || selector.axes[1] != "humidity") {
-            lua_pushliteral(L, "vox17: grid biome selector must name temperature and humidity");
+        if(selector.axes.size() != 2) {
+            msg::log_error("{}: vox17 needs two climate axes; the world is skipped", where);
+            return nullptr;
+        }
+
+        if(selector.axes[0] != "temperature") {
+            msg::log_error("{}: vox17 expects the temperature axis first; the world is skipped", where);
+            return nullptr;
+        }
+
+        if(selector.axes[1] != "humidity") {
+            msg::log_error("{}: vox17 expects the humidity axis second; the world is skipped", where);
             return nullptr;
         }
     }
     else {
-        lua_pushliteral(L, "vox17: biome selector must be nearest or grid");
+        msg::log_error("{}: vox17 needs a nearest or grid biome selector; the world is skipped", where);
         return nullptr;
     }
 
     auto state = std::make_shared<Vox17State>();
-    state->settings = settings;
+    state->settings = values;
 
     return state;
 }

@@ -4,7 +4,7 @@
 #include "server/world/generator.hh"
 
 struct GeneratorDefinition final {
-    std::shared_ptr<void> (*create_state)(lua_State* L, int settings_idx, const WorldDefinition& definition);
+    std::shared_ptr<void> (*create_state)(const JSON_Object* settings, const WorldDefinition& definition, std::string_view where);
     ColumnSlice (*sample_heightmap)(ServerWorld* world, const ChunkPosXZ& pos);
     bool (*generate_blocks)(ServerWorld* world, const ChunkPos& pos, BlockStorage& blocks, BiomeSlice& biomes);
     void (*generate_biomes)(ServerWorld* world, const ChunkPosXZ& pos, BiomeSlice& out);

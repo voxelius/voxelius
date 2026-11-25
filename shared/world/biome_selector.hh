@@ -20,7 +20,7 @@ struct BiomeSelector final {
         unsigned priority { 0 };
         float offset { 0.0f };
 
-        // Resolved from biome_name in world_registry::resolve()
+        // Resolved from biome_name in world_loader::load()
         biome_id_type biome { BIOME_ID_NULL };
     };
 
