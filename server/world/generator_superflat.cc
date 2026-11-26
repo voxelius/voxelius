@@ -122,9 +122,9 @@ bool Generator<Superflat>::generate_blocks(ServerWorld* world, const ChunkPos& p
     auto basic = BLOCK_ID_NULL;
 
     if(biome_def) {
-        surface = biome_def->palette_surface.cached;
-        filler = biome_def->palette_filler.cached;
-        basic = biome_def->palette_basic.cached;
+        surface = biome_def->palette_land_surface.cached;
+        filler = biome_def->palette_land_filler.cached;
+        basic = biome_def->palette_base.cached;
     }
 
     for(std::size_t i = 0; i < constant::CHUNK_VOLUME; ++i) {
@@ -148,6 +148,19 @@ bool Generator<Superflat>::generate_blocks(ServerWorld* world, const ChunkPos& p
     }
 
     return true;
+}
+
+template<>
+block_id_type Generator<Superflat>::surface_block(ServerWorld* world, const BlockPosXZ& pos, const Column& column)
+{
+    auto& definition = world->definition();
+    auto biome_def = biome_registry::find_definition(definition.biome_selector.constant_biome);
+
+    if(biome_def) {
+        return biome_def->palette_land_surface.cached;
+    }
+
+    return BLOCK_ID_NULL;
 }
 
 void Superflat::register_generator(void)

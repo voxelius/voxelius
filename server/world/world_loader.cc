@@ -25,16 +25,31 @@ constexpr static std::string_view DEFAULT_CONFIG = R"jsonc(
 //
 // Unknown keys are ignored. An invalid value logs a warning and falls back to
 // the default. Biome and weather names resolve in the builtin namespace, so
-// surface_plains means builtin:surface_plains.
+// vox2_plains means builtin:vox2_plains.
+//
+// The vox2 generator is a surface generator inspired by Beta 1.7.3. It takes
+// temperature and humidity as its two biome axes; a nearest selector wants
+// one target per axis on the 0..100 scale.
 
 {
   "overworld": {
     "default": true,
-    "generator": "vox17",
+    "generator": "vox2",
 
-    "min_y": -64,
-    "max_y": 255,
-    "spawn": [0, 32, 0],
+    "min_y": 0,
+    "max_y": 127,
+    "spawn": [0, 72, 0],
+
+    "generator_settings": {
+      "base_min": 44,
+      "base_max": 92,
+      "variation_min": 16,
+      "variation_max": 48,
+      "terrain_frequency": 0.03,
+      "terrain_octaves": 4,
+      "sea_level": 64,
+      "surface_depth": 4
+    },
 
     "weather": ["clear", "overcast", "rain", "thunderstorm"],
 
@@ -64,16 +79,19 @@ constexpr static std::string_view DEFAULT_CONFIG = R"jsonc(
 
     "biome_selector": {
       "strategy": "nearest",
-      "axes": ["temperature", "humidity", "continentalness", "erosion", "weirdness"],
-      "weights": [1.0, 1.0, 0.75, 1.0, 1.5],
+      "axes": ["temperature", "humidity"],
+      "weights": [1.0, 1.0],
       "entries": [
-        { "biome": "surface_beach",         "target": [60, 60, 35, 80, 50] },
-        { "biome": "surface_desert",        "target": [80, 20, 60, 65, 50] },
-        { "biome": "surface_forest_oak",    "target": [50, 70, 55, 60, 45] },
-        { "biome": "surface_forest_pine",   "target": [25, 55, 60, 50, 55] },
-        { "biome": "surface_hills_grassy",  "target": [40, 50, 70, 25, 50] },
-        { "biome": "surface_hills_rocky",   "target": [30, 40, 75, 15, 50] },
-        { "biome": "surface_plains",        "target": [50, 55, 55, 70, 50] }
+        { "biome": "vox2_rainforest",        "target": [95, 88] },
+        { "biome": "vox2_swamp",             "target": [55, 88] },
+        { "biome": "vox2_seasonal_forest",   "target": [85, 70] },
+        { "biome": "vox2_forest",            "target": [75, 50] },
+        { "biome": "vox2_taiga",             "target": [30, 55] },
+        { "biome": "vox2_plains",            "target": [55, 30] },
+        { "biome": "vox2_savanna",           "target": [80, 15] },
+        { "biome": "vox2_shrubland",         "target": [60, 20] },
+        { "biome": "vox2_desert",            "target": [95, 8] },
+        { "biome": "vox2_tundra",            "target": [8, 40] }
       ]
     }
   },
@@ -87,7 +105,7 @@ constexpr static std::string_view DEFAULT_CONFIG = R"jsonc(
 
     "biome_selector": {
       "strategy": "constant",
-      "biome": "surface_plains"
+      "biome": "vox2_plains"
     }
   }
 }

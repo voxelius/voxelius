@@ -58,5 +58,6 @@ private:
 using NoiseCache2D_2x2 = NoiseCache2D<2, 2>;
 using NoiseCache2D_4x4 = NoiseCache2D<4, 4>;
 using NoiseCache2D_8x8 = NoiseCache2D<8, 8>;
+using NoiseCache2D_16x16 = NoiseCache2D<16, 16>;
 
 #endif /* A159B98F_E5CD_4BCD_9BB1_817385D6A014 */

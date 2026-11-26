@@ -8,6 +8,7 @@ struct GeneratorDefinition final {
     ColumnSlice (*sample_heightmap)(ServerWorld* world, const ChunkPosXZ& pos);
     bool (*generate_blocks)(ServerWorld* world, const ChunkPos& pos, BlockStorage& blocks, BiomeSlice& biomes);
     void (*generate_biomes)(ServerWorld* world, const ChunkPosXZ& pos, BiomeSlice& out);
+    block_id_type (*surface_block)(ServerWorld* world, const BlockPosXZ& pos, const Column& column);
 };
 
 namespace generator_map::detail
@@ -34,6 +35,7 @@ void generator_map::add(std::string_view name)
     definition.sample_heightmap = &Generator<T>::sample_heightmap;
     definition.generate_blocks = &Generator<T>::generate_blocks;
     definition.generate_biomes = &Generator<T>::generate_biomes;
+    definition.surface_block = &Generator<T>::surface_block;
 
     detail::add(name, definition);
 }
