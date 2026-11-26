@@ -7,8 +7,10 @@
 # should set default to true; without one the first world is used.
 #
 # Unknown keys are ignored. An invalid value logs a warning and falls back to
-# the default. Biome and weather names resolve in the builtin namespace, so
-# vox2_plains means builtin:vox2_plains.
+# the default.
+#
+# Biome and weather names are full identifiers and need their namespace:
+# builtin:vox2_plains, mymod:custom_biome. A bare vox2_plains is rejected.
 #
 # The vox2 generator is a surface generator inspired by Beta 1.7.3. It takes
 # temperature and humidity as its two biome axes; a nearest selector wants
@@ -31,7 +33,11 @@ overworld:
     sea_level: 64
     surface_depth: 4
 
-  weather: [clear, overcast, rain, thunderstorm]
+  weather:
+    - builtin:clear
+    - builtin:overcast
+    - builtin:rain
+    - builtin:thunderstorm
 
   visuals:
     sky:
@@ -55,31 +61,35 @@ overworld:
     axes: [temperature, humidity]
     weights: [1.0, 1.0]
     entries:
-      - biome: vox2_rainforest
+      - biome: builtin:vox2_rainforest
         target: [95, 88]
-      - biome: vox2_swamp
+      - biome: builtin:vox2_swamp
         target: [55, 88]
-      - biome: vox2_seasonal_forest
+      - biome: builtin:vox2_seasonal_forest
         target: [85, 70]
-      - biome: vox2_forest
+      - biome: builtin:vox2_forest
         target: [75, 50]
-      - biome: vox2_taiga
+      - biome: builtin:vox2_taiga
         target: [30, 55]
-      - biome: vox2_plains
+      - biome: builtin:vox2_plains
         target: [55, 30]
-      - biome: vox2_savanna
+      - biome: builtin:vox2_savanna
         target: [80, 15]
-      - biome: vox2_shrubland
+      - biome: builtin:vox2_shrubland
         target: [60, 20]
-      - biome: vox2_desert
+      - biome: builtin:vox2_desert
         target: [95, 8]
-      - biome: vox2_tundra
+      - biome: builtin:vox2_tundra
         target: [8, 40]
 
 superflat:
   generator: superflat
   spawn: [0, 1, 0]
-  weather: [clear, overcast, rain, thunderstorm]
+  weather:
+    - builtin:clear
+    - builtin:overcast
+    - builtin:rain
+    - builtin:thunderstorm
   biome_selector:
     strategy: constant
-    biome: vox2_plains
+    biome: builtin:vox2_plains

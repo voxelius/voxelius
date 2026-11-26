@@ -5,7 +5,6 @@
 #include "core/identifier.hh"
 #include "core/utils/yaml.hh"
 
-#include "shared/constant.hh"
 #include "shared/world/world_definition.hh"
 
 #include "server/world/generator_map.hh"
@@ -28,6 +27,11 @@ static void warn_default(std::string_view where, std::string_view key, std::stri
 static void warn_ignored(std::string_view where, std::string_view key, std::string_view expected)
 {
     msg::log_warning("{}: {} must be {}; the value is ignored", where, key, expected);
+}
+
+static bool is_namespaced_identifier(const Identifier& identifier)
+{
+    return identifier.is_valid() && !identifier.name_space().empty() && !identifier.value().empty();
 }
 
 static std::optional<std::string_view> parse_string(ryml::ConstNodeRef object, std::string_view where, const char* key)
@@ -447,10 +451,10 @@ static bool parse_nearest_selector(ryml::ConstNodeRef object, BiomeSelector& sel
             continue;
         }
 
-        auto biome_name = Identifier::from_string(biome.value(), constant::BUILTIN_NAME_SPACE);
+        auto biome_name = Identifier::from_string(biome.value());
 
-        if(!biome_name.is_valid()) {
-            warn_ignored(entry_where, "biome", "a valid identifier");
+        if(!is_namespaced_identifier(biome_name)) {
+            warn_ignored(entry_where, "biome", "a namespaced identifier");
             index += 1;
             continue;
         }
@@ -574,10 +578,10 @@ static bool parse_grid_selector(ryml::ConstNodeRef object, BiomeSelector& select
                 return false;
             }
 
-            auto name = Identifier::from_string(text.value(), constant::BUILTIN_NAME_SPACE);
+            auto name = Identifier::from_string(text.value());
 
-            if(!name.is_valid()) {
-                msg::log_error("{}: a grid entry is not a valid identifier; the world is skipped", entry_where);
+            if(!is_namespaced_identifier(name)) {
+                msg::log_error("{}: a grid entry must be a namespaced identifier; the world is skipped", entry_where);
                 return false;
             }
 
@@ -608,10 +612,10 @@ static bool parse_selector(ryml::ConstNodeRef object, BiomeSelector& selector, s
             return false;
         }
 
-        auto name = Identifier::from_string(biome.value(), constant::BUILTIN_NAME_SPACE);
+        auto name = Identifier::from_string(biome.value());
 
-        if(!name.is_valid()) {
-            msg::log_error("{}: biome is not a valid identifier; the world is skipped", where);
+        if(!is_namespaced_identifier(name)) {
+            msg::log_error("{}: biome must be a namespaced identifier; the world is skipped", where);
             return false;
         }
 
@@ -742,10 +746,10 @@ std::shared_ptr<ServerWorldDefinition> world_parser::parse_world(std::string_vie
                 continue;
             }
 
-            auto entry_name = Identifier::from_string(text.value(), constant::BUILTIN_NAME_SPACE);
+            auto entry_name = Identifier::from_string(text.value());
 
-            if(!entry_name.is_valid()) {
-                warn_ignored(entry_where, "the entry", "a valid identifier");
+            if(!is_namespaced_identifier(entry_name)) {
+                warn_ignored(entry_where, "the entry", "a namespaced identifier");
                 index += 1;
                 continue;
             }
