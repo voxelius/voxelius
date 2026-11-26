@@ -9,6 +9,7 @@
 #include "core/utils/physfs.hh"
 
 constexpr static const char* MOUNT_DATA = "data";
+constexpr static const char* MOUNT_DEFAULTS = "defaults";
 constexpr static const char* MOUNT_USER = nullptr;
 
 static std::filesystem::path s_gamepath;
@@ -54,6 +55,13 @@ static void setup_generic(int argc, char** argv, std::string_view user_dirname)
 
     auto mount_gamepath_ok = PHYSFS_mount(s_gamepath.string().c_str(), MOUNT_DATA, false);
     vx::throw_if_not_fmt(mount_gamepath_ok, "failed to mount {}: {}", s_gamepath.string(), utils::physfs_error());
+
+    auto defaults_path = s_gamepath.parent_path() / "defaults";
+
+    if(std::filesystem::exists(defaults_path)) {
+        auto mount_defaults_ok = PHYSFS_mount(defaults_path.string().c_str(), MOUNT_DEFAULTS, false);
+        vx::throw_if_not_fmt(mount_defaults_ok, "failed to mount {}: {}", defaults_path.string(), utils::physfs_error());
+    }
 
     auto mount_userpath_ok = PHYSFS_mount(s_userpath.string().c_str(), MOUNT_USER, false);
     vx::throw_if_not_fmt(mount_userpath_ok, "failed to mount {}: {}", s_userpath.string(), utils::physfs_error());

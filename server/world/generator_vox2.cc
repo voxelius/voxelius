@@ -2,7 +2,7 @@
 
 #include "server/world/generator_vox2.hh"
 
-#include "core/utils/json.hh"
+#include "core/utils/yaml.hh"
 
 #include "shared/constant.hh"
 #include "shared/utils/coord.hh"
@@ -194,43 +194,41 @@ static LocalPos::value_type local_y(BlockPos::value_type y, int section)
 }
 
 template<>
-std::shared_ptr<void> Generator<Vox2>::create_state(const JSON_Object* settings, const WorldDefinition& definition, std::string_view where)
+std::shared_ptr<void> Generator<Vox2>::create_state(ryml::ConstNodeRef settings, const WorldDefinition& definition, std::string_view where)
 {
     Vox2Settings values;
     Vox2Settings defaults;
 
-    if(settings) {
-        if(auto value = utils::parse_arithmetic<float>(settings, "base_min")) {
-            values.base_min = value.value();
-        }
+    if(auto value = utils::parse_arithmetic<float>(settings, "base_min")) {
+        values.base_min = value.value();
+    }
 
-        if(auto value = utils::parse_arithmetic<float>(settings, "base_max")) {
-            values.base_max = value.value();
-        }
+    if(auto value = utils::parse_arithmetic<float>(settings, "base_max")) {
+        values.base_max = value.value();
+    }
 
-        if(auto value = utils::parse_arithmetic<float>(settings, "variation_min")) {
-            values.variation_min = value.value();
-        }
+    if(auto value = utils::parse_arithmetic<float>(settings, "variation_min")) {
+        values.variation_min = value.value();
+    }
 
-        if(auto value = utils::parse_arithmetic<float>(settings, "variation_max")) {
-            values.variation_max = value.value();
-        }
+    if(auto value = utils::parse_arithmetic<float>(settings, "variation_max")) {
+        values.variation_max = value.value();
+    }
 
-        if(auto value = utils::parse_arithmetic<float>(settings, "terrain_frequency")) {
-            values.terrain_frequency = value.value();
-        }
+    if(auto value = utils::parse_arithmetic<float>(settings, "terrain_frequency")) {
+        values.terrain_frequency = value.value();
+    }
 
-        if(auto value = utils::parse_integer<long long>(settings, "terrain_octaves")) {
-            values.terrain_octaves = static_cast<int>(value.value());
-        }
+    if(auto value = utils::parse_integer<long long>(settings, "terrain_octaves")) {
+        values.terrain_octaves = static_cast<int>(value.value());
+    }
 
-        if(auto value = utils::parse_integer<long long>(settings, "sea_level")) {
-            values.sea_level = static_cast<BlockPos::value_type>(value.value());
-        }
+    if(auto value = utils::parse_integer<long long>(settings, "sea_level")) {
+        values.sea_level = static_cast<BlockPos::value_type>(value.value());
+    }
 
-        if(auto value = utils::parse_integer<long long>(settings, "surface_depth")) {
-            values.surface_depth = static_cast<BlockPos::value_type>(value.value());
-        }
+    if(auto value = utils::parse_integer<long long>(settings, "surface_depth")) {
+        values.surface_depth = static_cast<BlockPos::value_type>(value.value());
     }
 
     auto base_valid = std::isfinite(values.base_min) && std::isfinite(values.base_max) && values.base_min <= values.base_max;

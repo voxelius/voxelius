@@ -2,7 +2,7 @@
 
 #include "server/world/generator_superflat.hh"
 
-#include "core/utils/json.hh"
+#include "core/utils/yaml.hh"
 
 #include "shared/constant.hh"
 #include "shared/utils/coord.hh"
@@ -24,20 +24,18 @@ struct SuperflatState final {
 };
 
 template<>
-std::shared_ptr<void> Generator<Superflat>::create_state(const JSON_Object* settings, const WorldDefinition& definition,
+std::shared_ptr<void> Generator<Superflat>::create_state(ryml::ConstNodeRef settings, const WorldDefinition& definition,
     std::string_view where)
 {
     SuperflatSettings values;
     SuperflatSettings defaults;
 
-    if(settings) {
-        if(auto value = utils::parse_integer<long long>(settings, "surface_y")) {
-            values.surface_y = static_cast<BlockPos::value_type>(value.value());
-        }
+    if(auto value = utils::parse_integer<long long>(settings, "surface_y")) {
+        values.surface_y = static_cast<BlockPos::value_type>(value.value());
+    }
 
-        if(auto value = utils::parse_integer<long long>(settings, "filler_depth")) {
-            values.filler_depth = static_cast<BlockPos::value_type>(value.value());
-        }
+    if(auto value = utils::parse_integer<long long>(settings, "filler_depth")) {
+        values.filler_depth = static_cast<BlockPos::value_type>(value.value());
     }
 
     if(values.surface_y < definition.min_y || values.surface_y > definition.max_y) {
