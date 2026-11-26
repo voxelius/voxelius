@@ -74,6 +74,7 @@ target_link_libraries(core PUBLIC
     deps::miniz
     deps::parson
     deps::physfs
+    deps::ryml
     deps::stb
     deps::thread_pool
     deps::tracy)
