@@ -36,10 +36,12 @@ struct BiomeDefinition final {
     float temperature { 15.0f };
     float humidity { 0.5f };
 
-    BiomePaletteEntry palette_basic;
-    BiomePaletteEntry palette_filler;
-    BiomePaletteEntry palette_surface;
+    BiomePaletteEntry palette_base;
+    BiomePaletteEntry palette_land_filler;
+    BiomePaletteEntry palette_land_surface;
     BiomePaletteEntry palette_fluid;
+    BiomePaletteEntry palette_shore_surface;
+    BiomePaletteEntry palette_shore_filler;
 
     std::vector<BiomeScatterEntry> scatter;
 

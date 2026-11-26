@@ -1,12 +1,14 @@
-biomes.add("surface_desert", {
+biomes.add("vox2_desert", {
   temperature = 30,
-  humidity = 15,
+  humidity = 10,
 
   palette = {
-    basic = { name = "stone" },
-    filler = { name = "sandstone" },
-    surface = { name = "sand" },
+    base = { name = "stone" },
+    land_filler = { name = "sandstone" },
+    land_surface = { name = "sand" },
     fluid = { name = "water", states = { level = "8", source = "true" } },
+    shore_surface = { name = "sand" },
+    shore_filler = { name = "sand" },
   },
 
   tints = {

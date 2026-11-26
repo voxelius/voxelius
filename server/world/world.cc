@@ -199,9 +199,9 @@ void ServerWorld::init_generation(void)
     m_placement_rules.clear();
     m_placement_rules.push_back(std::make_unique<PlacementScatter>());
 
-    // The generator seeds its climate noise from the first five draws of a
-    // seeder keyed by the world seed. Discard them so the entropy seed keeps
-    // its old value and feature placement stays stable across this change
+    // The generator seeds its noise from the first five draws of a seeder
+    // keyed by the world seed. Discard them so the entropy seed keeps its
+    // old value and feature placement stays stable across this change
     std::mt19937_64 seeder;
     seeder.seed(seed);
     seeder.discard(5);

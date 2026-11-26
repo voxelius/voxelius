@@ -1,11 +1,10 @@
 #include "server/pch.hh"
 
-#include "server/world/world_json.hh"
+#include "server/world/world_parser.hh"
 
 #include "core/identifier.hh"
-#include "core/utils/json.hh"
+#include "core/utils/yaml.hh"
 
-#include "shared/constant.hh"
 #include "shared/world/world_definition.hh"
 
 #include "server/world/generator_map.hh"
@@ -14,11 +13,6 @@ constexpr static std::size_t COLOR_COMPONENTS = 3;
 constexpr static std::size_t SPAWN_COMPONENTS = 3;
 constexpr static long long TARGET_MIN = 0;
 constexpr static long long TARGET_MAX = 99;
-
-static const JSON_Value* find_value(const JSON_Object* object, const char* key)
-{
-    return json_object_get_value(object, key);
-}
 
 static std::string join_path(std::string_view where, std::string_view key)
 {
@@ -35,176 +29,187 @@ static void warn_ignored(std::string_view where, std::string_view key, std::stri
     msg::log_warning("{}: {} must be {}; the value is ignored", where, key, expected);
 }
 
-static std::optional<std::string_view> parse_string(const JSON_Object* object, std::string_view where, const char* key)
+static bool is_namespaced_identifier(const Identifier& identifier)
 {
-    auto value = find_value(object, key);
+    return identifier.is_valid() && !identifier.name_space().empty() && !identifier.value().empty();
+}
 
-    if(value == nullptr) {
+static std::optional<std::string_view> parse_string(ryml::ConstNodeRef object, std::string_view where, const char* key)
+{
+    auto node = utils::find_child(object, key);
+
+    if(node.invalid()) {
         return std::nullopt;
     }
 
-    auto text = json_value_get_string(value);
+    auto text = utils::parse_string(node);
 
-    if(text == nullptr) {
+    if(!text.has_value()) {
         warn_default(where, key, "a string");
         return std::nullopt;
     }
 
-    return std::string_view(text);
+    return text;
 }
 
-static std::optional<double> parse_number(const JSON_Object* object, std::string_view where, const char* key)
+static std::optional<double> parse_number(ryml::ConstNodeRef object, std::string_view where, const char* key)
 {
-    if(auto value = utils::parse_arithmetic<double>(object, key)) {
-        return value;
-    }
+    auto node = utils::find_child(object, key);
 
-    if(json_object_has_value(object, key)) {
-        warn_default(where, key, "a number");
-    }
-
-    return std::nullopt;
-}
-
-static std::optional<long long> parse_integer(const JSON_Object* object, std::string_view where, const char* key)
-{
-    if(auto value = utils::parse_integer<long long>(object, key)) {
-        return value;
-    }
-
-    if(json_object_has_value(object, key)) {
-        warn_default(where, key, "an integer");
-    }
-
-    return std::nullopt;
-}
-
-static bool parse_bool(const JSON_Object* object, std::string_view where, const char* key, bool fallback)
-{
-    auto value = find_value(object, key);
-
-    if(value == nullptr) {
-        return fallback;
-    }
-
-    if(JSONBoolean == json_value_get_type(value)) {
-        return static_cast<bool>(json_value_get_boolean(value));
-    }
-
-    warn_default(where, key, "a boolean");
-
-    return fallback;
-}
-
-static const JSON_Array* parse_array(const JSON_Object* object, std::string_view where, const char* key)
-{
-    auto value = find_value(object, key);
-
-    if(value == nullptr) {
-        return nullptr;
-    }
-
-    auto array = json_value_get_array(value);
-
-    if(array == nullptr) {
-        warn_default(where, key, "an array");
-        return nullptr;
-    }
-
-    return array;
-}
-
-static const JSON_Object* parse_object(const JSON_Object* object, std::string_view where, const char* key)
-{
-    auto value = find_value(object, key);
-
-    if(value == nullptr) {
-        return nullptr;
-    }
-
-    auto nested = json_value_get_object(value);
-
-    if(nested == nullptr) {
-        warn_default(where, key, "an object");
-        return nullptr;
-    }
-
-    return nested;
-}
-
-static std::optional<std::vector<std::string>> parse_string_list(const JSON_Object* object, std::string_view where, const char* key)
-{
-    auto array = parse_array(object, where, key);
-
-    if(array == nullptr) {
+    if(node.invalid()) {
         return std::nullopt;
     }
 
-    auto count = json_array_get_count(array);
+    auto value = utils::parse_arithmetic<double>(node);
+
+    if(!value.has_value()) {
+        warn_default(where, key, "a number");
+        return std::nullopt;
+    }
+
+    return value;
+}
+
+static std::optional<long long> parse_integer(ryml::ConstNodeRef object, std::string_view where, const char* key)
+{
+    auto node = utils::find_child(object, key);
+
+    if(node.invalid()) {
+        return std::nullopt;
+    }
+
+    auto value = utils::parse_integer<long long>(node);
+
+    if(!value.has_value()) {
+        warn_default(where, key, "an integer");
+        return std::nullopt;
+    }
+
+    return value;
+}
+
+static bool parse_bool(ryml::ConstNodeRef object, std::string_view where, const char* key, bool fallback)
+{
+    auto node = utils::find_child(object, key);
+
+    if(node.invalid()) {
+        return fallback;
+    }
+
+    auto value = utils::parse_boolean(node);
+
+    if(!value.has_value()) {
+        warn_default(where, key, "a boolean");
+        return fallback;
+    }
+
+    return value.value();
+}
+
+static ryml::ConstNodeRef parse_array(ryml::ConstNodeRef object, std::string_view where, const char* key)
+{
+    auto node = utils::find_child(object, key);
+
+    if(node.invalid()) {
+        return {};
+    }
+
+    if(!node.is_seq()) {
+        warn_default(where, key, "an array");
+        return {};
+    }
+
+    return node;
+}
+
+static ryml::ConstNodeRef parse_object(ryml::ConstNodeRef object, std::string_view where, const char* key)
+{
+    auto node = utils::find_child(object, key);
+
+    if(node.invalid()) {
+        return {};
+    }
+
+    if(!node.is_map()) {
+        warn_default(where, key, "an object");
+        return {};
+    }
+
+    return node;
+}
+
+static std::optional<std::vector<std::string>> parse_string_list(ryml::ConstNodeRef object, std::string_view where, const char* key)
+{
+    auto array = parse_array(object, where, key);
+
+    if(array.invalid()) {
+        return std::nullopt;
+    }
 
     std::vector<std::string> result;
-    result.reserve(count);
 
-    for(std::size_t i = 0; i < count; ++i) {
-        auto text = json_array_get_string(array, i);
+    std::size_t index = 0;
 
-        if(text == nullptr) {
-            auto element_where = std::format("{}[{}]", key, i);
+    for(auto child : array.children()) {
+        auto text = utils::parse_string(child);
+
+        if(!text.has_value()) {
+            auto element_where = std::format("{}[{}]", key, index);
 
             warn_ignored(where, element_where, "a string");
             return std::nullopt;
         }
 
-        result.emplace_back(text);
+        result.emplace_back(text.value());
+        index += 1;
     }
 
     return result;
 }
 
-static std::optional<std::vector<float>> parse_number_list(const JSON_Object* object, std::string_view where, const char* key)
+static std::optional<std::vector<float>> parse_number_list(ryml::ConstNodeRef object, std::string_view where, const char* key)
 {
     auto array = parse_array(object, where, key);
 
-    if(array == nullptr) {
+    if(array.invalid()) {
         return std::nullopt;
     }
 
-    auto count = json_array_get_count(array);
-
     std::vector<float> result;
-    result.reserve(count);
 
-    for(std::size_t i = 0; i < count; ++i) {
-        auto element_where = std::format("{}[{}]", key, i);
-        auto number = utils::parse_arithmetic<float>(json_array_get_value(array, i));
+    std::size_t index = 0;
+
+    for(auto child : array.children()) {
+        auto element_where = std::format("{}[{}]", key, index);
+        auto number = utils::parse_arithmetic<double>(child);
 
         if(!number.has_value() || !std::isfinite(number.value())) {
             warn_ignored(where, element_where, "a finite number");
             return std::nullopt;
         }
 
-        result.push_back(number.value());
+        result.push_back(static_cast<float>(number.value()));
+        index += 1;
     }
 
     return result;
 }
 
-static std::optional<std::vector<std::uint8_t>> parse_target_list(const JSON_Object* object, std::string_view where)
+static std::optional<std::vector<std::uint8_t>> parse_target_list(ryml::ConstNodeRef object, std::string_view where)
 {
     auto array = parse_array(object, where, "target");
 
-    if(array == nullptr) {
+    if(array.invalid()) {
         return std::nullopt;
     }
 
-    auto count = json_array_get_count(array);
-
     std::vector<std::uint8_t> result;
-    result.reserve(count);
 
-    for(std::size_t i = 0; i < count; ++i) {
-        auto element_where = std::format("target[{}]", i);
-        auto integer = utils::parse_integer<long long>(json_array_get_value(array, i));
+    std::size_t index = 0;
+
+    for(auto child : array.children()) {
+        auto element_where = std::format("target[{}]", index);
+        auto integer = utils::parse_integer<long long>(child);
 
         if(!integer.has_value()) {
             warn_ignored(where, element_where, "an integer");
@@ -219,70 +224,87 @@ static std::optional<std::vector<std::uint8_t>> parse_target_list(const JSON_Obj
         }
 
         result.push_back(static_cast<std::uint8_t>(target));
+        index += 1;
     }
 
     return result;
 }
 
-static std::optional<Eigen::Vector3f> parse_color(const JSON_Object* object, std::string_view where, const char* key)
+static std::optional<Eigen::Vector3f> parse_color(ryml::ConstNodeRef object, std::string_view where, const char* key)
 {
     auto array = parse_array(object, where, key);
 
-    if(array == nullptr) {
-        return std::nullopt;
-    }
-
-    if(json_array_get_count(array) != COLOR_COMPONENTS) {
-        warn_ignored(where, key, "three numbers");
+    if(array.invalid()) {
         return std::nullopt;
     }
 
     auto color = Eigen::Vector3f(0.0f, 0.0f, 0.0f);
 
-    for(std::size_t i = 0; i < COLOR_COMPONENTS; ++i) {
-        auto number = utils::parse_arithmetic<float>(json_array_get_value(array, i));
+    std::size_t index = 0;
+
+    for(auto child : array.children()) {
+        if(index >= COLOR_COMPONENTS) {
+            warn_ignored(where, key, "three numbers");
+            return std::nullopt;
+        }
+
+        auto number = utils::parse_arithmetic<double>(child);
 
         if(!number.has_value()) {
             warn_ignored(where, key, "three numbers");
             return std::nullopt;
         }
 
-        color[static_cast<Eigen::Index>(i)] = number.value();
+        color[static_cast<Eigen::Index>(index)] = static_cast<float>(number.value());
+        index += 1;
+    }
+
+    if(index != COLOR_COMPONENTS) {
+        warn_ignored(where, key, "three numbers");
+        return std::nullopt;
     }
 
     return color;
 }
 
-static std::optional<BlockPos> parse_block_pos(const JSON_Object* object, std::string_view where, const char* key)
+static std::optional<BlockPos> parse_block_pos(ryml::ConstNodeRef object, std::string_view where, const char* key)
 {
     auto array = parse_array(object, where, key);
 
-    if(array == nullptr) {
-        return std::nullopt;
-    }
-
-    if(json_array_get_count(array) != SPAWN_COMPONENTS) {
-        warn_default(where, key, "three integers");
+    if(array.invalid()) {
         return std::nullopt;
     }
 
     auto pos = BlockPos(0, 0, 0);
 
-    for(std::size_t i = 0; i < SPAWN_COMPONENTS; ++i) {
-        auto integer = utils::parse_integer<long long>(json_array_get_value(array, i));
+    std::size_t index = 0;
+
+    for(auto child : array.children()) {
+        if(index >= SPAWN_COMPONENTS) {
+            warn_default(where, key, "three integers");
+            return std::nullopt;
+        }
+
+        auto integer = utils::parse_integer<long long>(child);
 
         if(!integer.has_value()) {
             warn_default(where, key, "three integers");
             return std::nullopt;
         }
 
-        pos[static_cast<Eigen::Index>(i)] = static_cast<BlockPos::value_type>(integer.value());
+        pos[static_cast<Eigen::Index>(index)] = static_cast<BlockPos::value_type>(integer.value());
+        index += 1;
+    }
+
+    if(index != SPAWN_COMPONENTS) {
+        warn_default(where, key, "three integers");
+        return std::nullopt;
     }
 
     return pos;
 }
 
-static std::optional<WorldVisuals::Sky::Gradient> parse_gradient(const JSON_Object* object, std::string_view where)
+static std::optional<WorldVisuals::Sky::Gradient> parse_gradient(ryml::ConstNodeRef object, std::string_view where)
 {
     auto horizon = parse_color(object, where, "horizon");
     auto zenith = parse_color(object, where, "zenith");
@@ -299,13 +321,13 @@ static std::optional<WorldVisuals::Sky::Gradient> parse_gradient(const JSON_Obje
     return gradient;
 }
 
-static std::optional<WorldVisuals::Sky> parse_sky(const JSON_Object* object, std::string_view where)
+static std::optional<WorldVisuals::Sky> parse_sky(ryml::ConstNodeRef object, std::string_view where)
 {
     auto day = parse_object(object, where, "day");
     auto night = parse_object(object, where, "night");
     auto twilight = parse_number(object, where, "twilight_height");
 
-    if(day == nullptr || night == nullptr || !twilight.has_value()) {
+    if(day.invalid() || night.invalid() || !twilight.has_value()) {
         msg::log_warning("{}: incomplete sky; the visual is ignored", where);
         return std::nullopt;
     }
@@ -325,7 +347,7 @@ static std::optional<WorldVisuals::Sky> parse_sky(const JSON_Object* object, std
     return sky;
 }
 
-static std::optional<WorldVisuals::Sun> parse_sun(const JSON_Object* object, std::string_view where)
+static std::optional<WorldVisuals::Sun> parse_sun(ryml::ConstNodeRef object, std::string_view where)
 {
     auto tilt = parse_number(object, where, "tilt");
 
@@ -340,7 +362,7 @@ static std::optional<WorldVisuals::Sun> parse_sun(const JSON_Object* object, std
     return sun;
 }
 
-static std::optional<WorldVisuals::Moon> parse_moon(const JSON_Object* object, std::string_view where)
+static std::optional<WorldVisuals::Moon> parse_moon(ryml::ConstNodeRef object, std::string_view where)
 {
     auto color = parse_color(object, where, "color");
 
@@ -355,7 +377,7 @@ static std::optional<WorldVisuals::Moon> parse_moon(const JSON_Object* object, s
     return moon;
 }
 
-static std::optional<WorldVisuals::Stars> parse_stars(const JSON_Object* object, std::string_view where)
+static std::optional<WorldVisuals::Stars> parse_stars(ryml::ConstNodeRef object, std::string_view where)
 {
     auto count = parse_integer(object, where, "count");
 
@@ -380,7 +402,7 @@ static std::optional<WorldVisuals::Stars> parse_stars(const JSON_Object* object,
     return stars;
 }
 
-static bool parse_nearest_selector(const JSON_Object* object, BiomeSelector& selector, std::string_view where)
+static bool parse_nearest_selector(ryml::ConstNodeRef object, BiomeSelector& selector, std::string_view where)
 {
     auto axes = parse_string_list(object, where, "axes");
     auto weights = parse_number_list(object, where, "weights");
@@ -405,19 +427,19 @@ static bool parse_nearest_selector(const JSON_Object* object, BiomeSelector& sel
 
     auto entries = parse_array(object, where, "entries");
 
-    if(entries == nullptr) {
+    if(entries.invalid()) {
         msg::log_error("{}: a nearest biome selector needs entries; the world is skipped", where);
         return false;
     }
 
-    auto count = json_array_get_count(entries);
+    std::size_t index = 0;
 
-    for(std::size_t i = 0; i < count; ++i) {
-        auto entry_where = std::format("{}.entries[{}]", where, i);
-        auto entry_object = json_array_get_object(entries, i);
+    for(auto entry_object : entries.children()) {
+        auto entry_where = std::format("{}.entries[{}]", where, index);
 
-        if(entry_object == nullptr) {
+        if(!entry_object.is_map()) {
             warn_ignored(entry_where, "the entry", "an object");
+            index += 1;
             continue;
         }
 
@@ -425,13 +447,15 @@ static bool parse_nearest_selector(const JSON_Object* object, BiomeSelector& sel
 
         if(!biome.has_value()) {
             warn_ignored(entry_where, "biome", "a string");
+            index += 1;
             continue;
         }
 
-        auto biome_name = Identifier::from_string(biome.value(), constant::BUILTIN_NAME_SPACE);
+        auto biome_name = Identifier::from_string(biome.value());
 
-        if(!biome_name.is_valid()) {
-            warn_ignored(entry_where, "biome", "a valid identifier");
+        if(!is_namespaced_identifier(biome_name)) {
+            warn_ignored(entry_where, "biome", "a namespaced identifier");
+            index += 1;
             continue;
         }
 
@@ -439,11 +463,13 @@ static bool parse_nearest_selector(const JSON_Object* object, BiomeSelector& sel
 
         if(!target.has_value()) {
             warn_ignored(entry_where, "the entry", "a valid target");
+            index += 1;
             continue;
         }
 
         if(target->size() != selector.weights.size()) {
             warn_ignored(entry_where, "target", "one value per axis");
+            index += 1;
             continue;
         }
 
@@ -465,6 +491,7 @@ static bool parse_nearest_selector(const JSON_Object* object, BiomeSelector& sel
         }
 
         selector.entries.push_back(std::move(entry));
+        index += 1;
     }
 
     if(selector.entries.empty()) {
@@ -475,7 +502,7 @@ static bool parse_nearest_selector(const JSON_Object* object, BiomeSelector& sel
     return true;
 }
 
-static bool parse_grid_selector(const JSON_Object* object, BiomeSelector& selector, std::string_view where)
+static bool parse_grid_selector(ryml::ConstNodeRef object, BiomeSelector& selector, std::string_view where)
 {
     auto axes = parse_string_list(object, where, "axes");
 
@@ -499,7 +526,18 @@ static bool parse_grid_selector(const JSON_Object* object, BiomeSelector& select
     auto size = static_cast<std::size_t>(grid_size.value());
     auto rows = parse_array(object, where, "lookup");
 
-    if(rows == nullptr || json_array_get_count(rows) != size) {
+    if(rows.invalid()) {
+        msg::log_error("{}: a grid biome selector needs grid_size rows; the world is skipped", where);
+        return false;
+    }
+
+    std::size_t row_count = 0;
+
+    for(auto row : rows.children()) {
+        row_count += 1;
+    }
+
+    if(row_count != size) {
         msg::log_error("{}: a grid biome selector needs grid_size rows; the world is skipped", where);
         return false;
     }
@@ -508,39 +546,56 @@ static bool parse_grid_selector(const JSON_Object* object, BiomeSelector& select
     selector.grid_size = size;
     selector.lookup_names.reserve(size * size);
 
-    for(std::size_t row = 0; row < size; row += 1) {
-        auto row_where = std::format("{}.lookup[{}]", where, row);
-        auto row_array = json_array_get_array(rows, row);
+    std::size_t row_index = 0;
 
-        if(row_array == nullptr || json_array_get_count(row_array) != size) {
+    for(auto row : rows.children()) {
+        auto row_where = std::format("{}.lookup[{}]", where, row_index);
+
+        if(!row.is_seq()) {
             msg::log_error("{}: a grid row needs grid_size entries; the world is skipped", row_where);
             return false;
         }
 
-        for(std::size_t column = 0; column < size; column += 1) {
-            auto entry_where = std::format("{}[{}]", row_where, column);
-            auto text = json_array_get_string(row_array, column);
+        std::size_t column_count = 0;
 
-            if(text == nullptr) {
+        for(auto cell : row.children()) {
+            column_count += 1;
+        }
+
+        if(column_count != size) {
+            msg::log_error("{}: a grid row needs grid_size entries; the world is skipped", row_where);
+            return false;
+        }
+
+        std::size_t column_index = 0;
+
+        for(auto cell : row.children()) {
+            auto entry_where = std::format("{}[{}]", row_where, column_index);
+            auto text = utils::parse_string(cell);
+
+            if(!text.has_value()) {
                 msg::log_error("{}: a grid entry must be a string; the world is skipped", entry_where);
                 return false;
             }
 
-            auto name = Identifier::from_string(text, constant::BUILTIN_NAME_SPACE);
+            auto name = Identifier::from_string(text.value());
 
-            if(!name.is_valid()) {
-                msg::log_error("{}: a grid entry is not a valid identifier; the world is skipped", entry_where);
+            if(!is_namespaced_identifier(name)) {
+                msg::log_error("{}: a grid entry must be a namespaced identifier; the world is skipped", entry_where);
                 return false;
             }
 
             selector.lookup_names.push_back(name);
+            column_index += 1;
         }
+
+        row_index += 1;
     }
 
     return true;
 }
 
-static bool parse_selector(const JSON_Object* object, BiomeSelector& selector, std::string_view where)
+static bool parse_selector(ryml::ConstNodeRef object, BiomeSelector& selector, std::string_view where)
 {
     auto strategy = parse_string(object, where, "strategy");
 
@@ -557,10 +612,10 @@ static bool parse_selector(const JSON_Object* object, BiomeSelector& selector, s
             return false;
         }
 
-        auto name = Identifier::from_string(biome.value(), constant::BUILTIN_NAME_SPACE);
+        auto name = Identifier::from_string(biome.value());
 
-        if(!name.is_valid()) {
-            msg::log_error("{}: biome is not a valid identifier; the world is skipped", where);
+        if(!is_namespaced_identifier(name)) {
+            msg::log_error("{}: biome must be a namespaced identifier; the world is skipped", where);
             return false;
         }
 
@@ -584,38 +639,56 @@ static bool parse_selector(const JSON_Object* object, BiomeSelector& selector, s
     return false;
 }
 
-static void parse_visuals(const JSON_Object* object, WorldVisuals& visuals, std::string_view where)
+static void parse_visuals(ryml::ConstNodeRef object, WorldVisuals& visuals, std::string_view where)
 {
-    if(auto sky = parse_object(object, where, "sky")) {
-        if(auto value = parse_sky(sky, join_path(where, "sky"))) {
-            visuals.sky = std::move(value);
+    auto sky = parse_object(object, where, "sky");
+
+    if(!sky.invalid()) {
+        auto value = parse_sky(sky, join_path(where, "sky"));
+
+        if(value.has_value()) {
+            visuals.sky = std::move(value.value());
         }
     }
 
-    if(auto sun = parse_object(object, where, "sun")) {
-        if(auto value = parse_sun(sun, join_path(where, "sun"))) {
-            visuals.sun = std::move(value);
+    auto sun = parse_object(object, where, "sun");
+
+    if(!sun.invalid()) {
+        auto value = parse_sun(sun, join_path(where, "sun"));
+
+        if(value.has_value()) {
+            visuals.sun = std::move(value.value());
         }
     }
 
-    if(auto moon = parse_object(object, where, "moon")) {
-        if(auto value = parse_moon(moon, join_path(where, "moon"))) {
-            visuals.moon = std::move(value);
+    auto moon = parse_object(object, where, "moon");
+
+    if(!moon.invalid()) {
+        auto value = parse_moon(moon, join_path(where, "moon"));
+
+        if(value.has_value()) {
+            visuals.moon = std::move(value.value());
         }
     }
 
-    if(auto stars = parse_object(object, where, "stars")) {
-        if(auto value = parse_stars(stars, join_path(where, "stars"))) {
-            visuals.stars = std::move(value);
+    auto stars = parse_object(object, where, "stars");
+
+    if(!stars.invalid()) {
+        auto value = parse_stars(stars, join_path(where, "stars"));
+
+        if(value.has_value()) {
+            visuals.stars = std::move(value.value());
         }
     }
 
-    if(parse_object(object, where, "clouds")) {
+    auto clouds = parse_object(object, where, "clouds");
+
+    if(!clouds.invalid()) {
         visuals.clouds = WorldVisuals::Clouds {};
     }
 }
 
-std::shared_ptr<ServerWorldDefinition> world_json::parse_world(std::string_view name, const JSON_Object* object, std::string_view where)
+std::shared_ptr<ServerWorldDefinition> world_parser::parse_world(std::string_view name, ryml::ConstNodeRef object, std::string_view where)
 {
     auto generator_name = parse_string(object, where, "generator");
 
@@ -626,7 +699,7 @@ std::shared_ptr<ServerWorldDefinition> world_json::parse_world(std::string_view 
 
     auto selector = parse_object(object, where, "biome_selector");
 
-    if(selector == nullptr) {
+    if(selector.invalid()) {
         msg::log_error("{}: biome_selector is required; the world is skipped", where);
         return nullptr;
     }
@@ -658,30 +731,37 @@ std::shared_ptr<ServerWorldDefinition> world_json::parse_world(std::string_view 
         result->spawn = spawn.value();
     }
 
-    if(auto weather = parse_array(object, where, "weather")) {
-        auto count = json_array_get_count(weather);
+    auto weather = parse_array(object, where, "weather");
 
-        for(std::size_t i = 0; i < count; ++i) {
-            auto entry_where = std::format("{}.weather[{}]", where, i);
-            auto text = json_array_get_string(weather, i);
+    if(!weather.invalid()) {
+        std::size_t index = 0;
 
-            if(text == nullptr) {
-                msg::log_warning("{}: must be a string; the entry is ignored", entry_where);
+        for(auto entry : weather.children()) {
+            auto entry_where = std::format("{}.weather[{}]", where, index);
+            auto text = utils::parse_string(entry);
+
+            if(!text.has_value()) {
+                warn_ignored(entry_where, "the entry", "a string");
+                index += 1;
                 continue;
             }
 
-            auto name = Identifier::from_string(text, constant::BUILTIN_NAME_SPACE);
+            auto entry_name = Identifier::from_string(text.value());
 
-            if(!name.is_valid()) {
-                msg::log_warning("{}: not a valid identifier; the entry is ignored", entry_where);
+            if(!is_namespaced_identifier(entry_name)) {
+                warn_ignored(entry_where, "the entry", "a namespaced identifier");
+                index += 1;
                 continue;
             }
 
-            result->weather_names.push_back(name);
+            result->weather_names.push_back(entry_name);
+            index += 1;
         }
     }
 
-    if(auto visuals = parse_object(object, where, "visuals")) {
+    auto visuals = parse_object(object, where, "visuals");
+
+    if(!visuals.invalid()) {
         parse_visuals(visuals, result->visuals, join_path(where, "visuals"));
     }
 

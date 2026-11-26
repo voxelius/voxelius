@@ -1,0 +1,95 @@
+# Voxelius world definitions. This file is YAML.
+#
+# Each key is a world name: it is also the directory under save/ that holds
+# the world, and the terrain seed is derived from the name and the universe
+# seed in save/universe.conf. Rename a world only by renaming the key and its
+# directory together, otherwise it starts from scratch. Exactly one world
+# should set default to true; without one the first world is used.
+#
+# Unknown keys are ignored. An invalid value logs a warning and falls back to
+# the default.
+#
+# Biome and weather names are full identifiers and need their namespace:
+# builtin:vox2_plains, mymod:custom_biome. A bare vox2_plains is rejected.
+#
+# The vox2 generator is a surface generator inspired by Beta 1.7.3. It takes
+# temperature and humidity as its two biome axes; a nearest selector wants
+# one target per axis on the 0..100 scale.
+
+overworld:
+  default: true
+  generator: vox2
+  min_y: 0
+  max_y: 127
+  spawn: [0, 72, 0]
+
+  generator_settings:
+    base_min: 44
+    base_max: 92
+    variation_min: 16
+    variation_max: 48
+    terrain_frequency: 0.03
+    terrain_octaves: 4
+    sea_level: 64
+    surface_depth: 4
+
+  weather:
+    - builtin:clear
+    - builtin:overcast
+    - builtin:rain
+    - builtin:thunderstorm
+
+  visuals:
+    sky:
+      day:
+        horizon: [0.64, 0.76, 0.94]
+        zenith: [0.26, 0.46, 0.85]
+      night:
+        horizon: [0.020, 0.030, 0.060]
+        zenith: [0.004, 0.007, 0.018]
+      twilight_height: 0.35
+    sun:
+      tilt: 0.0
+    moon:
+      color: [0.86, 0.90, 1.0]
+    stars:
+      count: 5120
+    clouds: {}
+
+  biome_selector:
+    strategy: nearest
+    axes: [temperature, humidity]
+    weights: [1.0, 1.0]
+    entries:
+      - biome: builtin:vox2_rainforest
+        target: [95, 88]
+      - biome: builtin:vox2_swamp
+        target: [55, 88]
+      - biome: builtin:vox2_seasonal_forest
+        target: [85, 70]
+      - biome: builtin:vox2_forest
+        target: [75, 50]
+      - biome: builtin:vox2_taiga
+        target: [30, 55]
+      - biome: builtin:vox2_plains
+        target: [55, 30]
+      - biome: builtin:vox2_savanna
+        target: [80, 15]
+      - biome: builtin:vox2_shrubland
+        target: [60, 20]
+      - biome: builtin:vox2_desert
+        target: [95, 8]
+      - biome: builtin:vox2_tundra
+        target: [8, 40]
+
+superflat:
+  generator: superflat
+  spawn: [0, 1, 0]
+  weather:
+    - builtin:clear
+    - builtin:overcast
+    - builtin:rain
+    - builtin:thunderstorm
+  biome_selector:
+    strategy: constant
+    biome: builtin:vox2_plains

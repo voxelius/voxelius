@@ -11,6 +11,7 @@
 
 #include "server/utils/heightmap.hh"
 #include "server/utils/rotate.hh"
+#include "server/world/generator_map.hh"
 #include "server/world/world.hh"
 
 struct WouldPlaceKey final {
@@ -76,6 +77,23 @@ static block_id_type block_at(const PlacementContext& context, const BlockPos& b
     return fallback;
 }
 
+static block_id_type surface_block_at(const PlacementContext& context, const BlockPos& origin, const Column& column,
+    const BiomeDefinition& biome)
+{
+    if(context.storage && context.position == utils::to_chunk(origin)) {
+        return context.storage->get(utils::to_local(origin));
+    }
+
+    auto generator = context.world->generator();
+
+    if(generator) {
+        auto pos = BlockPosXZ(origin.x(), origin.z());
+        return generator->surface_block(context.world, pos, column);
+    }
+
+    return biome.palette_land_surface.cached;
+}
+
 static bool matches_tags(block_id_type block_id, block_tag_bit required)
 {
     if(required == static_cast<block_tag_bit>(0)) {
@@ -107,7 +125,7 @@ static bool can_place(const PlacementContext& context, const BlockPos& origin, c
     auto above = BlockPos(origin.x(), origin.y() + 1, origin.z());
     auto in_chunk = utils::to_chunk(origin) == context.position;
 
-    auto origin_block = block_at(context, origin, biome.palette_surface.cached);
+    auto origin_block = surface_block_at(context, origin, column, biome);
     auto above_block = block_at(context, above, BLOCK_ID_NULL);
 
     if(origin_block == biome.palette_fluid.cached) {

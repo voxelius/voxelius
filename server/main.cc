@@ -33,7 +33,7 @@
 #include "server/world/chunk_loader.hh"
 #include "server/world/chunk_unloader.hh"
 #include "server/world/generator_superflat.hh"
-#include "server/world/generator_vox17.hh"
+#include "server/world/generator_vox2.hh"
 #include "server/world/world.hh"
 #include "server/world/worldgen.hh"
 
@@ -103,7 +103,7 @@ static void wrapped_main(int argc, char** argv)
 
     api_server::register_libraries();
 
-    Vox17::register_generator();
+    Vox2::register_generator();
     Superflat::register_generator();
 
     shared_game::init();

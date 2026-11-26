@@ -37,6 +37,8 @@ add_library(core STATIC
     "${CMAKE_CURRENT_LIST_DIR}/utils/physfs.hh"
     "${CMAKE_CURRENT_LIST_DIR}/utils/string.cc"
     "${CMAKE_CURRENT_LIST_DIR}/utils/string.hh"
+    "${CMAKE_CURRENT_LIST_DIR}/utils/yaml.cc"
+    "${CMAKE_CURRENT_LIST_DIR}/utils/yaml.hh"
     "${CMAKE_CURRENT_LIST_DIR}/buffer.cc"
     "${CMAKE_CURRENT_LIST_DIR}/buffer.hh"
     "${CMAKE_CURRENT_LIST_DIR}/camera.cc"
@@ -74,6 +76,7 @@ target_link_libraries(core PUBLIC
     deps::miniz
     deps::parson
     deps::physfs
+    deps::ryml
     deps::stb
     deps::thread_pool
     deps::tracy)

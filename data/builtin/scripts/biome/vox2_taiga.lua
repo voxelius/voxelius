@@ -1,18 +1,20 @@
-biomes.add("surface_forest_pine", {
-  temperature = 1,
-  humidity = 60,
+biomes.add("vox2_taiga", {
+  temperature = 8,
+  humidity = 55,
 
   palette = {
-    basic = { name = "stone" },
-    filler = { name = "dirt" },
-    surface = { name = "grass" },
+    base = { name = "stone" },
+    land_filler = { name = "dirt" },
+    land_surface = { name = "grass" },
     fluid = { name = "water", states = { level = "8", source = "true" } },
+    shore_surface = { name = "sand" },
+    shore_filler = { name = "sand" },
   },
 
   scatter = {
     {
       feature = "bush",
-      chance = 1.0 / 3.0,
+      chance = 1.0 / 6.0,
       need_above = { blocks.TAG_GAS },
       need_below = { blocks.TAG_TURF },
     },
@@ -51,8 +53,8 @@ biomes.add("surface_forest_pine", {
   },
 
   tints = {
-    grass = { 0.38, 0.62, 0.30 },
-    foliage = { 0.22, 0.48, 0.28 },
-    water = { 0.18, 0.40, 0.72 },
+    grass = { 0.34, 0.58, 0.30 },
+    foliage = { 0.20, 0.46, 0.28 },
+    water = { 0.18, 0.38, 0.68 },
   },
 })

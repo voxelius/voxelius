@@ -215,6 +215,7 @@ Every translation unit keeps the same top-level order:
 #### Class bodies
 
 A class body follows the same idea. A structure that gains a method becomes a class; a structure holds fields and no behavior.
+A tag structure marks a template argument: it holds no fields and only declares static members, so it stays a structure.
 
 - one access block per class: `public`, then `protected`, then `private`; do not repeat a specifier;
 - statics come first: the constants and the static methods;
@@ -261,6 +262,7 @@ until the reader knows why it is there. Never restate what the code next to it d
 |`client/`|`vclient`. `gui/` the menus, `net/` the connection, `res/` the render resources, `system/` the frame systems, `world/` the renderer|
 |`server/`|`vserver`. `entity/`, `net/`, `system/`, `utils/`, `world/`|
 |`data/`|Content that ships with the game: `builtin` mod, shaders, textures, language files|
+|`defaults/`|Defaults copied into the user directory on the first run|
 |`deps/`|Vendored third-party code and its CMake glue|
 |`scripts/`|Build, package and editor helpers|
 |`misc/`|Small image and model generators|

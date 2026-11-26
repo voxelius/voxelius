@@ -121,3 +121,4 @@ void NoiseCache2D<CellW, CellH>::generate(const ChunkPosXZ& pos, array_type& val
 template class NoiseCache2D<2, 2>;
 template class NoiseCache2D<4, 4>;
 template class NoiseCache2D<8, 8>;
+template class NoiseCache2D<16, 16>;

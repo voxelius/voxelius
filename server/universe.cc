@@ -120,7 +120,7 @@ void universe::init(void)
         s_worlds.push_back(std::move(world));
     }
 
-    vx::throw_if(s_default_world == nullptr, "worlds.jsonc: no default world");
+    vx::throw_if(s_default_world == nullptr, "worlds.yml: no default world");
 }
 
 void universe::init_late(void)
