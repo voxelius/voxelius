@@ -20,6 +20,7 @@ struct BiomeScatterEntry final {
     std::size_t group_hash;
     unsigned padding;
     unsigned edge;
+    unsigned slope;
 
     res::handle<Feature> cached;
 };

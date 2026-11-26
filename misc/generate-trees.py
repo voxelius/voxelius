@@ -66,18 +66,19 @@ def hash_unit(seed: int, x: int, y: int, z: int) -> float:
 class Cell:
     role: str
     axis: str = AXIS_Y
+    ground: bool = False
 
 
 @dataclass
 class Shape:
     cells: dict[Pos, Cell] = field(default_factory=dict)
 
-    def put(self, pos: Pos, role: str, axis: str = AXIS_Y) -> None:
-        self.cells[pos] = Cell(role, axis)
+    def put(self, pos: Pos, role: str, axis: str = AXIS_Y, ground: bool = False) -> None:
+        self.cells[pos] = Cell(role, axis, ground)
 
-    def put_if_empty(self, pos: Pos, role: str, axis: str = AXIS_Y) -> None:
+    def put_if_empty(self, pos: Pos, role: str, axis: str = AXIS_Y, ground: bool = False) -> None:
         if pos not in self.cells:
-            self.cells[pos] = Cell(role, axis)
+            self.cells[pos] = Cell(role, axis, ground)
 
     def has_role(self, pos: Pos, role: str) -> bool:
         cell = self.cells.get(pos)
@@ -171,11 +172,14 @@ def feature_json(shape: Shape, blocks: dict[str, str]) -> dict:
     parts = []
     for pos in sorted(shape.cells, key=lambda p: (p[1], p[0], p[2])):
         cell = shape.cells[pos]
-        parts.append({
+        part = {
             "block": slot(cell.role, cell.axis),
             "offset": list(pos),
             "overwrite": ROLE_OVERWRITE[cell.role],
-        })
+        }
+        if cell.ground or cell.role == DIRT or (cell.role in (ROCK, ROCK2) and pos[1] == 0):
+            part["ground"] = True
+        parts.append(part)
 
     return {"palette": palette, "parts": parts}
 
@@ -297,7 +301,7 @@ def build_swamp(rng: random.Random) -> Shape:
             shape.put_if_empty((dx, height, dz), LEAVES)
 
     for (rx, rz) in ((-1, 0), (1, 1)):
-        shape.put((rx, 1, rz), LOG)
+        shape.put((rx, 1, rz), LOG, ground=True)
 
     trunk(shape, height)
     return shape

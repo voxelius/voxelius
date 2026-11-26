@@ -12,6 +12,7 @@
 #include "shared/world/block_storage.hh"
 #include "shared/world/world_scope.hh"
 
+#include "server/utils/heightmap.hh"
 #include "server/utils/rotate.hh"
 #include "server/world/generator_map.hh"
 #include "server/world/placement_scatter.hh"
@@ -53,29 +54,50 @@ static bool check_intersection(const FeatureInstance& instance, const ChunkPos& 
     return chunk_bounds.intersects(local_bounds);
 }
 
-static void commit_instance(BlockStorage& storage, const ChunkPos& cpos, const FeatureInstance& instance)
+static void commit_instance(ServerWorld* world, BlockStorage& storage, const ChunkPos& cpos, const FeatureInstance& instance)
 {
     if(instance.feature == nullptr) {
         return;
     }
 
+    const auto bounds = utils::rotate_bounds(instance.feature->bounds, instance.facing);
+
+    BlockAlignedBoxXZ columns;
+    columns.min()[0] = instance.origin.x() + bounds.min().x();
+    columns.min()[1] = instance.origin.z() + bounds.min().z();
+    columns.max()[0] = instance.origin.x() + bounds.max().x();
+    columns.max()[1] = instance.origin.z() + bounds.max().z();
+
+    utils::HeightmapView view(world, columns);
+
     for(auto& part : instance.feature->parts) {
         auto offset = utils::rotate_offset(part.offset, instance.facing);
         auto bpos = instance.origin + offset.cast<BlockPos::value_type>();
 
-        if(cpos == utils::to_chunk(bpos)) {
-            auto lpos = utils::to_local(bpos);
-            auto existing = storage.get(lpos);
+        if(cpos != utils::to_chunk(bpos)) {
+            continue;
+        }
 
-            if(existing == BLOCK_ID_NULL) {
-                storage.set(lpos, part.block);
+        if(part.soft) {
+            auto part_x = bpos.x();
+            auto part_z = bpos.z();
+            auto& column = view.at(part_x, part_z);
+
+            if(!column.is_valid() || bpos.y() <= column.surface_y) {
                 continue;
             }
+        }
 
-            if(block_registry::has_tag_any(existing, part.overwrite)) {
-                storage.set(lpos, part.block);
-                continue;
-            }
+        auto lpos = utils::to_local(bpos);
+        auto existing = storage.get(lpos);
+
+        if(existing == BLOCK_ID_NULL) {
+            storage.set(lpos, part.block);
+            continue;
+        }
+
+        if(block_registry::has_tag_any(existing, part.overwrite)) {
+            storage.set(lpos, part.block);
         }
     }
 }
@@ -119,18 +141,25 @@ biome_id_type ServerWorld::biome_at(const BlockPosXZ& pos)
     cpos[0] = static_cast<ChunkPosXZ::value_type>(pos[0] >> constant::CHUNK_SIZE_LOG2);
     cpos[1] = static_cast<ChunkPosXZ::value_type>(pos[1] >> constant::CHUNK_SIZE_LOG2);
 
-    auto entry = get_biome_entry(cpos);
-
-    std::call_once(entry->init_flag, [this, cpos, entry] {
-        m_server_definition->generator->generate_biomes(this, cpos, entry->data);
-    });
+    auto& slice = sample_biomes(cpos);
 
     auto lx = static_cast<std::size_t>(pos[0] & (constant::CHUNK_SIZE - 1));
     auto lz = static_cast<std::size_t>(pos[1] & (constant::CHUNK_SIZE - 1));
 
     auto index = lx + lz * constant::CHUNK_SIZE;
 
-    return entry->data[index];
+    return slice[index];
+}
+
+const BiomeSlice& ServerWorld::sample_biomes(const ChunkPosXZ& pos)
+{
+    auto entry = get_biome_entry(pos);
+
+    std::call_once(entry->init_flag, [this, pos, entry] {
+        m_server_definition->generator->generate_biomes(this, pos, entry->data);
+    });
+
+    return entry->data;
 }
 
 std::shared_ptr<ServerWorld::ScatterEntry> ServerWorld::scatter_entry(const ChunkPosXZ& pos)
@@ -170,7 +199,7 @@ void ServerWorld::commit_placements(BlockStorage& storage, const ChunkPos& cpos,
 {
     for(auto& instance : instances) {
         if(check_intersection(instance, cpos)) {
-            commit_instance(storage, cpos, instance);
+            commit_instance(this, storage, cpos, instance);
         }
     }
 }

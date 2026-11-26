@@ -25,6 +25,7 @@ biomes.add("vox2_marsh", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
     {
       feature = "willow_tree_02",
@@ -33,6 +34,7 @@ biomes.add("vox2_marsh", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
     {
       feature = "willow_tree_03",
@@ -41,6 +43,7 @@ biomes.add("vox2_marsh", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
     {
       feature = "swamp_tree_01",
@@ -49,6 +52,7 @@ biomes.add("vox2_marsh", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
     {
       feature = "swamp_tree_02",
@@ -57,6 +61,7 @@ biomes.add("vox2_marsh", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
   },
 

@@ -14,6 +14,8 @@
 #include "server/world/generator_map.hh"
 #include "server/world/world.hh"
 
+constexpr static std::uint32_t ENTRY_NONE = std::numeric_limits<std::uint32_t>::max();
+
 struct WouldPlaceKey final {
     constexpr bool operator==(const WouldPlaceKey& other) const
     {
@@ -41,8 +43,17 @@ struct std::hash<WouldPlaceKey> final {
     }
 };
 
+struct ColumnWinner final {
+    std::uint32_t entry_index { ENTRY_NONE };
+    biome_id_type biome { BIOME_ID_NULL };
+    BlockPos::value_type surface_y { Column::UNSET };
+};
+
 struct ScatterScanCache final {
     vx::hash_map<WouldPlaceKey, bool> would_place;
+    vx::hash_map<BlockPosXZ, ColumnWinner> winners;
+    vx::hash_map<BlockPosXZ, std::uint64_t> entropy;
+    vx::hash_map<ChunkPosXZ, const BiomeSlice*> biomes;
 };
 
 static float scatter_roll(std::uint64_t entropy, std::size_t entry_index, const Identifier& feature_id)
@@ -78,7 +89,7 @@ static block_id_type block_at(const PlacementContext& context, const BlockPos& b
 }
 
 static block_id_type surface_block_at(const PlacementContext& context, const BlockPos& origin, const Column& column,
-    const BiomeDefinition& biome)
+    const BiomeDefinition* biome)
 {
     if(context.storage && context.position == utils::to_chunk(origin)) {
         return context.storage->get(utils::to_local(origin));
@@ -91,12 +102,12 @@ static block_id_type surface_block_at(const PlacementContext& context, const Blo
         return generator->surface_block(context.world, pos, column);
     }
 
-    return biome.palette_land_surface.cached;
+    return biome->palette_land_surface.cached;
 }
 
 static bool matches_tags(block_id_type block_id, block_tag_bit required)
 {
-    if(required == static_cast<block_tag_bit>(0)) {
+    if(required == BLOCK_TAG_NONE) {
         return true;
     }
 
@@ -107,7 +118,7 @@ static bool matches_tags(block_id_type block_id, block_tag_bit required)
     return block_registry::has_tag_any(block_id, required);
 }
 
-static bool can_place(const PlacementContext& context, const BlockPos& origin, const BiomeDefinition& biome, const BiomeScatterEntry& entry,
+static bool can_place(const PlacementContext& context, const BlockPos& origin, const BiomeDefinition* biome, const BiomeScatterEntry* entry,
     const Column& column)
 {
     if(!column.is_valid()) {
@@ -128,31 +139,67 @@ static bool can_place(const PlacementContext& context, const BlockPos& origin, c
     auto origin_block = surface_block_at(context, origin, column, biome);
     auto above_block = block_at(context, above, BLOCK_ID_NULL);
 
-    if(origin_block == biome.palette_fluid.cached) {
+    if(origin_block == biome->palette_fluid.cached) {
         return false;
     }
 
-    if(in_chunk && above_block == biome.palette_fluid.cached) {
+    if(in_chunk && above_block == biome->palette_fluid.cached) {
         return false;
     }
 
-    if(entry.need_below != static_cast<block_tag_bit>(0) && !matches_tags(origin_block, entry.need_below)) {
+    if(!matches_tags(origin_block, entry->need_below)) {
         return false;
     }
 
-    if(entry.need_above != static_cast<block_tag_bit>(0)) {
-        if(in_chunk && !matches_tags(above_block, entry.need_above)) {
-            return false;
-        }
+    if(in_chunk && !matches_tags(above_block, entry->need_above)) {
+        return false;
     }
 
     return true;
 }
 
-static bool check_footprint(ServerWorld* world, BlockPos::value_type bx, BlockPos::value_type bz, const Feature& feature, unsigned edge,
-    const BiomeDefinition* biome)
+static std::uint64_t entropy_cached(const PlacementContext& context, ScatterScanCache& cache, BlockPos::value_type x,
+    BlockPos::value_type z)
 {
-    auto& bounds = feature.bounds;
+    BlockPosXZ key;
+    key[0] = x;
+    key[1] = z;
+
+    auto it = cache.entropy.find(key);
+
+    if(it != cache.entropy.cend()) {
+        return it->second;
+    }
+
+    auto value = context.world->entropy_at(key);
+    cache.entropy.emplace(key, value);
+    return value;
+}
+
+static biome_id_type biome_cached(const PlacementContext& context, ScatterScanCache& cache, BlockPos::value_type x, BlockPos::value_type z)
+{
+    ChunkPosXZ cpos;
+    cpos[0] = static_cast<ChunkPosXZ::value_type>(x >> constant::CHUNK_SIZE_LOG2);
+    cpos[1] = static_cast<ChunkPosXZ::value_type>(z >> constant::CHUNK_SIZE_LOG2);
+
+    auto it = cache.biomes.find(cpos);
+
+    if(it == cache.biomes.cend()) {
+        auto& slice = context.world->sample_biomes(cpos);
+        auto inserted = cache.biomes.emplace(cpos, &slice);
+        it = inserted.first;
+    }
+
+    auto lx = static_cast<std::size_t>(x & (constant::CHUNK_SIZE - 1));
+    auto lz = static_cast<std::size_t>(z & (constant::CHUNK_SIZE - 1));
+
+    return it->second->at(lx + lz * constant::CHUNK_SIZE);
+}
+
+static bool check_footprint(const PlacementContext& context, ScatterScanCache& cache, BlockPos::value_type bx, BlockPos::value_type bz,
+    const Feature* feature, unsigned edge, const BiomeDefinition* biome)
+{
+    auto& bounds = feature->bounds;
     auto pad = static_cast<int>(edge);
 
     auto min_x = bounds.min().x() - pad;
@@ -162,7 +209,7 @@ static bool check_footprint(ServerWorld* world, BlockPos::value_type bx, BlockPo
 
     for(auto dz = min_z; dz <= max_z; dz += 1) {
         for(auto dx = min_x; dx <= max_x; dx += 1) {
-            auto biome_id = world->biome_at(BlockPosXZ(bx + dx, bz + dz));
+            auto biome_id = biome_cached(context, cache, bx + dx, bz + dz);
             auto biome_def = biome_registry::find_definition(biome_id);
 
             if(biome == biome_def)
@@ -174,16 +221,98 @@ static bool check_footprint(ServerWorld* world, BlockPos::value_type bx, BlockPo
     return true;
 }
 
-static bool would_place_uncached(BlockPos::value_type bx, BlockPos::value_type bz, const PlacementContext& context,
-    const BiomeDefinition& biome, const BiomeScatterEntry& entry, std::size_t entry_index, ScatterScanCache&)
+static bool fits_terrain(const PlacementContext& context, const Feature* feature, const BlockPos& origin, unsigned slope)
 {
-    if(entry.cached == nullptr) {
+    auto& bounds = feature->bounds;
+
+    BlockAlignedBoxXZ columns;
+    columns.min()[0] = origin.x() + bounds.min().x();
+    columns.min()[1] = origin.z() + bounds.min().z();
+    columns.max()[0] = origin.x() + bounds.max().x();
+    columns.max()[1] = origin.z() + bounds.max().z();
+
+    utils::HeightmapView view(context.world, columns);
+
+    auto width = static_cast<std::size_t>(columns.max().x() - columns.min().x() + 1);
+    auto depth = static_cast<std::size_t>(columns.max().y() - columns.min().y() + 1);
+
+    thread_local std::vector<BlockPos::value_type> surfaces;
+    surfaces.assign(width * depth, Column::UNSET);
+
+    auto limit = static_cast<BlockPos::value_type>(slope);
+
+    for(std::size_t dz = 0; dz < depth; dz += 1) {
+        for(std::size_t dx = 0; dx < width; dx += 1) {
+            auto x = columns.min().x() + static_cast<BlockPos::value_type>(dx);
+            auto z = columns.min().y() + static_cast<BlockPos::value_type>(dz);
+
+            auto& column = view.at(x, z);
+
+            if(!column.is_valid()) {
+                return false;
+            }
+
+            auto index = dx + dz * width;
+            surfaces[index] = column.surface_y;
+
+            if(limit == 0) {
+                continue;
+            }
+
+            if(dx > 0) {
+                auto step = column.surface_y - surfaces[index - 1];
+
+                if(step > limit || step < -limit) {
+                    return false;
+                }
+            }
+
+            if(dz > 0) {
+                auto step = column.surface_y - surfaces[index - width];
+
+                if(step > limit || step < -limit) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    for(auto& part : feature->parts) {
+        auto px = static_cast<std::size_t>(part.offset.x() - bounds.min().x());
+        auto pz = static_cast<std::size_t>(part.offset.z() - bounds.min().z());
+        auto index = px + pz * width;
+
+        auto surface = surfaces[index];
+        auto target = origin.y() + part.offset.y();
+
+        if(part.ground) {
+            if(surface != origin.y()) {
+                return false;
+            }
+
+            continue;
+        }
+
+        if(part.soft) {
+            continue;
+        }
+
+        if(target <= surface) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+static bool would_place_uncached(std::uint64_t entropy, BlockPos::value_type bx, BlockPos::value_type bz, const PlacementContext& context,
+    const BiomeDefinition* biome, const BiomeScatterEntry* entry, std::size_t entry_index, ScatterScanCache& cache)
+{
+    if(entry->cached == nullptr) {
         return false;
     }
 
-    auto entropy = context.world->entropy_at(BlockPosXZ(bx, bz));
-
-    if(scatter_roll(entropy, entry_index, entry.feature) >= entry.chance) {
+    if(scatter_roll(entropy, entry_index, entry->feature) >= entry->chance) {
         return false;
     }
 
@@ -198,11 +327,11 @@ static bool would_place_uncached(BlockPos::value_type bx, BlockPos::value_type b
         return false;
     }
 
-    return check_footprint(context.world, bx, bz, *entry.cached, entry.edge, &biome);
+    return check_footprint(context, cache, bx, bz, entry->cached.get(), entry->edge, biome);
 }
 
-static bool would_place(BlockPos::value_type bx, BlockPos::value_type bz, const PlacementContext& context, const BiomeDefinition& biome,
-    const BiomeScatterEntry& entry, std::size_t entry_index, ScatterScanCache& cache)
+static bool would_place(BlockPos::value_type bx, BlockPos::value_type bz, const PlacementContext& context, const BiomeDefinition* biome,
+    const BiomeScatterEntry* entry, std::size_t entry_index, ScatterScanCache& cache)
 {
     WouldPlaceKey key {};
     key.x = bx;
@@ -212,7 +341,8 @@ static bool would_place(BlockPos::value_type bx, BlockPos::value_type bz, const 
     auto it = cache.would_place.find(key);
 
     if(it == cache.would_place.cend()) {
-        auto result = would_place_uncached(bx, bz, context, biome, entry, entry_index, cache);
+        auto entropy = entropy_cached(context, cache, bx, bz);
+        auto result = would_place_uncached(entropy, bx, bz, context, biome, entry, entry_index, cache);
         cache.would_place.emplace(key, result);
         return result;
     }
@@ -220,19 +350,53 @@ static bool would_place(BlockPos::value_type bx, BlockPos::value_type bz, const 
     return it->second;
 }
 
-static BlockAlignedBox scatter_bounds(const BlockPos& origin, const Feature& feature, block_face facing)
+static ColumnWinner find_column_winner(BlockPos::value_type bx, BlockPos::value_type bz, const PlacementContext& context,
+    ScatterScanCache& cache)
 {
-    const auto bounds = utils::rotate_bounds(feature.bounds, facing);
+    BlockPosXZ key;
+    key[0] = bx;
+    key[1] = bz;
 
-    BlockAlignedBox world;
-    world.min() = origin + bounds.min().cast<BlockPos::value_type>();
-    world.max() = origin + bounds.max().cast<BlockPos::value_type>();
-    return world;
+    auto entry = cache.winners.find(key);
+
+    if(entry != cache.winners.cend()) {
+        return entry->second;
+    }
+
+    ColumnWinner winner {};
+
+    auto biome_id = biome_cached(context, cache, bx, bz);
+    auto biome_def = biome_registry::find_definition(biome_id);
+    auto& column = utils::heightmap_probe_slow(context.world, key);
+
+    if(biome_def && column.is_valid()) {
+        auto origin = BlockPos(bx, column.surface_y, bz);
+        auto count = biome_def->scatter.size();
+
+        for(std::size_t index = 0; index < count; index += 1) {
+            auto& scatter = biome_def->scatter[index];
+
+            if(!would_place(bx, bz, context, biome_def, &scatter, index, cache)) {
+                continue;
+            }
+
+            if(!fits_terrain(context, scatter.cached.get(), origin, scatter.slope)) {
+                continue;
+            }
+
+            winner.entry_index = static_cast<std::uint32_t>(index);
+            winner.biome = biome_id;
+            winner.surface_y = column.surface_y;
+        }
+    }
+
+    cache.winners.emplace(key, winner);
+    return winner;
 }
 
-static BlockPos::value_type scatter_extent(const Feature& feature)
+static BlockPos::value_type scatter_extent(const Feature* feature)
 {
-    const auto& bounds = feature.bounds;
+    auto& bounds = feature->bounds;
     const auto min_xz = Eigen::Vector2i(bounds.min().x(), bounds.min().z());
     const auto max_xz = Eigen::Vector2i(bounds.max().x(), bounds.max().z());
 
@@ -242,123 +406,104 @@ static BlockPos::value_type scatter_extent(const Feature& feature)
     return static_cast<BlockPos::value_type>(std::max(min_abs.maxCoeff(), max_abs.maxCoeff()));
 }
 
-static bool bounds_too_close(const BlockAlignedBox& a, const BlockAlignedBox& b, unsigned padding)
+static bool interacts(const BiomeScatterEntry* a, const BiomeScatterEntry* b, std::size_t a_index, std::size_t b_index)
 {
-    BlockAlignedBox expanded = a;
-    expanded.min() -= BlockPos::Constant(padding);
-    expanded.max() += BlockPos::Constant(padding);
-    return expanded.intersects(b);
-}
-
-static bool same_group(const BiomeScatterEntry& a, const BiomeScatterEntry& b, std::size_t a_index, std::size_t b_index)
-{
-    if(a.group_hash) {
-        return a.group_hash == b.group_hash;
+    if(a->group_hash && b->group_hash) {
+        return true;
     }
 
-    return a_index == b_index;
+    return a->group_hash == 0 && b->group_hash == 0 && a_index == b_index;
 }
 
-static const BiomeScatterEntry* find_group_winner(BlockPos::value_type bx, BlockPos::value_type bz, const PlacementContext& context,
-    const BiomeDefinition& biome, const BiomeScatterEntry& entry, std::size_t entry_index, ScatterScanCache& cache)
+static BlockPos::value_type interaction_spacing(const BiomeScatterEntry* a, const BiomeScatterEntry* b)
 {
-    const BiomeScatterEntry* winner = nullptr;
+    auto padding = static_cast<BlockPos::value_type>(std::max(a->padding, b->padding));
+    auto a_extent = scatter_extent(a->cached.get());
+    auto b_extent = scatter_extent(b->cached.get());
 
-    for(std::size_t i = 0; i < biome.scatter.size(); ++i) {
-        const auto& candidate = biome.scatter[i];
+    return padding + std::max(a_extent, b_extent);
+}
 
-        if(!same_group(entry, candidate, entry_index, i)) {
+static BlockPos::value_type interaction_radius(const BiomeDefinition* biome, std::size_t entry_index)
+{
+    auto entry = &biome->scatter[entry_index];
+    auto result = BlockPos::value_type(0);
+    auto count = biome->scatter.size();
+
+    for(std::size_t index = 0; index < count; index += 1) {
+        auto candidate = &biome->scatter[index];
+
+        if(candidate->cached == nullptr) {
             continue;
         }
 
-        if(!would_place(bx, bz, context, biome, candidate, i, cache)) {
+        if(!interacts(entry, candidate, entry_index, index)) {
             continue;
         }
 
-        winner = &candidate;
+        result = std::max(result, interaction_spacing(entry, candidate));
     }
 
-    return winner;
+    return result;
 }
 
-static BlockPos::value_type group_search_radius(const BiomeDefinition& biome, const BiomeScatterEntry& entry, std::size_t entry_index)
+static bool outranks(BlockPos::value_type ax, BlockPos::value_type az, BlockPos::value_type bx, BlockPos::value_type bz,
+    const PlacementContext& context, ScatterScanCache& cache)
 {
-    auto search = static_cast<BlockPos::value_type>(entry.padding) + scatter_extent(*entry.cached);
+    auto a = tie_priority(entropy_cached(context, cache, ax, az));
+    auto b = tie_priority(entropy_cached(context, cache, bx, bz));
 
-    for(std::size_t i = 0; i < biome.scatter.size(); ++i) {
-        auto& candidate = biome.scatter[i];
-
-        if(candidate.cached == nullptr) {
-            continue;
-        }
-
-        if(!same_group(entry, candidate, entry_index, i)) {
-            continue;
-        }
-
-        auto candidate_search = static_cast<BlockPos::value_type>(candidate.padding);
-        candidate_search += scatter_extent(*candidate.cached);
-        search = std::max(search, candidate_search);
+    if(a != b) {
+        return a > b;
     }
 
-    return search;
+    return bx < ax || (bx == ax && bz < az);
 }
 
-static bool resolve_padding_tie(BlockPos::value_type bx, BlockPos::value_type bz, const Column& column, const PlacementContext& context,
-    const BiomeDefinition& biome, const BiomeScatterEntry& entry, std::size_t entry_index, ScatterScanCache& cache)
+static bool overlaps_higher(const BlockPos& origin, const BiomeDefinition* biome, std::size_t entry_index, const PlacementContext& context,
+    ScatterScanCache& cache)
 {
-    if(entry.cached == nullptr) {
+    auto entry = &biome->scatter[entry_index];
+    auto radius = interaction_radius(biome, entry_index);
+    auto origin_x = origin.x();
+    auto origin_z = origin.z();
+
+    if(radius == 0) {
         return false;
     }
 
-    auto& feature = *entry.cached;
-    auto origin = BlockPos(bx, column.surface_y, bz);
-    auto current_box = scatter_bounds(origin, feature, BLOCK_FACE_NORTH);
-    auto search = group_search_radius(biome, entry, entry_index);
-    auto current_priority = tie_priority(context.world->entropy_at(BlockPosXZ(bx, bz)));
-
-    for(auto dx = -search; dx <= search; dx += 1) {
-        for(auto dz = -search; dz <= search; dz += 1) {
+    for(auto dx = -radius; dx <= radius; dx += 1) {
+        for(auto dz = -radius; dz <= radius; dz += 1) {
             if(dx == 0 && dz == 0) {
                 continue;
             }
 
-            auto ox = bx + dx;
-            auto oz = bz + dz;
+            auto ox = origin_x + dx;
+            auto oz = origin_z + dz;
 
-            auto neighbour_entry = find_group_winner(ox, oz, context, biome, entry, entry_index, cache);
+            auto winner = find_column_winner(ox, oz, context, cache);
 
-            if(neighbour_entry == nullptr || neighbour_entry->cached == nullptr) {
+            if(winner.entry_index == ENTRY_NONE) {
                 continue;
             }
 
-            BlockPosXZ neighbour_xz;
-            neighbour_xz[0] = ox;
-            neighbour_xz[1] = oz;
+            auto neighbour_biome = biome_registry::find_definition(winner.biome);
 
-            auto& neighbour_column = utils::heightmap_probe_slow(context.world, neighbour_xz);
-
-            if(!neighbour_column.is_valid()) {
+            if(neighbour_biome == nullptr) {
                 continue;
             }
 
-            auto neighbour_origin = BlockPos(ox, neighbour_column.surface_y, oz);
-            auto neighbour_bounds = scatter_bounds(neighbour_origin, *neighbour_entry->cached, BLOCK_FACE_NORTH);
+            auto neighbour_entry = &neighbour_biome->scatter[winner.entry_index];
 
-            if(!bounds_too_close(current_box, neighbour_bounds, entry.padding)) {
+            if(!interacts(entry, neighbour_entry, entry_index, winner.entry_index)) {
                 continue;
             }
 
-            auto neighbour_priority = tie_priority(context.world->entropy_at(BlockPosXZ(ox, oz)));
+            auto spacing = interaction_spacing(entry, neighbour_entry);
+            auto near_x = dx >= -spacing && dx <= spacing;
+            auto near_z = dz >= -spacing && dz <= spacing;
 
-            if(neighbour_priority > current_priority) {
-                return true;
-            }
-
-            auto same_priority = neighbour_priority == current_priority;
-            auto earlier_column = ox < bx || (ox == bx && oz < bz);
-
-            if(same_priority && earlier_column) {
+            if(near_x && near_z && outranks(ox, oz, origin_x, origin_z, context, cache)) {
                 return true;
             }
         }
@@ -383,51 +528,30 @@ void PlacementScatter::collect(const ChunkPos& pos, const PlacementContext& cont
 
     for(auto wx = search_min_x; wx <= search_max_x; wx += 1) {
         for(auto wz = search_min_z; wz <= search_max_z; wz += 1) {
-            auto biome = context.world->biome_at(BlockPosXZ(wx, wz));
-            auto biome_def = biome_registry::find_definition(biome);
+            auto winner = find_column_winner(wx, wz, context, cache);
 
-            if(biome_def == nullptr || biome_def->scatter.empty()) {
+            if(winner.entry_index == ENTRY_NONE) {
                 continue;
             }
 
-            BlockPosXZ sample_pos;
-            sample_pos.x() = wx;
-            sample_pos.y() = wz;
+            auto biome_def = biome_registry::find_definition(winner.biome);
 
-            auto& column = utils::heightmap_probe_slow(context.world, sample_pos);
-
-            if(!column.is_valid()) {
+            if(biome_def == nullptr) {
                 continue;
             }
 
-            BlockPos origin;
-            origin.x() = wx;
-            origin.y() = column.surface_y;
-            origin.z() = wz;
+            auto origin = BlockPos(wx, winner.surface_y, wz);
 
-            std::optional<FeatureInstance> column_winner;
-
-            for(std::size_t i = 0; i < biome_def->scatter.size(); ++i) {
-                auto& entry = biome_def->scatter[i];
-
-                if(!would_place(wx, wz, context, *biome_def, entry, i, cache)) {
-                    continue;
-                }
-
-                if(resolve_padding_tie(wx, wz, column, context, *biome_def, entry, i, cache)) {
-                    continue;
-                }
-
-                FeatureInstance instance {};
-                instance.origin = origin;
-                instance.feature = entry.cached;
-                instance.facing = BLOCK_FACE_NORTH;
-                column_winner = std::move(instance);
+            if(overlaps_higher(origin, biome_def, winner.entry_index, context, cache)) {
+                continue;
             }
 
-            if(column_winner.has_value()) {
-                out.push_back(std::move(column_winner.value()));
-            }
+            FeatureInstance instance {};
+            instance.origin = origin;
+            instance.feature = biome_def->scatter[winner.entry_index].cached;
+            instance.facing = BLOCK_FACE_NORTH;
+
+            out.push_back(std::move(instance));
         }
     }
 }

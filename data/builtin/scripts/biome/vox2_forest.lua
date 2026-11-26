@@ -25,6 +25,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 2,
     },
     {
       feature = "oak_tree_02",
@@ -33,6 +34,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 2,
     },
     {
       feature = "oak_tree_03",
@@ -41,6 +43,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 2,
     },
     {
       feature = "oak_tree_04",
@@ -49,6 +52,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 2,
     },
     {
       feature = "birch_tree_01",
@@ -57,6 +61,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 2,
     },
     {
       feature = "birch_tree_02",
@@ -65,6 +70,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 2,
     },
     {
       feature = "birch_tree_03",
@@ -73,6 +79,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 2,
     },
     {
       feature = "boulder_01",
@@ -81,6 +88,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "boulder",
       padding = 2,
+      slope = 1,
     },
     {
       feature = "boulder_02",
@@ -89,6 +97,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "boulder",
       padding = 2,
+      slope = 1,
     },
     {
       feature = "boulder_03",
@@ -97,6 +106,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "boulder",
       padding = 2,
+      slope = 1,
     },
     {
       feature = "red_mushroom_01",
@@ -105,6 +115,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 1,
     },
     {
       feature = "red_mushroom_02",
@@ -113,6 +124,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 1,
     },
     {
       feature = "red_mushroom_03",
@@ -121,6 +133,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 1,
     },
     {
       feature = "red_mushroom_tall_01",
@@ -129,6 +142,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 1,
     },
     {
       feature = "red_mushroom_tall_02",
@@ -137,6 +151,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 1,
     },
     {
       feature = "brown_mushroom_01",
@@ -145,6 +160,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 1,
     },
     {
       feature = "brown_mushroom_02",
@@ -153,6 +169,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 1,
     },
     {
       feature = "brown_mushroom_tall_01",
@@ -161,6 +178,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 1,
     },
     {
       feature = "brown_mushroom_tall_02",
@@ -169,6 +187,7 @@ biomes.add("vox2_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 0,
+      slope = 1,
     },
   },
 

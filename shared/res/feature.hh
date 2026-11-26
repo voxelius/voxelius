@@ -7,6 +7,8 @@ struct FeaturePart final {
     block_id_type block;
     Eigen::Vector3i offset;
     block_tag_bit overwrite;
+    bool ground { false };
+    bool soft { false };
 };
 
 struct Feature final {

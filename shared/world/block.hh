@@ -32,6 +32,7 @@ enum block_tool_bit : unsigned {
 };
 
 enum block_tag_bit : std::uint32_t {
+    BLOCK_TAG_NONE = 0x00000000U,
     BLOCK_TAG_GAS = 0x00000001U,
     BLOCK_TAG_ROCK = 0x00000002U,
     BLOCK_TAG_SOIL = 0x00000004U,

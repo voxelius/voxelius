@@ -95,6 +95,13 @@ static std::optional<std::vector<block_id_type>> parse_palette(const JSON_Array*
     return palette;
 }
 
+static bool is_soft_block(block_id_type block)
+{
+    constexpr auto tags = static_cast<block_tag_bit>(BLOCK_TAG_GAS | BLOCK_TAG_XFOIL | BLOCK_TAG_SFOIL);
+
+    return block_registry::has_tag_any(block, tags);
+}
+
 static std::optional<FeaturePart> parse_part(const JSON_Object* object, std::span<const block_id_type> palette)
 {
     if(object == nullptr) {
@@ -119,6 +126,15 @@ static std::optional<FeaturePart> parse_part(const JSON_Object* object, std::spa
     part.block = palette[block_index.value()];
     part.offset = offset.value();
     part.overwrite = static_cast<block_tag_bit>(overwrite.value_or(0));
+    part.soft = is_soft_block(part.block);
+
+    auto ground = json_object_get_value(object, "ground");
+
+    if(ground && json_value_get_type(ground) != JSONBoolean) {
+        return std::nullopt;
+    }
+
+    part.ground = ground && json_value_get_boolean(ground);
 
     return part;
 }

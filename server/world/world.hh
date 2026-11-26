@@ -30,6 +30,7 @@ public:
     std::uint64_t entropy_at(const BlockPosXZ& pos);
 
     biome_id_type biome_at(const BlockPosXZ& pos);
+    const BiomeSlice& sample_biomes(const ChunkPosXZ& pos);
 
     std::shared_ptr<ScatterEntry> scatter_entry(const ChunkPosXZ& pos);
 

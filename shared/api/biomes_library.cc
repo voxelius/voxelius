@@ -105,6 +105,19 @@ static bool parse_scatter_entry(lua_State* L, int entry_idx, BiomeScatterEntry& 
 
     entry.edge = static_cast<unsigned>(edge.value());
 
+    auto slope = utils::opt_integer(L, entry_idx, "slope", 0);
+
+    if(!slope.has_value()) {
+        return false;
+    }
+
+    if(slope.value() < 0) {
+        lua_pushliteral(L, "slope must be non-negative");
+        return false;
+    }
+
+    entry.slope = static_cast<unsigned>(slope.value());
+
     return true;
 }
 

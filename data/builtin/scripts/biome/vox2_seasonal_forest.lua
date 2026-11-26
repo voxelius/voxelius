@@ -25,6 +25,7 @@ biomes.add("vox2_seasonal_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
     {
       feature = "birch_tree_02",
@@ -33,6 +34,7 @@ biomes.add("vox2_seasonal_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
     {
       feature = "birch_tree_03",
@@ -41,6 +43,7 @@ biomes.add("vox2_seasonal_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
     {
       feature = "birch_tree_04",
@@ -49,6 +52,7 @@ biomes.add("vox2_seasonal_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
     {
       feature = "oak_tree_01",
@@ -57,6 +61,7 @@ biomes.add("vox2_seasonal_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
     {
       feature = "oak_tree_02",
@@ -65,6 +70,7 @@ biomes.add("vox2_seasonal_forest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
   },
 

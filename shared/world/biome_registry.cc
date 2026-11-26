@@ -83,6 +83,7 @@ static void update_checksum(void)
             hash_value(hash, static_cast<std::uint64_t>(entry.group_hash));
             hash_value(hash, static_cast<std::uint32_t>(entry.padding));
             hash_value(hash, static_cast<std::uint32_t>(entry.edge));
+            hash_value(hash, static_cast<std::uint32_t>(entry.slope));
         }
 
         std::vector<std::pair<Identifier, Eigen::Vector3f>> tints(def.tint_map.begin(), def.tint_map.end());

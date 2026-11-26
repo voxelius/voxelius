@@ -25,6 +25,7 @@ biomes.add("vox2_rainforest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
     {
       feature = "oak_tree_02",
@@ -33,6 +34,7 @@ biomes.add("vox2_rainforest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
     {
       feature = "oak_tree_03",
@@ -41,6 +43,7 @@ biomes.add("vox2_rainforest", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
   },
 

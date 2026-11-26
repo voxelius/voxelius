@@ -25,6 +25,7 @@ biomes.add("vox2_tundra", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
     {
       feature = "spruce_tree_02",
@@ -33,6 +34,7 @@ biomes.add("vox2_tundra", {
       need_below = { blocks.TAG_TURF },
       group = "tree",
       padding = 1,
+      slope = 2,
     },
     {
       feature = "boulder_01",
@@ -41,6 +43,7 @@ biomes.add("vox2_tundra", {
       need_below = { blocks.TAG_TURF },
       group = "boulder",
       padding = 2,
+      slope = 1,
     },
   },
 
