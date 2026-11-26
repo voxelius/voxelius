@@ -8,7 +8,7 @@ blocks.add("oak_leaves", {
     }
   },
 
-  model_name = "leaves",
+  model_name = "leaves_oak",
   bcoll_name = "cube",
 
   health = 1,

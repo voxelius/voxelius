@@ -63,7 +63,7 @@ overworld:
     entries:
       - biome: builtin:vox2_rainforest
         target: [95, 88]
-      - biome: builtin:vox2_swamp
+      - biome: builtin:vox2_marsh
         target: [55, 88]
       - biome: builtin:vox2_seasonal_forest
         target: [85, 70]

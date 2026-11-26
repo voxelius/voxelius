@@ -244,10 +244,6 @@ static BlockPos::value_type scatter_extent(const Feature& feature)
 
 static bool bounds_too_close(const BlockAlignedBox& a, const BlockAlignedBox& b, unsigned padding)
 {
-    if(padding == 0U) {
-        return false;
-    }
-
     BlockAlignedBox expanded = a;
     expanded.min() -= BlockPos::Constant(padding);
     expanded.max() += BlockPos::Constant(padding);
@@ -311,7 +307,7 @@ static BlockPos::value_type group_search_radius(const BiomeDefinition& biome, co
 static bool resolve_padding_tie(BlockPos::value_type bx, BlockPos::value_type bz, const Column& column, const PlacementContext& context,
     const BiomeDefinition& biome, const BiomeScatterEntry& entry, std::size_t entry_index, ScatterScanCache& cache)
 {
-    if(entry.padding == 0U || entry.cached == nullptr) {
+    if(entry.cached == nullptr) {
         return false;
     }
 

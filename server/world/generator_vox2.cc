@@ -89,8 +89,8 @@ static void seed_state(Vox2State* state, std::uint64_t seed)
 
         state->base_height = std::make_unique<NoiseCache2D_16x16>(make_field(seeder, FNL_NOISE_OPENSIMPLEX2S, 0.004f, 4));
         state->variation = std::make_unique<NoiseCache2D_8x8>(make_field(seeder, FNL_NOISE_OPENSIMPLEX2S, 0.008f, 3));
-        state->temperature = std::make_unique<NoiseCache2D_4x4>(make_field(seeder, FNL_NOISE_OPENSIMPLEX2S, 0.010f, 3));
-        state->humidity = std::make_unique<NoiseCache2D_4x4>(make_field(seeder, FNL_NOISE_OPENSIMPLEX2S, 0.014f, 3));
+        state->temperature = std::make_unique<NoiseCache2D_4x4>(make_field(seeder, FNL_NOISE_OPENSIMPLEX2S, 0.002f, 3));
+        state->humidity = std::make_unique<NoiseCache2D_4x4>(make_field(seeder, FNL_NOISE_OPENSIMPLEX2S, 0.0028f, 3));
 
         auto detail = make_field(seeder, FNL_NOISE_PERLIN, state->settings.terrain_frequency, state->settings.terrain_octaves);
         state->detail = std::make_unique<NoiseCache3D_4x8x4>(detail);

@@ -10,7 +10,7 @@ blocks.add("pine_leaves", {
     }
   },
 
-  model_name = "leaves",
+  model_name = "leaves_pine",
   bcoll_name = "cube",
 
   health = 1,
