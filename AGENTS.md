@@ -215,6 +215,7 @@ Every translation unit keeps the same top-level order:
 #### Class bodies
 
 A class body follows the same idea. A structure that gains a method becomes a class; a structure holds fields and no behavior.
+A tag structure marks a template argument: it holds no fields and only declares static members, so it stays a structure.
 
 - one access block per class: `public`, then `protected`, then `private`; do not repeat a specifier;
 - statics come first: the constants and the static methods;
