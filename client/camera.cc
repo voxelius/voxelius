@@ -79,8 +79,6 @@ Eigen::Vector3f client_camera::lookahead(float chunks)
     auto direction = Eigen::Vector2f(velocity.value.x(), velocity.value.z());
     auto speed = direction.norm();
 
-    // Standing still has to load what is around the player, not what
-    // happens to be in front of the camera: the two differ right after a spawn
     if(speed <= MOVING_SPEED) {
         return Eigen::Vector3f::Zero();
     }

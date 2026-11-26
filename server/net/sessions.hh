@@ -49,8 +49,7 @@ struct Session final {
     std::uint16_t stream_budget_chunks { 0 };
     bool stream_rebuild { true };
 
-    // One slice per XZ column, not per Y chunk;
-    // biomes never change, columns follow the view
+    // One slice per XZ column
     vx::hash_set<ChunkPosXZ> stream_sent_biomes;
     vx::hash_set<ChunkPosXZ> stream_sent_columns;
 

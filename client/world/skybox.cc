@@ -35,8 +35,7 @@ constexpr static std::uint32_t MOON_PHASE_COUNT = 8;
 
 // A cheap Rayleigh model: the air mass the sunlight crosses grows as
 // the sun sinks, and blue light is scattered away first, so the light
-// that reaches the eye at sunset is orange and then red. The constants
-// are tuned for looks, not for a physical atmosphere
+// that reaches the eye at sunset is orange and then red
 constexpr static float AIRMASS_FLOOR = 0.15f;
 constexpr static float RAYLEIGH_RED = 0.04f;
 constexpr static float RAYLEIGH_GREEN = 0.18f;

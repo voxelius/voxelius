@@ -73,8 +73,6 @@ static void on_entity_patch(const packet::Entity_Patch& packet)
         has_transform = has_transform || it.id == component_map::from_type<Transform>();
     }
 
-    // The server only patches the local player's components to correct them:
-    // a rubberband or a fresh snapshot has to snap the camera, not drag it
     if(packet.entity == globals::player) {
         interpolation::snap(packet.entity);
 
