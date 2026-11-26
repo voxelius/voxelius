@@ -17,7 +17,6 @@ local oak_planks_prototype = {
   emission = 0,
   dissipation = 15,
 
-  touch = blocks.TOUCH_SOLID,
   tags = { blocks.TAG_WOOD }
 }
 

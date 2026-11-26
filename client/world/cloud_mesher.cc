@@ -4,7 +4,6 @@
 
 static_assert(sizeof(CloudVertex) == 10 * sizeof(float), "CloudVertex must stay packed for the vertex layout");
 
-// One ring of the deck that is actually built: the ring itself and the band it covers
 struct CloudSpan final {
     const CloudRing* ring;
     float inner;
@@ -16,7 +15,6 @@ static std::size_t column_index(const CloudWindow& window, std::size_t x, std::s
     return z * window.cells_x + x;
 }
 
-// A cell outside the window holds no cloud, so a neighbour past the edge simply hides nothing
 static CloudColumn column_at(const CloudWindow& window, const std::vector<CloudColumn>& columns, std::int32_t x, std::int32_t z)
 {
     if(x < 0 || z < 0) {
@@ -70,8 +68,6 @@ static void push_side_face(CloudMesh& mesh, const Eigen::Vector2f& a, const Eige
     push_quad(mesh, bottom_a, bottom_b, top_b, top_a, normal, color);
 }
 
-// The vertical spans of `self` that `other` leaves exposed. A neighbour can hide a
-// lower and an upper part at once, because a column's underside steps down by whole cells
 template<typename F>
 static void for_exposed_span(const CloudColumn& self, const CloudColumn& other, F&& emit)
 {
@@ -171,7 +167,6 @@ static void mesh_column(CloudMesh& mesh, const CloudDeck& deck, const CloudWindo
     auto bottom_c = Eigen::Vector3f(x1, y_bottom, z1);
     auto bottom_d = Eigen::Vector3f(x0, y_bottom, z1);
 
-    // Both caps are meshed; the view culls the one that faces away
     push_quad(mesh, top_a, top_b, top_c, top_d, Eigen::Vector3f(0.0f, 1.0f, 0.0f), top_color);
     push_quad(mesh, bottom_a, bottom_b, bottom_c, bottom_d, Eigen::Vector3f(0.0f, -1.0f, 0.0f), bottom_color);
 

@@ -76,7 +76,6 @@ def radius_sequence(height: int) -> list[int]:
         else:
             base = 1
 
-        # Step the silhouette: odd tiers one radius thinner (min 1).
         if i % 2 == 1 and base > 1:
             base -= 1
 
@@ -96,7 +95,6 @@ def compute_tree_feature(height: int) -> list[dict]:
     for i in range(height):
         parts.append(part(LOG, 0, i + y0, 0, OVERWRITE_WOOD))
 
-    # Bare trunk below crown; canopy shifted one block down.
     crown_start = max(height // 3, 2) - 1
     tiers = radius_sequence(height)
 
@@ -107,7 +105,6 @@ def compute_tree_feature(height: int) -> list[dict]:
         for x, z in leaf_offsets(radius):
             parts.append(part(LEAVES, x, y, z, OVERWRITE_WOOD))
 
-    # Tip one block above the stem (side canopy already shifted down).
     parts.append(part(LEAVES, 0, height + y0, 0, OVERWRITE_WOOD))
 
     return parts

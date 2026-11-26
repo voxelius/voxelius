@@ -2,8 +2,6 @@
 
 #include "core/cmdline.hh"
 
-// Valid options always start with OPTION_PREFIX, can contain
-// a bunch of OPTION_PREFIX'es inside and never end with one
 constexpr static char OPTION_PREFIX = '-';
 
 static vx::hash_map<std::string, std::string> s_options;

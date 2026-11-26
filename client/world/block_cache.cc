@@ -58,8 +58,6 @@ void BlockCache::init(const ChunkPos& cpos)
                 auto& light_storage = chunk->light();
                 auto light = light_storage.data();
 
-                // A neighbour only contributes the slice that lands inside the cache, so
-                // clip the range instead of walking its whole volume and throwing most of it away
                 auto hx_begin = static_cast<std::int32_t>(dx) * chunk_size + PADDING;
                 auto hy_begin = static_cast<std::int32_t>(dy) * chunk_size + PADDING;
                 auto hz_begin = static_cast<std::int32_t>(dz) * chunk_size + PADDING;

@@ -57,12 +57,10 @@ def compute_tree_feature(height: int) -> list[dict]:
         ):
             parts.append(part(LEAVES, x, y, z, OVERWRITE_WOOD))
 
-    # Cap: plus-shaped 3x3 on top of the thin layer.
     y = height + y0
     for x, z in ((-1, 0), (0, -1), (0, 0), (0, 1), (1, 0)):
         parts.append(part(LEAVES, x, y, z, OVERWRITE_WOOD))
 
-    # Thick 5x5 outer ring (max(|x|,|z|) == 2).
     for i in range(leaves_start, leaves_thick_end + 1):
         y = i + y0
         for x, z in (

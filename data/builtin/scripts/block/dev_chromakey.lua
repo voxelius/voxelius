@@ -13,8 +13,6 @@ blocks.add("dev_chromakey", {
 
   health = 1,
 
-  touch = blocks.TOUCH_SOLID,
-
   emission = 0,
   dissipation = 15,
 })

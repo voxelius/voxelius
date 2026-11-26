@@ -10,8 +10,8 @@ namespace physics
 {
 enum block_filter {
     BLOCK_FILTER_NONE = 0,
-    BLOCK_FILTER_SOLID, // A block is solid only with a collision model and a valid touch response
-    BLOCK_FILTER_ALL,   // A block without a collision model is still ignored
+    BLOCK_FILTER_COLLIDABLE,
+    BLOCK_FILTER_SELECTABLE,
 };
 
 enum entity_filter {

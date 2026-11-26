@@ -35,8 +35,7 @@ constexpr static std::uint32_t MOON_PHASE_COUNT = 8;
 
 // A cheap Rayleigh model: the air mass the sunlight crosses grows as
 // the sun sinks, and blue light is scattered away first, so the light
-// that reaches the eye at sunset is orange and then red. The constants
-// are tuned for looks, not for a physical atmosphere
+// that reaches the eye at sunset is orange and then red
 constexpr static float AIRMASS_FLOOR = 0.15f;
 constexpr static float RAYLEIGH_RED = 0.04f;
 constexpr static float RAYLEIGH_GREEN = 0.18f;
@@ -77,8 +76,6 @@ static float s_light { 1.0f };
 static bool s_primed;
 static bool s_snap;
 
-// The shortest way from one phase to another, so the sun
-// never spins backwards when the day counter wraps
 static float wrapped_delta(float from, float to)
 {
     auto delta = to - from;
@@ -94,8 +91,6 @@ static float wrapped_delta(float from, float to)
     return delta;
 }
 
-// Rotating the sun's circle about the east-west axis keeps both
-// ends on the horizon, so zero tilt still rises due east
 static Eigen::Vector3f tilt_about_x(const Eigen::Vector3f& direction, float tilt)
 {
     auto c = std::cos(tilt);
@@ -225,8 +220,6 @@ void skybox::update(void)
     // a half cover already takes three quarters of their strength
     auto open_sky = visibility * visibility;
 
-    // The sunlight crosses more air as the sun sinks, losing blue
-    // first; the normalized result is the color of the setting sun
     auto airmass = 1.0f / (std::max(height, 0.0f) + AIRMASS_FLOOR);
 
     Eigen::Vector3f transmittance;
@@ -240,18 +233,13 @@ void skybox::update(void)
     auto base_horizon = night_horizon + (day_horizon - night_horizon) * light;
     auto base_zenith = night_zenith + (day_zenith - night_zenith) * light;
 
-    // The clear horizon is neutral away from the sun and warms towards
-    // the reddened sunlight on the sun's side; the zenith stays blue
     Eigen::Vector3f warm_horizon = tint * (0.65f + 0.35f * light);
     Eigen::Vector3f clear_horizon = base_horizon;
     Eigen::Vector3f clear_zenith = base_zenith;
 
-    // A covered sky has one color, so the weather zenith is its horizon
     Eigen::Vector3f weather_horizon = blend.sky_tint * light;
     Eigen::Vector3f weather_zenith = weather_horizon;
 
-    // A type with sky_visibility 0 replaces the sky with its own
-    // color; 1 leaves the Rayleigh gradient fully in charge
     Eigen::Vector3f target_horizon = weather_horizon * (1.0f - visibility) + clear_horizon * visibility;
     Eigen::Vector3f target_warm = weather_horizon * (1.0f - visibility) + warm_horizon * visibility;
     Eigen::Vector3f target_zenith = weather_zenith * (1.0f - visibility) + clear_zenith * visibility;
@@ -273,8 +261,6 @@ void skybox::update(void)
 
     s_primed = true;
 
-    // The fog takes the horizon color in the direction the camera
-    // faces, so turning towards the sunset warms the haze as well
     auto camera_flat = Eigen::Vector2f(client_camera::forward.x(), client_camera::forward.z());
     auto sun_flat = Eigen::Vector2f(sun_vector.x(), sun_vector.z());
     auto camera_length = camera_flat.norm();

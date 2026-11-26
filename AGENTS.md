@@ -214,7 +214,7 @@ Every translation unit keeps the same top-level order:
 
 #### Class bodies
 
-A class body follows the same idea:
+A class body follows the same idea. A structure that gains a method becomes a class; a structure holds fields and no behavior.
 
 - one access block per class: `public`, then `protected`, then `private`; do not repeat a specifier;
 - statics come first: the constants and the static methods;
@@ -223,17 +223,20 @@ A class body follows the same idea:
 
 ### Comments
 
-Code documents itself through names. A comment is worth having only when it says something the code cannot: why it is done this way and
-not the obvious way, an invariant (locking, ownership, units, range), or an outside requirement (a file format, a protocol, a hardware
-quirk). Never restate what the code next to it does.
+Code documents itself through names. A comment is the exception. Leave one only for the information that the code cannot carry: a
+measurement, a tuning value, a batch size, a protocol quirk, an outside requirement, or the reason behind a construct that looks wrong
+until the reader knows why it is there. Never restate what the code next to it does.
 
 - Before you write a comment, try to make it unnecessary: rename (`free_slots` instead of `slots // A set bit means free`), move the code
   into a function whose name says what it does, or turn the claim into a `static_assert`.
 - Do not describe the algorithm of a function above it. A precondition or an ownership rule that every caller must respect stays at the
   declaration: in the header for a public function, at the definition for a static one. A guarantee that only some callers rely on goes at
   those call sites, as the reason the caller is correct.
-- A constant or a field gets a comment only when it adds units or meaning that the name lacks, expands an outside name (a file format, a
-  protocol), or states an invariant. Drop a comment that only repeats the name.
+- A field, a constant or a local gets no comment that repeats its name, frame, units, axis or range. If the value needs that text, write
+  it once in the type or the schema. A comment that explains a field is a missing rename: `local_box`, `axis_contacts`, `volume_fraction`.
+- Keep the measurement or the outside rule with the value it chose: `// 64 keeps the upload under the 1 MiB limit`, not `// batch size`.
+  Keep the reason with the strange construct: `// The server applies the client state on purpose; the client cannot rebuild it`.
+- A comment that fails this test is removed in review; do not add one to look helpful.
 - Write comments approximately in ASD-STE100 Simplified Technical English: short sentences, one statement per sentence, active voice,
   present tense, common words with one meaning each.
 - Use `//` in C++ and GLSL, `--` in Lua and `#` in CMake and shell. Start with a capital letter and leave off the trailing period.

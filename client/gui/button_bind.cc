@@ -187,8 +187,6 @@ void gui::ButtonBind::layout_control(void)
 
     auto icon = icon_for(device);
 
-    // The textures are drawn at the height of the stone button, so the
-    // bind row lines up with the other controls instead of the text
     auto icon_height = ImGui::GetFrameHeight();
     auto icon_width = icon_height * static_cast<float>(icon->width) / static_cast<float>(icon->height);
     auto icon_stride = icon_width + item_spacing.x;

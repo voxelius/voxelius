@@ -48,8 +48,6 @@ void threading::init(void)
     unsigned thread_pool_size;
 
     if(num_concurrent_threads && 0 == argument.compare("max")) {
-        // Use the maximum available number of concurrent
-        // hardware threads provided by the implementation
         thread_pool_size = num_concurrent_threads;
     }
     else if(num_concurrent_threads) {

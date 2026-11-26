@@ -32,7 +32,6 @@ blocks.add("grass", {
   health = 2,
   tools = { blocks.TOOL_SHOVEL },
 
-  touch = blocks.TOUCH_SOLID,
   tags = { blocks.TAG_TURF },
 
   emission = 0,

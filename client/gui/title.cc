@@ -56,8 +56,6 @@ void gui::Title::layout(void)
 
     auto shadow_color = ImGui::GetColorU32(ImVec4(0.000f, 0.000f, 0.000f, 0.850f));
 
-    // The offset follows the UI scale: on a 2x display a single pixel is
-    // thinner than one glyph pixel and the shadow reads as a soft edge
     auto shadow_offset = detail::text_shadow_offset();
 
     // In game the menu is a pause screen, so the wordmark and the splash
@@ -96,8 +94,6 @@ void gui::Title::layout_header(ImVec2 window_size, ImDrawList* draw_list, float 
 
     auto aspect = m_texture_size.x / m_texture_size.y;
 
-    // The wordmark is very wide, so the height cap is what keeps it
-    // from eating the whole screen on wide windows
     auto max_height = 0.225f * window_size.y;
     auto width = std::min(window_size.x * m_width_fraction, max_height * aspect);
     auto height = width / aspect;

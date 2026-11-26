@@ -9,8 +9,8 @@
 #include "shared/world/world_visuals.hh"
 
 struct WorldDefinition {
-    std::string name;           // World name; also its directory under save/
-    std::string generator_name; // Generator name from C++, such as "vox17"
+    std::string name; // World name; also its directory under save/
+    std::string generator_name;
 
     BlockPos::value_type min_y { -64 };
     BlockPos::value_type max_y { 255 };

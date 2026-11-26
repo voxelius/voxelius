@@ -84,8 +84,6 @@ void universe::init(void)
         s_seed.set_value(seeder());
     }
 
-    // The universe clock continues from the save; a universe
-    // that has never been saved starts at noon
     globals::current_tick = s_tick.value();
 
     columns::init();

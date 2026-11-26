@@ -65,8 +65,6 @@ void gui::Stepper<T>::layout_control(void)
 
     auto draw_list = ImGui::GetWindowDrawList();
 
-    // One inset trough holds both arrows and the value,
-    // instead of three separate widgets
     draw_list->AddRectFilled(item_min, item_max, ImGui::GetColorU32(palette.frame));
     draw_list->AddRect(item_min, item_max, ImGui::GetColorU32(palette.border));
 

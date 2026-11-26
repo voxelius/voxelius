@@ -142,8 +142,6 @@ void weather_registry::commit(ModContext& ctx)
             }
         }
 
-        // Two types with the same target would make one of them
-        // unreachable: every point would break the tie the same way
         for(auto index = first; index < s_definitions.size(); index += 1) {
             for(std::size_t other = 1; other < index; other += 1) {
                 if(s_definitions[index].target != s_definitions[other].target) {

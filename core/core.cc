@@ -28,31 +28,18 @@ static void setup_generic(int argc, char** argv, std::string_view user_dirname)
     s_gamepath = std::filesystem::absolute(cmdline::value_or("gamepath", "data"));
 
     if(auto value = cmdline::value_or_cstr("user", nullptr)) {
-        // If there is a third-party launcher that supports
-        // multiple profiles, it might throw in a custom user
-        // directory with different user-specific configuration files
         s_userpath = std::filesystem::absolute(value);
     }
     else if(auto windows_appdata = std::getenv("APPDATA")) {
-        // We appear to run on a system/environment that is itself
-        // a Windows or pretends to be Windows; regardless, persistent
-        // application data for the game is stored in %APPDATA% in this case
         s_userpath = std::filesystem::path(windows_appdata) / user_dirname;
     }
     else if(auto xdg_data_home = std::getenv("XDG_DATA_HOME")) {
-        // We appear to run on a system/environment that complies
-        // or tries to comply with freedesktop spec; by default XDG_DATA_HOME
-        // should resolve to ${HOME}/.local/share so it's a good place for userpath
         s_userpath = std::filesystem::path(xdg_data_home) / user_dirname;
     }
     else if(auto unix_home = std::getenv("HOME")) {
-        // If anything else fails, as far as I'm concerned, every UNIX system
-        // defines an environment variable for user's home directory; we can
-        // assume default location from freedesktop spec and put game data there
         s_userpath = std::filesystem::path(unix_home) / ".local/share" / user_dirname;
     }
     else {
-        // Give up and save stuff into cwd
         s_userpath = std::filesystem::current_path();
     }
 

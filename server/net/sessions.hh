@@ -38,13 +38,9 @@ struct Session final {
 
     ENetPeer* peer;
 
-    // The box around the player and the
-    // entities inside it; interest owns both
     ChunkAlignedBox view_box;
     vx::hash_set<entt::entity> known_entities;
 
-    // The chunk stream: the box the
-    // client asked for, clipped by the server
     ChunkAlignedBox stream_view_box;
     ChunkPos stream_player_chunk { ChunkPos::Zero() };
     vx::hash_set<ChunkPos> stream_sent_chunks;
@@ -53,13 +49,10 @@ struct Session final {
     std::uint16_t stream_budget_chunks { 0 };
     bool stream_rebuild { true };
 
-    // One slice per XZ column, not per Y chunk;
-    // biomes never change, columns follow the view
+    // One slice per XZ column
     vx::hash_set<ChunkPosXZ> stream_sent_biomes;
     vx::hash_set<ChunkPosXZ> stream_sent_columns;
 
-    // The 2D box the client keeps its columns for;
-    // transmit tests column updates against it
     ChunkAlignedBoxXZ interest_box { ChunkPosXZ::Ones(), ChunkPosXZ::Zero() };
 
     std::uint64_t cvar_ratelimit_tick;

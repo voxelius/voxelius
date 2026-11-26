@@ -48,7 +48,6 @@ static bool layout_slider(const std::string& id, std::string_view text, float& f
     auto draw_list = ImGui::GetWindowDrawList();
     auto item_max = ImVec2(item_min.x + size.x, item_min.y + size.y);
 
-    // The trough is inset: shadow on the top left, light on the bottom right
     draw_list->AddRectFilled(item_min, item_max, ImGui::GetColorU32(palette.frame));
     draw_list->AddRect(item_min, item_max, ImGui::GetColorU32(palette.border));
 
@@ -60,18 +59,14 @@ static bool layout_slider(const std::string& id, std::string_view text, float& f
     auto handle_min = ImVec2(item_min.x + fraction * travel, item_min.y + bevel);
     auto handle_max = ImVec2(handle_min.x + handle_width, item_max.y - bevel);
 
-    // The part left of the handle reads as the filled one
     if(handle_min.x > item_min.x + bevel) {
         draw_list->AddRectFilled(ImVec2(item_min.x + bevel, item_min.y + bevel), ImVec2(handle_min.x, item_max.y - bevel),
             ImGui::GetColorU32(palette.button_active));
 
-        // A dark seam keeps the handle readable even when it sits far right
         draw_list->AddRectFilled(ImVec2(handle_min.x - 1.0f, item_min.y + bevel), ImVec2(handle_min.x, item_max.y - bevel),
             ImGui::GetColorU32(palette.bevel_dark));
     }
 
-    // The handle is a stone knob rather than a flat bar, so it reads as
-    // something you can grab even at the small widget size
     gui::detail::draw_stone_face(draw_list, handle_min, handle_max, palette.bevel_light);
 
     auto shadow_color = ImGui::GetColorU32(palette.bevel_dark);

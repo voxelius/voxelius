@@ -123,7 +123,6 @@ def draw_rain(rng, drops, brightness):
 
         for dy in range(length):
             for dx in range(width):
-                # The tile repeats four blocks down, so a streak wraps over the bottom edge
                 pixels[x + dx, (y + dy) % HEIGHT] = (level, level, level, 255)
 
     return image

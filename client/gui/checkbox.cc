@@ -33,8 +33,6 @@ void gui::CheckBox::layout_control(void)
 
     auto current = m_value.value();
 
-    // The toggle takes the whole control column: it is a row-level switch,
-    // and a narrower one reads as a stray button
     auto width = ImGui::CalcItemWidth();
     auto height = ImGui::GetFrameHeight();
 

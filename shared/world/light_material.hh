@@ -4,7 +4,6 @@
 #include "shared/world/block.hh"
 
 struct LightMaterial final {
-    // Every face of the cell is covered, so the block fills it like a cube
     static constexpr std::uint8_t ALL_FACES = 0x3F;
 
     block_light_type opacity;
@@ -29,7 +28,6 @@ const LightMaterial& get(block_id_type id);
 
 namespace light_material
 {
-// Light the block absorbs when it is crossed through the given face
 block_light_type face_cost(block_id_type id, block_face face);
 
 // Light absorbed by a step from `from` into `to` through `enter_face`, the
@@ -38,8 +36,6 @@ block_light_type face_cost(block_id_type id, block_face face);
 // blocks only across the face its solid part covers
 block_light_type crossing_cost(block_id_type from, block_id_type to, block_face enter_face);
 
-// True when the block fills its cell and absorbs all light, so the light
-// stored in its cell says nothing about the air around it
 bool is_opaque(block_id_type id);
 } // namespace light_material
 

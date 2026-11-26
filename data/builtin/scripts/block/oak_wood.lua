@@ -23,7 +23,6 @@ logdef.add_block("oak_log", {
   emission = 0,
   dissipation = 15,
 
-  touch = blocks.TOUCH_SOLID,
   tags = { blocks.TAG_WOOD },
 
   drops = {
@@ -58,7 +57,6 @@ blocks.add("oak_wood", {
   emission = 0,
   dissipation = 15,
 
-  touch = blocks.TOUCH_SOLID,
   tags = { blocks.TAG_WOOD },
 
   drops = {

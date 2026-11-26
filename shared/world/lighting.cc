@@ -26,8 +26,6 @@ constexpr static std::size_t LIGHT_GRID_VOLUME = static_cast<std::size_t>(LIGHT_
 // whole-column ones, so the budget stays the same amount of cells per tick
 constexpr static std::size_t LIGHT_TASKS_PER_TICK = 64;
 
-// Runtime block edits are propagated by a classic per-cell BFS so a
-// single block change only touches the cells it can actually affect
 constexpr static std::size_t LOCAL_BUDGET = 32768;
 constexpr static std::size_t LOCAL_MAX_QUEUED = 262144;
 
@@ -188,8 +186,6 @@ static bool realm_top(const World* world, ChunkPos::value_type y)
 
 static bool sky_ready(const World* world, const ChunkPos& pos)
 {
-    // Sunlight enters a chunk through the bottom row of the chunk above, so
-    // a chunk below an unlit one has to wait for it
     if(realm_top(world, pos.y())) {
         return true;
     }
@@ -221,7 +217,6 @@ static std::int64_t chunk_distance(World* world, const ChunkPos& pos)
     return best;
 }
 
-// The face of the destination cell that a step along `offset` crosses
 static block_face enter_face(const std::array<int, 4>& offset)
 {
     if(offset[0] < 0) {
@@ -650,9 +645,6 @@ ChunkLightTask::ChunkLightTask(World* world, ChunkPos pos) : m_world(world), m_c
         }
     }
 
-    // Sunlight enters through the row above the chunk, so an empty chunk is
-    // uniformly lit only when that row is already at full level. At the top
-    // of a realm the sky is open by definition
     m_realm_top = realm_top(world, m_cpos.y());
     m_open_sky = m_realm_top;
 
@@ -710,9 +702,6 @@ void ChunkLightTask::process(void)
                 level = static_cast<block_light_type>(light[index(gx, LIGHT_PADDING + chunk_size, gz)] >> 4U);
             }
 
-            // The column pass enters every cell through its top face and leaves
-            // it through the bottom one, so a half block closes exactly one of
-            // the two and the sun stops on the side its solid part is on
             auto above = blocks[index(gx, LIGHT_PADDING + chunk_size, gz)];
 
             for(int y = chunk_size - 1; y >= 0; --y) {
@@ -728,8 +717,6 @@ void ChunkLightTask::process(void)
         }
     }
 
-    // Block light comes from the emitters inside the chunk and from the
-    // neighbours' border cells that were copied into the padding
     for(int y = 0; y < chunk_size; ++y) {
         for(int z = 0; z < chunk_size; ++z) {
             for(int x = 0; x < chunk_size; ++x) {
@@ -743,8 +730,6 @@ void ChunkLightTask::process(void)
 
     std::array<std::deque<LocalLightNode>, 16> add;
 
-    // An empty chunk under an open sky is lit to the last cell, and block light can
-    // only enter it from the padding. When neither applies the whole fill is redundant
     if(m_empty && m_open_sky) {
         bool any_block_light = false;
 
@@ -911,8 +896,6 @@ void lighting::fixed_update(World* world)
 
     auto& state = state_of(world);
 
-    // Block edits are processed first: they are the visible, interactive
-    // change and must not wait behind chunk snapshot copies
     if(!state.pending_relight.empty()) {
         auto positions = std::move(state.pending_relight);
 
@@ -962,8 +945,6 @@ void lighting::fixed_update(World* world)
         auto pos = entry.second;
 
         if(submitted >= LIGHT_TASKS_PER_TICK || state.in_flight.contains(pos) || !sky_ready(world, pos)) {
-            // Not this tick: the budget is spent, a task is already running,
-            // or the chunk above has not been lit yet
             state.dirty.insert(pos);
             continue;
         }

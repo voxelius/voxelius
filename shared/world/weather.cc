@@ -6,12 +6,12 @@
 #include "shared/utils/weather.hh"
 #include "shared/world/weather_registry.hh"
 
-constexpr static float CLIMATE_A_SCALE = 1536.0f; // Blocks per noise cell of the first climate axis
-constexpr static float CLIMATE_B_SCALE = 1024.0f; // Blocks per noise cell of the second climate axis
-constexpr static float SCORE_FLOOR = 1.0e-4f;     // Keeps a sample that lands on a target finite
-constexpr static float WIND_SPEED_MIN = 0.8f;     // Blocks per second the field drifts, at the slow end
-constexpr static float WIND_SPEED_MAX = 2.4f;     // Blocks per second the field drifts, at the fast end
-constexpr static float FORCE_MIN_SHARE = 0.5f;    // A forced type has to own at least this much of the point
+constexpr static float CLIMATE_A_SCALE = 1536.0f;
+constexpr static float CLIMATE_B_SCALE = 1024.0f;
+constexpr static float SCORE_FLOOR = 1.0e-4f; // Keeps a sample that lands on a target finite
+constexpr static float WIND_SPEED_MIN = 0.8f;
+constexpr static float WIND_SPEED_MAX = 2.4f;
+constexpr static float FORCE_MIN_SHARE = 0.5f;
 
 constexpr static std::uint64_t FORCE_HORIZON_TICKS = 7 * 24 * 60 * 60 * constant::FIXED_TICKRATE;
 
@@ -49,8 +49,6 @@ static bool is_allowed(const WeatherTypeDefinition& def, std::span<const weather
     return std::ranges::contains(allowed, def.id);
 }
 
-// Inverse of the weighted distance from the sample to the type's target:
-// a type with a bigger weight reaches further, so it covers more of the world
 static float score_of(const WeatherTypeDefinition& def, float a, float b)
 {
     auto da = a - def.target.x();
@@ -60,9 +58,6 @@ static float score_of(const WeatherTypeDefinition& def, float a, float b)
     return std::max((da * da + db * db) / weight, SCORE_FLOOR);
 }
 
-// Share falls with the cube of the score, so a type that is even a little
-// farther in climate space loses most of its presence: the blend is a narrow
-// cross-fade around the nearest-target boundary, not a world-wide haze
 static float share_of(const WeatherTypeDefinition& def, float a, float b)
 {
     auto score = score_of(def, a, b);
@@ -203,9 +198,6 @@ WeatherBlend WeatherState::blend(std::span<const weather_type_id> allowed, float
     // only the coverage still has to be clamped to a single layer
     coverage = std::min(coverage, 1.0f);
 
-    // The sky tint is a target color, not a multiplier: mixing towards
-    // gray is what turns a blue sky into overcast gray instead of dark blue.
-    // The sky visibility says how much of the real sky survives that mix
     result.coverage = coverage;
     result.sky_tint = tint;
     result.sky_visibility = std::clamp(visibility, 0.0f, 1.0f);

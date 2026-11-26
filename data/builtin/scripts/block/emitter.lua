@@ -14,8 +14,6 @@ blocks.add("emitter", {
   health = 1,
   tools = { blocks.TOOL_SHOVEL },
 
-  touch = blocks.TOUCH_SOLID,
-
   emission = 15,
   dissipation = 0,
 })

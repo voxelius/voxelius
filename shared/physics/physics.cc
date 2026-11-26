@@ -56,7 +56,15 @@ std::optional<physics::BlockHit> physics::raycast_block(const Ray& ray, block_fi
             continue;
         }
 
-        if(bfilter == BLOCK_FILTER_SOLID && (bcoll->elements.empty() || def->touch == BLOCK_TOUCH_NONE)) {
+        if(bcoll->elements.empty()) {
+            continue;
+        }
+
+        if(bfilter == BLOCK_FILTER_COLLIDABLE && !bcoll->collidable) {
+            continue;
+        }
+
+        if(bfilter == BLOCK_FILTER_SELECTABLE && !bcoll->selectable) {
             continue;
         }
 

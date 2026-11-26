@@ -16,6 +16,7 @@
 #include "shared/net/packet_session.hh"
 #include "shared/net/packet_world.hh"
 #include "shared/net/protocol.hh"
+#include "shared/system/pmove.hh"
 #include "shared/utils/coord.hh"
 #include "shared/utils/entity.hh"
 #include "shared/world/biome_registry.hh"
@@ -242,6 +243,10 @@ static void on_auth_response(const packet::Auth_Response& packet)
     SessionRef ref {};
     ref.ptr = session;
     registry.emplace<SessionRef>(player, std::move(ref));
+
+    // The player falls and collides before the first move packet arrives
+    auto& move_data = registry.emplace<MoveData>(player);
+    move_data.wishdir.setZero();
 
     packet::Entity_Client response_2 {};
     response_2.entity = player;
@@ -533,7 +538,18 @@ Session* sessions::create(ENetPeer* peer, std::string_view username)
             session.player = entt::null;
             session.world = nullptr;
             session.peer = peer;
+            session.view_box = ChunkAlignedBox(ChunkPos::Ones(), ChunkPos::Zero());
             session.known_entities.clear();
+            session.stream_view_box = ChunkAlignedBox(ChunkPos::Ones(), ChunkPos::Zero());
+            session.stream_player_chunk = ChunkPos::Zero();
+            session.stream_sent_chunks.clear();
+            session.stream_wanted_chunks.clear();
+            session.stream_cursor_chunks = 0;
+            session.stream_budget_chunks = 0;
+            session.stream_rebuild = true;
+            session.stream_sent_biomes.clear();
+            session.stream_sent_columns.clear();
+            session.interest_box = ChunkAlignedBoxXZ(ChunkPosXZ::Ones(), ChunkPosXZ::Zero());
             session.cvar_ratelimit_tick = globals::current_tick;
             session.cvar_ratelimit_tokens = 1.0f; // Allow one command right after connecting
 

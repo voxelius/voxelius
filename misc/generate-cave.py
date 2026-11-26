@@ -42,12 +42,10 @@ DEFAULT_OUTPUT = ROOT / "data" / "builtin" / "textures" / "gui"
 TILE_WIDTH = 1536
 TILE_HEIGHT = 544
 
-# One block of the cave, and one stone texture of the game
 BLOCK = 16
 COLUMNS = TILE_WIDTH // BLOCK
 ROWS = TILE_HEIGHT // BLOCK
 
-# Wavelength of the ceiling and floor profiles, in blocks
 CEILING_WAVELENGTH = 14
 FLOOR_WAVELENGTH = 20
 
@@ -73,8 +71,6 @@ class Wall:
     seed: int
 
 
-# Back to front: the far wall closes most of the view, the front one is a thin
-# dark frame that the camera looks through
 WALLS = (
     Wall(
         name="background_back.png",
@@ -338,13 +334,11 @@ def build_wall_mask(wall: Wall, rng: np.random.Generator) -> np.ndarray:
 
     mask = tidy(mask)
 
-    # Loose chunks in the opening, so the wall is not a clean frame
     for _ in range(wall.rubble):
         column = int(rng.integers(0, COLUMNS))
         row = int(rng.integers(0, ROWS))
         stamp(mask, blob((ROWS, COLUMNS), int(rng.integers(1, 5)), int(rng.integers(1, 4)), rng), column, row)
 
-    # Holes that open the wall to the sky
     for _ in range(wall.holes):
         rocks = np.argwhere(mask)
 
@@ -380,8 +374,6 @@ def shade_wall(mask: np.ndarray, wall: Wall, variants: list[np.ndarray], rng: np
 
     gap = stretch(~mask).astype(np.float32)
 
-    # How much of the opening light reaches a texel: the near field lights the
-    # rim, the far field gives the falloff into the mass of the wall
     rim = box_blur(gap, 2)
     glow = box_blur(box_blur(gap, 7), 7)
 
@@ -410,8 +402,6 @@ def shade_wall(mask: np.ndarray, wall: Wall, variants: list[np.ndarray], rng: np
 
     rgb = grain * (shade * weight)[:, :, None] * wall.tint
 
-    # Rock close to an opening picks up the color of the sky behind it, and
-    # the haze fakes the air between the walls
     fog = sky_rows(height)[:, None, :]
     light = np.clip(wall.haze + 0.20 * rim, 0.0, 0.85)
     rgb = rgb * (1.0 - light[:, :, None]) + fog * 0.95 * light[:, :, None]

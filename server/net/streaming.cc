@@ -158,8 +158,6 @@ void streaming::subscribe(Session* session, const packet::World_Request& packet)
     auto view_min = ChunkPos(packet.view.min().cwiseMax(allowed.min()));
     auto view_max = ChunkPos(packet.view.max().cwiseMin(allowed.max()));
 
-    // A chunk the world does not hold can never
-    // arrive, so the box is clipped to its height
     auto& definition = session->world->definition();
     auto min_y = static_cast<ChunkPos::value_type>(definition.min_y >> constant::CHUNK_SIZE_LOG2);
     auto max_y = static_cast<ChunkPos::value_type>(definition.max_y >> constant::CHUNK_SIZE_LOG2);

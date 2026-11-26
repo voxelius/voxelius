@@ -2,8 +2,6 @@
 
 #include "shared/world/world_scope.hh"
 
-// Per thread: a world may tick on its own future later, and the API then
-// reads the world of the thread that runs the callback
 static thread_local World* s_active { nullptr };
 
 World* WorldScope::active(void)

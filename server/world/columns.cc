@@ -38,7 +38,6 @@ static std::size_t slot_of(const ChunkPosXZ& cpos)
     return lz * constant::REGION_SIZE + lx;
 }
 
-// A surface block stops a column; a bush or a tuft does not, and a fluid reports itself through liquid_y
 static bool is_surface(World* world, const BlockPos& pos)
 {
     auto definition = block_registry::find_definition(world->get_block(pos));
@@ -77,7 +76,6 @@ static BlockPos::value_type find_liquid(World* world, const BlockPos& origin, Bl
     return Column::UNSET;
 }
 
-// Only the edited column changes, so only its two heights are revised
 static void recompute(World* world, const BlockPos& bpos, Column& column)
 {
     auto y = bpos.y();
@@ -102,7 +100,6 @@ static void recompute(World* world, const BlockPos& bpos, Column& column)
         column.liquid_y = find_liquid(world, bpos, column.surface_y, y - 1);
     }
 
-    // A surface that fell below the liquid leaves the liquid stale
     if(column.liquid_y != Column::UNSET && column.liquid_y <= column.surface_y) {
         column.liquid_y = find_liquid(world, bpos, column.surface_y, column.surface_y + 1);
     }
@@ -237,7 +234,6 @@ void WorldColumns::touch(const BlockPos& bpos)
     auto lz = static_cast<std::size_t>(utils::mod_signed<BlockPos::value_type>(bpos.z(), constant::CHUNK_SIZE));
     auto index = lx + lz * constant::CHUNK_SIZE;
 
-    // A chunk no client has seen still needs a baseline, or the first edit would be lost
     auto& chunk = ensure(cpos);
     auto& old = chunk.columns[index];
 
@@ -251,7 +247,6 @@ void WorldColumns::touch(const BlockPos& bpos)
     old = column;
     chunk.dirty = true;
 
-    // The disk write and the packet wait for flush(), so a run of edits pays once
     m_dirty.insert(cpos);
     m_updates.insert_or_assign(BlockPosXZ(bpos.x(), bpos.z()), std::move(column));
 }

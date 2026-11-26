@@ -38,8 +38,6 @@ void transmit::init(void)
 
 void transmit::fixed_update_late(void)
 {
-    // Each world owns its clocks, so every world gets its own packet;
-    // interest only hands it to the sessions that are inside that world
     for(const auto& world : universe::worlds()) {
         packet::World_Timings timings {};
         timings.current_tick = globals::current_tick;

@@ -125,8 +125,6 @@ static void send_chunk_now(ENetPeer* peer, const ChunkPos& cpos)
         return;
     }
 
-    // Biomes and columns are per XZ column
-    // and the client keeps one copy of each
     auto cpos_xz = ChunkPosXZ(cpos.x(), cpos.z());
 
     if(session->stream_sent_biomes.insert(cpos_xz).second) {
@@ -175,7 +173,6 @@ static void send_waiting(World* world, const ChunkPos& cpos)
     auto chunk = world->find_chunk(cpos);
 
     if(chunk == nullptr) {
-        // Still loading or generating; retry on the next sweep
         return;
     }
 
@@ -385,22 +382,62 @@ static void on_player_interact_b(const packet::Player_InteractB& packet)
     hit.world = world.get();
     hit.block_pos = packet.bpos;
     hit.id = packet.expected;
+
+    if(auto target_family = block_registry::find_family_of(packet.expected)) {
+        hit.stem = target_family->stem_id;
+    }
+    else {
+        hit.stem = packet.expected;
+    }
+
     hit.face = packet.face;
     hit.normal = packet.normal;
     hit.point = packet.point;
 
     // TODO: hardcoded placed block until an inventory/hotbar system exists; keep it in sync with client/system/player_target.cc
-    auto family = block_registry::find_family(Identifier::from_string("builtin:emitter"));
+    auto family = block_registry::find_family(Identifier::from_string("builtin:stone_slab"));
     block_id_type block;
 
     if(family) {
         block = family->default_variant;
     }
     else {
-        block = block_registry::find(Identifier::from_string("builtin:emitter"));
+        block = block_registry::find(Identifier::from_string("builtin:stone_slab"));
     }
 
     utils::block_place(hit, session->player, block);
+}
+
+static Eigen::Vector3f sanitize_direction(Eigen::Vector3f value)
+{
+    for(Eigen::Index axis = 0; axis < value.size(); axis += 1) {
+        auto component = value[axis];
+
+        if(!std::isfinite(component)) {
+            component = 0.0f;
+        }
+
+        value[axis] = std::clamp(component, -1.0f, 1.0f);
+    }
+
+    return value;
+}
+
+static Eigen::Vector3f sanitize_vector(Eigen::Vector3f value)
+{
+    constexpr static float LIMIT = 1.0e6f;
+
+    for(Eigen::Index axis = 0; axis < value.size(); axis += 1) {
+        auto component = value[axis];
+
+        if(!std::isfinite(component)) {
+            component = 0.0f;
+        }
+
+        value[axis] = std::clamp(component, -LIMIT, LIMIT);
+    }
+
+    return value;
 }
 
 static void on_player_move_data(const packet::Player_MoveData& packet)
@@ -413,13 +450,13 @@ static void on_player_move_data(const packet::Player_MoveData& packet)
 
     auto& registry = session->world->registry();
 
-    registry.emplace_or_replace<MoveData>(session->player, MoveData { packet.wishdir });
+    registry.emplace_or_replace<MoveData>(session->player, MoveData { sanitize_direction(packet.wishdir) });
 
     SimulatedMoveData sim_data;
     sim_data.chunk = packet.simulated_cpos;
-    sim_data.local = packet.simulated_lpos;
-    sim_data.velocity = packet.velocity;
-    sim_data.angles = packet.camera_angles;
+    sim_data.local = sanitize_vector(packet.simulated_lpos);
+    sim_data.velocity = sanitize_vector(packet.velocity);
+    sim_data.angles = sanitize_vector(packet.camera_angles);
 
     registry.emplace_or_replace<SimulatedMoveData>(session->player, std::move(sim_data));
 }
@@ -452,7 +489,6 @@ static void process_send_queue(void)
         }
 
         if(peer_window_full(request.peer)) {
-            // Keep it for the next tick without blocking the peers that can still take data
             deferred.push_back(std::move(request));
             continue;
         }

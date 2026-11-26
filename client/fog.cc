@@ -45,8 +45,6 @@ void fog::update(void)
 {
     distance = static_cast<float>(constant::CHUNK_SIZE * client_camera::view_distance.value());
 
-    // The atmosphere owns the sky color and the weather tint; the fog
-    // only copies them so the terrain dissolves into the same horizon
     auto target_color = skybox::fog_color;
 
     daylight = skybox::daylight;

@@ -35,7 +35,6 @@ void forget_peer(ENetPeer* peer);
 
 namespace receive
 {
-// Queues a chunk for the peer, starting the load or generation when it is not in the world yet
 void enqueue_chunk(ENetPeer* peer, const ChunkPos& cpos);
 } // namespace receive
 

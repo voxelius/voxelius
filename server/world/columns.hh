@@ -23,8 +23,6 @@ private:
     Column m_column;
 };
 
-// The 2D heightmap and biomes of a world, persisted
-// in slice/R<X><Z>.zcol, read or generated on demand
 class WorldColumns final {
 public:
     struct Chunk final {
@@ -41,8 +39,6 @@ public:
     void init(ServerWorld* world);
     void save(void);
 
-    // Batches the disk writes and the column
-    // packets of every edit since the last call
     void flush(void);
 
     const Chunk& get(const ChunkPosXZ& cpos);

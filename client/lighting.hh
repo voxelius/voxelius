@@ -10,7 +10,6 @@ extern const float AMBIENT;
 
 namespace client_lighting
 {
-// Sky color of the current time of day and weather
 Eigen::Vector3f sky_color(void);
 } // namespace client_lighting
 

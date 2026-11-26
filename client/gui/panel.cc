@@ -53,8 +53,6 @@ void gui::Panel::layout(void)
     auto& window_id = imgui_id();
     auto window_flags = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBackground;
 
-    // A child has no padding of its own, so the panel adds one to keep the
-    // rail and the rows away from its edge
     auto child_flags = m_background ? ImGuiChildFlags_AlwaysUseWindowPadding : ImGuiChildFlags_None;
 
     if(m_background) {

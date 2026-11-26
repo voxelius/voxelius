@@ -3,10 +3,6 @@
 
 #include "shared/world/weather.hh"
 
-// The deck is meshed in rings: a cell is this many blocks across and this
-// many tall in a ring, and the ring reaches out to this radius. Each ring
-// uses four times the cell of the one inside it, so the column count grows
-// with the radius instead of its square
 struct CloudRing final {
     float cell;
     float height;
@@ -22,14 +18,13 @@ struct CloudColumn final {
     float shade;
 };
 
-// One cloud body of one weather type in one ring, with everything the mesher needs worked out once
 struct CloudDeck final {
     weather_type_id type;
     CloudBody body;
     const WeatherState* state;
     std::span<const weather_type_id> allowed;
-    Eigen::Vector2f anchor; // Field drift when the deck was anchored
-    Eigen::Vector3f center; // World point the window is meshed around, in the frame the vertices use
+    Eigen::Vector2f anchor;
+    Eigen::Vector3f center;
     float cell;
     float height;
     float scale;
@@ -40,8 +35,6 @@ struct CloudDeck final {
     Eigen::Vector3f side;
 };
 
-// A cloud body that is actually built, with the distance it sits at from the
-// camera; the mesher draws the farthest first
 struct CloudGroup final {
     weather_type_id type;
     // A copy, because the registry may grow between the sort and the build
@@ -49,7 +42,6 @@ struct CloudGroup final {
     float distance;
 };
 
-// Everything a worker needs: a copy of the field state and the frame the window belongs to
 struct CloudInput final {
     WeatherState state;
     std::vector<weather_type_id> allowed;

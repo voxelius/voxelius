@@ -21,9 +21,6 @@ uniform sampler2D u_PrecipColor;
 uniform vec2 u_CloudRange;
 uniform vec2 u_CameraRange;
 
-// Layers whose color and depth both matter: the opaque world,
-// translucent blocks, fluids and the cloud deck. Whichever ones
-// touched a pixel are sorted by depth and blended from the farthest to the nearest
 const int MAX_LAYERS = 4;
 
 // The compose target is 8-bit, so this is where a slow
@@ -58,8 +55,6 @@ float view_distance(float depth, vec2 range)
 
 void main(void)
 {
-    // Distances along the view axis, not raw depth
-    // values: the cloud layer has its own near and far planes
     vec4 colors[MAX_LAYERS];
     float depths[MAX_LAYERS];
 
@@ -85,8 +80,6 @@ void main(void)
         count += 1;
     }
 
-    // The deck is just another layer here, so water
-    // in front of it hides it just as the ground does
     vec4 clouds = texture(u_CloudColor, vs_TexCoord);
 
     if(clouds.a > 0.0) {
@@ -95,7 +88,6 @@ void main(void)
         count += 1;
     }
 
-    // Insertion sort, farthest depth first
     for(int i = 1; i < count; ++i) {
         vec4 color = colors[i];
         float depth = depths[i];

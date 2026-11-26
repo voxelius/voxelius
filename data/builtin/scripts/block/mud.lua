@@ -15,7 +15,6 @@ blocks.add("mud", {
   health = 1,
   tools = { blocks.TOOL_SHOVEL },
 
-  touch = blocks.TOUCH_SOLID,
   tags = { blocks.TAG_SOIL },
 
   emission = 0,

@@ -179,7 +179,6 @@ public:
     float get_temperature(const ChunkPos& cpos, const LocalPos& lpos) const;
     float get_temperature(const BlockPos& pos) const;
 
-    // Same as get_temperature(pos), for a caller that sampled the front coverage already
     float get_temperature(const BlockPos& pos, float coverage) const;
 
     float get_humidity_base(const ChunkPos& cpos, const LocalPos& lpos) const;

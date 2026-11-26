@@ -100,8 +100,6 @@ static gui::ChoicePopup s_error_popup;
 
 gui::Screen play_menu::screen;
 
-// Greedy word wrap over the width the draw list gives us; words longer
-// than the row are left whole instead of being cut in the middle of a word
 static std::vector<std::string> wrap_text(std::string_view text, float max_width, std::size_t max_lines)
 {
     std::vector<std::string> lines;
@@ -173,8 +171,6 @@ static void select_server(ServerListItem* item)
     s_btn_remove.set_enabled(s_selected_server);
 }
 
-// Clicking the row that already holds the selection
-// clears it, so the list does not keep a server picked forever
 static void toggle_server(ServerListItem* item)
 {
     select_server((s_selected_server == item) ? nullptr : item);
@@ -575,8 +571,6 @@ void ServerListItem::layout(void)
     auto text_width = std::max(1.0f, item_size.x - 2.0f * padding.x - spacing.x);
     auto motd_lines = wrap_text(motd_text, text_width, MAX_MOTD_LINES);
 
-    // Rows never drop below three lines,
-    // so a wrapped MOTD does not make the whole list jump
     auto rows = std::max<std::size_t>(MIN_ROW_LINES, 1 + motd_lines.size());
     auto row_height = static_cast<float>(rows) * (line_height + padding.y + spacing.y);
 
@@ -668,8 +662,6 @@ void ServerListItem::layout(void)
         ImGui::PopFont();
     }
 
-    // The MOTD sits behind the row highlight, so it keeps the same shadow
-    // offset as the labels instead of a thinner outline of its own
     auto motd_shadow_color = ImGui::GetColorU32(ImVec4(0.000f, 0.000f, 0.000f, 0.750f));
     auto motd_shadow_offset = gui::detail::text_shadow_offset();
 
@@ -741,8 +733,6 @@ void play_menu::init(void)
     s_btn_refresh.set_size(-1.0f, -1.0f);
     s_btn_refresh.on_click(&refresh_servers);
 
-    // One row: the actions are square icon buttons, the join button takes
-    // what is left and the chevron holds the direct connection
     s_servers_action_row.add_item(s_btn_add, gui::FIXED, ROW_HEIGHT);
     s_servers_action_row.add_item(s_btn_remove, gui::FIXED, ROW_HEIGHT);
     s_servers_action_row.add_item(s_btn_edit, gui::FIXED, ROW_HEIGHT);

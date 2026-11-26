@@ -34,6 +34,7 @@ struct BlockOverridePatch final {
     std::optional<Identifier> fluid_name;
     std::optional<unsigned> fluid_level;
     std::optional<std::uint32_t> fluid_faces;
+    std::optional<bool> fluid_falling;
 
     std::optional<unsigned> health;
 
@@ -41,8 +42,11 @@ struct BlockOverridePatch final {
     std::optional<block_light_type> emission;
     std::optional<block_light_type> dissipation;
 
-    std::optional<block_touch> touch;
-    std::optional<Eigen::Vector3f> touch_coeffs;
+    std::optional<bool> collidable;
+    std::optional<bool> selectable;
+    std::optional<float> friction;
+    std::optional<float> speed;
+    std::optional<Eigen::Vector3f> bounce;
 
     std::optional<block_tag_bit> tags;
     std::optional<bool> replaceable;

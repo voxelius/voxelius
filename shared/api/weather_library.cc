@@ -44,7 +44,7 @@ static WeatherCallback parse_callback(lua_State* L, int table_idx, const char* k
     if(lua_isfunction(L, -1)) {
         WeatherCallback callback {};
         callback.state = ctx->lua_state();
-        callback.callback_ref = luaL_ref(L, LUA_REGISTRYINDEX); // Pops the function
+        callback.callback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
         return callback;
     }
 
@@ -66,9 +66,6 @@ static bool parse_color(lua_State* L, int table_idx, const char* key, Eigen::Vec
     return true;
 }
 
-// Drops whatever the failing helper pushed above `base`
-// while keeping the error text it left on top, so a rejected
-// definition does not leave the Lua stack deeper than it found it
 static bool fail(lua_State* L, int base)
 {
     std::string message = "invalid value";
@@ -261,8 +258,6 @@ static bool parse_definition(lua_State* L, int def_idx, WeatherTypeDefinition& d
 
     def.sky_visibility = std::clamp(def.sky_visibility, 0.0f, 1.0f);
 
-    // The weight stretches the type's cell around its target,
-    // which is the only thing that makes one weather more common than another
     auto weight = utils::opt_number(L, def_idx, "weight", static_cast<lua_Number>(def.weight));
 
     if(!weight.has_value()) {
@@ -275,8 +270,6 @@ static bool parse_definition(lua_State* L, int def_idx, WeatherTypeDefinition& d
 
     def.weight = static_cast<float>(weight.value());
 
-    // The target places the type in the two-axis climate square that
-    // the two noise grids span; the nearest target wins at a point
     auto target = utils::opt_fvec<2>(L, def_idx, "target", Eigen::Vector<lua_Number, 2>(def.target.x(), def.target.y()));
 
     if(!target.has_value()) {

@@ -451,8 +451,6 @@ void sky_renderer::render(void)
         build_stars();
     }
 
-    // The sky spheres turn with the camera, so the view
-    // matrix loses its translation and keeps only its rotation
     auto view_rotation = client_camera::instance.view();
     view_rotation(0, 3) = 0.0f;
     view_rotation(1, 3) = 0.0f;

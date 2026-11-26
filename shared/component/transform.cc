@@ -149,17 +149,22 @@ void Transform::register_component(void)
     component_map::add<Transform>("transform");
 }
 
+bool Transform::normalize(void)
+{
+    auto changed = false;
+    changed = update_component(0, *this) || changed;
+    changed = update_component(1, *this) || changed;
+    changed = update_component(2, *this) || changed;
+
+    return changed;
+}
+
 void Transform::fixed_update(entt::registry& registry)
 {
     auto view = registry.view<Transform>();
 
     for(auto [entity, transform] : view.each()) {
-        auto changed = false;
-        changed = update_component(0, transform) || changed;
-        changed = update_component(1, transform) || changed;
-        changed = update_component(2, transform) || changed;
-
-        if(changed) {
+        if(transform.normalize()) {
             registry.patch<Transform>(entity);
         }
     }

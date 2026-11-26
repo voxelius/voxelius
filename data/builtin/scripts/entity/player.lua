@@ -1,6 +1,7 @@
 entities.add("player", {
-  head = {0.4, 0.4, 1.65},
-  move_mode = { value = "FLY" },
+  head = { 0, 1.62, 0 },
+  collision = { width = 0.6, height = 1.8, step_height = 0.5 },
+  move_mode = { value = "WALK" },
   player = {},
   transform = {},
   velocity = {},

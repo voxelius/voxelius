@@ -21,8 +21,6 @@ void main(void)
 
     float up = clamp(vert_Direction.y, 0.0, 1.0);
 
-    // The warm horizon only builds up on the sun's side; the
-    // opposite horizon keeps the neutral color
     vec2 view_flat = vert_Direction.xz;
     float flat_length2 = dot(view_flat, view_flat);
     float side = 0.0;
@@ -34,9 +32,6 @@ void main(void)
     vec3 horizon = mix(u_HorizonColor, u_SunHorizonColor, side * side * u_Scatter);
     vec3 color = mix(horizon, u_ZenithColor, sqrt(up));
 
-    // Rayleigh scattering around the sun, strongest along the horizon
-    // where the light crosses the most air and keeps the red end of its
-    // spectrum; the broad term is the warm glow that survives the mix
     float align = max(dot(vert_Direction, u_SunDirection), 0.0);
     float align2 = align * align;
     float align4 = align2 * align2;

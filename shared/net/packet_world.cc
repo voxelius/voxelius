@@ -126,7 +126,6 @@ void packet::World_Light::decode(World_Light& packet, ReadBuffer& buffer)
     auto count = buffer.read<std::uint16_t>();
 
     for(std::uint16_t i = 0; i < count; ++i) {
-        // Chunk position plus the full flag
         if(!buffer.has_records(1, ENTRY_HEADER_SIZE)) {
             return;
         }

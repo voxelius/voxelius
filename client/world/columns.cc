@@ -18,7 +18,6 @@ void columns::clear(void)
     s_chunks.clear();
 }
 
-// The cache follows the XZ view, not the chunk that was unloaded
 void columns::prune(const ChunkAlignedBoxXZ& box)
 {
     auto it = s_chunks.begin();

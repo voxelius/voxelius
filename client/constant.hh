@@ -5,11 +5,9 @@
 
 namespace constant
 {
-// The unit the interface is authored in; the GUI scale is how many of these fit on the screen at once
 constexpr static int BASE_WIDTH = 320;
 constexpr static int BASE_HEIGHT = 240;
 
-// The window is never smaller than this, whatever the GUI scale is
 constexpr static int MIN_WIDTH = 800;
 constexpr static int MIN_HEIGHT = 600;
 } // namespace constant

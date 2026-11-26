@@ -115,8 +115,6 @@ static void cache_fullscreen_modes(void)
     for(int i = 0; i < mode_count; ++i) {
         const auto& mode = *modes[i];
 
-        // Only allow video modes the window is allowed to shrink to,
-        // otherwise the UI has nowhere sane to scale down to
         if(mode.w >= constant::MIN_WIDTH && mode.h >= constant::MIN_HEIGHT) {
             s_fullscreen_modes.push_back(mode);
         }

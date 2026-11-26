@@ -50,10 +50,6 @@ import zlib
 from pathlib import Path
 
 
-# ---------------------------------------------------------------------------
-# PNG / debug
-# ---------------------------------------------------------------------------
-
 
 def write_png_rgba(path: Path, width: int, height: int, pixels: bytes) -> None:
     def chunk(tag: bytes, data: bytes) -> bytes:
@@ -120,10 +116,6 @@ def write_debug_gif(path: Path, frames_rgba: list[bytes], src_size: int, fps: in
 
     images[0].save(path, save_all=True, append_images=images[1:], duration=duration_ms, loop=0, optimize=False)
 
-
-# ---------------------------------------------------------------------------
-# Classic CA (TextureWaterFX / TextureWaterFlowFX)
-# ---------------------------------------------------------------------------
 
 
 def soup_to_rgba(soup: float, alpha_min: int, alpha_span: int, grayscale: bool = False) -> tuple[int, int, int, int]:
@@ -267,10 +259,6 @@ def simulate(
         out.append(render_soup(soup, size, alpha_min, alpha_span, scroll=scroll, grayscale=grayscale))
     return out
 
-
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
 
 
 def generate(

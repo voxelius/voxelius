@@ -21,7 +21,6 @@
 #include "client/gui/slider.hh"
 #include "client/settings.hh"
 
-// Below this horizontal speed the loader ignores the direction of travel
 constexpr static float MOVING_SPEED = 1.0f;
 
 cvar::Number<float> client_camera::vertical_fov { 70.0f, 45.0f, 110.0f };
@@ -80,8 +79,6 @@ Eigen::Vector3f client_camera::lookahead(float chunks)
     auto direction = Eigen::Vector2f(velocity.value.x(), velocity.value.z());
     auto speed = direction.norm();
 
-    // Standing still has to load what is around the player, not what
-    // happens to be in front of the camera: the two differ right after a spawn
     if(speed <= MOVING_SPEED) {
         return Eigen::Vector3f::Zero();
     }

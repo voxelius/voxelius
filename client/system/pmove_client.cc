@@ -177,7 +177,6 @@ void player_move::update(void)
             const auto& head = registry.get<Head>(globals::player);
             auto yaw = Eigen::AngleAxisf(head.angles.y(), Eigen::Vector3f::UnitY());
             wishdir = yaw * wishdir;
-            wishdir.normalize();
         }
     }
 

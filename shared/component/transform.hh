@@ -8,6 +8,8 @@ struct Transform {
     static void register_component(void);
     static void fixed_update(entt::registry& registry);
 
+    bool normalize(void);
+
     ChunkPos chunk;
     Eigen::Vector3f local;
     Eigen::Vector3f angles;

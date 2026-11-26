@@ -195,6 +195,7 @@ static void update_checksum(void)
         hash_value(hash, static_cast<std::uint32_t>(def.fluid));
         hash_value(hash, static_cast<std::uint32_t>(def.fluid_level));
         hash_value(hash, def.fluid_faces);
+        hash_value(hash, static_cast<std::uint8_t>(def.fluid_falling));
         hash_value(hash, static_cast<std::uint8_t>(def.fluid_name.has_value()));
 
         if(def.fluid_name) {
@@ -206,8 +207,11 @@ static void update_checksum(void)
         hash_text(hash, def.sound_set.full_string());
         hash_value(hash, static_cast<std::uint8_t>(def.emission));
         hash_value(hash, static_cast<std::uint8_t>(def.dissipation));
-        hash_value(hash, static_cast<std::uint32_t>(def.touch));
-        hash_value(hash, def.touch_coeffs);
+        hash_value(hash, def.collidable);
+        hash_value(hash, def.selectable);
+        hash_value(hash, def.surface.friction);
+        hash_value(hash, def.surface.speed);
+        hash_value(hash, def.surface.bounce);
         hash_value(hash, static_cast<std::uint32_t>(def.tags));
         hash_value(hash, static_cast<std::uint8_t>(def.replaceable));
 
@@ -291,6 +295,10 @@ BlockDefinition BlockOverridePatch::apply(BlockDefinition base, const BlockOverr
         base.fluid_faces = patch.fluid_faces.value();
     }
 
+    if(patch.fluid_falling.has_value()) {
+        base.fluid_falling = patch.fluid_falling.value();
+    }
+
     if(patch.health) {
         base.health = patch.health.value();
     }
@@ -307,12 +315,24 @@ BlockDefinition BlockOverridePatch::apply(BlockDefinition base, const BlockOverr
         base.dissipation = patch.dissipation.value();
     }
 
-    if(patch.touch) {
-        base.touch = patch.touch.value();
+    if(patch.collidable) {
+        base.collidable = patch.collidable.value();
     }
 
-    if(patch.touch_coeffs) {
-        base.touch_coeffs = patch.touch_coeffs.value();
+    if(patch.selectable) {
+        base.selectable = patch.selectable.value();
+    }
+
+    if(patch.friction) {
+        base.surface.friction = patch.friction.value();
+    }
+
+    if(patch.speed) {
+        base.surface.speed = patch.speed.value();
+    }
+
+    if(patch.bounce) {
+        base.surface.bounce = patch.bounce.value();
     }
 
     if(patch.tags) {

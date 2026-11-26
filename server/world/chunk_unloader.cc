@@ -69,8 +69,6 @@ void chunk_unloader::fixed_update_late(void)
                 auto& max = box.max();
                 auto& pos = component.position;
 
-                // Keep whole columns alive while their XZ position is in view;
-                // light needs every chunk of the realm, not only the visible ones
                 if(pos.x() < min.x() || pos.x() > max.x()) {
                     continue;
                 }

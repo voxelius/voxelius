@@ -40,15 +40,15 @@ static void place_block(void)
     const auto& hit = std::get<physics::BlockHit>(player_target::hit);
 
     // TODO: hardcoded placed block until an inventory/hotbar system exists
-    auto emitter_id = Identifier::from_string("builtin:emitter");
-    auto family = block_registry::find_family(emitter_id);
+    auto block_id = Identifier::from_string("builtin:stone_slab");
+    auto family = block_registry::find_family(block_id);
     block_id_type block;
 
     if(family) {
         block = family->default_variant;
     }
     else {
-        block = block_registry::find(emitter_id);
+        block = block_registry::find(block_id);
     }
 
     utils::block_place(hit, globals::player, block);
@@ -142,7 +142,7 @@ void player_target::update(void)
     ray.direction = client_camera::forward;
     ray.max_distance = gamerules::reach_distance.value();
 
-    hit = physics::raycast(ray, physics::BLOCK_FILTER_ALL, physics::ENTITY_FILTER_ALL);
+    hit = physics::raycast(ray, physics::BLOCK_FILTER_SELECTABLE, physics::ENTITY_FILTER_ALL);
 }
 
 void player_target::render(void)
