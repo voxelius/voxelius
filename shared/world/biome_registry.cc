@@ -65,6 +65,8 @@ static void update_checksum(void)
 
         hash_value(hash, def.temperature);
         hash_value(hash, def.humidity);
+        hash_value(hash, def.depth);
+        hash_value(hash, def.scale);
 
         hash_palette(hash, def.palette_base);
         hash_palette(hash, def.palette_land_filler);
@@ -72,6 +74,7 @@ static void update_checksum(void)
         hash_palette(hash, def.palette_fluid);
         hash_palette(hash, def.palette_shore_surface);
         hash_palette(hash, def.palette_shore_filler);
+        hash_palette(hash, def.palette_snow_surface);
 
         hash_value(hash, static_cast<std::uint64_t>(def.scatter.size()));
 
@@ -175,6 +178,7 @@ void biome_registry::resolve_palettes(void)
             &def.palette_fluid,
             &def.palette_shore_surface,
             &def.palette_shore_filler,
+            &def.palette_snow_surface,
         };
 
         for(auto& field : fields) {

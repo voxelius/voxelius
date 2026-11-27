@@ -2,6 +2,9 @@ biomes.add("vox2_shrubland", {
   temperature = 22,
   humidity = 30,
 
+  depth = 0.1,
+  scale = 0.2,
+
   palette = {
     base = { name = "stone" },
     land_filler = { name = "dirt" },

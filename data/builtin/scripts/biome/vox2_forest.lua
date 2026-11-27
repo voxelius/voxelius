@@ -2,6 +2,9 @@ biomes.add("vox2_forest", {
   temperature = 13,
   humidity = 65,
 
+  depth = 0.1,
+  scale = 0.2,
+
   palette = {
     base = { name = "stone" },
     land_filler = { name = "dirt" },

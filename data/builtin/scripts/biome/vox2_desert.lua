@@ -2,6 +2,9 @@ biomes.add("vox2_desert", {
   temperature = 30,
   humidity = 10,
 
+  depth = 0.125,
+  scale = 0.05,
+
   palette = {
     base = { name = "stone" },
     land_filler = { name = "sandstone" },

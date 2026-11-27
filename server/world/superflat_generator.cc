@@ -1,6 +1,6 @@
 #include "server/pch.hh"
 
-#include "server/world/generator_superflat.hh"
+#include "server/world/superflat_generator.hh"
 
 #include "core/utils/yaml.hh"
 

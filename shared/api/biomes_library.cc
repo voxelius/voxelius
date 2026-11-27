@@ -182,6 +182,7 @@ static bool parse_palette(lua_State* L, int palette_idx, BiomeDefinition& def, M
         std::make_pair("fluid", &def.palette_fluid),
         std::make_pair("shore_surface", &def.palette_shore_surface),
         std::make_pair("shore_filler", &def.palette_shore_filler),
+        std::make_pair("snow_surface", &def.palette_snow_surface),
     };
 
     for(const auto& [field_name, field_ptr] : palette_fields) {
@@ -223,6 +224,22 @@ static bool parse_definition(lua_State* L, int def_idx, BiomeDefinition& def, Mo
     }
 
     def.humidity = static_cast<float>(humidity.value()) / 100.0f;
+
+    auto depth = utils::opt_number(L, def_idx, "depth", def.depth);
+    auto scale = utils::opt_number(L, def_idx, "scale", def.scale);
+    auto finite = depth.has_value() && scale.has_value();
+
+    if(finite) {
+        finite = std::isfinite(depth.value()) && std::isfinite(scale.value());
+    }
+
+    if(!finite) {
+        lua_pushstring(L, "depth and scale must be finite numbers");
+        return false;
+    }
+
+    def.depth = static_cast<float>(std::clamp(depth.value(), -4.0, 4.0));
+    def.scale = static_cast<float>(std::clamp(scale.value(), 0.0, 4.0));
 
     lua_getfield(L, def_idx, "palette");
 

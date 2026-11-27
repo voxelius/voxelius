@@ -2,6 +2,9 @@ biomes.add("vox2_plains", {
   temperature = 15,
   humidity = 45,
 
+  depth = 0.125,
+  scale = 0.05,
+
   palette = {
     base = { name = "stone" },
     land_filler = { name = "dirt" },

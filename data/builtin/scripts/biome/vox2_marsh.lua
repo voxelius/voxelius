@@ -2,6 +2,9 @@ biomes.add("vox2_marsh", {
   temperature = 22,
   humidity = 90,
 
+  depth = -0.2,
+  scale = 0.1,
+
   palette = {
     base = { name = "stone" },
     land_filler = { name = "dirt" },

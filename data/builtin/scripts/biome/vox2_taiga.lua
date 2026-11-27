@@ -2,6 +2,9 @@ biomes.add("vox2_taiga", {
   temperature = 8,
   humidity = 55,
 
+  depth = 0.2,
+  scale = 0.2,
+
   palette = {
     base = { name = "stone" },
     land_filler = { name = "dirt" },

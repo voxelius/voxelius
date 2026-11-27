@@ -2,6 +2,9 @@ biomes.add("vox2_tundra", {
   temperature = 6,
   humidity = 50,
 
+  depth = 0.125,
+  scale = 0.05,
+
   palette = {
     base = { name = "stone" },
     land_filler = { name = "dirt" },
@@ -9,6 +12,7 @@ biomes.add("vox2_tundra", {
     fluid = { name = "water", states = { level = "8", source = "true" } },
     shore_surface = { name = "sand" },
     shore_filler = { name = "sand" },
+    snow_surface = { name = "snow" },
   },
 
   scatter = {

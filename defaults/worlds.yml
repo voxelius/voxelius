@@ -12,26 +12,40 @@
 # Biome and weather names are full identifiers and need their namespace:
 # builtin:vox2_plains, mymod:custom_biome. A bare vox2_plains is rejected.
 #
-# The vox2 generator is a surface generator inspired by Beta 1.7.3. It takes
-# temperature and humidity as its two biome axes; a nearest selector wants
-# one target per axis on the 0..100 scale.
+# The vox2 generator is a data-driven surface generator in the style of Minecraft
+# 1.6-1.17: it reads these fields, the biome selector and the biome depth, scale and palettes
 
 overworld:
   default: true
   generator: vox2
-  min_y: 0
+  min_y: -128
   max_y: 127
-  spawn: [0, 72, 0]
+  spawn: [0, 64, 0]
 
   generator_settings:
-    base_min: 44
-    base_max: 92
-    variation_min: 16
-    variation_max: 48
-    terrain_frequency: 0.03
-    terrain_octaves: 4
-    sea_level: 64
+    sea_level: 0
     surface_depth: 4
+    snow_line: 48
+    snow_temperature: 0.2
+    density_factor: 1.0
+    density_offset: -0.46875
+    noise_amplitude: 1.0
+    ocean_level: -0.18
+    deep_ocean_level: -0.45
+    river_width: 0.03
+    ocean_depth: -1.0
+    deep_ocean_depth: -1.8
+    ocean_scale: 0.1
+    river_depth: -0.5
+    river_scale: 0.0
+    beach_depth: 0.0
+    beach_scale: 0.025
+    ridge_mountain: 0.55
+    ridge_hills: 0.35
+    mountain_depth: 1.0
+    mountain_scale: 0.5
+    hills_depth: 0.45
+    hills_scale: 0.3
 
   weather:
     - builtin:clear

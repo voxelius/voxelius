@@ -32,8 +32,8 @@
 #include "server/universe.hh"
 #include "server/world/chunk_loader.hh"
 #include "server/world/chunk_unloader.hh"
-#include "server/world/generator_superflat.hh"
-#include "server/world/generator_vox2.hh"
+#include "server/world/superflat_generator.hh"
+#include "server/world/vox2_generator.hh"
 #include "server/world/world.hh"
 #include "server/world/worldgen.hh"
 

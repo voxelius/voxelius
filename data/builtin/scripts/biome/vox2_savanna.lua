@@ -2,6 +2,9 @@ biomes.add("vox2_savanna", {
   temperature = 26,
   humidity = 25,
 
+  depth = 0.125,
+  scale = 0.05,
+
   palette = {
     base = { name = "stone" },
     land_filler = { name = "dirt" },
