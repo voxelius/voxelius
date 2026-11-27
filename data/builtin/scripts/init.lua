@@ -14,6 +14,7 @@ tints.add("rain", { default_color = { 1.00, 1.00, 1.00 } })
 
 dofile("fluid/water.lua")
 
+dofile("block/bedrock.lua")
 dofile("block/birch.lua")
 dofile("block/bush.lua")
 dofile("block/clay.lua")

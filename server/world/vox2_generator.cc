@@ -9,6 +9,7 @@
 #include "shared/utils/coord.hh"
 #include "shared/world/biome_registry.hh"
 #include "shared/world/biome_selector.hh"
+#include "shared/world/block_registry.hh"
 #include "shared/world/heightmap.hh"
 
 #include "server/utils/climate.hh"
@@ -24,6 +25,7 @@ constexpr static int GRID_SIZE = static_cast<int>(constant::CHUNK_SIZE) / CELL_S
 constexpr static int MAX_OCTAVES = 16;
 constexpr static int INTERPOLATION_OCTAVES = 8;
 constexpr static int RELIEF_RADIUS = 3;
+constexpr static int BEDROCK_DEPTH = 4;
 
 constexpr static BlockPos::value_type BEACH_RADIUS = 4;
 constexpr static BlockPos::value_type MAX_WORLD_HEIGHT = 4096; // Keeps a column of 25 x 513 floats under 64 KiB
@@ -107,6 +109,7 @@ struct Vox2SurfaceMaterial final {
 struct Vox2State final {
     Vox2Settings settings;
     const BiomeSelector* selector { nullptr };
+    block_id_type bedrock { BLOCK_ID_NULL };
     std::once_flag seed_once;
 
     std::unique_ptr<NoiseCache2D_4x4> continent;
@@ -315,10 +318,24 @@ static bool is_known_axis(std::string_view name)
     return false;
 }
 
+static int bedrock_depth(std::uint64_t seed, BlockPos::value_type x, BlockPos::value_type z)
+{
+    auto value = static_cast<std::uint64_t>(x) * UINT64_C(0x9E3779B97F4A7C15);
+    value ^= static_cast<std::uint64_t>(z) * UINT64_C(0xC2B2AE3D27D4EB4F);
+    value ^= seed;
+    value ^= value >> 33;
+    value *= UINT64_C(0xFF51AFD7ED558CCD);
+    value ^= value >> 33;
+
+    return 1 + static_cast<int>(value % static_cast<std::uint64_t>(BEDROCK_DEPTH));
+}
+
 static void seed_state(Vox2State* state, std::uint64_t seed)
 {
     std::call_once(state->seed_once, [state, seed] {
         std::mt19937_64 seeder(seed ^ SALT_BIOMES);
+
+        state->bedrock = block_registry::find(Identifier::from_parts(constant::BUILTIN_NAME_SPACE, "bedrock"));
 
         state->continent = std::make_unique<NoiseCache2D_4x4>(make_state(seeder, FNL_NOISE_OPENSIMPLEX2S, FNL_FRACTAL_FBM, 0.0034f, 4));
         state->erosion = std::make_unique<NoiseCache2D_4x4>(make_state(seeder, FNL_NOISE_OPENSIMPLEX2S, FNL_FRACTAL_FBM, 0.0027f, 3));
@@ -795,6 +812,7 @@ bool Generator<Vox2>::generate_blocks(ServerWorld* world, const ChunkPos& pos, B
 
     std::array<Vox2SurfaceMaterial, constant::CHUNK_AREA> materials {};
     std::array<BlockPos::value_type, constant::CHUNK_AREA> surfaces {};
+    std::array<int, constant::CHUNK_AREA> bedrock_depths {};
 
     for(std::size_t i = 0; i < constant::CHUNK_AREA; ++i) {
         auto lpos = utils::to_local_xz(i);
@@ -803,6 +821,7 @@ bool Generator<Vox2>::generate_blocks(ServerWorld* world, const ChunkPos& pos, B
         auto sample = sample_block(state, bpos.x(), bpos.y());
 
         surfaces[i] = surface;
+        bedrock_depths[i] = bedrock_depth(world->seed, bpos.x(), bpos.y());
         materials[i] = resolve_surface(biomes[i], sample, surface, settings);
     }
 
@@ -813,12 +832,17 @@ bool Generator<Vox2>::generate_blocks(ServerWorld* world, const ChunkPos& pos, B
         auto surface = surfaces[column_index];
         auto& material = materials[column_index];
 
+        if(state->bedrock && y - settings.min_y < bedrock_depths[column_index]) {
+            blocks.set(i, state->bedrock);
+            continue;
+        }
+
         if(surface == Column::UNSET || y > surface) {
             if(y > settings.sea_level) {
                 continue;
             }
 
-            if(material.fluid != BLOCK_ID_NULL) {
+            if(material.fluid) {
                 blocks.set(i, material.fluid);
             }
 

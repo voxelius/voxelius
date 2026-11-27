@@ -54,7 +54,7 @@ Eigen::Vector3f fluid_flow::sample(const BlockDefinition* def, const BlockPos& p
             continue;
         }
 
-        if(neighbour && neighbour->fluid != FLUID_ID_NULL) {
+        if(neighbour && neighbour->fluid) {
             continue;
         }
 
