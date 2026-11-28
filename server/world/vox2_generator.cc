@@ -27,6 +27,11 @@ constexpr static int INTERPOLATION_OCTAVES = 8;
 constexpr static int RELIEF_RADIUS = 3;
 constexpr static int BEDROCK_DEPTH = 4;
 
+// FastNoiseLite perlin with unit gradients stays inside +-sqrt(3)/2, and the
+// octave weights 2^0..2^15 sum to 65535, so the density noise never leaves this
+constexpr static float PERLIN_OUTPUT_BOUND = 0.9f;
+constexpr static float OCTAVE_WEIGHT_SUM = 65535.0f;
+
 constexpr static BlockPos::value_type BEACH_RADIUS = 4;
 constexpr static BlockPos::value_type MAX_WORLD_HEIGHT = 4096; // Keeps a column of 25 x 513 floats under 64 KiB
 
@@ -58,6 +63,7 @@ constexpr static std::array<const char*, AXIS_COUNT> AXIS_NAMES {
 };
 
 static_assert(constant::CHUNK_SIZE % CELL_SIZE == 0);
+static_assert(OCTAVE_WEIGHT_SUM == static_cast<float>((1 << MAX_OCTAVES) - 1));
 
 struct Vox2BiomeSample final {
     float temperature { 0.5f };
@@ -104,6 +110,11 @@ struct Vox2SurfaceMaterial final {
     block_id_type filler { BLOCK_ID_NULL };
     block_id_type base { BLOCK_ID_NULL };
     block_id_type fluid { BLOCK_ID_NULL };
+};
+
+struct Vox2CellTerm final {
+    float depth_term { 0.0f };
+    float scale_term { 0.0f };
 };
 
 struct Vox2State final {
@@ -463,11 +474,23 @@ static float column_density(std::span<const float> values, const Vox2Settings& s
     return low * (1.0f - fraction_z) + high * fraction_z;
 }
 
+static float density_zero_y(const Vox2Settings& settings, float depth_term)
+{
+    auto offset = (settings.density_offset + depth_term) / settings.density_factor;
+
+    return (1.0f + offset) * (REFERENCE_HEIGHT * 0.5f) + static_cast<float>(settings.sea_level) - REFERENCE_SEA_LEVEL;
+}
+
 static ColumnSlice build_column(Vox2State* state, int chunk_x, int chunk_z)
 {
     auto& settings = state->settings;
     auto levels = static_cast<int>((settings.max_y - settings.min_y + 1) / VERTICAL_RESOLUTION);
     std::vector<float> values(static_cast<std::size_t>(GRID_SIZE * GRID_SIZE * (levels + 1)));
+    std::array<Vox2CellTerm, static_cast<std::size_t>(GRID_SIZE * GRID_SIZE)> terms {};
+    auto noise_bound = OCTAVE_WEIGHT_SUM * PERLIN_OUTPUT_BOUND / 512.0f * settings.noise_amplitude;
+    auto zero_low = std::numeric_limits<float>::max();
+    auto zero_high = std::numeric_limits<float>::lowest();
+    auto rise = 0.0f;
 
     // The coarse grid, the relief weights and the density terms reproduce
     // the vanilla surface generator; the numbers are not free to change
@@ -558,17 +581,50 @@ static ColumnSlice build_column(Vox2State* state, int chunk_x, int chunk_z)
             auto average_scale = scale_sum / weight_sum;
             auto depth_term = (average_depth * 0.5f - DEPTH_TERM_SHIFT) * DEPTH_TERM_SCALE;
             auto scale_term = SCALE_TERM_FACTOR / (average_scale * SCALE_TERM_SHIFT + SCALE_TERM_BIAS);
+            auto zero_y = density_zero_y(settings, depth_term);
+            auto cell_rise = noise_bound * (REFERENCE_HEIGHT * 0.5f) / (scale_term * settings.density_factor);
+            auto& term = terms[cell_z * GRID_SIZE + cell_x];
+
+            term.depth_term = depth_term;
+            term.scale_term = scale_term;
+
+            zero_low = std::min(zero_low, zero_y);
+            zero_high = std::max(zero_high, zero_y);
+            rise = std::max(rise, cell_rise);
+        }
+    }
+
+    // Above the zero crossing the noise competes with one scale term and below it
+    // with four, so the solid side needs a quarter of the margin. Every column
+    // mixes four neighbouring cells, so the band covers the whole chunk
+    auto band_low = zero_low - rise * 0.25f;
+    auto band_high = zero_high + rise;
+    auto keep_low = static_cast<int>(std::floor((band_low - static_cast<float>(settings.min_y)) / VERTICAL_RESOLUTION)) - 1;
+    auto keep_high = static_cast<int>(std::ceil((band_high - static_cast<float>(settings.min_y)) / VERTICAL_RESOLUTION)) + 1;
+
+    keep_low = std::clamp(keep_low, 0, levels);
+    keep_high = std::clamp(keep_high, 0, levels);
+
+    for(auto cell_z = 0; cell_z < GRID_SIZE; cell_z += 1) {
+        for(auto cell_x = 0; cell_x < GRID_SIZE; cell_x += 1) {
+            auto& term = terms[cell_z * GRID_SIZE + cell_x];
             auto noise_x = static_cast<float>(chunk_x * CELL_SIZE + cell_x);
             auto noise_z = static_cast<float>(chunk_z * CELL_SIZE + cell_z);
 
             for(auto y_index = 0; y_index <= levels; y_index += 1) {
-                auto noise_y = static_cast<float>(y_index);
-                auto noise = sample_noise(state, noise_x, noise_y, noise_z);
+                auto noise = 0.0f;
+
+                // Outside the band the bias fixes the sign on its own: the noise
+                // cannot flip it, so the surface cannot cross zero there
+                if(y_index >= keep_low && y_index <= keep_high) {
+                    noise = sample_noise(state, noise_x, static_cast<float>(y_index), noise_z);
+                }
+
                 auto y = static_cast<float>(settings.min_y + y_index * VERTICAL_RESOLUTION);
                 auto virtual_y = y - static_cast<float>(settings.sea_level) + REFERENCE_SEA_LEVEL;
                 auto base = 1.0f - 2.0f * virtual_y / REFERENCE_HEIGHT;
-                auto density_bias = base * settings.density_factor + settings.density_offset + depth_term;
-                auto density = density_bias * scale_term;
+                auto density_bias = base * settings.density_factor + settings.density_offset + term.depth_term;
+                auto density = density_bias * term.scale_term;
 
                 if(density > 0.0f) {
                     noise += density * 4.0f;
